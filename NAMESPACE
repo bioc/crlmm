@@ -1,0 +1,4 @@
+useDynLib("crlmm")
+import(methods)
+export("crlmm",
+       "list.celfiles")
