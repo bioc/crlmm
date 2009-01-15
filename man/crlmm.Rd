@@ -58,6 +58,18 @@ recallRegMin = 1000, returnParams = FALSE, badSNP = 0.7)
   Carvalho B, Louis TA, Irizarry RA. Describing Uncertainty in
   Genome-wide Genotype Calling. (in prep)
 }
+\examples{
+## this can be slow
+if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
+  path <- system.file("celFiles", package="hapmapsnp5")
 
+  ## the filenames with full path...
+  ## very useful when genotyping samples not in the working directory
+  cels <- list.celfiles(path, full.names=TRUE)
+  crlmmOutput <- crlmm(cels)
+  crlmmOutput[["calls"]][1:10, 1:2]
+  crlmmOutput[["confs"]][1:10, 1:2]
+}
+}
 \keyword{classif}
 

@@ -1,4 +1,5 @@
 snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1, verbose=TRUE, seed=1, cdfName, sns){
+  if (missing(sns)) sns <- basename(filenames)
   ##ADD CHECK TO SEE IF LOADED
   if (missing(cdfName))
     cdfName <- read.celfile.header(filenames[1])$cdfName
