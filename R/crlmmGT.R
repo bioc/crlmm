@@ -11,7 +11,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   NR <- nrow(A)
   
   pkgname <- getCrlmmAnnotationName(cdfName)
-  if(!require(pkgname, character.only=TRUE)){
+  if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
     suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
     msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
     message(strwrap(msg))
@@ -30,6 +30,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   SMEDIAN <- getVarInEnv("SMEDIAN")
   theKnots <- getVarInEnv("theKnots")
   regionInfo <- getVarInEnv("regionInfo")
+  params <- getVarInEnv("params")
   
   ##IF gender not provide, we predict
   if(is.null(gender)){

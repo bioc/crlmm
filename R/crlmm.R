@@ -8,11 +8,12 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
     stop("'intensityFile' is missing, and you chose either load.it or save.it")
   
   if (missing(sns)) sns <- basename(filenames)
-  if (load.it & !file.exists(intensityFile)){
-    load.it <- FALSE
-    message("File ", intensityFile, " does not exist.")
-    message("Not loading it, but running SNPRMA from scratch.")
-  }
+  if (!missing(intensityFile))
+    if (load.it & !file.exists(intensityFile)){
+      load.it <- FALSE
+      message("File ", intensityFile, " does not exist.")
+      message("Not loading it, but running SNPRMA from scratch.")
+    }
   if (!load.it){
     res <- snprma(filenames, fitMixture=TRUE,
                   mixtureSampleSize=mixtureSampleSize, verbose=verbose,
@@ -38,7 +39,8 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
                   gender=gender, row.names=row.names,
                   col.names=col.names, recallMin=recallMin,
                   recallRegMin=1000, SNRMin=SNRMin,
-                  returnParams=returnParams, badSNP=badSNP)
+                  returnParams=returnParams, badSNP=badSNP,
+                  verbose=verbose)
 
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]

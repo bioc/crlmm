@@ -131,7 +131,7 @@ SEXP gtypeCallerPart1(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
     int ibv[ib2];
     if (nSnpsPerClass[h] > 0)
       for (i=0; i < ptr2nIndexes[h]; i++){
-	if (i%100000 == 0) Rprintf("+");
+	/* if (i%100000 == 0) Rprintf("+");*/
 	// Substract 1, as coming from R it is 1-based and C is 0-based.
 	ii=INTEGER(VECTOR_ELT(Indexes, h))[i] - 1;
 	for (j=0; j < colsAB; j++){
@@ -348,7 +348,7 @@ SEXP gtypeCallerPart2(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   for (h=0; h < nSnpClasses; h++){
     if (nSnpsPerClass[h] > 0)
       for (i=0; i < ptr2nIndexes[h]; i++){
-	if (i%100000 == 0) Rprintf("+");
+	/* if (i%100000 == 0) Rprintf("+"); */
 	// Substract 1, as coming from R it is 1-based and C is 0-based.
 	ii=INTEGER(VECTOR_ELT(Indexes, h))[i] - 1;
 	intbuffer = ii+1;
