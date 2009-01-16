@@ -14,7 +14,7 @@ static const R_CallMethodDef CallEntries[] = {
     {NULL, NULL, 0}
 };
 
-void R_init_flowCore(DllInfo *dll)
+void R_init_crlmm(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);    
 }
