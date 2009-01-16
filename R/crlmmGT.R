@@ -104,11 +104,14 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       noMoveIndex <- union(setdiff(which(rowSums(is.na(newparams[["centers"]]))>0), YIndex), 
                            YIndex[rowSums(is.na(newparams[["centers"]][YIndex, ])>1)])
     }
+    snps2ignore <- which(rowSums(is.na(newparams[["centers"]])) > 0)
+    snps2keep <- setdiff(autosomeIndex, snps2ignore)
+    rm(snps2ignore)
     newparams[["centers"]][is.na(newparams[["centers"]])] <- params[["centers"]][is.na(newparams[["centers"]])]
     if(verbose) cat("\n")
   
     if(verbose) message("Calculating and standardizing size of shift.")
-    DD <- newparams[["centers"]] - params[["centers"]]
+    GG <- DD <- newparams[["centers"]] - params[["centers"]]
     DD <- sweep(DD, 2, colMeans(DD[autosomeIndex, ]))
     SS <- cov(DD[autosomeIndex, ])
     SSI <- solve(SS)
@@ -150,9 +153,12 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   if(!is.null(col.names)){ colnames(A) <- colnames(B) <- col.names}
 
   if(length(Index) >= recallRegMin){
-    tmp4batchQC <- DD[autosomeIndex,]/(params[["N"]][autosomeIndex,]+1)
-    tmpSnpQc <- dev[autosomeIndex]
-    SS <- cov(tmp4batchQC[tmpSnpQc < badSNP,])
+##     tmp4batchQC <- DD[autosomeIndex,]/(params[["N"]][autosomeIndex,]+1)
+##     tmpSnpQc <- dev[autosomeIndex]
+##     SS <- cov(tmp4batchQC[tmpSnpQc < badSNP,])
+    DD <- sweep(GG[snps2keep, ], 2, colMeans(DD[snps2keep, ]))
+    tmpSnpQc <- dev[snps2keep]
+    SS <- cov(DD[tmpSnpQc < badSNP, ])
     batchQC <- mean(diag(SS))
   }else{
     batchQC <- Inf
