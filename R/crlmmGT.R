@@ -13,7 +13,9 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   pkgname <- getCrlmmAnnotationName(cdfName)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
     suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-    msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+    msg <- paste("If", pkgname,
+                 "is installed on an alternative location, please load it manually by using",
+                 suggCall)
     message(strwrap(msg))
     stop("Package ", pkgname, " could not be found.")
     rm(suggCall, msg)
@@ -161,14 +163,15 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     SS <- cov(DD[tmpSnpQc < badSNP, ])
     batchQC <- mean(diag(SS))
   }else{
+    SS <- matrix(0, 3, 3)
     batchQC <- Inf
   }
   
   if(verbose) message("Done.")
   if (returnParams){
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covSS=SS))
   }else{
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD, covSS=SS))
   }
 }
 
