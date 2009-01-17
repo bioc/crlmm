@@ -1,8 +1,15 @@
 useDynLib("crlmm",.registration=TRUE)
-import(methods, utils)
+
 export("crlmm",
        "list.celfiles")
 
 importFrom(affyio, read.celfile.header, read.celfile)
 
 importFrom(preprocessCore, normalize.quantiles.use.target)
+importFrom(utils,
+           data,
+           packageDescription,
+           setTxtProgressBar,
+           txtProgressBar)
+importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
+           sd)
