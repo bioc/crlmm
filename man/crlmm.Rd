@@ -9,12 +9,12 @@
 }
 \usage{
 
-crlmm(filenames, row.names = TRUE, col.names = TRUE, probs = c(1/3, 1/3,
-1/3), DF = 6, SNRMin = 5, gender = NULL, save.it = FALSE, load.it =
-FALSE, intensityFile, mixtureSampleSize =
-10^5, eps = 0.1, verbose = TRUE, cdfName, sns, recallMin = 10,
-recallRegMin = 1000, returnParams = FALSE, badSNP = 0.7)
-
+crlmm(filenames, row.names=TRUE, col.names=TRUE,
+      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
+      gender=NULL, save.it=FALSE, load.it=FALSE,
+      intensityFile, mixtureSampleSize=10^5,
+      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
+      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -26,7 +26,7 @@ recallRegMin = 1000, returnParams = FALSE, badSNP = 0.7)
   \item{SNRMin}{'numeric' scalar defining the minimum SNR used to filter
   out samples.}
   \item{gender}{'integer' vector, with same length as 'filenames',
-    defining gender. (1 - male; 2 - female)}
+    defining sex. (1 - male; 2 - female)}
   \item{save.it}{'logical'. Save preprocessed data?}
   \item{load.it}{'logical'. Load preprocessed data to speed up analysis?}
   \item{intensityFile}{'character' with filename to be saved/loaded -

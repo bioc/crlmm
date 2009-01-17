@@ -1,13 +1,12 @@
 Package: crlmm
 Type: Package
 Title: Genotype Calling via CRLMM Algorithm
-Version: 1.0.32
+Version: 1.0.33
 Date: 2008-12-28
 Author: Rafael A Irizarry
 Maintainer: Benilton S Carvalho <bcarvalh@jhsph.edu>
 Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays.
-Depends: 
-Imports: affyio, preprocessCore, utils,stats
+Imports: affyio, preprocessCore, utils, stats
 License: Artistic-2.0
 Suggests: hapmapsnp5, genomewidesnp5Crlmm, methods
 Collate: crlmmGT.R

@@ -48,7 +48,7 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
   
   if(verbose){
     message("Processing ", length(filenames), " files.")
-    pb <- txtProgressBar(min=0, max=length(filenames), style=3)
+    if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
   }
   ##We start looping throug cel files
   idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
@@ -72,9 +72,13 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
       mixtureParams[, i] <- tmp[["coef"]]
       SNR[i] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
     }
-    if (verbose) setTxtProgressBar(pb, i)
+    if (verbose)
+      if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
+      else cat(".")
   }
-  if (verbose) close(pb)
+  if (verbose)
+    if (getRversion() > '2.7.0') close(pb)
+    else cat("\n")
   if (!fitMixture) SNR <- mixtureParams <- NA
   ## gns comes from preprocStuff.rda
   list(A=A, B=B, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
