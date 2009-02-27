@@ -254,7 +254,7 @@ computeCnBatch <- function(A,
 			   seed=123,
 			   MIN.OBS=3,
 			   envir,
-			   chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim, upperTail, ...){
+			   chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim=0, upperTail=TRUE, ...){
 	if(length(ls(envir)) == 0) instantiateObjects(calls, NP, plate, envir, chrom)
 	##require(genefilter)
 	require(splines)
