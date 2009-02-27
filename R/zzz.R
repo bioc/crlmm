@@ -10,7 +10,6 @@ THISPKG <- "crlmm"
 }
 
 .onUnload <- function( libpath ){
-  library.dynam.unload(THISPKG, libpath)
+	library.dynam.unload(THISPKG, libpath)
 }
-
-  .crlmmPkgEnv <- new.env(parent=emptyenv())
+.crlmmPkgEnv <- new.env(parent=emptyenv())

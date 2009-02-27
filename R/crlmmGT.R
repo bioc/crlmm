@@ -36,13 +36,13 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   
   ##IF gender not provide, we predict
   if(is.null(gender)){
-    if(verbose) message("Determining gender.")
-    XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
-    if(sum(SNR>SNRMin)==1){
-      gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
-    }else{
-      gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRMin]), max(XMedian[SNR>SNRMin])))[["cluster"]]
-    }
+	  if(verbose) message("Determining gender.")
+	  XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+	  if(sum(SNR>SNRMin)==1){
+		  gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
+	  }else{
+		  gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRMin]), max(XMedian[SNR>SNRMin])))[["cluster"]]
+	  }
   }
   
   Indexes <- list(autosomeIndex, XIndex, YIndex)

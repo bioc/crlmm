@@ -5,7 +5,7 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7){
   if ((load.it | save.it) & missing(intensityFile))
-    stop("'intensityFile' is missing, and you chose either load.it or save.it")
+	  stop("'intensityFile' is missing, and you chose either load.it or save.it")
   
   if (missing(sns)) sns <- basename(filenames)
   if (!missing(intensityFile))
@@ -33,7 +33,6 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
   }
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
-
   res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
                   res[["mixtureParams"]], res[["cdfName"]],
                   gender=gender, row.names=row.names,
