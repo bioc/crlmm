@@ -9,12 +9,11 @@ Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays.
 Imports: affyio, preprocessCore, utils, stats, genefilter, splines, Biobase
 License: Artistic-2.0
 Suggests: hapmapsnp5, genomewidesnp5Crlmm, genomewidesnp6Crlmm, methods
-Collate: crlmm-functions.R
-         fitAffySnpMixture56.R
-         snprma.R
+Collate: AllClasses.R
+         crlmm-methods.R
+	 cnrma-functions.R
+         crlmm-functions.R
+         snprma-functions.R
          utils.R
          zzz.R
-         AllClasses.R
-         crlmm-methods.R
-	 functions.R
 LazyLoad: yes
