@@ -1,0 +1,11 @@
+2009-03-01  Benilton Carvalho <bcarvalh@jhsph.edu>
+
+* Added TODO file
+
+* Added CHANGES file
+
+* Reduced number of files in R/ by combining functions for a given methodology (crlmm / cnrma)
+
+* Files with suffix XYZ-functions.R should have *functions* for methodology XYZ
+
+* Files with suffix XYZ-methods.R should have *methods* for methodology XYZ

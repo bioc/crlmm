@@ -1,0 +1,13 @@
+#####################################
+### FOR CRLMM
+#####################################
+- Decide on output format (BC vote: eSet-like)
+- Helper to convert to snpMatrix
+- Vignette with non-trivial use of crlmm (use Vince's)
+- Add RS ids
+- Allele plots
+- M v S plots
+
+#####################################
+### FOR CNRMA
+#####################################
