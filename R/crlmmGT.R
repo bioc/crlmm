@@ -158,10 +158,14 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 ##     tmp4batchQC <- DD[autosomeIndex,]/(params[["N"]][autosomeIndex,]+1)
 ##     tmpSnpQc <- dev[autosomeIndex]
 ##     SS <- cov(tmp4batchQC[tmpSnpQc < badSNP,])
-    DD <- sweep(GG[snps2keep, ], 2, colMeans(DD[snps2keep, ]))
+    tmp4batchQC <- DD[snps2keep,]/(params[["N"]][snps2keep,]+1)
     tmpSnpQc <- dev[snps2keep]
-    SS <- cov(DD[tmpSnpQc < badSNP, ])
-    batchQC <- mean(diag(SS))
+    SS <- cov(DD[snps2keep,])
+##     DD <- sweep(GG[snps2keep, ], 2, colMeans(DD[snps2keep, ]))
+##     tmpSnpQc <- dev[snps2keep]
+##     SS <- cov(DD[tmpSnpQc < badSNP, ])
+    batchQC <- sqrt(sum(diag(cov(tmp4batchQC[tmpSnpQc < badSNP,]))))*sum(params[["N"]][snps2keep[1],])
+##    batchQC <- mean(diag(SS))
   }else{
     SS <- matrix(0, 3, 3)
     batchQC <- Inf
@@ -169,9 +173,9 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   
   if(verbose) message("Done.")
   if (returnParams){
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covSS=SS))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covDD=SS))
   }else{
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD, covSS=SS))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD, covDD=SS))
   }
 }
 
@@ -225,7 +229,7 @@ gtypeCallerR2 <- function(A, B, fIndex, mIndex, theCenters, theScales,
 
 ##################
 ##################
-### THIS IS TEMPORARY NOT OFFICIALLY USED
+### THIS IS TEMPORARY AND NOT OFFICIALLY USED
 ##################
 ####################
 crlmmGTTNoN <- function(A, B, SNR, mixtureParams, cdfName,
