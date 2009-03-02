@@ -1,0 +1,129 @@
+%\VignetteIndexEntry{crlmm Vignette - Downstream Analysis}
+%\VignetteKeywords{genotype, crlmm, SNP 5, SNP 6}
+%\VignettePackage{crlmm}
+
+\documentclass[12pt]{article}
+
+\usepackage{amsmath,pstricks}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+
+
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+
+\textwidth=6.2in
+
+\bibliographystyle{plainnat} 
+ 
+\begin{document}
+%\setkeys{Gin}{width=0.55\textwidth}
+
+\title{crlmm to downstream data analysis}
+\author{VJ Carey}
+\maketitle
+
+\section{Running CRLMM on a nontrivial set of CEL files}
+
+We work with the 90 CEU samples hybridized to Affy 6.0 chips, which
+are assumed to be in the current directory. First, we identify the
+files and run \Rmethod{crlmm}. The results will be saved to the
+variable \Robject{crlmmResult}.
+<<lkd>>=
+library(crlmm)
+celFiles <- list.celfiles()
+celFiles[1:4]
+if (!exists("crlmmResult")) {
+ if (file.exists("crlmmResult.rda")) load("crlmmResult.rda")
+ else {
+    crlmmResult <- crlmm(celFiles)
+    save(crlmmResult, file="crlmmResult.rda")
+    }
+}
+@
+
+This is currently a list.
+<<lkj21>>=
+  class(crlmmResult)
+  sapply(crlmmResult, dim)
+  sapply(crlmmResult, length)
+@
+
+\section{Constructing an eSet extension}
+
+We will use the \Rpackage{GGdata} package to obtain extra information
+on the samples. This will be later used when building an \Rclass{eSet}
+extension to store the genotyping results.
+<<getpd>>=
+  library(GGdata)
+  if (!exists("hmceuB36")) data(hmceuB36)
+  pd <- phenoData(hmceuB36)
+  ggn <- sampleNames(pd)
+  preSN <- colnames(crlmmResult[["calls"]])
+  simpSN <- gsub("_.*", "", preSN)
+  if (!all.equal(simpSN, ggn)) stop("align GGdata phenoData with crlmmResult read")
+@ 
+
+The list obtained as output of the \Rmethod{crlmm} method can be
+easily coerced to an eSet extension with the help of the helper
+function \Rfunction{list2crlmmSet}.
+<<docl>>=
+  colnames(crlmmResult[["calls"]]) <- colnames(crlmmResult[["confs"]]) <- simpSN
+  crlmmResultSet <- list2crlmmSet(crlmmResult)
+  phenoData(crlmmResultSet) <- combine(pd, phenoData(crlmmResultSet))
+  crlmmResultSet
+  dim(calls(crlmmResultSet))
+  dim(confs(crlmmResultSet))
+  calls(crlmmResultSet)[1:10, 1:2]
+  confs(crlmmResultSet)[1:10, 1:2]
+@
+
+\section{Coercing to snp.matrix as a prelude to a GWAS}
+
+<<lksnm>>=
+library(snpMatrix)
+crlmmSM <- as(t(calls(crlmmResultSet))-1, "snp.matrix")
+crlmmSM
+@
+
+\section{Conducting a GWAS}
+
+We want to find SNP for which rare allele count is predictive of expression of CPNE1.
+We will use expression data available from GGdata.  This is a very naive analysis.
+<<doa>>=
+library(illuminaHumanv1.db)
+rmm <- revmap(illuminaHumanv1SYMBOL)
+mypr <- get("CPNE1", rmm)
+ex <- as.numeric(exprs(hmceuB36)[mypr[1],])
+subjdata <- pData(hmceuB36)
+subjdata[["ex"]] <- ex
+gwas <- snp.rhs.tests(ex~male, data=subjdata, snp.data=crlmmSM, family="gaussian")
+ok <- which(p.value(gwas) < 1e-10)
+gwas[ok,]
+<<dopl,fig=TRUE>>=
+plot(ex~calls(crlmmResultSet)["SNP_A-4208858",],
+     xlab="Genotype Call for SNP_A-4208858",
+     ylab="Expression", xaxt="n")
+axis(1, at=1:3, labels=c("AA", "AB", "BB"))
+@
+
+<<lksess>>=
+sessionInfo()
+@
+
+\end{document}

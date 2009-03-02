@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{crlmm Vignette}
+%\VignetteIndexEntry{crlmm Vignette - Genotyping}
 %\VignetteDepends{crlmm, hapmapsnp5, genomewidesnp5Crlmm}
 %\VignetteKeywords{genotype, crlmm, SNP 5, SNP 6}
 %\VignettePackage{crlmm}

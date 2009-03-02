@@ -1,4 +1,4 @@
-2009-03-01  Benilton Carvalho <bcarvalh@jhsph.edu>
+2009-03-01  Benilton Carvalho <bcarvalh@jhsph.edu> - committed version 1.0.40
 
 * Added TODO file
 
@@ -9,3 +9,11 @@
 * Files with suffix XYZ-functions.R should have *functions* for methodology XYZ
 
 * Files with suffix XYZ-methods.R should have *methods* for methodology XYZ
+
+* Exported assayDataNew from Biobase
+
+* Added inst/scripts to store vignettes that can't be built by BioC
+due to the fact that they depend on external data not available as
+BioC data packages
+
+* Added crlmmSet class and calls/confs methods
