@@ -94,7 +94,7 @@ celDatesFrom <- function(celfiles, path=""){
 }
 
 
-cnrma <- function(filenames, sns, cdfName, seed=1){
+cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 ##	require(preprocessCore) || stop("Package preprocessCore not available")
 	if (missing(sns)) sns <- basename(filenames)
 	if (missing(cdfName))
