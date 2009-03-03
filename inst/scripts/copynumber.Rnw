@@ -42,13 +42,15 @@ library(genomewidesnp6Crlmm)
 library(ellipse)
 @ 
 
+You must specify the names of the CEL files and the full path, as well
+as a directory in which to store the output from crlmm and cnrma.
+
 <<celfiles>>=
 celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
 outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
 @ 
 
-Specify an output directory for storing the quantile-normalized
-intensities from crlmm.
+Preprocess and genotype (for more info see the crlmm vignette).
 
 <<genotype>>=
 if (!exists("crlmmResult")) {
@@ -63,7 +65,7 @@ if (!exists("crlmmResult")) {
 }
 @ 
 
-Quantile normalize the nonpolymorphic probes and save the output.
+Quantile normalize the nonpolymorphic probes and save the results.
 
 <<cnrma>>=
 if(!exists("cnrmaResult")){
@@ -113,7 +115,6 @@ calls <- crlmmResult$calls
 conf <- crlmmResult$conf
 SNR <- crlmmResult$SNR
 NP <- cnrmaResult$NP
-rm(res, crlmmResult, cnrmaResult)
 gc()
 @ 
 
@@ -155,14 +156,16 @@ stored. Allele-specific estimates of copy number are also stored in
 this environment.
 
 <<copyNumberByBatch>>=
-e1 <- new.env()
-computeCopynumber(A=A,
-		  B=B,
-		  calls=calls,
-		  conf=conf,
-		  NP=NP,
-		  plate=plates,
-		  envir=e1, chrom=CHR, DF.PRIOR=75)
+if(!exists("e1")){
+	e1 <- new.env()
+	computeCopynumber(A=A,
+			  B=B,
+			  calls=calls,
+			  conf=conf,
+			  NP=NP,
+			  plate=plate,
+			  envir=e1, chrom=CHR, DF.PRIOR=75)
+}
 @ 
 
 The DF.PRIOR indicates how much we will shrink SNP-specific estimates
@@ -196,7 +199,7 @@ points(position, copyT[, 1], pch=".", cex=2, , xaxt="n", col="grey70")
 axis(1, at=pretty(range(position)), labels=pretty(range(position))/1e6)
 axis(2, at=0:5, labels=0:5)
 mtext("position (Mb)", 1, line=2)
-mtext(expression(C[A] + C[B]), 2, line=2, las=3)
+mtext(expression(hat(C)[A] + hat(C)[B]), 2, line=2, las=3)
 @ 
 
 \begin{figure}
@@ -206,6 +209,8 @@ mtext(expression(C[A] + C[B]), 2, line=2, las=3)
 \end{figure}
 
 \paragraph{One SNP at a time}
+
+This section needs to be cleaned up (TODO).
 
 <<intermediateFiles>>=
 tau2A <- get("tau2A", e1)
@@ -224,22 +229,25 @@ B <- get("B", e1)
 @ 
 
 Here, we plot the prediction regions for total copy number 2 and 3 for
-the first plate. Black plotting symbols are estimates from the first
-plate; light grey are points from other plates. (You could also draw
-prediction regions for 0-4 copies, but it gets crowded).  Notice that
-there is little evidence of a plate effect for this SNP.
+the first plate. Plotting symbols are the genotype calls (1=AA, 2=AB,
+3=BB); light grey points are from other plates. (You could also add
+the prediction regions for 0-4 copies, but it gets crowded).  Notice
+that there is little evidence of a plate effect for this SNP.
 
 <<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE>>=
-par(las=1)
+par(las=1, pty="s")
 p <- 1 ##indicates plate
-J <- grep(unique(plates)[p], sns) ##sample indices for this plate
+J <- grep(unique(plate)[p], plate) ##sample indices for this plate
 ylim <- c(6.5,13)
 I <- which(phiA > 10 & phiB > 10)
 i <- I[1]
+##plate effects are small
+log2(phiA[i, ])
+log2(phiB[i, ])
 plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
 points(log2(A[i, J]), log2(B[i, J]), col="black", pch=as.character(calls[i, J]))
-for(CT in 2:3){
-	if(CT == 2) ellipse.col <- "brown" else ellipse.col <- "purple"
+for(CT in 2){
+	if(CT == 2) ellipse.col <- "black" ##else ellipse.col <- "purple"
 	for(CA in 0:CT){
 		CB <- CT-CA
 		A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
@@ -252,104 +260,125 @@ for(CT in 2:3){
 			      scale=scale), col=ellipse.col, lwd=2)
 	}
 }
-legend("topright", lwd=3, col=c("black", "purple"), legend=c("2 copies", "3 copies"), bty="n")
+legend("topright", lwd=3, col="black", legend="2 copies", bty="n")
 @ 
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-predictionRegion}
-  \caption{Prediction regions for copy number 2 and 3 for one SNP.
-    The plate effects are negligible for this SNP and we only plot the
+  \caption{Prediction regions for copy number 2 for one SNP.  The
+    plate effects are negligible for this SNP and we only plot the
     prediction region for the first plate.}
 \end{figure}
 
-Here is one way to identify a SNP with a large plate effect -- look
-for shifts in the prediction regions (here I'm looking for large
-shifts in the A direction).
 
-<<shifts>>=
-shiftA <- nuA+2*phiA 
-maxA <- apply(shiftA, 1, max, na.rm=T)
-minA <- apply(shiftA, 1, min, na.rm=T)
+<<predictionRegion, eval=FALSE>>=
+par(las=1, pty="s", ask=TRUE)
+p <- 1 ##indicates plate
+J <- grep(unique(plate)[p], plate) ##sample indices for this plate
+ylim <- c(6.5,13)
+I <- which(phiA > 10 & phiB > 10)
+col <- c("grey0", "grey30", "grey70")
+cex <- 3
+for(j in seq(along=I)){
+	i <- I[j]
+	J1 <- grep("C", plate) ##sample indices for this plate
+	J2 <- grep("Y", plate) ##sample indices for this plate	
+	J3 <- grep("A", plate)
+	plot(log2(A[i, ]), log2(B[i, ]), pch=21, col="grey60", type="n", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
+	points(log2(A[i, J1]), log2(B[i, J1]), col=col[1], pch=".", cex=cex)
+	points(log2(A[i, J2]), log2(B[i, J2]), col=col[2], pch=".", cex=cex)
+	points(log2(A[i, J3]), log2(B[i, J3]), col=col[3], pch=".", cex=cex)
+	P <- 1:3
+	ellipse.col <- col
+	for(p in seq(along=P)){
+		for(CT in 2){
+			for(CA in 0:CT){
+				CB <- CT-CA
+				A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
+				B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
+				scale <- c(A.scale, B.scale)
+				if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
+				if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
+				if(CA > 0 & CB > 0) rho <- corr[i, p]		
+				lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
+					      scale=scale), col=ellipse.col[p], lwd=2)
+			}
+		}
+
+	}
+	legend("topright", lwd=3, col=ellipse.col, legend=unique(plate), bty="n")	
+}
+@ 
+
+Look at the distribution of shifts in the predicted centers across the
+plates.  The biggest shifts are for SNPs that have no observations in
+a subset of the plates.  Here, we should borrow strength across plates
+to improve the prediction regions (TO DO).
+
+<<shifts, eval=FALSE>>=
+shiftA <- log2(nuA+phiA)
+maxA <- apply(shiftA, 1, max, na.rm=TRUE)
+minA <- apply(shiftA, 1, min, na.rm=TRUE)
 d <- maxA - minA
 hist(d)
-index <- which(d > 3000)[2]
-plate1 <- which(shiftA[index, ] == maxA[index])
-plate2 <- which(shiftA[index, ] == minA[index])
-@ 
+index <- which(d > 1)
+plate1 <- plate2 <- rep(NA, length(index))
+for(i in seq(along=index)){
+	plate1[i] <- which(shiftA[index[i], ] == maxA[index[i]])
+	plate2[i] <- which(shiftA[index[i], ] == minA[index[i]])
+}
 
-Now plot the predictions for the two plates.  All the ellipses are
-prediction regions for copy number 2.  Note that while I looked for
-shifts in the A direction, the shift often occurs in both the B and A
-dimensions.
-
-<<plateEffect, fig=TRUE, width=8, height=8, include=FALSE>>=
 par(las=1)
-i <- index
-J1 <- grep(unique(plates)[plate1], sns) ##sample indices for this plate
-J2 <- grep(unique(plates)[plate2], sns) ##sample indices for this plate
-ylim <- c(6.5,13)
-plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
-points(log2(A[i, J1]), log2(B[i, J1]), col="brown", pch=as.character(calls[i, J1]))
-points(log2(A[i, J2]), log2(B[i, J2]), col="blue", pch=as.character(calls[i, J2]))
-p <- plate1
-CT <- 2
-ellipse.col <- "brown" 
-for(CA in 0:CT){
-	CB <- CT-CA
-	A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
-	B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
-	scale <- c(A.scale, B.scale)
-	if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
-	if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
-	if(CA > 0 & CB > 0) rho <- corr[i, p]			
-	lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
-		      scale=scale), col=ellipse.col, lwd=2)
-}
-ellipse.col <- "blue" 
-p <- plate2
-for(CA in 0:CT){
-	CB <- CT-CA
-	A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
-	B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
-	scale <- c(A.scale, B.scale)
-	if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
-	if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
-	if(CA > 0 & CB > 0) rho <- corr[i, p]			
-	lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
-		      scale=scale), col=ellipse.col, lwd=2)
-}
-legend("topright", lwd=3, col=c("brown", "blue"), legend=c("2 copies, plate 1", "2 copies, plate 2 "), bty="n")
-@ 
-
-\begin{figure}
-  \includegraphics[width=0.9\textwidth]{copynumber-plateEffect}
-  \caption{The prediction regions for copy number 2 shift when there
-    is a large plate effect.}
-\end{figure}
-
-Alternatively, loop through a large number of SNPs to see how these
-regions move
-<<codeForLoop, eval=FALSE>>=
-par(las=1, pty="s", ask=TRUE)
-for(i in I[1:50]){
-	plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col=col[DS], cex=0.9, ylim=ylim, xlim=ylim)
-	for(CT in 2:3){
-		if(CT == 2) ellipse.col <- "brown" else ellipse.col <- "purple"
+for(j in seq(along=index)){
+	i <- index[j]
+	J1 <- grep(plate[plate1[j]], plate) ##sample indices for this plate
+	J2 <- grep(plate[plate2[j]], plate) ##sample indices for this plate
+	ylim <- c(6.5,13)
+	plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
+	points(log2(A[i, J1]), log2(B[i, J1]), col="brown", pch=as.character(calls[i, J1]))
+	points(log2(A[i, J2]), log2(B[i, J2]), col="blue", pch=as.character(calls[i, J2]))
+	CT <- 2
+	P <- c(plate1[j], plate2[j])
+	for(p in seq(along=P)){
+		if(p == 1) ellipse.col="brown" else ellipse.col="blue"
 		for(CA in 0:CT){
 			CB <- CT-CA
 			A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
 			B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
+			scale <- c(A.scale, B.scale)
 			if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
 			if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
 			if(CA > 0 & CB > 0) rho <- corr[i, p]			
-			scale <- c(A.scale, B.scale)
 			lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
 				      scale=scale), col=ellipse.col, lwd=2)
 		}
 	}
-	legend("topright", lwd=3, col=col, legend=c("3 copies", "2 copies"), bty="n")
+}
+legend("topright", lwd=3, col=c("brown", "blue"), legend=c("2 copies, plate 1", "2 copies, plate 2 "), bty="n")
+@ 
+
+Now look at shifts for which we have at least 3 observations in each
+genotype cluster (TO DO).
+
+<<shifts, eval=FALSE, echo=FALSE>>=
+shiftA <- log2(nuA+phiA)
+maxA <- apply(shiftA, 1, max, na.rm=TRUE)
+minA <- apply(shiftA, 1, min, na.rm=TRUE)
+d <- maxA - minA
+hist(d)
+index <- which(d > 0.2)
+plate1 <- plate2 <- rep(NA, length(index))
+for(i in seq(along=index)){
+	plate1[i] <- which(shiftA[index[i], ] == maxA[index[i]])
+	plate2[i] <- which(shiftA[index[i], ] == minA[index[i]])
 }
 @ 
+
+%\begin{figure}
+%  \includegraphics[width=0.9\textwidth]{copynumber-plateEffect}
+%  \caption{The prediction regions for copy number 2 shift when there
+%    is a large plate effect.}
+%\end{figure}
 
 \section{Session information}
 <<>>=
