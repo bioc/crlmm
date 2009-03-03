@@ -12,6 +12,17 @@ rowMAD <- function(x, y, ...){
 	return(mad)
 }
 
+getCnvFid <- function(chromosome, pkg="pd.genomewidesnp.6", max.size=1000){
+	##requires the pd.mapping package
+	##best to drop this
+	require(pkg, character.only=TRUE)
+	conn <- db(get(pkg))
+	sql <- paste("SELECT featureSetCNV.chrom_start, featureSetCNV.man_fsetid, featureSetCNV.fsetid, fid FROM featureSetCNV, pmfeatureCNV WHERE ",
+		     "featureSetCNV.fsetid=pmfeatureCNV.fsetid AND featureSetCNV.chrom IN ('", chromosome, "')", sep="")
+	tmp <- dbGetQuery(conn, sql)
+	tmp
+}
+
 rowCors <- function(x, y, ...){
 	N <- rowSums(!is.na(x))
 	x <- suppressWarnings(log2(x))
