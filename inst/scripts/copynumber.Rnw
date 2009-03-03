@@ -106,7 +106,7 @@ number.  Specifically, we require 6 items:
   
   These items are extracted as follows:
 
-<<snpAndCnSummaries, eval=FALSE>>=
+<<snpAndCnSummaries>>=
 A <- res$A
 B <- res$B
 calls <- crlmmResult$calls
@@ -127,7 +127,7 @@ We suggest excluding samples with a signal to noise ratio less than 5.
 We then extract the probes (rows) that are on chromosome 15 and the
 samples (columns) that have a suitable signal to noise ratio.
 
-<<subsetCrlmmOutput, eval=FALSE>>=
+<<subsetCrlmmOutput>>=
 A <- A[index[[1]], SNR > 5]
 B <- B[index[[1]], SNR > 5]
 calls <- calls[index[[1]], SNR > 5]
@@ -154,7 +154,7 @@ intermediate \R{} objects for copy number estimation are
 stored. Allele-specific estimates of copy number are also stored in
 this environment.
 
-<<copyNumberByBatch, eval=FALSE>>=
+<<copyNumberByBatch>>=
 e1 <- new.env()
 computeCopynumber(A=A,
 		  B=B,
@@ -299,7 +299,10 @@ for(CA in 0:CT){
 	A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
 	B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
 	scale <- c(A.scale, B.scale)
-	lines(ellipse(x=corr[i, p]*(CA>0)*(CB>0), centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
+	if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
+	if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
+	if(CA > 0 & CB > 0) rho <- corr[i, p]			
+	lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
 		      scale=scale), col=ellipse.col, lwd=2)
 }
 ellipse.col <- "blue" 
@@ -309,7 +312,10 @@ for(CA in 0:CT){
 	A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
 	B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
 	scale <- c(A.scale, B.scale)
-	lines(ellipse(x=corr[i, p]*(CA>0)*(CB>0), centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
+	if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
+	if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
+	if(CA > 0 & CB > 0) rho <- corr[i, p]			
+	lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
 		      scale=scale), col=ellipse.col, lwd=2)
 }
 legend("topright", lwd=3, col=c("brown", "blue"), legend=c("2 copies, plate 1", "2 copies, plate 2 "), bty="n")
@@ -333,8 +339,11 @@ for(i in I[1:50]){
 			CB <- CT-CA
 			A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
 			B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
+			if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
+			if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
+			if(CA > 0 & CB > 0) rho <- corr[i, p]			
 			scale <- c(A.scale, B.scale)
-			lines(ellipse(x=corr[i, p]*(CA>0)*(CB>0), centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
+			lines(ellipse(x=rho, centre=c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p])),
 				      scale=scale), col=ellipse.col, lwd=2)
 		}
 	}
