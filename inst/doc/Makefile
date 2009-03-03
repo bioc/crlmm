@@ -1,4 +1,4 @@
-all: copynumber crlmmDownstream clean
+All: copynumber crlmmDownstream clean
 
 copynumber: copynumber.tex
 	cp -p ../scripts/copynumber.pdf .
