@@ -114,7 +114,7 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
 	SKW <- vector("numeric", length(filenames))
-	NP <- matrix(NA, nrow(map), length(filenames))
+	NP <- matrix(NA, length(fid), length(filenames))
 	verbose <- TRUE
 	if(verbose){
 		message("Processing ", length(filenames), " files.")

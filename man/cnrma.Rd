@@ -2,7 +2,8 @@
 \alias{cnrma}
 \title{Quantile normalizes the intensities for the nonpolymorphic probe
   to a HapMap reference distribution.}
-\description{
+\description{Quantile normalizes the intensities for the nonpolymorphic probe
+  to a HapMap reference distribution.
 }
 \usage{
 cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
@@ -12,6 +13,7 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
   \item{sns}{the sample names. If missing, the basename of the filenames is used.}
   \item{cdfName}{Should be 'genomewidesnp6Crlmm'}
   \item{seed}{seed for sampling the intensities to calculate skewness}
+  \item{verbose}{logical}
 }
 \details{
 }
@@ -21,7 +23,6 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
 }
 \author{Rob Scharpf}
 \note{Not tested}
-\seealso{\code{\link{snprma}}}
 \examples{
 	\dontrun{
 		library(genomewidesnp6Crlmm)
