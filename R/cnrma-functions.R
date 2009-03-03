@@ -12,17 +12,6 @@ rowMAD <- function(x, y, ...){
 	return(mad)
 }
 
-getCnvFid <- function(chromosome, pkg="pd.genomewidesnp.6", max.size=1000){
-	##requires the pd.mapping package
-	##best to drop this
-	require(pkg, character.only=TRUE)
-	conn <- db(get(pkg))
-	sql <- paste("SELECT featureSetCNV.chrom_start, featureSetCNV.man_fsetid, featureSetCNV.fsetid, fid FROM featureSetCNV, pmfeatureCNV WHERE ",
-		     "featureSetCNV.fsetid=pmfeatureCNV.fsetid AND featureSetCNV.chrom IN ('", chromosome, "')", sep="")
-	tmp <- dbGetQuery(conn, sql)
-	tmp
-}
-
 rowCors <- function(x, y, ...){
 	N <- rowSums(!is.na(x))
 	x <- suppressWarnings(log2(x))
@@ -121,16 +110,9 @@ cnrma <- function(filenames, sns, cdfName, seed=1){
 	}
 	
 	##I'm using the pd.mapping package
-	map <- list(); j <- 1
-	for(chrom in c(1:22, "X")){
-		map[[j]] <- getCnvFid(chrom)
-		j <- j+1
-	}
-	map <- lapply(map, function(x) x[order(x[, "chrom_start"]), ])
-	map <- do.call("rbind", map)
-
-	
-	fid <- map[, "fid"]
+	data(npProbesFid, package=pkgname)
+	fid <- npProbesFid
+	gc()
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
 	SKW <- vector("numeric", length(filenames))
@@ -141,7 +123,7 @@ cnrma <- function(filenames, sns, cdfName, seed=1){
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
 	}
 	##load reference distribution obtained from hapmap
-	load("/thumper/ctsa/snpmicroarray/hapmap/processed/affy/1m_reference_cn.rda")
+	data(list="1m_reference_cn", pkgname)
 	for(i in seq(along=filenames)){
 		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		x <- log2(y[idx2])
@@ -155,7 +137,8 @@ cnrma <- function(filenames, sns, cdfName, seed=1){
 			if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
 			else cat(".")
 	}
-	dimnames(NP) <- list(map[, "man_fsetid"], sns)
+	dimnames(NP) <- list(names(fid), sns)
+	##dimnames(NP) <- list(map[, "man_fsetid"], sns)
 	res3 <- list(NP=NP, SKW=SKW)
 	return(res3)
 }
@@ -255,17 +238,16 @@ instantiateObjects <- function(calls, NP, plate, envir, chrom){
 	assign("CB", CB, envir=envir)
 }
 
-computeCnBatch <- function(A,
-			   B,
-			   calls,
-			   conf,
-			   NP,
-			   plate,
-			   fit.variance=NULL,
-			   seed=123,
-			   MIN.OBS=3,
-			   envir,
-			   chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim=0, upperTail=TRUE, ...){
+computeCopynumber <- function(A,
+			      B,
+			      calls,
+			      conf,
+			      NP,
+			      plate,
+			      fit.variance=NULL,
+			      MIN.OBS=3,
+			      envir,
+			      chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim=0, upperTail=TRUE, ...){
 	if(length(ls(envir)) == 0) instantiateObjects(calls, NP, plate, envir, chrom)
 	##require(genefilter)
 	require(splines)
@@ -297,7 +279,7 @@ computeCnBatch <- function(A,
 	message("\nAllele specific copy number")	
 	for(p in P){
 		cat(".")
-		copynumber(plateIndex=p,
+		polymorphic(plateIndex=p,
 			   A=A[, plate==uplate[p]],
 			   B=B[, plate==uplate[p]],
 			   envir=envir)
@@ -872,7 +854,7 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	assign("phiB.se", phiB.se, envir)
 }
 
-copynumber <- function(plateIndex, A, B, envir){
+polymorphic <- function(plateIndex, A, B, envir){
 	p <- plateIndex
 	plates.completed <- get("plates.completed", envir)
 	if(!plates.completed[p]) return()

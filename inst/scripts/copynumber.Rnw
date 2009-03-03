@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{crlmm Vignette - Copy Number}
+%\VignetteIndexEntry{crlmm copy number Vignette}
 %\VignetteDepends{crlmm, genomewidesnp6Crlmm}
 %\VignetteKeywords{crlmm, SNP 6}
 %\VignettePackage{crlmm}
@@ -27,21 +27,14 @@ options(prompt="R> ")
 
 \section{Estimating copy number}
 
-General requirements: in addition to the \R{} packages indicated
-below, processing a large number of samples requires a high-end
-computer with a large amount of RAM. Currently, the maximum number of
-samples that can be genotyped at once is approximately 2000 and this
-requires roughly 32G of RAM.
-
-\paragraph{Suggested work flow.} I typically submit code for
-preprocessing and genotyping as a batch job to a computing cluster.
-When the preprocessing is complete, I pick a chromosome and work
-interactively from the cluster to calculate copy number and make some
-of the suggested diagnostic plots.
+At present, software for copy number estimation is provided only for
+the Affymetrix 6.0 platform.  This vignette estimates copy number for
+the HapMap samples.
 
 \subsection{Preprocess and genotype the samples}
 
-First, load the required libraries.
+See the crlmm vignette for additional details on
+preprocessing/genotyping.  
 
 <<requiredPackages>>=
 library(crlmm)
@@ -49,41 +42,49 @@ library(genomewidesnp6Crlmm)
 library(ellipse)
 @ 
 
-Specify an output directory and provide the complete path for the CEL
-file names.
-
-<<>>=
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/gain/bipolar/GRU-EA"
-datadir <- "/thumper/ctsa/snpmicroarray/GAIN/Bipolar/GRU-EA"
-fns <- list.files(datadir, pattern=".CEL", full.names=TRUE)
+<<celfiles>>=
+celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
 @ 
 
-Genotype the samples with CRLMM. Submit this job to the cluster and save the
-output to \Robject{outdir}.
+Specify an output directory for storing the quantile-normalized
+intensities from crlmm.
 
-<<genotype, eval=FALSE>>=
-res2 <- crlmm(filenames=fns,  save.it=TRUE, intensityFile=file.path(outdir, "intensities.rda"))
-save(res2, file=file.path(outdir, "res2.rda"))
+<<genotype>>=
+if (!exists("crlmmResult")) {
+	if (file.exists(file.path(outdir, "crlmmResult.rda"))){
+		load(file.path(outdir, "intensities.rda"))
+		load(file.path(outdir, "crlmmResult.rda"))
+	}
+	else {
+		crlmmResult <- crlmm(celFiles, save.it=TRUE, intensityFile=file.path(outdir, "intensities.rda"))
+		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
+	}
+}
 @ 
 
-Quantile normalize the nonpolymorphic probes and save the output:
+Quantile normalize the nonpolymorphic probes and save the output.
 
-<<quantileNormalizeCnProbes, eval=FALSE>>=
-res3 <- cnrma(fns)
-save(res3, file=file.path(outdir, "res3.rda"))
+<<cnrma>>=
+if(!exists("cnrmaResult")){
+	if(file.exists(file.path(outdir, "cnrmaResult.rda"))) load(file.path(outdir, "cnrmaResult.rda"))
+	else {
+		cnrmaResult <- cnrma(celFiles)
+		save(cnrmaResult, file=file.path(outdir, "cnrmaResult.rda"))
+	}
+}
 @ 
 
 \subsection{Copy number}
 
 Copy number can be assessed one chromosome at a time.  Here we specify
-chromosome 15 and and load a list of indices used to subset the files
-saved in the previous section. The first element in the list
-correspond to indices of polymorphic probes on chromosome 15; the
-second element corresponds to indices of nonpolymorphic probes on
-chromosome 15.
+chromosome 15 and and load a list of indices to subset the data. The
+first element in the list correspond to indices of polymorphic probes
+on chromosome 15; the second element corresponds to indices of
+nonpolymorphic probes on chromosome 15.
 
 <<chromosomeIndex>>=
-CHR <- 15
+CHR <- 21
 CHR_INDEX <- paste(CHR, "index", sep="")
 data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
 str(index)
@@ -105,39 +106,14 @@ number.  Specifically, we require 6 items:
   
   These items are extracted as follows:
 
-<<eval=FALSE>>=
-load(file.path(outdir, "intensities.rda"))
-load(file.path(outdir, "res2.rda"))
-load(file.path(outdir, "res3.rda"))
-@ 
-
-Depending on the number of samples, the above objects can be large and
-take a while to load.  For the figures in this vignette, I am loading
-only 5000 SNP-level summaries from chromosome 22 (28MB) and the
-quantile-normalized intensities for 5000 nonpolymorphic probes on
-chromosome 22 (8 MB total).
-
-<<loadTmpFiles, eval=FALSE, echo=FALSE>>=
-load("/thumper/ctsa/snpmicroarray/rs/data/gain/bipolar/tmp.rda")
-assign("res", tmp, envir=.GlobalEnv)
-rm(tmp); gc()
-load("/thumper/ctsa/snpmicroarray/rs/data/gain/bipolar/tmpcn.rda")
-A <- res$A
-B <- res$B
-calls <- res$calls
-conf <- res$conf
-SNR <- res$SNR
-NP <- res3$NP
-@ 
-
 <<snpAndCnSummaries, eval=FALSE>>=
 A <- res$A
 B <- res$B
-calls <- res2$calls
-conf <- res2$conf
-SNR <- res2$SNR
-NP <- res3$NP
-rm(res, res2, res3)
+calls <- crlmmResult$calls
+conf <- crlmmResult$conf
+SNR <- crlmmResult$SNR
+NP <- cnrmaResult$NP
+rm(res, crlmmResult, cnrmaResult)
 gc()
 @ 
 
@@ -157,25 +133,22 @@ B <- B[index[[1]], SNR > 5]
 calls <- calls[index[[1]], SNR > 5]
 conf <- conf[index[[1]], SNR > 5]
 NP <- NP[index[[2]], SNR > 5]
-rm(res, res2, res3); gc()
 @ 
 
-We want to adjust for batch effects.  In our experience, the chemistry
-plate is a good surrogate for batch, although this should be assessed
-on a study by study basis.  For samples processed by Broad, the plate
-is indicated by a capitalized five-letter word and is part of the
-sample name.  It is important that the plate (batch) variable is
-ordered the same as filenames in the preprocessed data.  For instance,
-to indicate plate in this example one can use the command
+Batch effects can be very large in the quantile-normalized
+intensities.  Often the chemistry plate is a good surrogate for batch
+effects, although it can also be the lab, etc.  Here we define batch
+by the chemistry plate. For the HapMap data, plate is often confounded
+with ancestry.
 
 <<specifyBatch>>=
 sns <- colnames(calls)
 sns[1]
-plates <- sapply(sns, function(x) strsplit(x, "_")[[1]][2])
-table(plates)
+plate <- substr(basename(sns), 13, 13)
+table(plate)
 @ 
 
-We are now ready to estimate the copy number for each batch.  In the
+We are now ready to estimate copy number for each batch.  In the
 current version of this package, one specifies an environment to which
 intermediate \R{} objects for copy number estimation are
 stored. Allele-specific estimates of copy number are also stored in
@@ -183,13 +156,13 @@ this environment.
 
 <<copyNumberByBatch, eval=FALSE>>=
 e1 <- new.env()
-computeCnBatch(A=A,
-	       B=B,
-	       calls=calls,
-	       conf=conf,
-	       NP=NP,
-	       plate=plates,
-	       envir=e1, chrom=CHR, DF.PRIOR=75)
+computeCopynumber(A=A,
+		  B=B,
+		  calls=calls,
+		  conf=conf,
+		  NP=NP,
+		  plate=plates,
+		  envir=e1, chrom=CHR, DF.PRIOR=75)
 @ 
 
 The DF.PRIOR indicates how much we will shrink SNP-specific estimates
@@ -290,8 +263,8 @@ legend("topright", lwd=3, col=c("black", "purple"), legend=c("2 copies", "3 copi
 \end{figure}
 
 Here is one way to identify a SNP with a large plate effect -- look
-for shifts in the prediction regions (here I'm lucking for large
-shifts in the A direction). 
+for shifts in the prediction regions (here I'm looking for large
+shifts in the A direction).
 
 <<shifts>>=
 shiftA <- nuA+2*phiA 
