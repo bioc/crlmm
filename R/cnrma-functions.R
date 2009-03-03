@@ -78,7 +78,6 @@ nuphiAllele <- function(allele, Ystar, W, envir, p){
 
 
 celDatesFrom <- function(celfiles, path=""){
-	require(affyio)
 	celdates <- vector("character", length(celfiles))
 	celtimes <- vector("character", length(celfiles))
 	for(i in seq(along=celfiles)){
@@ -108,7 +107,6 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 		stop("Package ", pkgname, " could not be found.")
 		rm(suggCall, msg)
 	}
-	
 	##I'm using the pd.mapping package
 	data(npProbesFid, package=pkgname)
 	fid <- npProbesFid
@@ -249,13 +247,8 @@ computeCopynumber <- function(A,
 			      envir,
 			      chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim=0, upperTail=TRUE, ...){
 	if(length(ls(envir)) == 0) instantiateObjects(calls, NP, plate, envir, chrom)
-	##require(genefilter)
-	require(splines)
-	require(Biobase)##needs rowMedians
 	##will be updating these objects
 	uplate <- get("uplate", envir)
-	##AAA <- A
-	##BBB <- B
 	message("Sufficient statistics")
 	if(missing(P)) P <- seq(along=uplate)
 	for(p in P){
@@ -294,7 +287,6 @@ computeCopynumber <- function(A,
 }
 
 nonpolymorphic <- function(plateIndex, NP, envir){
-	require(genefilter) 
 	p <- plateIndex
 	plate <- get("plate", envir)
 	uplate <- get("uplate", envir)	

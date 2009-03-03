@@ -13,10 +13,10 @@ computeCopynumber(A, B, calls, conf, NP, plate, fit.variance = NULL, MIN.OBS = 3
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{A}{The A allele intensities from \Rfunction{snprma}}
-  \item{B}{The B allele intensities from \Rfunction{snprma}}
-  \item{calls}{The genotype calls from \Rfunction{crlmm}}
-  \item{conf}{The genotype confidence scores from \Rfunction{crlmm}}
+  \item{A}{The A allele intensities from \code{snprma}}
+  \item{B}{The B allele intensities from \code{snprma}}
+  \item{calls}{The genotype calls from \code{crlmm}}
+  \item{conf}{The genotype confidence scores from \code{crlmm}}
   \item{NP}{The quantile normalized intensities of the nonpolymorphic probes}
   \item{plate}{The bach variable.  Should be the same length as the
     number of columns in A}

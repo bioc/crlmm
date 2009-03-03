@@ -21,9 +21,10 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
 }
 \author{Rob Scharpf}
 \note{Not tested}
-\seealso{}
+\seealso{\code{\link{snprma}}}
 \examples{
 	\dontrun{
+		library(genomewidesnp6Crlmm)
 		library(hapmapsnp6)
 		path <- system.file("celFiles", package="hapmapsnp5")
 		celFiles <- list.celfiles(path, full.names=TRUE)
