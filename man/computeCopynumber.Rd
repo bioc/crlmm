@@ -9,7 +9,9 @@
   
 }
 \usage{
-computeCopynumber(A, B, calls, conf, NP, plate, fit.variance = NULL, MIN.OBS = 3, envir, chrom, P, DF.PRIOR = 50, CONF.THR = 0.99, trim = 0, upperTail = TRUE, ...)
+computeCopynumber(A, B, calls, conf, NP, plate, fit.variance = NULL,
+MIN.OBS = 1, envir, chrom, P, DF.PRIOR = 50, CONF.THR = 0.99, trim = 0,
+upperTail = TRUE, bias.adj=FALSE, priorProb, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -34,7 +36,14 @@ computeCopynumber(A, B, calls, conf, NP, plate, fit.variance = NULL, MIN.OBS = 3
   \item{trim}{Temporary option: a number between 0 and 1.  Lops off a percentage of one tail of the
     intensities for the A and B alleles}
   \item{upperTail}{Logical: if TRUE and trim = p, quantiles greater than
-  1-p are replaced with NAs}
+    1-p are replaced with NAs}
+  \item{bias.adj}{Logical: whether to adjust the location and scale
+    parameters to account for biases due to common copy number
+    variants.  This is a SNP-specific adjustment.  Parameters for
+    background and slope must have already been estimated.}
+  \item{priorProb}{Numerical vector of length 4.  The prior probability
+    of each copy number state (0, 1, 2, 3, and 4). The default is a
+    uniform prior.  Ignored if bias.adj=FALSE}
   \item{\dots}{Currently ignored}
 }
 

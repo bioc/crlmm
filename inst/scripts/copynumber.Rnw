@@ -78,24 +78,23 @@ if(!exists("cnrmaResult")){
 @ 
 
 \subsection{Copy number}
+<<chr>>=
+CHR <- 21
+@ 
 
 Copy number can be assessed one chromosome at a time.  Here we specify
-chromosome 15 and and load a list of indices to subset the data. The
+chromosome \Sexpr{CHR} and and load a list of indices to subset the data. The
 first element in the list correspond to indices of polymorphic probes
-on chromosome 15; the second element corresponds to indices of
-nonpolymorphic probes on chromosome 15.
+on chromosome \Sexpr{CHR}; the second element corresponds to indices of
+nonpolymorphic probes on chromosome \Sexpr{21}.
 
 <<chromosomeIndex>>=
-CHR <- 21
 CHR_INDEX <- paste(CHR, "index", sep="")
 data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
 str(index)
 @ 
 
-Next we load 3 files that were saved from the preprocessing step and
-then subset these lists using the above indices to extract the
-preprocessed intensities and genotypes needed for estimating copy
-number.  Specifically, we require 6 items:
+We require 6 items for copy number estimation:
 
 \begin{itemize}
   \item quantile-normalized A intensities (I1 x J)

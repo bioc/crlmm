@@ -8,4 +8,5 @@ importFrom(preprocessCore, normalize.quantiles.use.target)
 importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
 importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd)
 importFrom(genefilter, rowSds)
+importFrom(mvtnorm, dmvnorm)
 

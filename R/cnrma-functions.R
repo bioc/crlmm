@@ -75,8 +75,6 @@ nuphiAllele <- function(allele, Ystar, W, envir, p){
 	assign("phi.se", phi.se, envir=parent.frame(1))	
 }
 
-
-
 celDatesFrom <- function(celfiles, path=""){
 	celdates <- vector("character", length(celfiles))
 	celtimes <- vector("character", length(celfiles))
@@ -91,7 +89,6 @@ celDatesFrom <- function(celfiles, path=""){
 	celdts <- strptime(tmp, "%m/%d/%y %H:%M:%S")
 	return(celdts)
 }
-
 
 cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 ##	require(preprocessCore) || stop("Package preprocessCore not available")
@@ -236,6 +233,8 @@ instantiateObjects <- function(calls, NP, plate, envir, chrom){
 	assign("CB", CB, envir=envir)
 }
 
+
+
 computeCopynumber <- function(A,
 			      B,
 			      calls,
@@ -243,10 +242,17 @@ computeCopynumber <- function(A,
 			      NP,
 			      plate,
 			      fit.variance=NULL,
-			      MIN.OBS=3,
+			      MIN.OBS=1,
 			      envir,
-			      chrom, P, DF.PRIOR=50, CONF.THR=0.99, trim=0, upperTail=TRUE, ...){
+			      chrom, P, DF.PRIOR=50, CONF.THR=0.99,
+			      trim=0, upperTail=TRUE,
+			      bias.adj=FALSE,
+			      priorProb, ...){
 	if(length(ls(envir)) == 0) instantiateObjects(calls, NP, plate, envir, chrom)
+	if(bias.adj){
+		##assign uniform priors for total copy number states
+		if(missing(priorProb)) priorProb <- rep(1/4, 4)
+	}
 	##will be updating these objects
 	uplate <- get("uplate", envir)
 	message("Sufficient statistics")
@@ -261,7 +267,8 @@ computeCopynumber <- function(A,
 			 envir=envir,
 			 MIN.OBS=MIN.OBS,
 			 DF.PRIOR=DF.PRIOR,
-			 trim=trim, upperTail=upperTail)
+			 trim=trim, upperTail=upperTail,
+			 bias.adj=bias.adj)
 	}
 	message("\nEstimating coefficients")	
 	for(p in P){
@@ -395,7 +402,7 @@ nonpolymorphic <- function(plateIndex, NP, envir){
 ##	firstPass.NP
 }
 
-oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, upperTail, ...){
+oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, upperTail, bias.adj=FALSE, priorProb, ...){
 	p <- plateIndex
 	plate <- get("plate", envir)
 	AA <- G == 1
@@ -405,27 +412,30 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 	Ns[, p, "AA"] <- rowSums(AA)
 	Ns[, p, "AB"] <- rowSums(AB)
 	Ns[, p, "BB"] <- rowSums(BB)
+	assign("Ns", Ns, envir)
 	AA[AA == FALSE] <- NA
 	AB[AB == FALSE] <- NA
 	BB[BB == FALSE] <- NA
-	Ip <- array(NA, dim=c(nrow(G), ncol(G), 3, 2))
-	dimnames(Ip) <- list(rownames(G), colnames(G), c("AA", "AB", "BB"), c("A", "B"))
-	Ip[, , "AA", "A"] <- AA*A
-	Ip[, , "AB", "A"] <- AB*A
-	Ip[, , "BB", "A"] <- BB*A
-	Ip[, , "AA", "B"] <- AA*B
-	Ip[, , "AB", "B"] <- AB*B
-	Ip[, , "BB", "B"] <- BB*B
 	##---------------------------------------------------------------------------
 	## Sufficient statistics (plate-specific)
 	##---------------------------------------------------------------------------
-	##These matrices instantiated in the calling function are updated
+	AA.A <- AA*A
+	AB.A <- AB*A
+	BB.A <- BB*A
+	AA.B <- AA*B
+	AB.B <- AB*B
+	BB.B <- BB*B
+	locationAndScale(p=p, AA.A=AA.A, AB.A=AB.A, BB.A=BB.A,
+			 AA.B=AA.B, AB.B=AB.B, BB.B=BB.B,
+			 envir=envir, DF.PRIOR=DF.PRIOR)
 	muA.AA <- get("muA.AA", envir)
 	muA.AB <- get("muA.AB", envir)
 	muA.BB <- get("muA.BB", envir)
 	muB.AA <- get("muB.AA", envir)
 	muB.AB <- get("muB.AB", envir)
 	muB.BB <- get("muB.BB", envir)
+	sigmaA <- get("sigmaA", envir)
+	sigmaB <- get("sigmaB", envir)
 	tau2A <- get("tau2A", envir)
 	tau2B <- get("tau2B", envir)
 	sig2A <- get("sig2A", envir)
@@ -433,13 +443,48 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 	corr <- get("corr", envir)
 	corrA.BB <- get("corrA.BB", envir)  ## B allele
 	corrB.AA <- get("corrB.AA", envir)
-
-	AA.A <- AA*A
-	AB.A <- AB*A
-	BB.A <- BB*A
-	AA.B <- AA*B
-	AB.B <- AB*B
-	BB.B <- BB*B
+	if(bias.adj){
+		##First check that nu and phi are available
+		nuA <- get("nuA", envir)
+		if(all(is.na(nuA))) {
+			message("Background and signal coefficients have not yet been estimated -- can not do bias correction yet")
+			message("Must run computeCopynumber a second time with bias.adj=TRUE to do the adjustment")
+		} else {
+			message("running bias adjustment")			
+			normal <- biasAdj(A=A, B=B, plateIndex=p, envir=envir, priorProb=priorProb)
+			normal[normal == FALSE] <- NA
+			AA.A <- AA.A*normal
+			AB.A <- AB.A*normal
+			BB.A <- BB.A*normal
+			AA.B <- AA.B*normal
+			AB.B <- AB.B*normal
+			BB.B <- BB.B*normal
+			message("Recomputing location and scale parameters")						
+			locationAndScale(p=p, AA.A=AA.A, AB.A=AB.A, BB.A=BB.A,
+					 AA.B=AA.B, AB.B=AB.B, BB.B=BB.B,
+					 envir=envir, DF.PRIOR=DF.PRIOR)
+			muA.AA <- get("muA.AA", envir)
+			muA.AB <- get("muA.AB", envir)
+			muA.BB <- get("muA.BB", envir)
+			muB.AA <- get("muB.AA", envir)
+			muB.AB <- get("muB.AB", envir)
+			muB.BB <- get("muB.BB", envir)
+			tau2A <- get("tau2A", envir)
+			tau2B <- get("tau2B", envir)
+			sig2A <- get("sig2A", envir)
+			sig2B <- get("sig2B", envir)
+			sigmaA <- get("sigmaA", envir)
+			sigmaB <- get("sigmaB", envir)
+			corr <- get("corr", envir)
+			corrA.BB <- get("corrA.BB", envir)  ## B allele
+			corrB.AA <- get("corrB.AA", envir)
+			Ns.unadj <- Ns
+			assign("Ns.unadj", Ns.unadj, envir)
+			Ns[, p, "AA"] <- rowSums(!is.na(AA.A))
+			Ns[, p, "AB"] <- rowSums(!is.na(AB.A))
+			Ns[, p, "BB"] <- rowSums(!is.na(BB.A))			
+		}
+	}
 	if(trim > 0){
 		##rowMedians is not robust enough when a variant is common
 		##Try a trimmed rowMedian, trimming only one tail (must specify which)
@@ -474,114 +519,13 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		Ns[, p, "AB"] <- rowSums(!is.na(AB.A))
 		Ns[, p, "BB"] <- rowSums(!is.na(BB.A))		
 	}
-	muA.AA[, p] <- rowMedians(AA.A, na.rm=TRUE)
-	muA.AB[, p] <- rowMedians(AB.A, na.rm=TRUE)
-	muA.BB[, p] <- rowMedians(BB.A, na.rm=TRUE)
-	muB.AA[, p] <- rowMedians(AA.B, na.rm=TRUE)
-	muB.AB[, p] <- rowMedians(AB.B, na.rm=TRUE)
-	muB.BB[, p] <- rowMedians(BB.B, na.rm=TRUE)
-	sigmaA <- matrix(NA, nrow(AA), 3)
-	sigmaB <- matrix(NA, nrow(AA), 3)	
-	colnames(sigmaB) <- colnames(sigmaA) <- c("AA", "AB", "BB")
-
-
-	sigmaA[, "AA"] <- rowMAD(AA.A, na.rm=TRUE)
-	sigmaA[, "AB"] <- rowMAD(AB.A, na.rm=TRUE)
-	sigmaA[, "BB"] <- rowMAD(BB.A, na.rm=TRUE)
-	sigmaB[, "AA"] <- rowMAD(AA.B, na.rm=TRUE)
-	sigmaB[, "AB"] <- rowMAD(AB.B, na.rm=TRUE)
-	sigmaB[, "BB"] <- rowMAD(BB.B, na.rm=TRUE)
-
-##	sigmaA[, "AA"] <- rowSds(AA.A, na.rm=TRUE)
-##	sigmaA[, "AB"] <- rowSds(AB.A, na.rm=TRUE)
-##	sigmaA[, "BB"] <- rowSds(BB*A, na.rm=TRUE)
-##	sigmaB[, "AA"] <- rowSds(AA*B, na.rm=TRUE)
-##	sigmaB[, "AB"] <- rowSds(AB*B, na.rm=TRUE)
-##	sigmaB[, "BB"] <- rowSds(BB*B, na.rm=TRUE)
-	##shrink
-	DF <- Ns[, p, ]-1
-	DF[DF < 1] <- 1
-	medsA <- apply(sigmaA, 2, "median", na.rm=TRUE)
-	medsB <- apply(sigmaB, 2, "median", na.rm=TRUE)			
-	for(m in 1:3){
-		sigmaA[, m] <- (sigmaA[, m]*DF[, m] + medsA[m]*DF.PRIOR)/(DF.PRIOR+DF[, m])
-		sigmaA[is.na(sigmaA[, m]), m] <- medsA[m]
-		sigmaB[, m] <- (sigmaB[, m]*DF[, m] + medsB[m]*DF.PRIOR)/(DF.PRIOR+DF[, m])
-		sigmaB[is.na(sigmaB[, m]), m] <- medsB[m]		
-	}
-	index.AA <- which(Ns[, p, "AA"] >= 2)
-	index.AB <- which(Ns[, p, "AB"] >= 2)
-	index.BB <- which(Ns[, p, "BB"] >= 2)
-	
-	x <- Ip[index.BB, , "BB", "A"]
-	##tau2A[index.BB, p] <- rowVars(x, na.rm=TRUE)##var(log(IA)| BB)
-	tau2A[index.BB, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2
-	DF <- Ns[, p, "BB"]-1
-	DF[DF < 1] <- 1
-	med <- median(tau2A[, p], na.rm=TRUE)
-	tau2A[, p] <- (tau2A[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
-	tau2A[is.na(tau2A[, p]), p] <- med
-	
-	x <- Ip[index.BB, , "BB", "B"]
-##	sig2B[index.BB, p] <- rowVars(log2(x), na.rm=TRUE) ##var(log(IB)|BB)
-	sig2B[index.BB, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2	
-	##system.time(tmp <- rowCovs(x, x, na.rm=TRUE)) ##var(log(IB)|BB)
-	##system.time(tmp2 <- rowVars(log2(x), na.rm=TRUE))
-	med <- median(sig2B[, p], na.rm=TRUE)
-	sig2B[, p] <- (sig2B[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
-	sig2B[is.na(sig2B[, p]), p] <- med
-	
-	x <- Ip[index.AA, , "AA", "B"]
-	##tau2B[index.AA, p] <- rowCovs(x, x, na.rm=TRUE)##var(log(IB)| AA)
-	tau2B[index.AA, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2		
-	DF <- Ns[, p, "AA"]-1
-	DF[DF < 1] <- 1
-	med <- median(tau2B[, p], na.rm=TRUE)
-	tau2B[, p] <- (tau2B[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
-	tau2B[is.na(tau2B[, p]), p] <- med
-	
-	x <- Ip[index.AA, , "AA", "A"]
-	##sig2A[index.AA, p] <- rowVars(log2(x), na.rm=TRUE)##var(log(IA)|AA)
-	sig2A[index.AA, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2##var(log(IA)|AA)	
-	##sig2A[index.AA, p] <- rowCovs(x, x, na.rm=TRUE) ##var(log(IA)|AA)
-	med <- median(sig2A[, p], na.rm=TRUE)
-	sig2A[, p] <- (sig2A[, p]*DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
-	sig2A[is.na(sig2A[, p]), p] <- med	
-
-	##estimate the correlation where there is at least 1 or more copies (AB genotypes)
-	if(length(index.AB) > 0){ ##all homozygous is possible	
-		x <- Ip[index.AB, , "AB", "A"]
-		y <- Ip[index.AB, , "AB", "B"]
-		corr[index.AB, p] <- rowCors(x, y, na.rm=TRUE)
-		corr[corr < 0] <- 0
-		DF <- Ns[, p, "AB"]-1
-		DF[DF<1] <- 1
-		med <- median(corr[, p], na.rm=TRUE)
-		corr[, p] <- (corr[, p]*DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
-		corr[is.na(corr[, p]), p] <- med
-	}
-	##estimate the correlation of the background errors and AA, BB genotypes
-	backgroundB <- Ip[index.AA, , "AA", "B"]
-	signalA <- Ip[index.AA, , "AA", "A"]
-	corrB.AA[index.AA, p] <- rowCors(backgroundB, signalA, na.rm=TRUE)
-	DF <- Ns[, p, "AA"]-1
-	DF[DF < 1] <- 1
-	med <- median(corrB.AA[, p], na.rm=TRUE)
-	corrB.AA[, p] <- (corrB.AA[, p]*DF + med*DF.PRIOR)/(DF.PRIOR + DF)
-	corrB.AA[is.na(corrB.AA[, p]), p] <- med
-
-	backgroundA <- Ip[index.BB, , "BB", "A"]
-	signalB <- Ip[index.BB, , "BB", "B"]
-	corrA.BB[index.BB, p] <- rowCors(backgroundA, signalB, na.rm=TRUE)
-	DF <- Ns[, p, "BB"]-1
-	DF[DF < 1] <- 1
-	med <- median(corrA.BB[, p], na.rm=TRUE)
-	corrA.BB[, p] <- (corrA.BB[, p]*DF + med*DF.PRIOR)/(DF.PRIOR + DF)
-	corrA.BB[is.na(corrA.BB[, p]), p] <- med	
-	
 	##---------------------------------------------------------------------------
 	## Predict sufficient statistics for unobserved genotypes (plate-specific)
 	##---------------------------------------------------------------------------
+	index.AA <- which(Ns[, p, "AA"] >= 3)
+	index.AB <- which(Ns[, p, "AB"] >= 3)
+	index.BB <- which(Ns[, p, "BB"] >= 3)
+	
 	correct.orderA <- muA.AA[, p] > muA.BB[, p]
 	correct.orderB <- muB.BB[, p] > muB.AA[, p]
 	if(length(index.AB) > 0){
@@ -654,9 +598,9 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		dev.off()
 	}
 	##missing two genotypes
-	noAA <- Ns[, p, "AA"] <= 2
-	noAB <- Ns[, p, "AB"] <= 2
-	noBB <- Ns[, p, "BB"] <= 2
+	noAA <- Ns[, p, "AA"] < MIN.OBS
+	noAB <- Ns[, p, "AB"] < MIN.OBS
+	noBB <- Ns[, p, "BB"] < MIN.OBS
 	##---------------------------------------------------------------------------
 	## Two genotype clusters not observed -- would sequence help? (didn't seem that helpful)
 	## 1 extract index of complete data
@@ -717,8 +661,6 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 	dn.Ns <- dimnames(Ns)
 	Ns <- array(as.integer(Ns), dim=dim(Ns))
 	dimnames(Ns)[[3]] <- dn.Ns[[3]]
-
-	assign("Ns", Ns, envir)	
 	assign("muA.AA", muA.AA, envir)
 	assign("muA.AB", muA.AB, envir)
 	assign("muA.BB", muA.BB, envir)
@@ -733,10 +675,146 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 	assign("sig2B", sig2B, envir)
 	assign("corr", corr, envir)
 	assign("corrB.AA", corrB.AA, envir)
-	assign("corrA.BB", corrA.BB, envir)		
+	assign("corrA.BB", corrA.BB, envir)				
+	assign("Ns", Ns, envir)	
 	plates.completed <- get("plates.completed", envir)
 	plates.completed[p] <- TRUE
 	assign("plates.completed", plates.completed, envir)
+}
+
+locationAndScale <- function(p, AA.A, AB.A, BB.A,
+			     AA.B, AB.B, BB.B, envir,
+			     DF.PRIOR){
+	muA.AA <- get("muA.AA", envir)
+	muA.AB <- get("muA.AB", envir)
+	muA.BB <- get("muA.BB", envir)
+	muB.AA <- get("muB.AA", envir)
+	muB.AB <- get("muB.AB", envir)
+	muB.BB <- get("muB.BB", envir)
+	tau2A <- get("tau2A", envir)
+	tau2B <- get("tau2B", envir)
+	sig2A <- get("sig2A", envir)
+	sig2B <- get("sig2B", envir)
+	corr <- get("corr", envir)
+	corrA.BB <- get("corrA.BB", envir)  ## B allele
+	corrB.AA <- get("corrB.AA", envir)
+	Ns <- get("Ns", envir)	
+	muA.AA[, p] <- rowMedians(AA.A, na.rm=TRUE)
+	muA.AB[, p] <- rowMedians(AB.A, na.rm=TRUE)
+	muA.BB[, p] <- rowMedians(BB.A, na.rm=TRUE)
+	muB.AA[, p] <- rowMedians(AA.B, na.rm=TRUE)
+	muB.AB[, p] <- rowMedians(AB.B, na.rm=TRUE)
+	muB.BB[, p] <- rowMedians(BB.B, na.rm=TRUE)
+	sigmaA <- matrix(NA, nrow(AA.A), 3)
+	sigmaB <- matrix(NA, nrow(AA.A), 3)	
+	colnames(sigmaB) <- colnames(sigmaA) <- c("AA", "AB", "BB")
+	sigmaA[, "AA"] <- rowMAD(AA.A, na.rm=TRUE)
+	sigmaA[, "AB"] <- rowMAD(AB.A, na.rm=TRUE)
+	sigmaA[, "BB"] <- rowMAD(BB.A, na.rm=TRUE)
+	sigmaB[, "AA"] <- rowMAD(AA.B, na.rm=TRUE)
+	sigmaB[, "AB"] <- rowMAD(AB.B, na.rm=TRUE)
+	sigmaB[, "BB"] <- rowMAD(BB.B, na.rm=TRUE)
+
+	##shrink
+	DF <- Ns[, p, ]-1
+	DF[DF < 1] <- 1
+	medsA <- apply(sigmaA, 2, "median", na.rm=TRUE)
+	medsB <- apply(sigmaB, 2, "median", na.rm=TRUE)			
+	for(m in 1:3){
+		sigmaA[, m] <- (sigmaA[, m]*DF[, m] + medsA[m]*DF.PRIOR)/(DF.PRIOR+DF[, m])
+		sigmaA[is.na(sigmaA[, m]), m] <- medsA[m]
+		sigmaB[, m] <- (sigmaB[, m]*DF[, m] + medsB[m]*DF.PRIOR)/(DF.PRIOR+DF[, m])
+		sigmaB[is.na(sigmaB[, m]), m] <- medsB[m]		
+	}
+	index.AA <- which(Ns[, p, "AA"] >= 2)
+	index.AB <- which(Ns[, p, "AB"] >= 2)
+	index.BB <- which(Ns[, p, "BB"] >= 2)
+
+	x <- BB.A[index.BB, ]
+	##x <- Ip[index.BB, , "BB", "A"]
+	##tau2A[index.BB, p] <- rowVars(x, na.rm=TRUE)##var(log(IA)| BB)
+	tau2A[index.BB, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2
+	DF <- Ns[, p, "BB"]-1
+	DF[DF < 1] <- 1
+	med <- median(tau2A[, p], na.rm=TRUE)
+	tau2A[, p] <- (tau2A[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
+	tau2A[is.na(tau2A[, p]), p] <- med
+	
+	##x <- Ip[index.BB, , "BB", "B"]
+	x <- BB.B[index.BB, ]
+	sig2B[index.BB, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2	
+	med <- median(sig2B[, p], na.rm=TRUE)
+	sig2B[, p] <- (sig2B[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
+	sig2B[is.na(sig2B[, p]), p] <- med
+	
+	##x <- Ip[index.AA, , "AA", "B"]
+	x <- AA.B[index.AA, ]
+	tau2B[index.AA, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2		
+	DF <- Ns[, p, "AA"]-1
+	DF[DF < 1] <- 1
+	med <- median(tau2B[, p], na.rm=TRUE)
+	tau2B[, p] <- (tau2B[, p] * DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
+	tau2B[is.na(tau2B[, p]), p] <- med
+	
+	##x <- Ip[index.AA, , "AA", "A"]
+	x <- AA.A[index.AA, ]
+	sig2A[index.AA, p] <- rowMAD(log2(x), log2(x), na.rm=TRUE)^2##var(log(IA)|AA)	
+	med <- median(sig2A[, p], na.rm=TRUE)
+	sig2A[, p] <- (sig2A[, p]*DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
+	sig2A[is.na(sig2A[, p]), p] <- med	
+
+	##estimate the correlation where there is at least 1 or more copies (AB genotypes)
+	if(length(index.AB) > 0){ ##all homozygous is possible
+		x <- AB.A[index.AB, ]
+		y <- AB.B[index.AB, ]
+		##x <- Ip[index.AB, , "AB", "A"]
+		##y <- Ip[index.AB, , "AB", "B"]
+		corr[index.AB, p] <- rowCors(x, y, na.rm=TRUE)
+		corr[corr < 0] <- 0
+		DF <- Ns[, p, "AB"]-1
+		DF[DF<1] <- 1
+		med <- median(corr[, p], na.rm=TRUE)
+		corr[, p] <- (corr[, p]*DF  +  med * DF.PRIOR)/(DF.PRIOR + DF)
+		corr[is.na(corr[, p]), p] <- med
+	}
+	##estimate the correlation of the background errors and AA, BB genotypes
+	##backgroundB <- Ip[index.AA, , "AA", "B"]
+	backgroundB <- AA.B[index.AA, ]
+	signalA <- AA.A[index.AA, ]
+	##signalA <- Ip[index.AA, , "AA", "A"]
+	corrB.AA[index.AA, p] <- rowCors(backgroundB, signalA, na.rm=TRUE)
+	DF <- Ns[, p, "AA"]-1
+	DF[DF < 1] <- 1
+	med <- median(corrB.AA[, p], na.rm=TRUE)
+	corrB.AA[, p] <- (corrB.AA[, p]*DF + med*DF.PRIOR)/(DF.PRIOR + DF)
+	corrB.AA[is.na(corrB.AA[, p]), p] <- med
+
+	##backgroundA <- Ip[index.BB, , "BB", "A"]
+	backgroundA <- BB.A[index.BB, ]
+	signalB <- BB.B[index.BB, ]
+	##signalB <- Ip[index.BB, , "BB", "B"]
+	corrA.BB[index.BB, p] <- rowCors(backgroundA, signalB, na.rm=TRUE)
+	DF <- Ns[, p, "BB"]-1
+	DF[DF < 1] <- 1
+	med <- median(corrA.BB[, p], na.rm=TRUE)
+	corrA.BB[, p] <- (corrA.BB[, p]*DF + med*DF.PRIOR)/(DF.PRIOR + DF)
+	corrA.BB[is.na(corrA.BB[, p]), p] <- med
+
+	assign("muA.AA", muA.AA, envir)
+	assign("muA.AB", muA.AB, envir)
+	assign("muA.BB", muA.BB, envir)
+	assign("muB.AA", muB.AA, envir)
+	assign("muB.AB", muB.AB, envir)
+	assign("muB.BB", muB.BB, envir)
+	assign("sigmaA", sigmaA, envir)
+	assign("sigmaB", sigmaB, envir)	
+	assign("tau2A", tau2A, envir)
+	assign("tau2B", tau2B, envir)
+	assign("sig2A", sig2A, envir)
+	assign("sig2B", sig2B, envir)
+	assign("corr", corr, envir)
+	assign("corrB.AA", corrB.AA, envir)
+	assign("corrA.BB", corrA.BB, envir)			
 }
 
 coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
@@ -966,4 +1044,87 @@ polymorphic <- function(plateIndex, A, B, envir){
 	##---------------------------------------------------------------------------
 	## nonpolymorphic probes
 	##---------------------------------------------------------------------------
+}
+
+
+biasAdj <- function(A, B, plateIndex, envir, priorProb){
+	sig2A <- get("sig2A", envir)
+	sig2B <- get("sig2B", envir)
+	tau2A <- get("tau2A", envir)
+	tau2B <- get("tau2B", envir)
+	corrA.BB <- get("corrA.BB", envir)
+	corrB.AA <- get("corrB.AA", envir)
+	corr <- get("corr", envir)
+	nuA <- get("nuA", envir)
+	nuB <- get("nuB", envir)
+	phiA <- get("phiA", envir)
+	phiB <- get("phiB", envir)
+	p <- plateIndex
+	plate <- get("plate", envir)
+	if(missing(priorProb)) priorProb <- rep(1/4, 4) ##uniform
+	emit <- array(NA, dim=c(nrow(A), ncol(A), 10))##SNPs x sample x 'truth'	
+	m <- 1##snp counter	
+	for(i in 1:nrow(A)){
+		if(i %% 100 == 0) cat(".")
+		counter <- 1##state counter
+		for(CT in 0:3){
+			for(CA in 0:CT){
+				CB <- CT-CA
+				A.scale <- sqrt(tau2A[i, p]*(CA==0) + sig2A[i, p]*(CA > 0))
+				B.scale <- sqrt(tau2B[i, p]*(CB==0) + sig2B[i, p]*(CB > 0))
+				scale <- c(A.scale, B.scale)
+				if(CA == 0 & CB == 0) rho <- 0
+				if(CA == 0 & CB > 0) rho <- corrA.BB[i, p]
+				if(CA > 0 & CB == 0) rho <- corrB.AA[i, p]
+				if(CA > 0 & CB > 0) rho <- corr[i, p]
+				means <- c(log2(nuA[i, p]+CA*phiA[i, p]), log2(nuB[i, p]+CB*phiB[i, p]))
+				covs <- rho*A.scale*B.scale
+				##ensure positive definite			
+				##Sigma <- as.matrix(nearPD(matrix(c(A.scale^2, covs,
+				##covs, B.scale^2), 2, 2))[[1]])
+				Sigma <- matrix(c(A.scale^2, covs, covs, B.scale^2), 2,2)
+				X <- log2(cbind(A[i, ], B[i, ]))
+				tmp <- dmvnorm(X, mean=means, sigma=Sigma) 
+				emit[m, , counter] <- tmp
+				counter <- counter+1
+			}
+		}
+		m <- m+1
+	}
+	homDel <- priorProb[1]*emit[, , 1]
+	hemDel <- priorProb[2]*emit[, , c(2, 3)] # + priorProb[3]*emit[, c(4, 5, 6)] + priorProb[4]*emit[, c(7:10)]
+	norm <- priorProb[3]*emit[, , 4:6]
+	amp <- priorProb[4]*emit[, , 7:10]
+	##sum over the different combinations within each copy number state
+	hemDel <- apply(hemDel, c(1,2), sum)
+	norm <- apply(norm, c(1, 2), sum)
+	amp <- apply(amp, c(1,2), sum)
+
+	tmp <- array(NA, dim=c(nrow(A), ncol(A), 4))
+	tmp[, , 1] <- homDel
+	tmp[, , 2] <- hemDel
+	tmp[, , 3] <- norm
+	tmp[, , 4] <- amp
+	tmp2 <- apply(tmp, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	##Adjust for SNPs that have less than 80% in an altered state
+	##flag the remainder?
+	tmp3 <- tmp2 != 3
+	propAlt <- rowMeans(tmp3)##prop normal
+	ii <- propAlt < 0.75
+	##only exclude observations from one tail, depending on
+	##whether more are up or down
+	##(should probably iterate)
+	moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3)
+	notUp <-  tmp2[ii & moreup, ] <= 3
+	notDown <- tmp2[ii & !moreup, ] >= 3
+
+	normal <- matrix(TRUE, nrow(A), ncol(A))
+	normal[ii & moreup, ] <- notUp
+	normal[ii & !moreup, ] <- notDown
+	flagAltered <- which(propAlt > 0.5)
+	assign("flagAltered", flagAltered, envir) 
+##	tmp3 <- tmp2[ii, ] == 3
+##	tmp4 <- matrix(TRUE, nrow(A), ncol(A))
+##	tmp4[ii, ] <- tmp3
+	return(normal)
 }
