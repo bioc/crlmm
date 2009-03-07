@@ -196,9 +196,10 @@ instantiateObjects <- function(calls, NP, plate, envir, chrom){
 	assign("plates.completed", plates.completed, envir)
 	
 	fit.variance <- NULL
-	snpflags <- NULL
+	npflags <- snpflags <- NULL
 	assign("fit.variance", fit.variance, envir=envir)
 	assign("snpflags", snpflags, envir=envir)
+	assign("npflags", npflags, envir=envir)
 	
 	assign("Ns", Ns, envir=envir)		
 	assign("uplate", uplate, envir=envir)	
@@ -261,6 +262,8 @@ computeCopynumber <- function(A,
 			 G=calls[, plate==uplate[p]],
 			 A=A[, plate==uplate[p]],
 			 B=B[, plate==uplate[p]],
+			 conf=conf[, plate==uplate[p]],
+			 CONF.THR=CONF.THR,
 			 envir=envir,
 			 MIN.OBS=MIN.OBS,
 			 DF.PRIOR=DF.PRIOR,
@@ -271,7 +274,7 @@ computeCopynumber <- function(A,
 	for(p in P){
 		cat(".")
 		coefs(plateIndex=p, conf=conf[, plate==uplate[p]],
-		      envir=envir, CONF.THR=CONF.THR)
+		      envir=envir, CONF.THR=CONF.THR, MIN.OBS=MIN.OBS)
 	}
 	message("\nAllele specific copy number")	
 	for(p in P){
@@ -288,6 +291,12 @@ computeCopynumber <- function(A,
 			       NP=NP[, plate==uplate[p]],
 			       envir=envir)
 	}
+##	snpflags <- get("snpflags", envir)
+##	npflags <- get("npflags", envir)
+##	flags <- sapply(snpflags, length)
+##	flags.np <- sapply(npflags, length)
+##	if(any(flags > 0) | any(flags.np > 0))
+##		warning("some SNPs were flagged -- possible NAs.  Check the indices in snpflags and npflags")
 }
 
 nonpolymorphic <- function(plateIndex, NP, envir){
@@ -365,7 +374,13 @@ nonpolymorphic <- function(plateIndex, NP, envir){
 	indexA <- which(rowSums(is.na(tmpA)) > 0)
 	indexB <- which(rowSums(is.na(tmpB)) > 0)
 	index <- union(indexA, indexB)
-	if(length(index) > 0) browser()
+	if(length(index) > 0){
+		npflags <- get("npflags", envir)
+		##warning(paste(length(index), "indices have NAs for the copy number estimates"))		
+		npflags[[p]] <- unique(c(npflags[[p]], index))
+		assign("npflags", npflags, envir)
+	}
+	##if(length(index) > 0) browser()
 	
 	##---------------------------------------------------------------------------
 	## this part could stand improvement
@@ -399,7 +414,7 @@ nonpolymorphic <- function(plateIndex, NP, envir){
 ##	firstPass.NP
 }
 
-oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, upperTail, bias.adj=FALSE, priorProb, ...){
+oneBatch <- function(plateIndex, G, A, B, conf, CONF.THR=0.99, MIN.OBS=3, DF.PRIOR, envir, trim, upperTail, bias.adj=FALSE, priorProb, ...){
 	p <- plateIndex
 	plate <- get("plate", envir)
 	AA <- G == 1
@@ -482,76 +497,70 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 			Ns[, p, "BB"] <- rowSums(!is.na(BB.A))			
 		}
 	}
-	if(trim > 0){
-		##rowMedians is not robust enough when a variant is common
-		##Try a trimmed rowMedian, trimming only one tail (must specify which)
-		##  - for genotypes with 3 or more observations, exclude the upper X% 
-		##        - one way to do this is to replace these observations with NAs
-		##         e.g, exclude round(Ns * X%, 0) observations
-		##  - for genotypes with fewer than 10 observations,
-		##  - recalculate rowMedians
-		replaceWithNAs <- function(x, trim, upperTail){
-			##put NA's last if trimming the upperTail
-			if(upperTail) decreasing <- TRUE else decreasing <- FALSE
-			NN <- round(sum(!is.na(x)) * trim, 0)
-			ix <- order(x, decreasing=decreasing, na.last=TRUE)[1:NN]
-			x[ix] <- NA
-			return(x)
-		}
-		##which rows should be trimmed
-		rowsToTrim <- which(round(Ns[, p, "AA"] * trim, 0) > 0)
-		##replace values in the tail of A with NAs
-		AA.A[rowsToTrim, ] <- t(apply(AA.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-		AA.B[rowsToTrim, ] <- t(apply(AA.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-		rowsToTrim <- which(round(Ns[, p, "AB"] * trim, 0) > 0)
-		AB.A[rowsToTrim, ] <- t(apply(AB.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-		AB.B[rowsToTrim, ] <- t(apply(AB.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-		rowsToTrim <- which(round(Ns[, p, "BB"] * trim, 0) > 0)
-		BB.A[rowsToTrim, ] <- t(apply(BB.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-		BB.B[rowsToTrim, ] <- t(apply(BB.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
-
-		##Should probably recompute the Ns -- change the
-		##degrees of freedom
-		Ns[, p, "AA"] <- rowSums(!is.na(AA.A))
-		Ns[, p, "AB"] <- rowSums(!is.na(AB.A))
-		Ns[, p, "BB"] <- rowSums(!is.na(BB.A))		
-	}
+##	if(trim > 0){
+##		##rowMedians is not robust enough when a variant is common
+##		##Try a trimmed rowMedian, trimming only one tail (must specify which)
+##		##  - for genotypes with 3 or more observations, exclude the upper X% 
+##		##        - one way to do this is to replace these observations with NAs
+##		##         e.g, exclude round(Ns * X%, 0) observations
+##		##  - for genotypes with fewer than 10 observations,
+##		##  - recalculate rowMedians
+##		replaceWithNAs <- function(x, trim, upperTail){
+##			##put NA's last if trimming the upperTail
+##			if(upperTail) decreasing <- TRUE else decreasing <- FALSE
+##			NN <- round(sum(!is.na(x)) * trim, 0)
+##			ix <- order(x, decreasing=decreasing, na.last=TRUE)[1:NN]
+##			x[ix] <- NA
+##			return(x)
+##		}
+##		##which rows should be trimmed
+##		rowsToTrim <- which(round(Ns[, p, "AA"] * trim, 0) > 0)
+##		##replace values in the tail of A with NAs
+##		AA.A[rowsToTrim, ] <- t(apply(AA.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##		AA.B[rowsToTrim, ] <- t(apply(AA.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##		rowsToTrim <- which(round(Ns[, p, "AB"] * trim, 0) > 0)
+##		AB.A[rowsToTrim, ] <- t(apply(AB.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##		AB.B[rowsToTrim, ] <- t(apply(AB.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##		rowsToTrim <- which(round(Ns[, p, "BB"] * trim, 0) > 0)
+##		BB.A[rowsToTrim, ] <- t(apply(BB.A[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##		BB.B[rowsToTrim, ] <- t(apply(BB.B[rowsToTrim, ], 1, replaceWithNAs, trim=trim, upperTail=upperTail))
+##
+##		##Should probably recompute the Ns -- change the
+##		##degrees of freedom
+##		Ns[, p, "AA"] <- rowSums(!is.na(AA.A))
+##		Ns[, p, "AB"] <- rowSums(!is.na(AB.A))
+##		Ns[, p, "BB"] <- rowSums(!is.na(BB.A))		
+##	}
 	##---------------------------------------------------------------------------
 	## Predict sufficient statistics for unobserved genotypes (plate-specific)
 	##---------------------------------------------------------------------------
-	index.AA <- which(Ns[, p, "AA"] >= 3)
-	index.AB <- which(Ns[, p, "AB"] >= 3)
-	index.BB <- which(Ns[, p, "BB"] >= 3)
-	
+	highConf <- 1-exp(-conf/1000)
+	highConf <- highConf > CONF.THR
+	confInd <- rowMeans(highConf) > CONF.THR
+	NN <- Ns
+	NN[, p, "AA"] <- rowSums(AA & highConf, na.rm=TRUE) ##how many AA were called with high confidence
+	NN[, p, "AB"] <- rowSums(AB & highConf, na.rm=TRUE)
+	NN[, p, "BB"] <- rowSums(BB & highConf, na.rm=TRUE)
+	index.AA <- which(NN[, p, "AA"] >= 3)
+	index.AB <- which(NN[, p, "AB"] >= 3)
+	index.BB <- which(NN[, p, "BB"] >= 3)
 	correct.orderA <- muA.AA[, p] > muA.BB[, p]
 	correct.orderB <- muB.BB[, p] > muB.AA[, p]
 	if(length(index.AB) > 0){
-		nobs <- rowSums(Ns[, p, ] >= MIN.OBS) == 3
-	} else nobs <- rowSums(Ns[, p, c(1,3)] >= MIN.OBS) == 2
+		nobs <- rowSums(NN[, p, ] >= MIN.OBS) == 3
+	} else nobs <- rowSums(NN[, p, c(1,3)] >= MIN.OBS) == 2
 	index.complete <- which(correct.orderA & correct.orderB & nobs) ##be selective here
 	size <- min(5000, length(index.complete))
 	if(size == 5000) index.complete <- sample(index.complete, 5000)
 	if(length(index.complete) < 200){
-		warning("too few snps pass my criteria for predicting the sufficient statistics")
-		##message("Plate has too few samples to call many genotypes...can we use prior information to predict")
-		browser()
+		warning("fewer than 200 snps pass criteria for predicting the sufficient statistics")
+		stop()
 	}
-	index.AA <- which(Ns[, p, "AA"] == 0 & Ns[, p, "AB"] >= MIN.OBS)
-	index.AB <- which(Ns[, p, "AB"] == 0 & (Ns[, p, "AA"] >= MIN.OBS & Ns[, p, "BB"] >= MIN.OBS))
-	index.BB <- which(Ns[, p, "BB"] == 0 & Ns[, p, "AB"] >= MIN.OBS)
-	if(FALSE){
-		png("figures/predictedMusBB%02d.png", width=800, height=500)
-		par(mfrow=c(1, 2), las=1, mar=c(3, 1, 1, 1), oma=c(1, 2, 1, 1), pty="s")				
-		plot(log(muA.BB[index.complete, 1]), log(muB.BB[index.complete, 1]), pch=".", ylim=c(5,12), xlim=c(5,12),
-		     xlab="A", ylab="B", main="good")
-		points(log(muA.AB[index.complete, 1]), log(muB.AB[index.complete, 1]), pch=".")
-		points(log(muA.AA[index.complete, 1]), log(muB.AA[index.complete, 1]), pch=".")
-		plot(log(muA.BB[index.BB, 1]), log(muB.BB[index.BB, 1]), pch=".", ylim=c(5,12), xlim=c(5,12),
-		     xlab="A", ylab="B", main="missing BB")
-		points(log(muA.AB[index.BB, 1]), log(muB.AB[index.BB, 1]), pch=".")
-		points(log(muA.AA[index.BB, 1]), log(muB.AA[index.BB, 1]), pch=".")				
-	}
+	index.AA <- which(NN[, p, "AA"] == 0 & (NN[, p, "AB"] >= MIN.OBS & NN[, p, "BB"] >= MIN.OBS))
+	index.AB <- which(NN[, p, "AB"] == 0 & (NN[, p, "AA"] >= MIN.OBS & NN[, p, "BB"] >= MIN.OBS))
+	index.BB <- which(NN[, p, "BB"] == 0 & (NN[, p, "AB"] >= MIN.OBS & NN[, p, "AA"] >= MIN.OBS))
 	if(length(index.AA) > 0){
+		##Predict mean for AA genotypes
 		X.AA <- cbind(1, muA.AB[index.complete, p], muA.BB[index.complete, p],
 			      muB.AB[index.complete, p], muB.BB[index.complete, p])
 		Y <- cbind(muA.AA[index.complete, p], muB.AA[index.complete, p])
@@ -565,6 +574,7 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		muB.AA[index.AA, p] <- musAA[, 2]
 	}
 	if(length(index.AB) > 0){
+		##Predict mean for AB genotypes
 		X.AB <- cbind(1, muA.AA[index.complete, p], muA.BB[index.complete, p],
 			      muB.AA[index.complete, p], muB.BB[index.complete, p])
 		Y <- cbind(muA.AB[index.complete, p], muB.AB[index.complete, p])
@@ -578,6 +588,7 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		muB.AB[index.AB, p] <- musAB[, 2]				
 	}
 	if(length(index.BB) > 0){
+		##Predict mean for BB genotypes
 		X.BB <- cbind(1, muA.AA[index.complete, p], muA.AB[index.complete, p],
 			      muB.AA[index.complete, p], muB.AB[index.complete, p])
 		Y <- cbind(muA.BB[index.complete, p], muB.BB[index.complete, p])
@@ -590,14 +601,13 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		muA.BB[index.BB, p] <- musBB[, 1]
 		muB.BB[index.BB, p] <- musBB[, 2]								
 	}
-	if(FALSE){
-		points(log(muA.BB[index.BB, 1]), log(muB.BB[index.BB, 1]), pch=".", col="blue")
-		dev.off()
-	}
 	##missing two genotypes
-	noAA <- Ns[, p, "AA"] < MIN.OBS
-	noAB <- Ns[, p, "AB"] < MIN.OBS
-	noBB <- Ns[, p, "BB"] < MIN.OBS
+#	index.AA <- which(NN[, p, "AA"] == 0 & (NN[, p, "AB"] < MIN.OBS | NN[, p, "BB"] < MIN.OBS))
+#	index.AB <- which(NN[, p, "AB"] == 0 & (NN[, p, "AA"] < MIN.OBS | NN[, p, "BB"] < MIN.OBS))
+#	index.BB <- which(NN[, p, "BB"] == 0 & (NN[, p, "AB"] >= MIN.OBS | NN[, p, "AA"] >= MIN.OBS))	
+	noAA <- NN[, p, "AA"] < MIN.OBS
+	noAB <- NN[, p, "AB"] < MIN.OBS
+	noBB <- NN[, p, "BB"] < MIN.OBS
 	##---------------------------------------------------------------------------
 	## Two genotype clusters not observed -- would sequence help? (didn't seem that helpful)
 	## 1 extract index of complete data
@@ -605,8 +615,7 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 	## 3 Predict mu1*, mu3* for missing genotypes
 	##---------------------------------------------------------------------------			
 	if(sum(noAA & noAB) > 0){
-		##predict other cluster centers using only the observed genotypes
-		##predict AA:
+		##predict AA and AB centers
 		X <- cbind(1, muA.BB[index.complete, p], muB.BB[index.complete, p])
 		Y <- cbind(muA.AA[index.complete, p],
 			   muB.AA[index.complete, p],
@@ -622,16 +631,8 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		muA.AB[noAA & noAB, p] <- mus[, 3]
 		muB.AB[noAA & noAB, p] <- mus[, 4]				
 	}
-	if(FALSE){
-		i <- which(noAA & noAB)
-		par(mfrow=c(1, 1), las=1, mar=c(3, 3, 1, 1), pty="s")
-		plot(log(muA.BB[i, 1]), log(muB.BB[i, 1]), pch=".", ylim=c(5,12), xlim=c(5,12),
-		     xlab="A", ylab="B", main="missing BB")
-		points(log(muA.AB[i, 1]), log(muB.AB[i, 1]), pch=".", col="blue")
-		points(log(muA.AA[i, 1]), log(muB.AA[i, 1]), pch=".", col="red")
-	}
 	if(sum(noBB & noAB) > 0){
-		##predict other cluster centers using only the observed genotypes
+		##predict AB and BB centers
 		X <- cbind(1, muA.AA[index.complete, p], muB.AA[index.complete, p])
 		Y <- cbind(muA.AB[index.complete, p],
 			   muB.AB[index.complete, p],
@@ -646,18 +647,29 @@ oneBatch <- function(plateIndex, G, A, B, MIN.OBS=3, DF.PRIOR, envir, trim, uppe
 		muB.AB[noBB & noAB, p] <- mus[, 2]								
 		muA.BB[noBB & noAB, p] <- mus[, 3]
 		muB.BB[noBB & noAB, p] <- mus[, 4]				
-		if(FALSE){
-			i <- which(noBB & noAB)
-			par(mfrow=c(1, 1), las=1, mar=c(3, 3, 1, 1), pty="s")
-			plot(log(muA.BB[i, 1]), log(muB.BB[i, 1]), pch=".", ylim=c(5,12), xlim=c(5,12),
-			     xlab="A", ylab="B", main="missing BB")
-			points(log(muA.AB[i, 1]), log(muB.AB[i, 1]), pch=".", col="blue")
-			points(log(muA.AA[i, 1]), log(muB.AA[i, 1]), pch=".", col="red")
-		}				
+	}
+	if(sum(noAA & noBB) > 0){
+		##predict AA and BB centers
+		X <- cbind(1, muA.AB[index.complete, p], muB.AB[index.complete, p])
+		Y <- cbind(muA.AA[index.complete, p],
+			   muB.AA[index.complete, p],
+			   muA.BB[index.complete, p], #muA.AB[index.complete, p],
+			   muB.BB[index.complete, p])#, muB.AB[index.complete, p])
+		XtY <- crossprod(X, Y)
+		betahat <- solve(crossprod(X), XtY)
+		X <- cbind(1, muA.AB[noAA & noBB, p], muB.AB[noAA & noBB, p])
+		mus <- X %*% betahat
+		mus[mus <= 100] <- 100
+		muA.AA[noAA & noBB, p] <- mus[, 1]
+		muB.AA[noAA & noBB, p] <- mus[, 2]								
+		muA.BB[noAA & noBB, p] <- mus[, 3]
+		muB.BB[noAA & noBB, p] <- mus[, 4]				
 	}
 	dn.Ns <- dimnames(Ns)
 	Ns <- array(as.integer(Ns), dim=dim(Ns))
 	dimnames(Ns)[[3]] <- dn.Ns[[3]]
+	if(any(is.na(muA.AA) | any(is.na(muA.AB)) | any(is.na(muA.BB))))
+		warning("Some SNPs do not have any genotype calls above the confidence threshold. Check the indices in snpflags and npflags.")
 	assign("muA.AA", muA.AA, envir)
 	assign("muA.AB", muA.AB, envir)
 	assign("muA.BB", muA.BB, envir)
@@ -842,14 +854,24 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	IA <- cbind(muA.AA[, p], muA.AB[, p], muA.BB[, p])
 	IB <- cbind(muB.AA[, p], muB.AB[, p], muB.BB[, p])
 	NOHET <- mean(Ns[, p, 2], na.rm=TRUE) < 0.05
+	##---------------------------------------------------------------------------
 	##predict missing variance (do only once)
-	is.complete <- rowSums(Ns[, p, ] >= 1) == 3
-	if(NOHET) is.complete <- rowSums(Ns[, p, c(1,3)] >= MIN.OBS) == 2		
-	correct.orderA <- muA.AA[, p] > muA.BB[, p]
-	correct.orderB <- muB.BB[, p] > muB.AA[, p]
-	highConf <- 1-exp(-conf/1000)
-	confInd <- rowMeans(highConf) > CONF.THR
-	keep <- confInd & is.complete & correct.orderA & correct.orderB
+	##---------------------------------------------------------------------------
+	##should consider replacing Ns with Ns & high conf
+##	highConf <- 1-exp(-conf/1000)
+##	highConf <- highConf > CONF.THR
+##	NN <- Ns
+##	NN[, p, "AA"] <- rowSums(AA & highConf, na.rm=TRUE) ##how many AA were called with high confidence
+##	NN[, p, "AB"] <- rowSums(AB & highConf, na.rm=TRUE)
+##	NN[, p, "BB"] <- rowSums(BB & highConf, na.rm=TRUE)
+	
+##	is.complete <- rowSums(Ns[, p, ] >= 3) == 3 ##Be selective
+##	if(NOHET) is.complete <- rowSums(NN[, p, c(1,3)] >= 3) == 2		
+##	correct.orderA <- muA.AA[, p] > muA.BB[, p]
+##	correct.orderB <- muB.BB[, p] > muB.AA[, p]
+##	highConf <- 1-exp(-conf/1000)
+##	confInd <- rowMeans(highConf) > CONF.THR
+##	keep <- confInd & is.complete & correct.orderA & correct.orderB
 ##	if(is.null(fit.variance)){
 ##		log.sigma2 <- as.numeric(log2(sigma2A[keep, ]))
 ##		log.mus <- as.numeric(log2(IA[keep, ]))
@@ -990,7 +1012,12 @@ polymorphic <- function(plateIndex, A, B, envir){
 	indexA <- which(rowSums(is.na(tmpA)) > 0)
 	indexB <- which(rowSums(is.na(tmpB)) > 0)
 	index <- union(indexA, indexB)
-	if(length(index) > 0) browser()	
+	if(length(index) > 0){
+		snpflags <- get("snpflags", envir)
+		##warning(paste(length(index), "indices have NAs for the copy number estimates"))		
+		snpflags[[p]] <- unique(c(snpflags[[p]], index))
+		assign("snpflags", snpflags, envir)
+	}
 	##---------------------------------------------------------------------------
 	## Estimate var(CA), var(CB), var(CA+CB)
 	##---------------------------------------------------------------------------
