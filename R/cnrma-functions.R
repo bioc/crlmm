@@ -417,10 +417,12 @@ nonpolymorphic <- function(plateIndex, NP, envir){
 oneBatch <- function(plateIndex, G, A, B, conf, CONF.THR=0.99, MIN.OBS=3, DF.PRIOR, envir, trim, upperTail, bias.adj=FALSE, priorProb, ...){
 	p <- plateIndex
 	plate <- get("plate", envir)
-	AA <- G == 1
-	AB <- G == 2
-	BB <- G == 3
-	Ns <- get("Ns", envir)
+	Ns <- get("Ns", envir)	
+	highConf <- 1-exp(-conf/1000)
+	highConf <- highConf > CONF.THR
+	AA <- G == 1 & highConf
+	AB <- G == 2 & highConf
+	BB <- G == 3 & highConf
 	Ns[, p, "AA"] <- rowSums(AA)
 	Ns[, p, "AB"] <- rowSums(AB)
 	Ns[, p, "BB"] <- rowSums(BB)
@@ -534,21 +536,18 @@ oneBatch <- function(plateIndex, G, A, B, conf, CONF.THR=0.99, MIN.OBS=3, DF.PRI
 	##---------------------------------------------------------------------------
 	## Predict sufficient statistics for unobserved genotypes (plate-specific)
 	##---------------------------------------------------------------------------
-	highConf <- 1-exp(-conf/1000)
-	highConf <- highConf > CONF.THR
-	confInd <- rowMeans(highConf) > CONF.THR
-	NN <- Ns
-	NN[, p, "AA"] <- rowSums(AA & highConf, na.rm=TRUE) ##how many AA were called with high confidence
-	NN[, p, "AB"] <- rowSums(AB & highConf, na.rm=TRUE)
-	NN[, p, "BB"] <- rowSums(BB & highConf, na.rm=TRUE)
-	index.AA <- which(NN[, p, "AA"] >= 3)
-	index.AB <- which(NN[, p, "AB"] >= 3)
-	index.BB <- which(NN[, p, "BB"] >= 3)
+##	NN <- Ns
+##	NN[, p, "AA"] <- rowSums(AA & highConf, na.rm=TRUE) ##how many AA were called with high confidence
+##	NN[, p, "AB"] <- rowSums(AB & highConf, na.rm=TRUE)
+##	NN[, p, "BB"] <- rowSums(BB & highConf, na.rm=TRUE)
+	index.AA <- which(Ns[, p, "AA"] >= 3)
+	index.AB <- which(Ns[, p, "AB"] >= 3)
+	index.BB <- which(Ns[, p, "BB"] >= 3)
 	correct.orderA <- muA.AA[, p] > muA.BB[, p]
 	correct.orderB <- muB.BB[, p] > muB.AA[, p]
 	if(length(index.AB) > 0){
-		nobs <- rowSums(NN[, p, ] >= MIN.OBS) == 3
-	} else nobs <- rowSums(NN[, p, c(1,3)] >= MIN.OBS) == 2
+		nobs <- rowSums(Ns[, p, ] >= MIN.OBS) == 3
+	} else nobs <- rowSums(Ns[, p, c(1,3)] >= MIN.OBS) == 2
 	index.complete <- which(correct.orderA & correct.orderB & nobs) ##be selective here
 	size <- min(5000, length(index.complete))
 	if(size == 5000) index.complete <- sample(index.complete, 5000)
@@ -556,9 +555,9 @@ oneBatch <- function(plateIndex, G, A, B, conf, CONF.THR=0.99, MIN.OBS=3, DF.PRI
 		warning("fewer than 200 snps pass criteria for predicting the sufficient statistics")
 		stop()
 	}
-	index.AA <- which(NN[, p, "AA"] == 0 & (NN[, p, "AB"] >= MIN.OBS & NN[, p, "BB"] >= MIN.OBS))
-	index.AB <- which(NN[, p, "AB"] == 0 & (NN[, p, "AA"] >= MIN.OBS & NN[, p, "BB"] >= MIN.OBS))
-	index.BB <- which(NN[, p, "BB"] == 0 & (NN[, p, "AB"] >= MIN.OBS & NN[, p, "AA"] >= MIN.OBS))
+	index.AA <- which(Ns[, p, "AA"] == 0 & (Ns[, p, "AB"] >= MIN.OBS & Ns[, p, "BB"] >= MIN.OBS))
+	index.AB <- which(Ns[, p, "AB"] == 0 & (Ns[, p, "AA"] >= MIN.OBS & Ns[, p, "BB"] >= MIN.OBS))
+	index.BB <- which(Ns[, p, "BB"] == 0 & (Ns[, p, "AB"] >= MIN.OBS & Ns[, p, "AA"] >= MIN.OBS))
 	if(length(index.AA) > 0){
 		##Predict mean for AA genotypes
 		X.AA <- cbind(1, muA.AB[index.complete, p], muA.BB[index.complete, p],
@@ -605,9 +604,9 @@ oneBatch <- function(plateIndex, G, A, B, conf, CONF.THR=0.99, MIN.OBS=3, DF.PRI
 #	index.AA <- which(NN[, p, "AA"] == 0 & (NN[, p, "AB"] < MIN.OBS | NN[, p, "BB"] < MIN.OBS))
 #	index.AB <- which(NN[, p, "AB"] == 0 & (NN[, p, "AA"] < MIN.OBS | NN[, p, "BB"] < MIN.OBS))
 #	index.BB <- which(NN[, p, "BB"] == 0 & (NN[, p, "AB"] >= MIN.OBS | NN[, p, "AA"] >= MIN.OBS))	
-	noAA <- NN[, p, "AA"] < MIN.OBS
-	noAB <- NN[, p, "AB"] < MIN.OBS
-	noBB <- NN[, p, "BB"] < MIN.OBS
+	noAA <- Ns[, p, "AA"] < MIN.OBS
+	noAB <- Ns[, p, "AB"] < MIN.OBS
+	noBB <- Ns[, p, "BB"] < MIN.OBS
 	##---------------------------------------------------------------------------
 	## Two genotype clusters not observed -- would sequence help? (didn't seem that helpful)
 	## 1 extract index of complete data
