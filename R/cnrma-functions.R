@@ -91,21 +91,18 @@ celDatesFrom <- function(celfiles, path=""){
 }
 
 cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
-##	require(preprocessCore) || stop("Package preprocessCore not available")
+	require(genomewidesnp6Crlmm) || stop("Package genomewidesnp6Crlmm not available")
 	if (missing(sns)) sns <- basename(filenames)
-	if (missing(cdfName))
-		cdfName <- read.celfile.header(filenames[1])$cdfName
-	##  stuffDir <- changeToCrlmmAnnotationName(cdfName)
-	pkgname <- crlmm:::getCrlmmAnnotationName(cdfName)
-	if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-		msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
-		message(strwrap(msg))
-		stop("Package ", pkgname, " could not be found.")
-		rm(suggCall, msg)
-	}
-	##I'm using the pd.mapping package
-	data(npProbesFid, package=pkgname)
+##	if (missing(cdfName)) cdfName <- read.celfile.header(filenames[1])$cdfName
+##	pkgname <- crlmm:::getCrlmmAnnotationName(cdfName)
+##	if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
+##		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
+##		msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+##		message(strwrap(msg))
+##		stop("Package ", pkgname, " could not be found.")
+##		rm(suggCall, msg)
+##	}
+	data(npProbesFid, package="genomewidesnp6Crlmm")
 	fid <- npProbesFid
 	gc()
 	set.seed(seed)
