@@ -15,8 +15,6 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
   \item{seed}{seed for sampling the intensities to calculate skewness}
   \item{verbose}{logical}
 }
-\details{
-}
 \value{
   A list.  First element is the matrix of quantile-normalized
   intensities.  The second element is the skew.
@@ -27,7 +25,7 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
 	\dontrun{
 		library(genomewidesnp6Crlmm)
 		library(hapmapsnp6)
-		path <- system.file("celFiles", package="hapmapsnp5")
+		path <- system.file("celFiles", package="hapmapsnp6")
 		celFiles <- list.celfiles(path, full.names=TRUE)
 		cnrmaResult <- cnrma(celFiles)
 	}

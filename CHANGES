@@ -10,10 +10,16 @@
 
 * Files with suffix XYZ-methods.R should have *methods* for methodology XYZ
 
-* Exported assayDataNew from Biobase
+* Imported assayDataNew from Biobase
 
 * Added inst/scripts to store vignettes that can't be built by BioC
 due to the fact that they depend on external data not available as
 BioC data packages
 
 * Added crlmmSet class and calls/confs methods
+
+2009-03-08 Benilton Carvalho <bcarvalh@jhsph.edu> - committed version 1.0.55
+
+* Added biocViews
+
+* Removed empty \details{} in cnrma.Rd
