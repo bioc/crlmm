@@ -93,16 +93,7 @@ celDatesFrom <- function(celfiles, path=""){
 cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 	require(genomewidesnp6Crlmm) || stop("Package genomewidesnp6Crlmm not available")
 	if (missing(sns)) sns <- basename(filenames)
-##	if (missing(cdfName)) cdfName <- read.celfile.header(filenames[1])$cdfName
-##	pkgname <- crlmm:::getCrlmmAnnotationName(cdfName)
-##	if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-##		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-##		msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
-##		message(strwrap(msg))
-##		stop("Package ", pkgname, " could not be found.")
-##		rm(suggCall, msg)
-##	}
-	data(npProbesFid, package="genomewidesnp6Crlmm")
+	data("npProbesFid", package="genomewidesnp6Crlmm")
 	fid <- npProbesFid
 	gc()
 	set.seed(seed)
@@ -115,16 +106,13 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
 	}
 	##load reference distribution obtained from hapmap
-	data(list="1m_reference_cn", pkgname)
+	data(list="1m_reference_cn", package="genomewidesnp6Crlmm")
 	for(i in seq(along=filenames)){
 		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		x <- log2(y[idx2])
 		SKW[i] <- mean((x-mean(x))^3)/(sd(x)^3)
 		rm(x)
 		NP[, i] <- as.integer(normalize.quantiles.use.target(y, target=reference))
-		##A[, i] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-		##B[, i] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
-		##Now to fit the EM
 		if (verbose)
 			if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
 			else cat(".")
@@ -196,8 +184,8 @@ instantiateObjects <- function(calls, NP, plate, envir, chrom){
 	assign("plates.completed", plates.completed, envir)
 	
 	fit.variance <- NULL
-	npflags <- snpflags <- NULL
 	assign("fit.variance", fit.variance, envir=envir)
+	npflags <- snpflags <- vector("list", length(uplate))	
 	assign("snpflags", snpflags, envir=envir)
 	assign("npflags", npflags, envir=envir)
 	
@@ -280,9 +268,9 @@ computeCopynumber <- function(A,
 	for(p in P){
 		cat(".")
 		polymorphic(plateIndex=p,
-			   A=A[, plate==uplate[p]],
-			   B=B[, plate==uplate[p]],
-			   envir=envir)
+			    A=A[, plate==uplate[p]],
+			    B=B[, plate==uplate[p]],
+			    envir=envir)
 	}
 	message("\nCopy number for nonpolymorphic probes...")	
 	for(p in P){
@@ -827,7 +815,6 @@ locationAndScale <- function(p, AA.A, AB.A, BB.A,
 
 coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	p <- plateIndex
-	##if(p == 5) browser()
 	plates.completed <- get("plates.completed", envir)
 	if(!plates.completed[p]) return()
 	plate <- get("plate", envir)
