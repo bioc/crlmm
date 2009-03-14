@@ -2,7 +2,6 @@
 ### FOR CRLMM
 #####################################
 - Decide on output format (BC vote: eSet-like)
-- Helper to convert to snpMatrix
 - Add RS ids to annotation packages
 - Allele plots
 - M v S plots
@@ -11,19 +10,6 @@
 #####################################
 ### FOR CNRMA
 #####################################
-- fix the following 2 items
-* checking R code for possible problems ... NOTE
-cnrma: no visible global function definition for ‘getCnvFid’
-cnrma: no visible binding for global variable ‘reference’
-coefs: no visible binding for global variable ‘nu’
-coefs: no visible binding for global variable ‘phi’
-coefs: no visible binding for global variable ‘nu.se’
-coefs: no visible binding for global variable ‘phi.se’
-
-* checking for unstated dependencies in R code ... WARNING
-'library' or 'require' calls not declared from:
-  affyio splines Biobase genefilter
-
-* checking for missing documentation entries ... WARNING
-Undocumented code objects:
-  computeCnBatch
+- Rob, can you run a: 'grep ROB *' under R/? There are
+  some notes for you there. Basically because I changed
+  a few things that I'm not so sure of.

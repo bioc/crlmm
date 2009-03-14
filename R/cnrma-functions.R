@@ -91,10 +91,16 @@ celDatesFrom <- function(celfiles, path=""){
 }
 
 cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
-	require(genomewidesnp6Crlmm) || stop("Package genomewidesnp6Crlmm not available")
+  ## BC: 03/14/09
+  ## getting pkgname from cdfName, in the future this might be useful
+  ## as the method might be implemented for other platforms
+  pkgname <- getCrlmmAnnotationName(cdfName)
+
+	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
 	if (missing(sns)) sns <- basename(filenames)
-	data("npProbesFid", package="genomewidesnp6Crlmm")
-	fid <- npProbesFid
+  ## Loading data in .crlmmPkgEnv and extracting from there
+	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
+	fid <- getVarInEnv("npProbesFid")
 	gc()
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
@@ -106,7 +112,8 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
 	}
 	##load reference distribution obtained from hapmap
-	data(list="1m_reference_cn", package="genomewidesnp6Crlmm")
+	data(list="1m_reference_cn", package="genomewidesnp6Crlmm", envir=.crlmmPkgEnv)
+  reference <- getVarInEnv("reference")
 	for(i in seq(along=filenames)){
 		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		x <- log2(y[idx2])
@@ -893,10 +900,14 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	is.complete <- rowSums(is.na(W)) == 0
 	##is.complete <- is.complete & correct.orderA & correct.orderB & confInd & notmissing
 	nuphiAllele(allele="A", Ystar=Ystar[is.complete, ], W=W[is.complete, ], envir=envir, p=p)
-	nuA[is.complete, p] <- nu
-	phiA[is.complete, p] <- phi
-	nuA.se[is.complete, p] <- nu.se
-	phiA.se[is.complete, p] <- phi.se
+        ## ROB: can you please double check that my fix is okay?
+        ## ROB: the parameters nu/phi/nu.se/phi.se aren't defined
+        ## ROB: in this particular function. So I assume they come
+        ## ROB: from the nuphiAllele function above.
+	nuA[is.complete, p] <- get("nu", envir=envir)
+	phiA[is.complete, p] <- get("phi", envir=envir)
+	nuA.se[is.complete, p] <- get("nu.se", envir=envir)
+	phiA.se[is.complete, p] <- get("phi.se", envir=envir)
 	
 	if(NOHET){
 		IB <- IB[, c(1, 3)]
@@ -912,10 +923,14 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	Ystar <- IB*W
 	is.complete <- rowSums(is.na(W)) == 0
 	nuphiAllele(allele="B", Ystar=Ystar[is.complete, ], W=W[is.complete, ], envir=envir, p=p)
-	nuB[is.complete, p] <- nu
-	phiB[is.complete, p] <- phi
-	nuB.se[is.complete, p] <- nu.se
-	phiB.se[is.complete, p] <- phi.se
+        ## ROB: can you please double check that my fix is okay?
+        ## ROB: the parameters nu/phi/nu.se/phi.se aren't defined
+        ## ROB: in this particular function. So I assume they come
+        ## ROB: from the nuphiAllele function above.
+	nuB[is.complete, p] <- get("nu", envir=envir)
+	phiB[is.complete, p] <- get("phi", envir=envir)
+	nuB.se[is.complete, p] <- get("nu.se", envir=envir)
+	phiB.se[is.complete, p] <- get("phi.se", envir=envir)
 	phiA <- matrix(as.integer(phiA), nrow(phiA), ncol(phiA))
 	phiB <- matrix(as.integer(phiB), nrow(phiA), ncol(phiA))
 

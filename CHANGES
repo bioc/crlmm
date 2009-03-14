@@ -23,3 +23,8 @@ BioC data packages
 * Added biocViews
 
 * Removed empty \details{} in cnrma.Rd
+
+2009-03-14 Benilton Carvalho <bcarvalh@jhsph.edu> - committed version 1.0.56
+
+* Loaded data in cnrma-functions.R to an environment and extracted from there
+  so we can get rid of the NOTES complaining about 'no visible bindings'.
