@@ -69,10 +69,10 @@ nuphiAllele <- function(allele, Ystar, W, envir, p){
 	nu.se <- ses[1,]
 	phi.se <- ses[2,]
 	##dimnames(nu) <- dimnames(phi) <- dimnames(nu.ses) <- dimnames(phi.ses)
-	assign("nu", nu, envir=parent.frame(1))
-	assign("phi", phi, envir=parent.frame(1))
-	assign("nu.se", nu.se, envir=parent.frame(1))
-	assign("phi.se", phi.se, envir=parent.frame(1))	
+	assign("nu", nu, envir=envir)
+	assign("phi", phi, envir=envir)
+	assign("nu.se", nu.se, envir=envir)
+	assign("phi.se", phi.se, envir=envir)	
 }
 
 celDatesFrom <- function(celfiles, path=""){
@@ -900,10 +900,6 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	is.complete <- rowSums(is.na(W)) == 0
 	##is.complete <- is.complete & correct.orderA & correct.orderB & confInd & notmissing
 	nuphiAllele(allele="A", Ystar=Ystar[is.complete, ], W=W[is.complete, ], envir=envir, p=p)
-        ## ROB: can you please double check that my fix is okay?
-        ## ROB: the parameters nu/phi/nu.se/phi.se aren't defined
-        ## ROB: in this particular function. So I assume they come
-        ## ROB: from the nuphiAllele function above.
 	nuA[is.complete, p] <- get("nu", envir=envir)
 	phiA[is.complete, p] <- get("phi", envir=envir)
 	nuA.se[is.complete, p] <- get("nu.se", envir=envir)
@@ -923,10 +919,6 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 	Ystar <- IB*W
 	is.complete <- rowSums(is.na(W)) == 0
 	nuphiAllele(allele="B", Ystar=Ystar[is.complete, ], W=W[is.complete, ], envir=envir, p=p)
-        ## ROB: can you please double check that my fix is okay?
-        ## ROB: the parameters nu/phi/nu.se/phi.se aren't defined
-        ## ROB: in this particular function. So I assume they come
-        ## ROB: from the nuphiAllele function above.
 	nuB[is.complete, p] <- get("nu", envir=envir)
 	phiB[is.complete, p] <- get("phi", envir=envir)
 	nuB.se[is.complete, p] <- get("nu.se", envir=envir)
