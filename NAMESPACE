@@ -1,5 +1,5 @@
 useDynLib("crlmm", .registration=TRUE)
-export("crlmm", "list.celfiles", "computeCopynumber", "cnrma")
+export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates")
 exportMethods("list2crlmmSet", "calls", "confs")
 exportClasses("crlmmSet")
 import(Biobase)

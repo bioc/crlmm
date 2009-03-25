@@ -28,3 +28,27 @@ BioC data packages
 
 * Loaded data in cnrma-functions.R to an environment and extracted from there
   so we can get rid of the NOTES complaining about 'no visible bindings'.
+
+2009-03-18 Rob Scharpf <rscharpf@jhsph.edu> - committed version 1.0.57
+* Added steps object to instantiateObjects to speed up debugging
+* Reformulated the regression for chromosome X
+   -  estimate cross-hybridization using chromosome X
+* Take into account pseudo-autosomal regions on chr X for copy number estimation
+* Replaced get() and assign() with '<-' operations to improve readability
+* Function to compute posterior means of copy number estimates
+
+2009-03-19 Rob Scharpf - committed version 1.0.59
+* Requires genomewidesnp6Crlmm version 1.0.1 or greater
+
+2009-03-25 Rob Scharpf - committed version 1.0.60
+* simplified some of the preliminary steps for the computeCopynumber function
+** crlmm output subset within the body of the function
+* modified vignette -- store results in an oligoSnpSet object (for now)
+* added function to extract the date from the celfile headers (celDates)
+
+
+
+
+
+
+

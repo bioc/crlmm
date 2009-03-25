@@ -27,23 +27,22 @@ options(prompt="R> ")
 
 \section{Estimating copy number}
 
-At present, software for copy number estimation is provided only for
-the Affymetrix 6.0 platform.  This vignette estimates copy number for
-the HapMap samples.
+At present, software for copy number estimation is provided only for the
+Affymetrix 6.0 platform.  This vignette estimates copy number for the
+HapMap samples.
 
 \subsection{Preprocess and genotype the samples}
 
-See the crlmm vignette for additional details on
-preprocessing/genotyping.  
+We preprocess and genotype the samples as described in the CRLMM
+vignette.
 
 <<requiredPackages>>=
 library(crlmm)
 library(genomewidesnp6Crlmm)
-library(ellipse)
 @ 
 
-You must specify the names of the CEL files and the full path, as well
-as a directory in which to store the output from crlmm and cnrma.
+Specify the complete path for the CEL files and a directory in which to
+store intermediate files:
 
 <<celfiles>>=
 celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
@@ -78,21 +77,6 @@ if(!exists("cnrmaResult")){
 @ 
 
 \subsection{Copy number}
-<<chr>>=
-CHR <- 21
-@ 
-
-Copy number can be assessed one chromosome at a time.  Here we specify
-chromosome \Sexpr{CHR} and and load a list of indices to subset the data. The
-first element in the list correspond to indices of polymorphic probes
-on chromosome \Sexpr{CHR}; the second element corresponds to indices of
-nonpolymorphic probes on chromosome \Sexpr{21}.
-
-<<chromosomeIndex>>=
-CHR_INDEX <- paste(CHR, "index", sep="")
-data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
-str(index)
-@ 
 
 We require 6 items for copy number estimation:
 
@@ -117,89 +101,192 @@ NP <- cnrmaResult$NP
 gc()
 @ 
 
-Make a histogram of the signal to noise ratio for these samples:
+A histogram of the signal to noise ratio for the HapMap samples:
 
 <<plotSnr, fig=TRUE>>=
 hist(SNR, xlab="SNR", main="")
 @ 
 
 We suggest excluding samples with a signal to noise ratio less than 5.
-We then extract the probes (rows) that are on chromosome 15 and the
-samples (columns) that have a suitable signal to noise ratio.
+As batch effects can be very large in the quantile-normalized
+intensities, we suggest adjusting for date or chemistry plate.  
 
-<<subsetCrlmmOutput>>=
-A <- A[index[[1]], SNR > 5]
-B <- B[index[[1]], SNR > 5]
-calls <- calls[index[[1]], SNR > 5]
-conf <- conf[index[[1]], SNR > 5]
-NP <- NP[index[[2]], SNR > 5]
+<<dates>>=
+dts <- celDates(celFiles)
+table(format(dts, "%d %b %Y"))
 @ 
 
-Batch effects can be very large in the quantile-normalized
-intensities.  Often the chemistry plate is a good surrogate for batch
-effects, although it can also be the lab, etc.  Here we define batch
-by the chemistry plate. For the HapMap data, plate is often confounded
-with ancestry.
+
+Ideally, one would have 70+ files in a given batch.  For the HapMap
+date, we define batch by the chemistry plate.
 
 <<specifyBatch>>=
 sns <- colnames(calls)
 sns[1]
 plate <- substr(basename(sns), 13, 13)
 table(plate)
+table(format(dts, "%d %b %Y"), plate)
 @ 
 
-We are now ready to estimate copy number for each batch.  In the
-current version of this package, one specifies an environment to which
-intermediate \R{} objects for copy number estimation are
-stored. Allele-specific estimates of copy number are also stored in
-this environment.
+Intermediate files as well as the copy number estimates are stored in an
+environment created by the user.  The intermediate files can be useful
+for creating SNP-level plots.
 
-<<copyNumberByBatch>>=
-if(!exists("e1")){
-	e1 <- new.env()
-	computeCopynumber(A=A,
-			  B=B,
-			  calls=calls,
-			  conf=conf,
-			  NP=NP,
-			  plate=plate,
-			  envir=e1, chrom=CHR, DF.PRIOR=75)
+<<chromosome22>>=
+if(!exists("env")){
+	CHR <- 22
+	if(!file.exists(file.path(outdir, paste("env_chr", CHR, ".rda", sep="")))){
+		env <- new.env()
+		computeCopynumber(chrom=CHR,
+				  A=A,
+				  B=B,
+				  calls=calls,
+				  conf=conf,
+				  NP=NP,
+				  plate=plate,
+				  envir=env, 
+				  DF.PRIOR=50, 
+				  MIN.OBS=1,
+				  SNR=SNR,
+				  SNRmin=5)	
+		save(env, file=file.path(outdir, paste("env_chr", CHR, ".rda", sep="")))
+	} else {
+		load(file.path(outdir, paste("env_chr", CHR, ".rda", sep="")))
+	}
 }
 @ 
 
-The DF.PRIOR indicates how much we will shrink SNP-specific estimates
-of the variance and correlation.
+A class representation would be useful for this sort of data (TODO).
+The \Rpackage{oligoSnpSet} class used below is a bit inefficient as the
+assay data elements are forced to be the same size.  The advantage is
+that all of the assay data is bound to the meta-data.
 
-<<accessingEstimates>>=
-copyA <- get("CA", e1)
-copyB <- get("CB", e1)
-copyT <- (copyA+copyB)/100
-copyT[copyT < 0] <- 0
-copyT[copyT > 6] <- 6
+<<oligoSnpSet>>=
+require(oligoClasses)
+data(snpProbes, package="genomewidesnp6Crlmm")
+data(cnProbes, package="genomewidesnp6Crlmm")
+position <- snpProbes[match(env[["snps"]], rownames(snpProbes)), "position"]
+position.np <- cnProbes[match(rownames(env[["NP"]]), rownames(cnProbes)), "position"]
+CA <- env[["CA"]]
+CB <- env[["CB"]]
+snpCT <- CA+CB
+npCT <- env[["CT"]]
+CT <- rbind(snpCT, npCT)
+dimnames(CT) <- list(c(env[["snps"]], rownames(env[["NP"]])), env[["sns"]])
+genotypes <- matrix(NA, nrow(CT), ncol(CT))
+dimnames(genotypes) <- dimnames(CT)
+genotypes[1:length(env[["snps"]]), ] <- env[["calls"]]
+polymorphic <- c(rep(1, length(env[["snps"]])), rep(0, nrow(npCT)))
+fD <- new("AnnotatedDataFrame", 
+	  data=data.frame(chromosome=rep(CHR, nrow(CT)), 
+	  polymorphic=polymorphic,
+	  position=c(position, position.np)),
+	  varMetadata=data.frame(labelDescription=c("chromosome",
+				 "polymorphic",
+				 "position")))
+locusSet <- new("oligoSnpSet",
+		copyNumber=CT,
+		calls=genotypes,
+		featureData=fD,
+		phenoData=annotatedDataFrameFrom(CT, byrow=FALSE),
+		annotation="genomewidesnp6")
+@ 
+
+Note that an indicator for the polymorphic probes was created in the
+code chunk above.  I use this indicator to smooth the estimates of copy
+number from the nonpolymorphic and polymorphic probes separately.  The
+uncertainty estimates (work in progress) should reflect that the
+nonpolymorphic probes have more variance and the smoothing will take
+this into account.  The above algorithm for estimating copy number is
+predicated on the assumption that most samples within a batch have copy
+number 2 at any given SNP.  For common copy number variants, this
+assumption may not hold.  An additional iteration using a bias
+correction can improve the estimates.  Set the \Robject{bias.adj}
+argument to \Robject{TRUE}.
+
+%The total copy number for all chromosomes can be extracted from a
+%\emph{for} loop.  
+
+<<remainingChromosomes, eval=FALSE, echo=FALSE>>=
+require(oligoClasses)
+if(!exists("env")){
+##	for(CHR in c(1:21, 23)){  
+	for(CHR in 22){
+		cat(CHR, ", ")
+		if(!file.exists(file.path(outdir, paste("CT_chr", CHR, ".rda", sep="")))){
+			env <- new.env()
+			computeCopynumber(chrom=CHR,
+					  A=A,
+					  B=B,
+					  calls=calls,
+					  conf=conf,
+					  NP=NP,
+					  plate=plate,
+					  envir=env, 
+					  DF.PRIOR=50, 
+					  MIN.OBS=1,
+					  SNR=SNR,
+					  SNRmin=5)	
+			CA <- env[["CA"]]
+			CB <- env[["CB"]]
+			snpCT <- CA+CB
+			npCT <- env[["CT"]]
+			position.snp <- snpProbes[match(env[["snps"]], rownames(snpProbes)), "position"]
+			position.np <- cnProbes[match(rownames(env[["NP"]]), rownames(cnProbes)), "position"]
+			CT <- rbind(snpCT, npCT)
+			dimnames(CT) <- list(c(env[["snps"]], rownames(env[["NP"]])), env[["sns"]])
+			genotypes <- matrix(NA, nrow(CT), ncol(CT))
+			dimnames(genotypes) <- dimnames(CT)
+			genotypes[1:length(env[["snps"]]), ] <- env[["calls"]]
+			polymorphic <- c(rep(1, length(env[["snps"]])), rep(0, nrow(npCT)))
+			fD <- new("AnnotatedDataFrame", 
+				  data=data.frame(chromosome=rep(CHR, nrow(CT)), 
+				  polymorphic=polymorphic,
+				  position=c(position.snp, position.np)),
+				  varMetadata=data.frame(labelDescription=c("chromosome",
+							 "polymorphic",
+							 "position")))
+			pD <- annotatedDataFrameFrom(CT, byrow=FALSE)
+			locusSet <- new("oligoSnpSet",
+					copyNumber=CT,
+					calls=genotypes,
+					featureData=fD,
+					phenoData=pD,
+					annotation="genomewidesnp6")
+			save(locusSet, file=file.path(outdir, paste("locusSet_", CHR, ".rda", sep="")))			
+		} else {
+			load(file.path(outdir, paste("CT_chr", CHR, ".rda", sep="")))
+		}
+		rm(env); gc()
+	}
+}
 @ 
 
 \section{Suggested plots}
 
 \paragraph{One sample at a time}
 
-<<annotation>>=
-data(snpProbes, package="genomewidesnp6Crlmm")
-data(cnProbes, package="genomewidesnp6Crlmm")
-position <- snpProbes[match(rownames(calls), rownames(snpProbes)), "position"]
-@ 
-
-To plot physical position versus copy number for the first sample:
+Plot physical position versus copy number for the first sample.  Recall
+that the copy number estimates were multiplied by 100 and stored as an
+integer.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
-require(SNPchip)
+require(ellipse)
 par(las=1)
-plotCytoband(as.character(CHR), ylim=c(0,7), cytoband.ycoords=c(6.5,7), label.cytoband=FALSE, main="Chr 15")
-points(position, copyT[, 1], pch=".", cex=2, , xaxt="n", col="grey70")
-axis(1, at=pretty(range(position)), labels=pretty(range(position))/1e6)
-axis(2, at=0:5, labels=0:5)
-mtext("position (Mb)", 1, line=2)
-mtext(expression(hat(C)[A] + hat(C)[B]), 2, line=2, las=3)
+plot(position(locusSet), copyNumber(locusSet)[, 1]/100, pch=".", cex=2, xaxt="n", col="grey70", ylim=c(0,6), 
+     ylab="copy number", xlab="physical position (Mb)",
+     main=paste(sampleNames(locusSet)[1], ", CHR:", unique(chromosome(locusSet))))
+axis(1, at=pretty(range(position(locusSet))), labels=pretty(range(position(locusSet)))/1e6)
+I <- fData(locusSet)$polymorphic==0
+points(position(locusSet)[I], copyNumber(locusSet)[I, 1]/100, pch=".", col="blue", cex=1)
 @ 
+<<eval=FALSE>>=
+require(SNPchip)
+plotCytoband(22, new=FALSE, cytoband.ycoords=c(5.8, 6.0), label.cytoband=FALSE)
+@ 
+
+In this example, the estimates of copy number for the nonpolymorphic
+probes appear correlated with the polymorphic probes -- a good sign.
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-oneSample}
@@ -209,36 +296,36 @@ mtext(expression(hat(C)[A] + hat(C)[B]), 2, line=2, las=3)
 
 \paragraph{One SNP at a time}
 
-This section needs to be cleaned up (TODO).
+This section needs to be cleaned up (TODO).  The parameters needed for
+drawing prediction regions are plate-specific.
 
 <<intermediateFiles>>=
-tau2A <- get("tau2A", e1)
-tau2B <- get("tau2B", e1)
-sig2A <- get("sig2A", e1)
-sig2B <- get("sig2B", e1)
-nuA <- get("nuA", e1)
-phiA <- get("phiA", e1)
-nuB <- get("nuB", e1)
-phiB <- get("phiB", e1)
-corr <- get("corr", e1)
-corrA.BB <- get("corrA.BB", e1)
-corrB.AA <- get("corrA.BB", e1)
-A <- get("A", e1)
-B <- get("B", e1)
+tau2A <- env[["tau2A"]]
+tau2B <- env[["tau2B"]]
+sig2A <- env[["sig2A"]]
+sig2B <- env[["sig2B"]]
+nuA <- env[["nuA"]]
+nuB <- env[["nuB"]]
+phiA <- env[["phiA"]]
+phiB <- env[["phiB"]]
+corr <- env[["corr"]]
+corrA.BB <- env[["corrA.BB"]]
+corrB.AA <- env[["corrB.AA"]]
+A <- env[["A"]]
+B <- env[["B"]]
 @ 
 
-Here, we plot the prediction regions for total copy number 2 and 3 for
-the first plate. Plotting symbols are the genotype calls (1=AA, 2=AB,
-3=BB); light grey points are from other plates. (You could also add
-the prediction regions for 0-4 copies, but it gets crowded).  Notice
-that there is little evidence of a plate effect for this SNP.
+Plot the prediction regions for total copy number 2 and 3 for the first
+plate. Plotting symbols are the genotype calls (1=AA, 2=AB, 3=BB); light
+grey points are from other plates. One could also add the prediction
+regions for 0-4 copies, but it gets crowded.
 
 <<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE>>=
 par(las=1, pty="s")
 p <- 1 ##indicates plate
 J <- grep(unique(plate)[p], plate) ##sample indices for this plate
 ylim <- c(6.5,13)
-I <- which(phiA > 10 & phiB > 10)
+I <- which(phiA > 10 & phiB > 10)  
 i <- I[1]
 ##plate effects are small
 log2(phiA[i, ])
@@ -270,7 +357,7 @@ legend("topright", lwd=3, col="black", legend="2 copies", bty="n")
 \end{figure}
 
 
-<<predictionRegion, eval=FALSE>>=
+<<predictionRegion, eval=FALSE, echo=FALSE>>=
 par(las=1, pty="s", ask=TRUE)
 p <- 1 ##indicates plate
 J <- grep(unique(plate)[p], plate) ##sample indices for this plate
@@ -310,23 +397,20 @@ for(j in seq(along=I)){
 @ 
 
 Look at the distribution of shifts in the predicted centers across the
-plates.  The biggest shifts are for SNPs that have no observations in
-a subset of the plates.  Here, we should borrow strength across plates
-to improve the prediction regions (TO DO).
+plates.  The biggest shifts are for SNPs that have no observations in a
+subset of the plates -- need more shrinkage here.
 
-<<shifts, eval=FALSE>>=
+<<shifts, eval=FALSE, echo=FALSE>>=
 shiftA <- log2(nuA+phiA)
-maxA <- apply(shiftA, 1, max, na.rm=TRUE)
-minA <- apply(shiftA, 1, min, na.rm=TRUE)
-d <- maxA - minA
+d <- suppressWarnings(apply(shiftA, 1, function(x) diff(range(x, na.rm=TRUE))))
 hist(d)
-index <- which(d > 1)
+index <- which(d > 1.5)
 plate1 <- plate2 <- rep(NA, length(index))
 for(i in seq(along=index)){
 	plate1[i] <- which(shiftA[index[i], ] == maxA[index[i]])
 	plate2[i] <- which(shiftA[index[i], ] == minA[index[i]])
 }
-
+par(ask=TRUE)
 par(las=1)
 for(j in seq(along=index)){
 	i <- index[j]

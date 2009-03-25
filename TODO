@@ -10,6 +10,10 @@
 #####################################
 ### FOR CNRMA
 #####################################
-- Rob, can you run a: 'grep ROB *' under R/? There are
-  some notes for you there. Basically because I changed
-  a few things that I'm not so sure of.
+- Bias adjustment for X chromosome
+- adjust nu for altered copy number (crosshyb)
+- a class for the assay data elements and metadata -- oligoSnpSet?
+      - should we consider a name change -- e.g., LocusSet
+- a class for the intermediate files and methods for SNP-specific plots
+- uncertainty estimates for copy number.  Put in cnConfidence slot
+
