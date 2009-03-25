@@ -46,6 +46,9 @@ BioC data packages
 * modified vignette -- store results in an oligoSnpSet object (for now)
 * added function to extract the date from the celfile headers (celDates)
 
+2009-03-25 Rob Scharpf - committed version 1.0.61
+* update to copynumber vignette
+
 
 
 

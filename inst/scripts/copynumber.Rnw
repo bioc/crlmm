@@ -117,8 +117,8 @@ table(format(dts, "%d %b %Y"))
 @ 
 
 
-Ideally, one would have 70+ files in a given batch.  For the HapMap
-date, we define batch by the chemistry plate.
+Ideally, one would have 70+ files in a given batch. Here we make a table
+of date versus ancestry:
 
 <<specifyBatch>>=
 sns <- colnames(calls)
@@ -128,9 +128,11 @@ table(plate)
 table(format(dts, "%d %b %Y"), plate)
 @ 
 
-Intermediate files as well as the copy number estimates are stored in an
-environment created by the user.  The intermediate files can be useful
-for creating SNP-level plots.
+As all of these samples were run on the first week of March, we would
+expect that any systematic artifacts to the intensities that develop
+over time to be minimal (a best case scenario).  As this is typically
+not the case, we illustrate how one may adjust for batch using the
+chemistry plate as an argument to the computeCopynumber function.
 
 <<chromosome22>>=
 if(!exists("env")){
