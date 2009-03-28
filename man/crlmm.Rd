@@ -1,9 +1,5 @@
 \name{crlmm}
 \alias{crlmm}
-\alias{calls}
-\alias{calls,SnpSet-method}
-\alias{confs}
-\alias{confs,SnpSet-method}
 
 \title{Genotype oligonucleotide arrays with CRLMM}
 \description{
@@ -18,12 +14,9 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
       intensityFile, mixtureSampleSize=10^5,
       eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
       recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
-calls(x)
-confs(x)
 }
 
 \arguments{
-  \item{x}{'SnpSet' object. Usually the result of crlmm.}
   \item{filenames}{'character' vector with CEL files to be genotyped.}
   \item{row.names}{'logical'. Use rownames - SNP names?}
   \item{col.names}{'logical'. Use colnames - Sample names?}
@@ -73,9 +66,7 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  crlmmOutput <- crlmm(cels)
-  (calls(crlmmOutput)[1:10, 1:2])
-  (confs(crlmmOutput)[1:10, 1:2])
+  (crlmmOutput <- crlmm(cels))
 }
 }
 \keyword{classif}

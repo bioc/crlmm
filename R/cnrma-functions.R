@@ -128,7 +128,8 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
 	if (missing(sns)) sns <- basename(filenames)
 	## Loading data in .crlmmPkgEnv and extracting from there
-	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
+        loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
+##	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
 	fid <- getVarInEnv("npProbesFid")
 	gc()
 	set.seed(seed)
@@ -141,7 +142,8 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
 	}
 	##load reference distribution obtained from hapmap
-	data(list="1m_reference_cn", package="genomewidesnp6Crlmm", envir=.crlmmPkgEnv)
+        loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
+##	data(list="1m_reference_cn", package="genomewidesnp6Crlmm", envir=.crlmmPkgEnv)
 	reference <- getVarInEnv("reference")
 	for(i in seq(along=filenames)){
 		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
@@ -186,11 +188,14 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 }
 
 instantiateObjects <- function(calls, NP, plate, envir, chrom, A, B,
-			       gender, SNRmin=5, SNR){
+			       gender, SNRmin=5, SNR,
+                               pkgname="genomewidesnp6Crlmm"){
 	envir[["chrom"]] <- chrom
 	CHR_INDEX <- paste(chrom, "index", sep="")
-	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
-        ## Rob, where does 'index[[1]]' come from?
+        fname <- paste(CHR_INDEX, ".rda", sep="")
+        loader(fname, .crlmmPkgEnv, pkgname)
+        index <- get("index", envir=.crlmmPkgEnv)
+##	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
 	A <- A[index[[1]], SNR > SNRmin]
 	B <- B[index[[1]], SNR > SNRmin]
 	calls <- calls[index[[1]], SNR > SNRmin]
@@ -388,7 +393,7 @@ computeCopynumber <- function(chrom,
 	}
 }
 
-nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50){
+nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pkgname="genomewidesnp6Crlmm"){
 	p <- plateIndex
 	CHR <- envir[["chrom"]]
 	plate <- envir[["plate"]]
@@ -446,7 +451,9 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50){
 	##calculate R2
 	if(CHR == 23){
 		cnvs <- envir[["cnvs"]]
-		data(cnProbes, package="genomewidesnp6Crlmm")
+                loader("cnProbes", pkgname, .crlmmPkgEnv)
+                cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
+##		data(cnProbes, package="genomewidesnp6Crlmm")
 		cnProbes <- cnProbes[match(cnvs, rownames(cnProbes)), ]
 		par <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
 		gender <- envir[["gender"]]

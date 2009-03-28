@@ -14,7 +14,10 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
   }
   
   if(verbose) message("Loading annotations and mixture model parameters.")
-  data(preprocStuff, genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
+  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+##  data(preprocStuff, genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
   autosomeIndex <- getVarInEnv("autosomeIndex")
   pnsa <- getVarInEnv("pnsa")
   pnsb <- getVarInEnv("pnsb")

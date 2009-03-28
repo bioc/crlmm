@@ -70,7 +70,9 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   }
 
   if(verbose) message("Loading annotations.")
-  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+##  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
 
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
@@ -396,9 +398,12 @@ crlmmGTTNoN <- function(A, B, SNR, mixtureParams, cdfName,
   
   NC <- ncol(A)
   NR <- nrow(A)
+  pkgname <- getCrlmmAnnotationName(cdfName)
   
   if(verbose) message("Loading annotations.")
-  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+##  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
 
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
@@ -559,9 +564,12 @@ crlmmGTNormalNoN <- function(A, B, SNR, mixtureParams, cdfName,
   
   NC <- ncol(A)
   NR <- nrow(A)
-  
+  pkgname <- getCrlmmAnnotationName(cdfName)
+
   if(verbose) message("Loading annotations.")
-  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+##  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
 
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
@@ -736,7 +744,9 @@ crlmmGTnm <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   }
 
   if(verbose) message("Loading annotations.")
-  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+##  data(genotypeStuff, mixtureStuff, package=pkgname, envir=.crlmmPkgEnv)
 
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
