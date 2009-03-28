@@ -58,3 +58,7 @@ BioC data packages
 * redefined calls/confs to accommodate this change
 
 * fixed documentation to acommodate this change
+
+2009-03-28 B Carvalho - committed version 1.0.63
+
+* modified warning message

@@ -123,7 +123,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                                 !apply(regionInfo, 1, any)),
                                 autosomeIndex)
   if(length(Index) < recallRegMin){
-    warning("Recalibration not possible.")
+    warning("Recalibration not possible. Possible cause: small sample size.")
     newparams <- params
     dev <- vector("numeric", nrow(newparams[["centers"]]))
     SS <- matrix(Inf, 3, 3)
