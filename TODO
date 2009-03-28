@@ -1,7 +1,7 @@
 #####################################
 ### FOR CRLMM
 #####################################
-- Decide on output format (BC vote: eSet-like)
+- Fix downstream vignette
 - Add RS ids to annotation packages
 - Allele plots
 - M v S plots

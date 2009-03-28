@@ -14,7 +14,7 @@
 
 \begin{document}
 \title{Genotyping with the \Rpackage{crlmm} Package}
-\date{January, 2009}
+\date{March, 2009}
 \author{Benilton Carvalho}
 \maketitle
 
@@ -56,20 +56,21 @@ celFiles <- list.celfiles(path, full.names=TRUE)
 system.time(crlmmResult <- crlmm(celFiles, verbose=FALSE))
 @ 
 
-The \Robject{crlmmResult} is a list with the following components:
+The \Robject{crlmmResult} is a \Rclass{SnpSet} (see Biobase) object.
 \begin{itemize}
 \item \Robject{calls}: genotype calls (1 - AA; 2 - AB; 3 - BB);
 \item \Robject{confs}: confidence scores, which can be translated to probabilities by using:
   \[ 1-2^-(\mbox{confs}/1000), \] although we prefer this
   representation as it saves a significant amount of memory;
 \item \Robject{SNPQC}: SNP quality score;
-\item \Robject{batchQC}: Batch quality score;
+%%\item \Robject{batchQC}: Batch quality score;
 \item \Robject{SNR}: Signal-to-noise ratio.
 \end{itemize}
 
 <<out>>=
-crlmmResult[["calls"]][1:10,]
-crlmmResult[["confs"]][1:10,]
+calls(crlmmResult)[1:10,]
+confs(crlmmResult)[1:10,]
+crlmmResult[["SNR"]]
 @ 
 
 \section{Details}

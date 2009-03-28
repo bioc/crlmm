@@ -1,6 +1,10 @@
 \name{crlmm}
 \alias{crlmm}
-%- Also NEED an '\alias' for EACH other topic documented here.
+\alias{calls}
+\alias{calls,SnpSet-method}
+\alias{confs}
+\alias{confs,SnpSet-method}
+
 \title{Genotype oligonucleotide arrays with CRLMM}
 \description{
   This is a faster and more efficient implementation of the CRLMM
@@ -8,16 +12,18 @@
   be soon extended to other platforms).
 }
 \usage{
-
 crlmm(filenames, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, save.it=FALSE, load.it=FALSE,
       intensityFile, mixtureSampleSize=10^5,
       eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
       recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
+calls(x)
+confs(x)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
+  \item{x}{'SnpSet' object. Usually the result of crlmm.}
   \item{filenames}{'character' vector with CEL files to be genotyped.}
   \item{row.names}{'logical'. Use rownames - SNP names?}
   \item{col.names}{'logical'. Use colnames - Sample names?}
@@ -43,6 +49,7 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
 \value{
+  A \code{SnpSet} object.
   \item{calls}{Genotype calls (1 - AA, 2 - AB, 3 - BB)}
   \item{confs}{Confidence scores 'round(-1000*log2(1-p))'}
   \item{SNPQC}{SNP Quality Scores}
@@ -67,8 +74,8 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
   crlmmOutput <- crlmm(cels)
-  crlmmOutput[["calls"]][1:10, 1:2]
-  crlmmOutput[["confs"]][1:10, 1:2]
+  (calls(crlmmOutput)[1:10, 1:2])
+  (confs(crlmmOutput)[1:10, 1:2])
 }
 }
 \keyword{classif}

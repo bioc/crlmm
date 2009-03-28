@@ -189,7 +189,8 @@ instantiateObjects <- function(calls, NP, plate, envir, chrom, A, B,
 			       gender, SNRmin=5, SNR){
 	envir[["chrom"]] <- chrom
 	CHR_INDEX <- paste(chrom, "index", sep="")
-	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")	
+	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
+        ## Rob, where does 'index[[1]]' come from?
 	A <- A[index[[1]], SNR > SNRmin]
 	B <- B[index[[1]], SNR > SNRmin]
 	calls <- calls[index[[1]], SNR > SNRmin]

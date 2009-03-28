@@ -43,7 +43,7 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
 
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
-  return(res2)
+  return(list2SnpSet(res2, returnParams=returnParams))
 }
 
 crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
@@ -122,9 +122,8 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                                 newparams[["N"]][, 3]) > recallMin &
                                 !apply(regionInfo, 1, any)),
                                 autosomeIndex)
-  
   if(length(Index) < recallRegMin){
-    warning("Recallibration not possible.")
+    warning("Recalibration not possible.")
     newparams <- params
     dev <- vector("numeric", nrow(newparams[["centers"]]))
     SS <- matrix(Inf, 3, 3)
@@ -221,9 +220,9 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   
   if(verbose) message("Done.")
   if (returnParams){
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covDD=SS))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covDD=SS, gender=gender, pkgname=pkgname))
   }else{
-    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD, covDD=SS))
+    return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, DD=DD, covDD=SS, gender=gender, pkgname=pkgname))
   }
 }
 

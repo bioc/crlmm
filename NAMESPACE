@@ -1,7 +1,4 @@
 useDynLib("crlmm", .registration=TRUE)
-export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates")
-exportMethods("list2crlmmSet", "calls", "confs")
-exportClasses("crlmmSet")
 import(Biobase)
 importFrom(affyio, read.celfile.header, read.celfile)
 importFrom(preprocessCore, normalize.quantiles.use.target)
@@ -10,3 +7,5 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd)
 importFrom(genefilter, rowSds)
 importFrom(mvtnorm, dmvnorm)
 
+export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates")
+exportMethods("calls", "confs")

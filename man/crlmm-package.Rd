@@ -10,8 +10,10 @@ Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays.
 \details{
 Index:
 \preformatted{
-crlmm                   Genotype SNP 5.0 or 6.0 samples.
 crlmm-package           New implementation of the CRLMM Algorithm.
+crlmm                   Genotype SNP 5.0 or 6.0 samples.
+calls                   Accessor for genotype calls.
+confs                   Accessor for confidences.
 }
 The 'crlmm' package reimplements the CRLMM algorithm present in the
 'oligo' package. This implementation primes for efficient genotyping of

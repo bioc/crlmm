@@ -42,3 +42,95 @@ getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
 		stop("Variable ", dataset, " not found in .crlmmPkgEnv")
 	environ[[dataset]]
 }
+
+list2SnpSet <- function(x, returnParams=FALSE){
+  pd <- data.frame(SNR=x[["SNR"]], gender=x[["gender"]],
+                   row.names=colnames(x[["calls"]]))
+  pdv <- data.frame(labelDescription=c("Signal-to-noise Ratio",
+                      "Gender: Male (1) and Female (2)"),
+                    row.names=c("SNR", "gender"))
+  recall <- length(x[["DD"]]) > 1
+  if (returnParams){
+    if (recall){
+      fd <- data.frame(SNPQC=x[["SNPQC"]],
+                       cAA=x[["params"]][["centers"]][,1],
+                       cAB=x[["params"]][["centers"]][,2],
+                       cBB=x[["params"]][["centers"]][,3],
+                       sAA=x[["params"]][["scales"]][,1],
+                       sAB=x[["params"]][["scales"]][,2],
+                       sBB=x[["params"]][["scales"]][,3],
+                       nAA=x[["params"]][["N"]][,1],
+                       nAB=x[["params"]][["N"]][,2],
+                       nBB=x[["params"]][["N"]][,3],
+                       spAA=x[["DD"]][,1],
+                       spAB=x[["DD"]][,2],
+                       spBB=x[["DD"]][,3],
+                       row.names=rownames(x[["calls"]]))
+      fdv <- data.frame(labelDescription=c(
+                          "SNP Quality Score",
+                          "Center AA", "Center AB", "Center BB",
+                          "Scale AA", "Scale AB", "Scale BB",
+                          "N AA", "N AB", "N BB",
+                          "Shift in parameters AA",
+                          "Shift in parameters AB",
+                          "Shift in parameters BB"),
+                        row.names=c(
+                          "SNPQC",
+                          "cAA", "cAB", "cBB",
+                          "sAA", "sAB", "sBB",
+                          "nAA", "nAB", "nBB",
+                          "spAA", "spAB", "spBB"))
+    }else{
+      fd <- data.frame(SNPQC=x[["SNPQC"]],
+                       cAA=x[["params"]][["centers"]][,1],
+                       cAB=x[["params"]][["centers"]][,2],
+                       cBB=x[["params"]][["centers"]][,3],
+                       sAA=x[["params"]][["scales"]][,1],
+                       sAB=x[["params"]][["scales"]][,2],
+                       sBB=x[["params"]][["scales"]][,3],
+                       nAA=x[["params"]][["N"]][,1],
+                       nAB=x[["params"]][["N"]][,2],
+                       nBB=x[["params"]][["N"]][,3],
+                       row.names=rownames(x[["calls"]]))
+      fdv <- data.frame(labelDescription=c(
+                          "SNP Quality Score",
+                          "Center AA", "Center AB", "Center BB",
+                          "Scale AA", "Scale AB", "Scale BB",
+                          "N AA", "N AB", "N BB",
+                          "Shift in parameters AA",
+                          "Shift in parameters AB",
+                          "Shift in parameters BB"),
+                        row.names=c(
+                          "SNPQC",
+                          "cAA", "cAB", "cBB",
+                          "sAA", "sAB", "sBB",
+                          "nAA", "nAB", "nBB"))
+    }
+  }else{
+    if (recall){
+      fd <- data.frame(SNPQC=x[["SNPQC"]],
+                       spAA=x[["DD"]][,1],
+                       spAB=x[["DD"]][,2],
+                       spBB=x[["DD"]][,3],
+                       row.names=rownames(x[["calls"]]))
+      fdv <- data.frame(labelDescription=c("SNP Quality Score",
+                          "Shift in parameters AA",
+                          "Shift in parameters AB",
+                          "Shift in parameters BB"),
+                        row.names=c("SNPQC", "spAA", "spAB", "spBB"))
+    }else{
+      fd <- data.frame(SNPQC=x[["SNPQC"]],
+                       row.names=rownames(x[["calls"]]))
+      fdv <- data.frame(labelDescription=c("SNP Quality Score"),
+                        row.names=c("SNPQC"))
+    }
+  }
+  new("SnpSet",
+      assayData=assayDataNew("lockedEnvironment",
+        call=x[["calls"]], callProbability=x[["confs"]]),
+      phenoData=new("AnnotatedDataFrame",
+        data=pd, varMetadata=pdv),
+      featureData=new("AnnotatedDataFrame",
+        data=fd, varMetadata=fdv),
+      annotation=x[["pkgname"]])
+}
