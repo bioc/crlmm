@@ -136,11 +136,11 @@ list2SnpSet <- function(x, returnParams=FALSE){
 }
 
 loader <- function(theFile, envir, pkgname){
-  stopifnot(theFile %in% c("genotypeStuff.rda", "mixtureStuff.rda", "preprocStuff.rda"))
-  theFile <- file.path(system.file(package=pkgname),
-                       "extdata", theFile)
-  if (!file.exists(theFile))
-    stop("File", theFile, "does not exist in", pkgname)
-  load(theFile, envir=envir)
+	##stopifnot(theFile %in% c("genotypeStuff.rda", "mixtureStuff.rda", "preprocStuff.rda"))
+	theFile <- file.path(system.file(package=pkgname),
+			     "extdata", theFile)
+	if (!file.exists(theFile))
+		stop("File", theFile, "does not exist in", pkgname)
+	load(theFile, envir=envir)
 }
 

@@ -70,7 +70,7 @@ Quantile normalize the nonpolymorphic probes and save the results.
 if(!exists("cnrmaResult")){
 	if(file.exists(file.path(outdir, "cnrmaResult.rda"))) load(file.path(outdir, "cnrmaResult.rda"))
 	else {
-		cnrmaResult <- cnrma(celFiles)
+		cnrmaResult <- cnrma(celFiles, cdfName="genomewidesnp6")
 		save(cnrmaResult, file=file.path(outdir, "cnrmaResult.rda"))
 	}
 }
@@ -94,8 +94,9 @@ We require 6 items for copy number estimation:
 <<snpAndCnSummaries>>=
 A <- res$A
 B <- res$B
-calls <- crlmmResult$calls
-conf <- crlmmResult$conf
+genotypes <- crlmm:::calls(crlmmResult)##$calls
+conf <- confs(crlmmResult)##$conf
+gender <- crlmmResult$gender
 SNR <- crlmmResult$SNR
 NP <- cnrmaResult$NP
 gc()
@@ -107,21 +108,22 @@ A histogram of the signal to noise ratio for the HapMap samples:
 hist(SNR, xlab="SNR", main="")
 @ 
 
-We suggest excluding samples with a signal to noise ratio less than 5.
-As batch effects can be very large in the quantile-normalized
-intensities, we suggest adjusting for date or chemistry plate.  
 
 <<dates>>=
 dts <- celDates(celFiles)
 table(format(dts, "%d %b %Y"))
+SNRmin <- 5
 @ 
 
-
-Ideally, one would have 70+ files in a given batch. Here we make a table
-of date versus ancestry:
+We suggest excluding samples with a signal to noise ratio less than
+\Sexpr{SNRmin}.  As batch effects can be very large in the
+quantile-normalized intensities, we suggest adjusting for date or
+chemistry plate.  Ideally, one would have 70+ files in a given
+batch. Here we make a table of date versus ancestry:
 
 <<specifyBatch>>=
-sns <- colnames(calls)
+require(Biobase)
+sns <- sampleNames(crlmmResult)
 sns[1]
 plate <- substr(basename(sns), 13, 13)
 table(plate)
@@ -142,7 +144,7 @@ if(!exists("env")){
 		computeCopynumber(chrom=CHR,
 				  A=A,
 				  B=B,
-				  calls=calls,
+				  calls=genotypes,
 				  conf=conf,
 				  NP=NP,
 				  plate=plate,
@@ -150,7 +152,7 @@ if(!exists("env")){
 				  DF.PRIOR=50, 
 				  MIN.OBS=1,
 				  SNR=SNR,
-				  SNRmin=5)	
+				  SNRmin=SNRmin)	
 		save(env, file=file.path(outdir, paste("env_chr", CHR, ".rda", sep="")))
 	} else {
 		load(file.path(outdir, paste("env_chr", CHR, ".rda", sep="")))
@@ -165,8 +167,9 @@ that all of the assay data is bound to the meta-data.
 
 <<oligoSnpSet>>=
 require(oligoClasses)
-data(snpProbes, package="genomewidesnp6Crlmm")
-data(cnProbes, package="genomewidesnp6Crlmm")
+path <- system.file("extdata", package="genomewidesnp6Crlmm")
+load(file.path(path, "snpProbes.rda"))
+load(file.path(path, "cnProbes.rda"))
 position <- snpProbes[match(env[["snps"]], rownames(snpProbes)), "position"]
 position.np <- cnProbes[match(rownames(env[["NP"]]), rownames(cnProbes)), "position"]
 CA <- env[["CA"]]
@@ -220,7 +223,7 @@ if(!exists("env")){
 			computeCopynumber(chrom=CHR,
 					  A=A,
 					  B=B,
-					  calls=calls,
+					  calls=genotypes,
 					  conf=conf,
 					  NP=NP,
 					  plate=plate,
@@ -332,8 +335,8 @@ i <- I[1]
 ##plate effects are small
 log2(phiA[i, ])
 log2(phiB[i, ])
-plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
-points(log2(A[i, J]), log2(B[i, J]), col="black", pch=as.character(calls[i, J]))
+plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(genotypes[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
+points(log2(A[i, J]), log2(B[i, J]), col="black", pch=as.character(genotypes[i, J]))
 for(CT in 2){
 	if(CT == 2) ellipse.col <- "black" ##else ellipse.col <- "purple"
 	for(CA in 0:CT){
@@ -419,9 +422,9 @@ for(j in seq(along=index)){
 	J1 <- grep(plate[plate1[j]], plate) ##sample indices for this plate
 	J2 <- grep(plate[plate2[j]], plate) ##sample indices for this plate
 	ylim <- c(6.5,13)
-	plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(calls[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
-	points(log2(A[i, J1]), log2(B[i, J1]), col="brown", pch=as.character(calls[i, J1]))
-	points(log2(A[i, J2]), log2(B[i, J2]), col="blue", pch=as.character(calls[i, J2]))
+	plot(log2(A[i, ]), log2(B[i, ]), pch=as.character(genotypes[i, ]), col="grey60", cex=0.9, ylim=ylim, xlim=ylim, xlab="A", ylab="B")
+	points(log2(A[i, J1]), log2(B[i, J1]), col="brown", pch=as.character(genotypes[i, J1]))
+	points(log2(A[i, J2]), log2(B[i, J2]), col="blue", pch=as.character(genotypes[i, J2]))
 	CT <- 2
 	P <- c(plate1[j], plate2[j])
 	for(p in seq(along=P)){
@@ -459,11 +462,6 @@ for(i in seq(along=index)){
 }
 @ 
 
-%\begin{figure}
-%  \includegraphics[width=0.9\textwidth]{copynumber-plateEffect}
-%  \caption{The prediction regions for copy number 2 shift when there
-%    is a large plate effect.}
-%\end{figure}
 
 \section{Session information}
 <<>>=

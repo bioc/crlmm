@@ -6,12 +6,12 @@
   to a HapMap reference distribution.
 }
 \usage{
-cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
+cnrma(filenames, cdfName="genomewidesnp6", sns, seed = 1, verbose=FALSE)
 }
 \arguments{
   \item{filenames}{filenames with complete path}
+  \item{cdfName}{Only 'genomewidesnp6' allowed}
   \item{sns}{the sample names. If missing, the basename of the filenames is used.}
-  \item{cdfName}{Should be 'genomewidesnp6Crlmm'}
   \item{seed}{seed for sampling the intensities to calculate skewness}
   \item{verbose}{logical}
 }
@@ -22,13 +22,11 @@ cnrma(filenames, sns, cdfName, seed = 1, verbose=FALSE)
 \author{Rob Scharpf}
 \note{Not tested}
 \examples{
-	\dontrun{
-		library(genomewidesnp6Crlmm)
-		library(hapmapsnp6)
-		path <- system.file("celFiles", package="hapmapsnp6")
-		celFiles <- list.celfiles(path, full.names=TRUE)
-		cnrmaResult <- cnrma(celFiles)
-	}
+	library(genomewidesnp6Crlmm)
+	library(hapmapsnp6)
+	path <- system.file("celFiles", package="hapmapsnp6")
+	celFiles <- list.celfiles(path, full.names=TRUE)
+	cnrmaResult <- cnrma(celFiles, cdfName="genomewidesnp6")
 }
 \keyword{robust}
 

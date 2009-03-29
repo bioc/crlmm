@@ -13,7 +13,6 @@ computeCopynumber(chrom, A, B, calls, conf, NP, plate, MIN.OBS=1,
 envir, P, DF.PRIOR = 50, CONF.THR = 0.99, bias.adj=FALSE,
 priorProb, gender=NULL, SNR, SNRmin, seed=123, verbose=TRUE, ...)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{chrom}{Chromosome (an integer).  Use 23 for X and 24 for Y.}
   \item{A}{The A allele intensities from \code{snprma}}
@@ -52,22 +51,58 @@ priorProb, gender=NULL, SNR, SNRmin, seed=123, verbose=TRUE, ...)
 
 \details{
   
-  This function essentially transforms intensities from the raw scale to
-  a copy number scale.  We assume that the median within-SNP intensity
-  across samples is 2.  We make no assumption about the chromosomal copy
-  number. This function is mostly useful for detecting rare variants
-  (e.g., variants that would not affect the SNP-specific quantile-based
-  estimators of location and scale).  A correction for more common
-  variants is coming, as well as improved estimates of the uncertainty.
+  This function transforms the intensities to a copy number scale.  We
+  assume that the median within-SNP intensity across samples is 2.  We
+  make no assumption about the chromosomal copy number. This function is
+  useful for detecting rare variants (e.g., variants that would not
+  affect the SNP-specific quantile-based estimators of location and
+  scale).  A correction for more common variants is coming, as well as
+  improved estimates of the uncertainty.
   
 }
 
 \value{
 
-  For now, nothing is returned. All objects created by this function are
-  stored in the environment passed to this function.  See the copynumber
-  vignette for details on accessing these objects.
-  
+All objects created by this function are stored in the environment
+  passed to this function.  In addition, each of the elements are
+  specific to the chromosome(s) specified by the argument \code{chrom}.
+  For instance the element \code{A} is the matrix of quantile-normalized
+  intensities for the A-allele on chromosome(s) \code{chrom}.  The
+  element of this environment are as follows
+
+  \item{A}{Matrix of quantile-normalized intensities for the A-allele}
+  \item{B}{Matrix of quantile-normalized intensities for the A-allele}
+  \item{CA}{Copy number estimate for the A-allele (x 100)} 
+  \item{CB}{Copy number estimate for the B-allele (x 100)}
+  \item{calls}{CRLMM genotype calls (AA=1, AB=2, BB=3)}
+  \item{chrom}{Integer(s) indicating the chromosome(s)} 
+  \item{cnvs}{Names of the nonpolymorphic probes.  These are the
+  rownames of \code{NP} and \code{CT}.}
+  \item{conf}{CRLMM confidence scores for the genotypes: 'round(-1000*log2(1-p))'}
+  \item{corr}{Correlation of the A and B alleles for genotypes AB}
+  \item{corrA.BB}{Correlation of A and B alleles for genotypes BB}
+  \item{corrB.AA}{Correlation of A and B alleles for genotypes AA}
+  \item{CT}{Copy number estimates for nonpolymorphic probe.  See
+  \code{cnvs} for the rownames.}
+  \item{CT.sds}{Standard deviation estimates for \code{CT}}
+  \item{npflags}{Flags for the nonpolymorphic probes.}
+  \item{Ns}{The number of observations for each genotype/plate}
+  \item{nuA}{Background/cross-hyb for the A allele (plate- and locus-specific)}
+  \item{nuB}{Background/cross-hyb for the B allele (plate- and locus-specific)}
+  \item{nuT}{Background for the nonpolymorphic probes (plate- and locus-specific)}
+  \item{phiA}{Slope for the A allele (plate- and locus-specific)}
+  \item{phiB}{Slope for the B allele (plate- and locus-specific)}
+  \item{phiT}{Slope for the nonpolymorphic probes (plate- and locus-specific)}
+  \item{plate}{Factor indicating batch (same length as number of cel files)}
+  \item{sig2A}{Variance estimate for the A-allele signal (plate- and locus-specific)}
+  \item{sig2B}{Variance estimate for the B-allele signal (plate- and locus-specific)}
+  \item{sig2T}{Variance estimate for the nonpolymorphic signal (plate- and locus-specific)}
+  \item{snpflags}{Flags for polymorphic probes}
+  \item{snps}{Rownames for \code{A}, \code{B}, \code{CA}, \code{CB}, ...}
+  \item{sns}{ Sample names -- the column names for \code{A}, \code{B}, ...}
+  \item{steps}{Steps completed. For internal use.}
+  \item{tau2A}{Variance estimate for the B-allele background/cross-hyb (plate- and locus-specific)}
+  \item{tau2B}{Variance estimate for the B-allele background/cross-hyb (plate- and locus-specific)}
 }
 \references{Nothing yet.}
 \author{Rob Scharpf}

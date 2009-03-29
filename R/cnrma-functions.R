@@ -28,6 +28,7 @@ generateIXTX <- function(x, nrow=3) {
 	XTX <- crossprod(X)
 	solve(XTX)
 }
+
 nuphiAllele <- function(p, allele, Ystar, W, envir){
 	Ns <- envir[["Ns"]]
 	CHR <- envir[["chrom"]]
@@ -120,7 +121,8 @@ celDates <- function(celfiles){
 	return(celdts)
 }
 
-cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
+cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALSE){
+	if(cdfName != "genomewidesnp6") stop("Only genomewidesnp6 supported at this time")
 	## BC: 03/14/09
 	## getting pkgname from cdfName, in the future this might be useful
 	## as the method might be implemented for other platforms
@@ -131,7 +133,6 @@ cnrma <- function(filenames, sns, cdfName, seed=1, verbose=FALSE){
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
 ##	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
 	fid <- getVarInEnv("npProbesFid")
-	gc()
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
 	SKW <- vector("numeric", length(filenames))
@@ -378,7 +379,7 @@ computeCopynumber <- function(chrom,
 				    envir=envir)
 		}
 		steps[3] <- TRUE
-		envir[["snp-cn"]] <- steps						
+		envir[["steps"]] <- steps						
 	}
 	if(!steps[4]){
 		message("\nCopy number for nonpolymorphic probes...")	
@@ -389,7 +390,7 @@ computeCopynumber <- function(chrom,
 				       envir=envir)
 		}
 		steps[4] <- TRUE
-		envir[["np-cn"]] <- steps
+		envir[["step"]] <- steps
 	}
 }
 
@@ -1053,14 +1054,99 @@ biasAdj <- function(plateIndex, envir, priorProb){
 }
 
 
+posteriorNonpolymorphic <- function(plateIndex, envir, priorProb, cnStates=0:6){
+	p <- plateIndex
+	CHR <- envir[["chrom"]]
+	if(missing(priorProb)) priorProb <- rep(1/length(cnStates), length(cnStates)) ##uniform	
+	plate <- envir[["plate"]]
+	uplate <- envir[["plate"]]
+	NP <- envir[["NP"]][, plate==uplate[p]]
+	nuT <- envir[["nuT"]][, p]
+	phiT <- envir[["phiT"]][, p]
+	sig2T <- envir[["sig2T"]][, p]
+	##Assuming background variance for np probes is the same on the log-scale
+	emit <- array(NA, dim=c(nrow(NP), ncol(NP), length(cnStates)))##SNPs x sample x 'truth'
+	lT <- log2(NP)
+	sds <- sqrt(sig2T)
+	counter <- 1##state counter	
+	for(CT in cnStates){
+		cat(".")
+		if(CHR == 23) browser()
+		means <- suppressWarnings(log2(nuT + CT*phiT))
+		emit[, , counter] <- dnorm(lT, mean=means, sd=sds)
+		counter <- counter+1
+	}
+	for(j in seq(along=cnStates)){
+		emit[, , j] <- priorProb[j]*emit[, , j]
+	}
+	homDel <- emit[, , 1]
+	hemDel <- emit[, , 2]
+	norm <- emit[, , 3]
+	amp <- emit[, , 4]
+	amp4 <- emit[, , 5]
+	amp5 <- emit[, , 6]
+	amp6 <- emit[, , 7]
+	total <- homDel+hemDel+norm+amp+amp4+amp5+amp6
+	weights <- array(NA, dim=c(nrow(NP), ncol(NP), length(cnStates)))
+	weights[, , 1] <- homDel/total
+	weights[, , 2] <- hemDel/total
+	weights[, , 3] <- norm/total
+	weights[, , 4] <- amp/total
+	weights[, , 5] <- amp4/total
+	weights[, , 6] <- amp5/total
+	weights[, , 7] <- amp6/total
+	##posterior mode
+	posteriorMode <- apply(weights, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	posteriorMode <- posteriorMode-1
+	##sns <- envir[["sns"]]
+	##colnames(posteriorMode) <- sns
+	##envir[["np.posteriorMode"]] <- posteriorMode
+	##envir[["np.weights"]] <- weights
+	posteriorMeans <- 0*homDel/total + 1*hemDel/total + 2*norm/total + 3*amp/total + 4*amp4/total + 5*amp5/total + 6*amp6/total
+	##colnames(posteriorMeans) <- sns
+	##envir[["np.posteriorMeans"]] <- posteriorMeans
+	return(posteriorMode)
+}
+
+posteriorWrapper <- function(envir){
+	snp.PM <- matrix(NA, length(envir[["snps"]]), length(envir[["sns"]]))
+	np.PM <- matrix(NA, length(envir[["cnvs"]]), length(envir[["sns"]]))
+	plate <- envir[["plate"]]
+	uplate <- envir[["uplate"]]
+	for(p in seq(along=uplate)){
+		tmp <- expectedC(plateIndex=p, envir=envir)
+		snp.PM[, plate==uplate[p]] <- tmp
+		##snp.pm <- env[["posteriorMode"]]
+		##trace(posteriorNonpolymorphic, browser)
+		tmp <- posteriorNonpolymorphic(plateIndex=p, envir=envir)
+		np.PM[, plate==uplate[p]] <- tmp##env[["np.posteriorMode"]]
+		##pMode <- rbind(snp.pm, np.pm)
+		##rownames(pMode) <- c(env[["snps"]], env[["cnvs"]])
+		##dn <- dimnames(pMode)
+		##pMode <- matrix(as.integer(pMode), nrow(pMode), ncol(pMode))
+	}
+	PM <- rbind(snp.PM, np.PM)
+	PM <- matrix(as.integer(PM), nrow(PM), ncol(PM))
+	dns <- list(c(envir[["snps"]], envir[["cnvs"]]), envir[["sns"]])
+	dimnames(PM) <- dns
+	return(PM)
+}
+
+
+
 
 
 ##for polymorphic probes
-expectedC <- function(A, B, plateIndex, envir, priorProb){
+expectedC <- function(plateIndex, envir, priorProb, cnStates=0:6){
 	p <- plateIndex
 	CHR <- envir[["chrom"]]
-	if(missing(priorProb)) priorProb <- rep(1/4, 6) ##uniform	
+	if(missing(priorProb)) priorProb <- rep(1/length(cnStates), length(cnStates)) ##uniform	
 	plate <- envir[["plate"]]
+	uplate <- envir[["uplate"]]
+	A <- envir[["A"]]
+	B <- envir[["B"]]
+	A <- A[, plate==uplate[p]]
+	B <- B[, plate==uplate[p]]
 	calls <- envir[["calls"]]	
 	calls <- calls[, plate==unique(plate)[p]]
 	probA <- sqrt(rowMeans(calls == 1, na.rm=TRUE))
@@ -1084,7 +1170,7 @@ expectedC <- function(A, B, plateIndex, envir, priorProb){
 	lB <- log2(B)	
 	X <- cbind(lA, lB)	
 	counter <- 1##state counter
-	for(CT in 0:6){
+	for(CT in cnStates){
 		cat(".")
 		for(CA in 0:CT){
 			CB <- CT-CA
@@ -1122,9 +1208,8 @@ expectedC <- function(A, B, plateIndex, envir, priorProb){
 	norm <- priorProb[3]*emit[, , 4:6]
 	amp <- priorProb[4]*emit[, , 7:10]
 	amp4 <- priorProb[5]*emit[, , 11:15]
-	amp5 <- priorProb[5]*emit[, , 16:21]
-	amp6 <- priorProb[5]*emit[, , 22:28]	
-	
+	amp5 <- priorProb[6]*emit[, , 16:21]
+	amp6 <- priorProb[7]*emit[, , 22:28]	
 	##sum over the different combinations within each copy number state
 	hemDel <- apply(hemDel, c(1,2), sum)
 	norm <- apply(norm, c(1, 2), sum)
@@ -1144,15 +1229,21 @@ expectedC <- function(A, B, plateIndex, envir, priorProb){
 	##posterior mode
 	posteriorMode <- apply(weights, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
 	posteriorMode <- posteriorMode-1
-	envir[["posteriorMode"]] <- posteriorMode
+	##This is for one plate.  Need to instantiate a much bigger
+	##object in the environment
+	
+	##envir[["posteriorMode"]] <- posteriorMode
 	##weights <- list(homDel/total, hemDel/total, norm/total, amp/total, amp4/total, amp5/total, amp6/total)
-	##names(weights) <- c(0:6)
-	envir[["weights"]] <- weights
+	##names(weights) <- c(cnStates)
+	##envir[["weights"]] <- weights
 	posteriorMeans <- 0*homDel/total + 1*hemDel/total + 2*norm/total + 3*amp/total + 4*amp4/total + 5*amp5/total + 6*amp6/total
-	sns <- envir[["sns"]]
-	colnames(posteriorMeans) <- sns
-	envir[["posteriorMeans"]] <- posteriorMeans
+	##sns <- envir[["sns"]]
+	##colnames(posteriorMeans) <- sns
+	##envir[["posteriorMeans"]] <- posteriorMeans
+	return(posteriorMode)
 }
+
+
 
 
 
