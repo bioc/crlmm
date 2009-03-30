@@ -631,7 +631,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5, fitMixture=TRUE, eps=
 crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   row.names=TRUE, col.names=TRUE,
                   probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  seed=1, # save.it=FALSE, load.it=FALSE, intensityFile,
+                  seed=1, save.it=FALSE, load.it=FALSE, intensityFile,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7) {
@@ -641,34 +641,34 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
     else
       stop("Both RG and XY specified - please use one or the other")
   }
-#  if ((load.it | save.it) & missing(intensityFile))
-#    stop("'intensityFile' is missing, and you chose either load.it or save.it")
+  if ((load.it | save.it) & missing(intensityFile))
+    stop("'intensityFile' is missing, and you chose either load.it or save.it")
   if (missing(sns)) sns <- sampleNames(XY) #basename(filenames)
-#  if (!missing(intensityFile))
-#    if (load.it & !file.exists(intensityFile)){
-#      load.it <- FALSE
-#      message("File ", intensityFile, " does not exist.")
-#      message("Not loading it, but running SNPRMA from scratch.")
-# }
-#  if (!load.it){
+  if (!missing(intensityFile))
+    if (load.it & !file.exists(intensityFile)){
+      load.it <- FALSE
+      message("File ", intensityFile, " does not exist.")
+      message("Not loading it, but running SNPRMA from scratch.")
+  }
+  if (!load.it){
 #    res <- snprma(filenames, fitMixture=TRUE,
 #                    mixtureSampleSize=mixtureSampleSize, verbose=verbose,
 #                    eps=eps, cdfName=cdfName, sns=sns)
-  res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
+    res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
-#    if(save.it){
-#      t0 <- proc.time()
-#      save(res, file=intensityFile)
-#      t0 <- proc.time()-t0
-#      if (verbose) message("Used ", t0[3], " seconds to save ", intensityFile, ".")
-#    }
-#      }else{
-#            if (verbose) message("Loading ", intensityFile, ".")
-#                obj <- load(intensityFile)
-#                if (verbose) message("Done.")
-#                if (obj != "res")
-#                        stop("Object in ", intensityFile, " seems to be invalid.")
-#          }
+    if(save.it){
+      t0 <- proc.time()
+      save(res, file=intensityFile)
+      t0 <- proc.time()-t0
+      if(verbose) message("Used ", t0[3], " seconds to save ", intensityFile, ".")
+    }
+  }else{
+      if(verbose) message("Loading ", intensityFile, ".")
+        obj <- load(intensityFile)
+        if(verbose) message("Done.")
+        if(obj != "res")
+         stop("Object in ", intensityFile, " seems to be invalid.")
+  }
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
 
@@ -680,13 +680,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   returnParams=returnParams, badSNP=badSNP,
                   verbose=verbose)
   
-  res2[["A"]] <- res[["A"]]  # added for copy number analysis
-  res2[["B"]] <- res[["B"]]  # added for copy number analysis
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
-  res2[["zero"]] <- res[["zero"]]
-  rm(res)
-  gc()
-  # MR: FIXME - for consistency with crlmm, need to save results in a 'SnpSet' object
-  return(res2)
+  return(res2) # return(list2SnpSet(res2, returnParams=returnParams))
 }
