@@ -1,8 +1,8 @@
 Package: crlmm
 Type: Package
 Title: Genotype Calling (CRLMM) and Copy Number Analysis tool for SNP 5.0 and 6.0 arrays.
-Version: 1.0.65
-Date: 2008-12-28
+Version: 1.0.66
+Date: 2008-12-30
 Author: Rafael A Irizarry, Benilton S Carvalho <bcarvalh@jhsph.edu>, Robert Scharpf <rscharpf@jhsph.edu>
 Maintainer: Benilton S Carvalho <bcarvalh@jhsph.edu>, Robert Scharpf <rscharpf@jhsph.edu>
 Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays, as well as a copy number tool specific to 6.0.
@@ -13,6 +13,7 @@ Collate: AllClasses.R
          methods-SnpSet.R
 	 cnrma-functions.R
          crlmm-functions.R
+         crlmm-illumina.R
          snprma-functions.R
          utils.R
          zzz.R

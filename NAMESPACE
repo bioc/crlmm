@@ -7,5 +7,5 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd)
 importFrom(genefilter, rowSds)
 importFrom(mvtnorm, dmvnorm)
 
-export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates")
+export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates", "crlmmIllumina", "readIdatFiles")
 exportMethods("calls", "confs")

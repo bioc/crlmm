@@ -72,3 +72,12 @@ BioC data packages
 * cnrma function requires the cdfName
 
 * update man files for cnrma and computeCopynumber
+
+2009-03-30 Matt Ritchie - committed version 1.0.66
+
+* added functions to read in idat files, pre-process and genotype 
+data from Illumina SNP arrays (functions named readIdatFiles() 
+and crlmmIllumina() in crlmm-illumina.R)
+
+* added man pages for these functions
+
