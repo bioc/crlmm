@@ -50,8 +50,6 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
 \value{
-  \item{A}{normalized A allele intensity}
-  \item{B}{normalized B allele intensity}
   \item{calls}{Genotype calls (1 - AA, 2 - AB, 3 - BB)}
   \item{confs}{Confidence scores 'round(-1000*log2(1-p))'}
   \item{SNPQC}{SNP Quality Scores}
