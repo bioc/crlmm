@@ -16,6 +16,10 @@ R. Scharpf (after next release)
   file a SnpSet object for each chromosome.  This would help the copy
   number part that runs by chromosome
 
+B Carvalho
+
+- crlmm should return results in CHP files
+
 #####################################
 ### FOR CNRMA
 #####################################
