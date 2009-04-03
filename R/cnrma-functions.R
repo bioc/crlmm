@@ -953,7 +953,6 @@ biasAdj <- function(plateIndex, envir, priorProb){
 	plate <- envir[["plate"]]
 	if(missing(priorProb)) priorProb <- rep(1/4, 4) ##uniform
 	emit <- array(NA, dim=c(nrow(A), ncol(A), 10))##SNPs x sample x 'truth'	
-
 	lA <- log2(A)
 	lB <- log2(B)	
 	X <- cbind(lA, lB)
@@ -995,7 +994,11 @@ biasAdj <- function(plateIndex, envir, priorProb){
 	hemDel <- apply(hemDel, c(1,2), sum)
 	norm <- apply(norm, c(1, 2), sum)
 	amp <- apply(amp, c(1,2), sum)
-
+	total <- hemDel + norm + amp
+	hemDel <- hemDel/total
+	norm <- norm/total
+	amp <- amp/total
+	envir[["posteriorProb"]] <- list(hemDel=hemDel, norm=norm, amp=amp) 
 	tmp <- array(NA, dim=c(nrow(A), ncol(A), 4))
 	tmp[, , 1] <- homDel
 	tmp[, , 2] <- hemDel

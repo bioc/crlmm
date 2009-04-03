@@ -6,6 +6,15 @@
 - Allele plots
 - M v S plots
 
+R. Scharpf (after next release)
+
+- crlmm should return a SnpSet object with elements A, B, calls, and
+  confs in the assayData when save.it=TRUE.  These objects can be very
+  big, so...  
+
+- crlmm function should have an option to return nothing and write to
+  file a SnpSet object for each chromosome.  This would help the copy
+  number part that runs by chromosome
 
 #####################################
 ### FOR CNRMA

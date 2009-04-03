@@ -84,3 +84,7 @@ and crlmmIllumina() in crlmm-illumina.R)
 2009-04-01 Matt Ritchie - committed version 1.0.67
 
 * added import statement for normalize.quantiles
+
+2009-04-01 R.Scharpf - committed version 1.0.69
+
+* added a few items to the crlmm TODOs
