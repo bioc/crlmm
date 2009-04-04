@@ -333,7 +333,7 @@ computeCopynumber <- function(chrom,
 		envir[["steps"]] <- rep(FALSE, 4)
 	}
 	##will be updating these objects
-	message("Sufficient statistics")
+	if(verbose) message("Sufficient statistics")
 	if(missing(P)) P <- seq(along=uplate)
 	steps <- envir[["steps"]]
 	if(!steps[1]){
@@ -664,12 +664,14 @@ oneBatch <- function(plateIndex,
 	}
 	nobsA <- Ns[, p, "A"] > 10
 	nobsB <- Ns[, p, "B"] > 10
+	notMissing <- !(is.na(muA[, p, "A"]) | is.na(muA[, p, "B"]) | is.na(muB[, p, "A"]) | is.na(muB[, p, "B"]))
 	complete <- list()
-	complete[[1]] <- which(correct.orderA & correct.orderB & nobsA) ##be selective here
-	complete[[2]] <- which(correct.orderA & correct.orderB & nobsB) ##be selective here	
+	complete[[1]] <- which(correct.orderA & correct.orderB & nobsA & notMissing) ##be selective here
+	complete[[2]] <- which(correct.orderA & correct.orderB & nobsB & notMissing) ##be selective here	
 	size <- min(5000, length(complete[[1]]))
 	if(size == 5000) complete <- lapply(complete, function(x) sample(x, size))
 	if(CHR == 23){
+		index <- list()
 		index[[1]] <- which(Ns[, p, "A"] == 0)
 		index[[2]] <- which(Ns[, p, "B"] == 0)
 		cols <- 2:1
@@ -1310,3 +1312,4 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 	normalNP[normalNP == FALSE] <- NA
 	envir[["normalNP"]] <- normalNP
 }
+
