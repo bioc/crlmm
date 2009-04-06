@@ -12,7 +12,8 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
               arrayInfoColNames=list(barcode="SentrixBarcode_A",
                                      position="SentrixPosition_A"),
               highDensity=FALSE, sep="_",
-              fileExt=list(green="Grn.idat", red="Red.idat"))
+              fileExt=list(green="Grn.idat", red="Red.idat"),
+              saveDate=FALSE)
 }
 
 \arguments{
@@ -40,6 +41,8 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     names.}
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
+  \item{saveDate}{logical.  Should the dates from each .idat be saved
+    with sample information?}
 }
 
 \details{

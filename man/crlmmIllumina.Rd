@@ -50,16 +50,22 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
 \value{
+  A \code{SnpSet} object which contains
   \item{calls}{Genotype calls (1 - AA, 2 - AB, 3 - BB)}
-  \item{confs}{Confidence scores 'round(-1000*log2(1-p))'}
+  \item{callProbability}{confidence scores 'round(-1000*log2(1-p))'}
+  in the \code{assayData} slot and
   \item{SNPQC}{SNP Quality Scores}
-  \item{batchQC}{Batch Quality Score}
-  \item{params}{Recalibrated parameters}
+  \item{batchQC}{Batch Quality Scores}
+  along with center and scale parameters when \code{returnParams=TRUE}
+  in the \code{featureData} slot.
 }
 
 \details{
   Note: The user should specify either the \code{RG} or \code{XY}
-  intensities, not both.
+  intensities, not both.  Alternatively if \code{crlmmIllumina} has been
+  run already with \code{save.it=TRUE}, the preprocessed data can be
+  loaded from file by specifying \code{load.it=TRUE} and
+  \code{intensityFile} (\code{RG} or \code{XY} are not needed in this case).
 }
 
 \references{
