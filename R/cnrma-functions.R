@@ -128,17 +128,11 @@ celDates <- function(celfiles){
 }
 
 cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALSE){
-	if(cdfName != "genomewidesnp6") stop("Only genomewidesnp6 supported at this time")
-	## BC: 03/14/09
-	## getting pkgname from cdfName, in the future this might be useful
-	## as the method might be implemented for other platforms
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
 	if (missing(sns)) sns <- basename(filenames)
-	## Loading data in .crlmmPkgEnv and extracting from there
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
-##	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
-	fid <- getVarInEnv("fid")
+	fid <- getVarInEnv("npProbesFid")
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
 	SKW <- vector("numeric", length(filenames))
@@ -148,9 +142,7 @@ cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALS
 		message("Processing ", length(filenames), " files.")
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
 	}
-	##load reference distribution obtained from hapmap
         loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
-##	data(list="1m_reference_cn", package="genomewidesnp6Crlmm", envir=.crlmmPkgEnv)
 	reference <- getVarInEnv("reference")
 	for(i in seq(along=filenames)){
 		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])

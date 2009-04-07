@@ -124,4 +124,10 @@ is decoded and scanned
 
 * fixed bug in cnrma
 
+2009-04-07 Rob Scharpf - committed versioni 1.0.77
+
+* cnrma accepts other cdfNames
+
+* fixed bug in cnrma
+
 
