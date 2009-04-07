@@ -48,9 +48,14 @@ nuphiAllele <- function(p, allele, Ystar, W, envir){
 	NOHET <- mean(Ns[, p, "AB"], na.rm=TRUE) < 0.05
 	if(missing(allele)) stop("must specify allele")
 	if(CHR == 23){
-		gender <- envir[["gender"]]
-		if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
-		if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))			
+		##Design matrix for X chromosome depends on whether there was a sufficient number of AB genotypes
+		if(length(grep("AB", colnames(W))) > 0){
+			if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
+			if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))
+		} else{
+			if(allele == "A") X <- cbind(1, c(1, 0, 2, 0), c(0, 1, 0, 2))
+			if(allele == "B") X <- cbind(1, c(0, 1, 0, 2), c(1, 0, 2, 0))
+		}
 	} else {##autosome
 		if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
 		if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
@@ -63,6 +68,7 @@ nuphiAllele <- function(p, allele, Ystar, W, envir){
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
 	Xstar <- apply(W, 1, generateX, X)
 	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
+	##as.numeric(diag(W[1, ]) %*% X)
 	if(CHR == 23){
 		betahat <- matrix(NA, 3, nrow(Ystar))
 		ses <- matrix(NA, 3, nrow(Ystar))		
@@ -457,10 +463,11 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 	##calculate R2
 	if(CHR == 23){
 		cnvs <- envir[["cnvs"]]
-                loader("cnProbes", pkgname, .crlmmPkgEnv)
+                loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
                 cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
 ##		data(cnProbes, package="genomewidesnp6Crlmm")
 		cnProbes <- cnProbes[match(cnvs, rownames(cnProbes)), ]
+		##par:pseudo-autosomal regions
 		par <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
 		gender <- envir[["gender"]]
 		mu1 <- rowMedians(NP[, gender=="male"], na.rm=TRUE)
@@ -547,7 +554,6 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 		GT.A[[j]] <- GT*A
 		GT.B[[j]] <- GT*B
 		index[[j]] <- which(Ns[, p, j+2] > 0)
-		
 		muA[, p, j+2] <- rowMedians(GT.A[[j]], na.rm=TRUE)
 		muB[, p, j+2] <- rowMedians(GT.B[[j]], na.rm=TRUE)
 		vA[, p, j+2] <- rowMAD(GT.A[[j]], na.rm=TRUE)
@@ -558,6 +564,8 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 		DF[DF < 1] <- 1
 		v0A <- median(vA[, p, j+2], na.rm=TRUE)
 		v0B <- median(vB[, p, j+2], na.rm=TRUE)
+		if(v0A == 0) v0A <- NA
+		if(v0B == 0) v0B <- NA
 		vA[, p, j+2] <- (vA[, p, j+2]*DF + v0A*DF.PRIOR)/(DF.PRIOR+DF)
 		vA[is.na(vA[, p, j+2]), p, j+2] <- v0A
 		vB[, p, j+2] <- (vB[, p, j+2]*DF + v0B*DF.PRIOR)/(DF.PRIOR+DF)
@@ -844,25 +852,34 @@ coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 		vB <- vB[, p, 3:5]
 		Np <- Ns[, p, 3:5]
 	} else {
-		IA <- muA[, p, ]
-		IB <- muB[, p, ]
-		vA <- vA[, p, ]
-		vB <- vB[, p, ]
-		Np <- Ns[, p, ]
+		NOHET <- is.na(median(vA[, p, "AB"], na.rm=TRUE))
+		if(NOHET){
+			IA <- muA[, p, -4]
+			IB <- muB[, p, -4]
+			vA <- vA[, p, -4]
+			vB <- vB[, p, -4]
+			Np <- Ns[, p, -4]
+		} else{
+			IA <- muA[, p, ]
+			IB <- muB[, p, ]
+			vA <- vA[, p, ]
+			vB <- vB[, p, ]
+			Np <- Ns[, p, ]
+		}
 	}
-	NOHET <- mean(Ns[, p, "AB"], na.rm=TRUE) < 0.05
 	##---------------------------------------------------------------------------
 	## Estimate nu and phi
 	##---------------------------------------------------------------------------
-	if(NOHET){
-		##only homozygous
-		Np <- Np[, -2]
-		Np[Np < 1] <- 1
-		IA <- IA[, c(1, 3)]
-		IB <- IB[, c(1, 3)]		
-		vA <- vA[, c(3,5)]
-		vB <- vB[, c(3,5)]
-	}else 	Np[Np < 1] <- 1
+##	if(NOHET){
+##		##only homozygous
+##		Np <- Np[, -2]
+##		Np[Np < 1] <- 1
+##		IA <- IA[, c(1, 3)]
+##		IB <- IB[, c(1, 3)]		
+##		vA <- vA[, c(3,5)]
+##		vB <- vB[, c(3,5)]
+##	}else 	Np[Np < 1] <- 1
+	Np[Np < 1] <- 1
 	vA2 <- vA^2/Np
 	vB2 <- vB^2/Np
 	wA <- sqrt(1/vA2)

@@ -115,3 +115,9 @@ is decoded and scanned
 * Added documentation for snprma.
 
 * Removed 'svn:executable' property of readIdatFiles.Rd
+
+2009-04-07 Rob Scharpf - committed versioni 1.0.75
+
+* modifications to chromosome X copy number estimation
+
+
