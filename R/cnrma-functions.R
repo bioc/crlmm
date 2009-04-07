@@ -190,7 +190,8 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 
 instantiateObjects <- function(calls, NP, plate, envir, chrom, A, B,
 			       gender, SNRmin=5, SNR,
-                               pkgname="genomewidesnp6Crlmm"){
+                               pkgname){
+	pkgname <- paste(pkgname, "Crlmm", sep="")
 	envir[["chrom"]] <- chrom
 	CHR_INDEX <- paste(chrom, "index", sep="")
         fname <- paste(CHR_INDEX, ".rda", sep="")
@@ -312,13 +313,17 @@ computeCopynumber <- function(chrom,
 			      priorProb,
 			      gender=NULL,
 			      SNR,
-			      SNRmin=5, seed=123, verbose=TRUE, ...){
+			      SNRmin=5, seed=123,
+			      cdfName="genomewidesnp6",
+			      verbose=TRUE, ...){
+	require(paste(cdfName, "Crlmm", sep=""), character.only=TRUE) || stop(paste("cdf ", cdfName, "Crlmm", " not available.", sep=""))
 	set.seed(seed)
 	if(missing(chrom)) stop("must specify chromosome")
 	if(length(ls(envir)) == 0) {
 		instantiateObjects(calls=calls, NP=NP, plate=plate,
 				   envir=envir, chrom=chrom, A=A, B=B,
-				   gender=gender, SNR=SNR, SNRmin=SNRmin)
+				   gender=gender, SNR=SNR, SNRmin=SNRmin,
+				   pkgname=cdfName)
 	}
 	plate <- envir[["plate"]]
 	uplate <- envir[["uplate"]]	

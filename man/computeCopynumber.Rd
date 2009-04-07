@@ -11,7 +11,8 @@
 \usage{
 computeCopynumber(chrom, A, B, calls, conf, NP, plate, MIN.OBS=1, 
 envir, P, DF.PRIOR = 50, CONF.THR = 0.99, bias.adj=FALSE,
-priorProb, gender=NULL, SNR, SNRmin, seed=123, verbose=TRUE, ...)
+priorProb, gender=NULL, SNR, SNRmin, seed=123, cdfName="genomewidesnp6",
+verbose=TRUE, ...)
 }
 \arguments{
   \item{chrom}{Chromosome (an integer).  Use 23 for X and 24 for Y.}
@@ -45,6 +46,7 @@ priorProb, gender=NULL, SNR, SNRmin, seed=123, verbose=TRUE, ...)
   \item{SNRmin}{The minimum value for the SNR -- we suggest 5. Samples
     with SNR below SNRmin are excluded.}
   \item{seed}{Seed used for random samples}
+  \item{cdfName}{Annotation package }
   \item{verbose}{Logical: verbose output}
   \item{\dots}{Currently ignored}
 }
