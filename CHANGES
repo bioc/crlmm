@@ -120,4 +120,8 @@ is decoded and scanned
 
 * modifications to chromosome X copy number estimation
 
+2009-04-07 Rob Scharpf - committed versioni 1.0.76
+
+* fixed bug in cnrma
+
 

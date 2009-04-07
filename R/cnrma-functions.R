@@ -138,7 +138,7 @@ cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALS
 	## Loading data in .crlmmPkgEnv and extracting from there
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
 ##	data("npProbesFid", package=pkgname, envir=.crlmmPkgEnv)
-	fid <- getVarInEnv("npProbesFid")
+	fid <- getVarInEnv("fid")
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
 	SKW <- vector("numeric", length(filenames))
@@ -531,7 +531,6 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 	uplate <- envir[["uplate"]]
 	normal <- envir[["normal"]][, plate==uplate[p]]
 	G <- calls; rm(calls); gc()	
-	if(is.null(normal)) normal <- matrix(TRUE, nrow(G), ncol(G))
 
 	highConf <- 1-exp(-conf/1000)
 	highConf <- highConf > CONF.THR
@@ -548,7 +547,9 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 	##--------------------------------------------------
 	GT.B <- GT.A <- list()
 	for(j in 1:3){
-		GT <- G==j & highConf & IX & normal
+		##GT <- G==j & highConf & IX & normal
+		GT <- G==j & highConf & IX
+		GT <- GT * normal
 		Ns[, p, j+2] <- rowSums(GT, na.rm=TRUE)		
 		GT[GT == FALSE] <- NA
 		GT.A[[j]] <- GT*A
@@ -633,8 +634,14 @@ oneBatch <- function(plateIndex,
 		biasAdj(plateIndex=p, envir=envir, priorProb=priorProb)
 		message("Recomputing location and scale parameters")		
 	}
-	withinGenotypeMoments(p=p, A=A, B=B, calls=calls, conf=conf, CONF.THR=CONF.THR,
-			      DF.PRIOR=DF.PRIOR, envir=envir)
+	withinGenotypeMoments(p=p,
+			      A=A,
+			      B=B,
+			      calls=calls,
+			      conf=conf,
+			      CONF.THR=CONF.THR,
+			      DF.PRIOR=DF.PRIOR,
+			      envir=envir)
 	GT.A <- envir[["GT.A"]]
 	GT.B <- envir[["GT.B"]]
 	index <- envir[["index"]]
@@ -953,7 +960,7 @@ polymorphic <- function(plateIndex, A, B, envir){
 
 
 
-biasAdj <- function(plateIndex, envir, priorProb){
+biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	CHR <- envir[["chrom"]]
 	if(CHR == 23){
 		phiAx <- envir[["phiAx"]]
@@ -1042,18 +1049,26 @@ biasAdj <- function(plateIndex, envir, priorProb){
 	}
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
 	propAlt <- rowMeans(tmp3)##prop normal
-	ii <- propAlt < 0.75
+	##ii <- propAlt < PROP
+	ii <- propAlt > 0.05
 	##only exclude observations from one tail, depending on
 	##whether more are up or down
 	if(CHR != 23){
-		moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3)
-		notUp <-  tmp2[ii & moreup, ] <= 3
-		notDown <- tmp2[ii & !moreup, ] >= 3
-		NORM <- matrix(NA, nrow(A), ncol(A))
-		NORM[ii & moreup, ] <- notUp
-		NORM[ii & !moreup, ] <- notDown
+		moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3) ##3 is normal
+		##notUp <-  tmp2[ii & moreup, ] <= 3
+		##notDown <- tmp2[ii & !moreup, ] >= 3
+		
+		##What if we just keep X% of the ones with the highest
+		##posterior probability for normal
+		prNorm <- tmp[, , 3]
+		rankNorm <- t(apply(prNorm, 1, order, decreasing=TRUE))
+		percentage <- round(0.75*ncol(prNorm),0)
+		NORM <- rankNorm <= percentage
+##		NORM <- matrix(NA, nrow(A), ncol(A))
+##		NORM[ii & moreup, ] <- notUp
+##		NORM[ii & !moreup, ] <- notDown
 		##Define NORM so that we can iterate this step
-		##NA's in the previous iteration (normal) will be propogated		
+		##NA's in the previous iteration (normal) will be propogated
 		normal <- NORM*normal
 	} else{
 		fem <- tmp2[, gender=="female"]
