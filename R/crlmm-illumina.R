@@ -53,9 +53,7 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
                          Position = rep(NA, narrays)) # this may also vary a bit
 
        dates = list(decode=rep(NA, narrays),
-                    scan=rep(NA, narrays),
-                    register=rep(NA, narrays),
-                    extract=rep(NA, narrays))
+                    scan=rep(NA, narrays))
 
        # read in the data
        for(i in seq(along=arrayNames)) {
@@ -90,8 +88,6 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 
          dates$decode[i] = G$RunInfo[1, 1]
          dates$scan[i] = G$RunInfo[2, 1]
-         dates$register[i] = G$RunInfo[3, 1]
-         dates$extract[i] = G$RunInfo[4, 1]
 
          if(i==1) {
            if(is.null(ids) && !is.null(G))
@@ -245,7 +241,7 @@ readIDAT <- function(idatFile){
   RunInfo <- matrix(NA, nRunInfoBlocks, 5)
   colnames(RunInfo) <- c("RunTime", "BlockType", "BlockPars", 
                          "BlockCode", "CodeVersion")
-  for(i1 in 1:nRunInfoBlocks){
+  for(i1 in 1:2) { #nRunInfoBlocks){  ## MR edit
     for(i2 in 1:5){
       nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
       RunInfo[i1,i2] <- readChar(tempCon, nChars)
