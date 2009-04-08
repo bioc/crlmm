@@ -130,4 +130,10 @@ is decoded and scanned
 
 * fixed bug in cnrma
 
+2009-04-07 Rob Scharpf - committed versioni 1.0.78
+
+* added conf as argument to instantiateObjects
+
+
+
 

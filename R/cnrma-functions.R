@@ -186,7 +186,7 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 	return(flags)
 }
 
-instantiateObjects <- function(calls, NP, plate, envir, chrom, A, B,
+instantiateObjects <- function(calls, conf, NP, plate, envir, chrom, A, B,
 			       gender, SNRmin=5, SNR,
                                pkgname){
 	pkgname <- paste(pkgname, "Crlmm", sep="")
@@ -318,7 +318,7 @@ computeCopynumber <- function(chrom,
 	set.seed(seed)
 	if(missing(chrom)) stop("must specify chromosome")
 	if(length(ls(envir)) == 0) {
-		instantiateObjects(calls=calls, NP=NP, plate=plate,
+		instantiateObjects(calls=calls, conf=conf, NP=NP, plate=plate,
 				   envir=envir, chrom=chrom, A=A, B=B,
 				   gender=gender, SNR=SNR, SNRmin=SNRmin,
 				   pkgname=cdfName)
