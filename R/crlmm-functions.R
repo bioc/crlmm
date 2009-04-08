@@ -100,7 +100,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                    keepIndex[which(gender[keepIndex]==2)], 
                    keepIndex[which(gender[keepIndex]==1)])
   
-  if(verbose) cat("Calling", NR, "SNPs for recalibration")
+  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
   fIndex <- which(gender==2)
@@ -185,7 +185,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   params[-2] <- newparams[-2]
   
   rm(newparams);gc(verbose=FALSE)  
-  if(verbose) cat("Calling", NR, "SNPs")
+  if(verbose) cat("Calling", NR, "SNPs... ")
   ## ###################
   ## ## MOVE TO C#######
   ImNull <- gtypeCallerR2(A, B, fIndex, mIndex, params[["centers"]],
@@ -426,7 +426,7 @@ crlmmGTTNoN <- function(A, B, SNR, mixtureParams, cdfName,
                    keepIndex[which(gender[keepIndex]==2)], 
                    keepIndex[which(gender[keepIndex]==1)])
   
-  if(verbose) cat("Calling", NR, "SNPs for recalibration")
+  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
   fIndex <- which(gender==2)
@@ -498,7 +498,7 @@ crlmmGTTNoN <- function(A, B, SNR, mixtureParams, cdfName,
   ## BC: must keep SD
   params[-2] <- newparams[-2]
   rm(newparams);gc(verbose=FALSE)  
-  if(verbose) cat("Calling", NR, "SNPs")
+  if(verbose) cat("Calling", NR, "SNPs... ")
   ## ###################
   ## ## MOVE TO C#######
   t0 <- proc.time()
@@ -592,7 +592,7 @@ crlmmGTNormalNoN <- function(A, B, SNR, mixtureParams, cdfName,
                    keepIndex[which(gender[keepIndex]==2)], 
                    keepIndex[which(gender[keepIndex]==1)])
   
-  if(verbose) cat("Calling", NR, "SNPs for recalibration")
+  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
   fIndex <- which(gender==2)
@@ -664,7 +664,7 @@ crlmmGTNormalNoN <- function(A, B, SNR, mixtureParams, cdfName,
   ## BC: must keep SD
   params[-2] <- newparams[-2]
   rm(newparams);gc(verbose=FALSE)  
-  if(verbose) cat("Calling", NR, "SNPs")
+  if(verbose) cat("Calling", NR, "SNPs... ")
   ## ###################
   ## ## MOVE TO C#######
   t0 <- proc.time()
@@ -773,7 +773,7 @@ crlmmGTnm <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                    keepIndex[which(gender[keepIndex]==2)], 
                    keepIndex[which(gender[keepIndex]==1)])
   
-  if(verbose) cat("Calling", NR, "SNPs for recalibration")
+  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
   fIndex <- which(gender==2)
@@ -858,7 +858,7 @@ crlmmGTnm <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   params[-2] <- newparams[-2]
   
   rm(newparams);gc(verbose=FALSE)  
-  if(verbose) cat("Calling", NR, "SNPs")
+  if(verbose) cat("Calling", NR, "SNPs... ")
   ## ###################
   ## ## MOVE TO C#######
   t0 <- proc.time()

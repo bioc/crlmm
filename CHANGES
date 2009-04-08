@@ -137,3 +137,9 @@ is decoded and scanned
 2009-04-08 Matt Ritchie - committed version 1.0.79
 
 * fixed bug in readIDAT and readIdatFiles from reading in RunInfo header information
+
+2009-04-07 B Carvalho - committed version 1.0.80 (advantages of being a lot of hours behind)
+
+* Fixed downstream vignette to account for the SnpSet object being returned by crlmm
+
+* Fixed some minor status messages

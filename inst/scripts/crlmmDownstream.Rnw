@@ -57,14 +57,12 @@ if (!exists("crlmmResult")) {
 }
 @
 
-This is currently a list.
+This is currently a \Rclass{SnpSet} object.
 <<lkj21>>=
   class(crlmmResult)
-  sapply(crlmmResult, dim)
-  sapply(crlmmResult, length)
 @
 
-\section{Constructing an eSet extension}
+\section{Adding information to a \Rclass{SnpSet}}
 
 We will use the \Rpackage{GGdata} package to obtain extra information
 on the samples. This will be later used when building an \Rclass{eSet}
@@ -74,30 +72,27 @@ extension to store the genotyping results.
   if (!exists("hmceuB36")) data(hmceuB36)
   pd <- phenoData(hmceuB36)
   ggn <- sampleNames(pd)
-  preSN <- colnames(crlmmResult[["calls"]])
+  preSN <- sampleNames(crlmmResult)
   simpSN <- gsub("_.*", "", preSN)
   if (!all.equal(simpSN, ggn)) stop("align GGdata phenoData with crlmmResult read")
 @ 
 
-The list obtained as output of the \Rmethod{crlmm} method can be
-easily coerced to an eSet extension with the help of the helper
-function \Rfunction{list2crlmmSet}.
+The additional information obtained from \Rpackage{GGdata} can be
+easily combined to what is already available on \Robject{crlmmResult}.
 <<docl>>=
-  colnames(crlmmResult[["calls"]]) <- colnames(crlmmResult[["confs"]]) <- simpSN
-  crlmmResultSet <- list2crlmmSet(crlmmResult)
-  phenoData(crlmmResultSet) <- combine(pd, phenoData(crlmmResultSet))
-  crlmmResultSet
-  dim(calls(crlmmResultSet))
-  dim(confs(crlmmResultSet))
-  calls(crlmmResultSet)[1:10, 1:2]
-  confs(crlmmResultSet)[1:10, 1:2]
+  sampleNames(crlmmResult) <- simpSN
+  phenoData(crlmmResult) <- combine(pd, phenoData(crlmmResult))
+  dim(calls(crlmmResult))
+  dim(confs(crlmmResult))
+  calls(crlmmResult)[1:10, 1:2]
+  confs(crlmmResult)[1:10, 1:2]
 @
 
 \section{Coercing to snp.matrix as a prelude to a GWAS}
 
 <<lksnm>>=
 library(snpMatrix)
-crlmmSM <- as(t(calls(crlmmResultSet))-1, "snp.matrix")
+crlmmSM <- as(t(calls(crlmmResult))-1, "snp.matrix")
 crlmmSM
 @
 
@@ -116,12 +111,15 @@ gwas <- snp.rhs.tests(ex~male, data=subjdata, snp.data=crlmmSM, family="gaussian
 ok <- which(p.value(gwas) < 1e-10)
 gwas[ok,]
 <<dopl,fig=TRUE>>=
-plot(ex~calls(crlmmResultSet)["SNP_A-4208858",],
+plot(ex~calls(crlmmResult)["SNP_A-4208858",],
      xlab="Genotype Call for SNP_A-4208858",
      ylab="Expression", xaxt="n")
 axis(1, at=1:3, labels=c("AA", "AB", "BB"))
 @
 
+\section{Session Info}
+
+This vignette was created using the following packages:
 <<lksess>>=
 sessionInfo()
 @
