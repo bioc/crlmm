@@ -143,3 +143,7 @@ is decoded and scanned
 * Fixed downstream vignette to account for the SnpSet object being returned by crlmm
 
 * Fixed some minor status messages
+
+2009-04-09 R Scharpf - committed version 1.0.81
+
+* added a skeleton of a copy number vignette for the illumina platform (illumina_copynumber.Rnw) to inst/scripts

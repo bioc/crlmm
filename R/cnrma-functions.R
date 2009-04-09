@@ -188,7 +188,8 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 
 instantiateObjects <- function(calls, conf, NP, plate, envir, chrom, A, B,
 			       gender, SNRmin=5, SNR,
-                               pkgname){
+                               pkgname,
+			       locusSet){
 	pkgname <- paste(pkgname, "Crlmm", sep="")
 	envir[["chrom"]] <- chrom
 	CHR_INDEX <- paste(chrom, "index", sep="")
@@ -615,7 +616,7 @@ oneBatch <- function(plateIndex,
 	CHR <- envir[["chrom"]]
 	if(bias.adj){
 		nuA <- envir[["nuA"]]
-		if(all(is.na(nuA))) {
+		if(all(is.na(nuA))){
 			message("Background and signal coefficients have not yet been estimated -- can not do bias correction yet")
 			stop("Must run computeCopynumber a second time with bias.adj=TRUE to do the adjustment")
 		}
@@ -1021,7 +1022,7 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	hemDel <- hemDel/total
 	norm <- norm/total
 	amp <- amp/total
-	envir[["posteriorProb"]] <- list(hemDel=hemDel, norm=norm, amp=amp) 
+	envir[["posteriorProb"]] <- list(hemDel=hemDel, norm=norm, amp=amp)
 	tmp <- array(NA, dim=c(nrow(A), ncol(A), 4))
 	tmp[, , 1] <- homDel
 	tmp[, , 2] <- hemDel
@@ -1047,18 +1048,21 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	##whether more are up or down
 	if(CHR != 23){
 		moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3) ##3 is normal
-		##notUp <-  tmp2[ii & moreup, ] <= 3
-		##notDown <- tmp2[ii & !moreup, ] >= 3
-		
+		down <-  tmp2[ii & moreup, ] <= 3
+		up <- tmp2[ii & !moreup, ] >= 3
 		##What if we just keep X% of the ones with the highest
 		##posterior probability for normal
-		prNorm <- tmp[, , 3]
-		rankNorm <- t(apply(prNorm, 1, order, decreasing=TRUE))
-		percentage <- round(0.75*ncol(prNorm),0)
-		NORM <- rankNorm <= percentage
-##		NORM <- matrix(NA, nrow(A), ncol(A))
-##		NORM[ii & moreup, ] <- notUp
-##		NORM[ii & !moreup, ] <- notDown
+##		prNorm <- tmp[, , 3]
+##		rankNorm <- t(apply(prNorm, 1, order, decreasing=TRUE))
+
+		rankUP <- t(apply(tmp[moreup & ii, , 4]/tmp[moreup & ii, , 3], 1, order, decreasing=TRUE))
+		rankDown <- t(apply(tmp[!moreup & ii, , 2]/tmp[!moreup & ii, , 3], 1, order, decreasing=TRUE))		
+		maxNumberToDrop <- round(0.25*ncol(tmp2),0)
+##		NORM <- rankNorm <= percentage
+		NORM <- matrix(TRUE, nrow(A), ncol(A))
+		NORM[ii & moreup, ] <- rankUP >= maxNumberToDrop
+		NORM[ii & !moreup, ] <- rankDown >= maxNumberToDrop
+##		NORM[ii & !moreup, ] <- up
 		##Define NORM so that we can iterate this step
 		##NA's in the previous iteration (normal) will be propogated
 		normal <- NORM*normal
