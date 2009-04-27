@@ -440,7 +440,11 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 	muB <- muB[!flagsB, "BB"]
 	X <- cbind(1, log2(c(muA, muB)))
 	Y <- log2(c(phiA[!flagsA], phiB[!flagsB]))
-	if(nrow(X) > 5000) ix <- sample(1:nrow(X), 5000)
+	if(nrow(X) > 5000){
+		ix <- sample(1:nrow(X), 5000)
+	} else {
+		ix <- 1:nrow(X)
+	}
 	##X <- X[ix, ]
 	##Y <- Y[ix]
 	betahat <- solve(crossprod(X[ix, ]), crossprod(X[ix, ], Y[ix]))

@@ -147,3 +147,7 @@ is decoded and scanned
 2009-04-09 R Scharpf - committed version 1.0.81
 
 * added a skeleton of a copy number vignette for the illumina platform (illumina_copynumber.Rnw) to inst/scripts
+
+2009-04-27 R Scharpf - committed version 1.3.1
+
+* Fixed bug in nonpolymorphic() function
