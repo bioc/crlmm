@@ -457,7 +457,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 #  brgrg = bids[rrgg]
   X = Y = Xnb = Ynb = Xse = Yse = zero = matrix(0, nsnps, narrays)
   rownames(X) = rownames(Y) = rownames(Xnb) = rownames(Ynb) = rownames(Xse) = rownames(Yse) = ids
-  colnames(X) = colnames(Y) = colnames(Xnb) = colnames(Ynb) = colnames(Xse) = colnames(Yse) = sampleNames(RG)$G
+  colnames(X) = colnames(Y) = colnames(Xnb) = colnames(Ynb) = colnames(Xse) = colnames(Yse) = sampleNames(RG) #$G
 
   # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
   X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
@@ -529,7 +529,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
     targetdist = getVarInEnv("reference")
   
   Xqws = Yqws = matrix(0, nrow(XY), ncol(XY))
-  colnames(Xqws) = colnames(Yqws) = sampleNames(XY)$X
+  colnames(Xqws) = colnames(Yqws) = sampleNames(XY) #$X
   rownames(Xqws) = rownames(Yqws) = featureNames(XY)
 
   if(verbose){
@@ -574,7 +574,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5, fitMixture=TRUE, eps=
     XY = stripNormalize(XY, useTarget=useTarget, verbose=verbose)
 
 ## MR: the code below is mostly straight from snprma.R
-  if (missing(sns)) sns <- sampleNames(XY)$X
+  if (missing(sns)) sns <- sampleNames(XY) #$X
   if(missing(cdfName))
     cdfName <- annotation(XY)
 ##  stuffDir <- changeToCrlmmAnnotationName(cdfName)
@@ -707,7 +707,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
       else
         stop("Both RG and XY specified - please use one or the other")
     }
-    if (missing(sns)) sns <- sampleNames(XY)$X
+    if (missing(sns)) sns <- sampleNames(XY) #$X
     
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
