@@ -45,7 +45,7 @@ getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
 
 list2SnpSet <- function(x, returnParams=FALSE){
   pd <- data.frame(SNR=x[["SNR"]], gender=x[["gender"]],
-                   batchQC=rep(x[["batchQC"]], length(ncol(x[["calls"]]))),
+                   batchQC=rep(x[["batchQC"]], ncol(x[["calls"]])),
                    row.names=colnames(x[["calls"]]))
   pdv <- data.frame(labelDescription=c("Signal-to-noise Ratio",
                       "Gender: Male (1) and Female (2)",
