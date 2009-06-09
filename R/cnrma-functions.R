@@ -316,6 +316,10 @@ computeCopynumber <- function(chrom,
 			      cdfName="genomewidesnp6",
 			      verbose=TRUE, ...){
 	require(paste(cdfName, "Crlmm", sep=""), character.only=TRUE) || stop(paste("cdf ", cdfName, "Crlmm", " not available.", sep=""))
+	if(!missing(plate)){
+		if(length(plate) != ncol(A))
+			stop("plate must the same length as the number of columns of A")
+	}
 	set.seed(seed)
 	if(missing(chrom)) stop("must specify chromosome")
 	if(length(ls(envir)) == 0) {
@@ -517,6 +521,7 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 	##---------------------------------------------------------------------------
 }
 
+##sufficient statistics on the intensity scale
 withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envir){
 	CHR <- envir[["chrom"]]
 	Ns <- envir[["Ns"]]
@@ -714,14 +719,14 @@ oneBatch <- function(plateIndex,
 	snpflags[, p] <- index[[1]] | index[[2]] | index[[3]]
 
 	##---------------------------------------------------------------------------
-	## Two genotype clusters not observed -- would sequence help? (didn't seem that helpful)
-	## 1 extract index of complete data
-	## 2 Regress  mu1,mu3 ~ sequence + mu2
-	## 3 Predict mu1*, mu3* for missing genotypes
+	## Two genotype clusters not observed -- would sequence help? (didn't seem to)
+	## 1. extract index of complete data
+	## 2. Regress  mu_missing ~ sequence + mu_observed
+	## 3. solve for nu assuming the median is 2
 	##---------------------------------------------------------------------------
 	cols <- c(3, 1, 2)
 	for(j in 1:3){
-		if(sum(index[[1]]) == 0) next()
+		if(sum(index[[j]]) == 0) next()
 		k <- cols[j]
 		X <- cbind(1, mnA[index.complete, k], mnB[index.complete, k])
 		Y <- cbind(mnA[index.complete,  -k],
@@ -732,7 +737,6 @@ oneBatch <- function(plateIndex,
 		muA[index[[j]], p, -c(1, 2, k+2)] <- mus[, 1:2]
 		muB[index[[j]], p, -c(1, 2, k+2)] <- mus[, 3:4]
 	}
-	
 	negA <- rowSums(muA[, p, ] < 0) > 0
 	negB <- rowSums(muB[, p, ] < 0) > 0	
 	snpflags[, p] <- snpflags[, p] | negA | negB | rowSums(is.na(muA[, p, 3:5]), na.rm=TRUE) > 0
@@ -748,6 +752,7 @@ oneBatch <- function(plateIndex,
 	envir[["plates.completed"]] <- plates.completed
 }
 
+##Estimate tau2, sigma2, and correlation
 locationAndScale <- function(p, GT.A, GT.B, index, envir, DF.PRIOR){
 	tau2A <- envir[["tau2A"]]
 	tau2B <- envir[["tau2B"]]
@@ -997,20 +1002,18 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 			if(CA > 0 & CB > 0) rho <- corr[, p]
 			if(CHR == 23){
 				means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p] + CB*phiAx[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p] + CA*phiBx[, p])))
+				browser()
 			} else{
 				means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p])))
+				meanA <- suppressWarnings(log2(nuA[, p]+CA*phiA[, p]))
+				meanB <- suppressWarnings(log2(nuB[, p]+CB*phiB[, p]))
+				covs <- rho*A.scale*B.scale
+				A.scale2 <- A.scale^2
+				B.scale2 <- B.scale^2
 			}
-			covs <- rho*A.scale*B.scale
-			A.scale2 <- A.scale^2
-			B.scale2 <- B.scale^2
-			m <- 1			
-			for(i in 1:nrow(A)){
-				Sigma <- matrix(c(A.scale2[i], covs[i], covs[i], B.scale2[i]), 2,2)
-				xx <- matrix(X[i, ], ncol=2)
-				tmp <- dmvnorm(xx, mean=means[i, ], sigma=Sigma) 
-				emit[m, , counter] <- tmp
-				m <- m+1				
-			}
+			Q.x.y <- 1/(1-rho^2)*(((lA - meanA)/A.scale)^2 + ((lB - meanB)/B.scale)^2 - 2*rho*((lA - meanA)*(lB - meanB))/(A.scale*B.scale))
+			f.x.y <- 1/(2*pi*A.scale*B.scale*sqrt(1-rho^2))*exp(-0.5*Q.x.y)
+			emit[, , counter] <- f.x.y
 			counter <- counter+1
 		}
 	}
@@ -1019,60 +1022,63 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	norm <- priorProb[3]*emit[, , 4:6]
 	amp <- priorProb[4]*emit[, , 7:10]
 	##sum over the different combinations within each copy number state
-	hemDel <- apply(hemDel, c(1,2), sum)
-	norm <- apply(norm, c(1, 2), sum)
-	amp <- apply(amp, c(1,2), sum)
+	hemDel <- hemDel[, , 1] + hemDel[, , 2]
+	norm <- norm[, , 1] + norm[, , 2] + norm[, , 3]
+	amp <- amp[, , 1] + amp[, , 2] + amp[ , , 3] + amp[, , 4]
 	total <- hemDel + norm + amp
 	hemDel <- hemDel/total
 	norm <- norm/total
 	amp <- amp/total
 	envir[["posteriorProb"]] <- list(hemDel=hemDel, norm=norm, amp=amp)
-	tmp <- array(NA, dim=c(nrow(A), ncol(A), 4))
-	tmp[, , 1] <- homDel
-	tmp[, , 2] <- hemDel
-	tmp[, , 3] <- norm
-	tmp[, , 4] <- amp
-	tmp2 <- apply(tmp, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	posteriorProb <- array(NA, dim=c(nrow(A), ncol(A), 4))
+	posteriorProb[, , 1] <- homDel
+	posteriorProb[, , 2] <- hemDel
+	posteriorProb[, , 3] <- norm
+	posteriorProb[, , 4] <- amp
+	mostLikelyState <- apply(posteriorProb, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
 	##Adjust for SNPs that have less than 80% of the samples in an altered state
 	##flag the remainder?
 	if(CHR != 23){
-		tmp3 <- tmp2 != 3
+		proportionSamplesAltered <- rowMeans(mostLikelyState != 3)
 	}else{
 		##should also consider pseud
+		browser()
 		gender <- envir[["gender"]]
 		tmp3 <- tmp2
 		tmp3[, gender=="male"] <- tmp2[, gender=="male"] != 2
 		tmp3[, gender=="female"] <- tmp2[, gender=="female"] != 3
 	}
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
-	propAlt <- rowMeans(tmp3)##prop normal
-	##ii <- propAlt < PROP
-	ii <- propAlt > 0.05
+	##ii <- proportionSamplesAltered < PROP
+	##ii <- proportionSamplesAltered > 0.05
+	##Figure out why the proportion altered can be near 1...
+	ii <- proportionSamplesAltered < 0.8 & proportionSamplesAltered > 0.01
 	##only exclude observations from one tail, depending on
 	##whether more are up or down
 	if(CHR != 23){
-		moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3) ##3 is normal
-		down <-  tmp2[ii & moreup, ] <= 3
-		up <- tmp2[ii & !moreup, ] >= 3
-		##What if we just keep X% of the ones with the highest
-		##posterior probability for normal
-##		prNorm <- tmp[, , 3]
-##		rankNorm <- t(apply(prNorm, 1, order, decreasing=TRUE))
-
-		rankUP <- t(apply(tmp[moreup & ii, , 4]/tmp[moreup & ii, , 3], 1, order, decreasing=TRUE))
-		rankDown <- t(apply(tmp[!moreup & ii, , 2]/tmp[!moreup & ii, , 3], 1, order, decreasing=TRUE))		
-		maxNumberToDrop <- round(0.25*ncol(tmp2),0)
-##		NORM <- rankNorm <= percentage
-		NORM <- matrix(TRUE, nrow(A), ncol(A))
-		NORM[ii & moreup, ] <- rankUP >= maxNumberToDrop
-		NORM[ii & !moreup, ] <- rankDown >= maxNumberToDrop
+		moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3) ##3 is normal
+		NORM <- matrix(FALSE, nrow(A), ncol(A))
+		NORM[proportionSamplesAltered > 0.8, ] <- FALSE
+		##big and greater than 1 if copy number 3 is more likely
+		ratioUp <- posteriorProb[, , 4]/posteriorProb[, , 3]
+		##large values will have small ranks
+		##rankUP <- t(apply(ratio, 1, rank))
+		## drop small ranks up to the maximum number, unless the ratio is greater than 1 
+		##NORM[ii & moreup, ] <- !(rankUP <= maxNumberToDrop) | (ratio < 1)
+		NORM[ii & moreup, ] <- ratioUp[moreup & ii] < 1  ##normal more likely
+		##big and greater than 1 if copy number 1 is more likely than 2
+		ratioDown <- posteriorProb[, , 2]/posteriorProb[, , 3]
+		##big values have small ranks
+		##rankDown <- t(apply(ratio, 1, rank))		
+		##NORM[ii & !moreup, ] <- !(rankDown <= maxNumberToDrop) | (ratio < 1)
+		NORM[ii & !moreup, ] <- ratioDown[!moreup & ii] < 1  ##normal more likely
 ##		NORM[ii & !moreup, ] <- up
 		##Define NORM so that we can iterate this step
 		##NA's in the previous iteration (normal) will be propogated
 		normal <- NORM*normal
 	} else{
-		fem <- tmp2[, gender=="female"]
-		mal <- tmp2[, gender=="male"]
+		fem <- mostLikelyState[, gender=="female"]
+		mal <- mostLikelyState[, gender=="male"]
 		moreupF <- rowSums(fem > 3) > rowSums(fem < 3)
 		moreupM <- rowSums(mal > 2) > rowSums(mal < 2)
 		notUpF <-  fem[ii & moreupF, ] <= 3
@@ -1089,7 +1095,7 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 		normal[, gender=="female"] <- normalF
 		normal[, gender=="male"] <- normalM
 	}
-	flagAltered <- which(propAlt > 0.5)
+	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAltered"]] <- flagAltered
 	normal[normal == FALSE] <- NA
 	envir[["normal"]] <- normal
@@ -1285,10 +1291,6 @@ expectedC <- function(plateIndex, envir, priorProb, cnStates=0:6){
 	return(posteriorMode)
 }
 
-
-
-
-
 biasAdjNP <- function(plateIndex, envir, priorProb){
 	p <- plateIndex
 	normalNP <- envir[["normalNP"]]
@@ -1297,56 +1299,62 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 	plate <- envir[["plate"]]
 	uplate <- envir[["uplate"]]
 	sig2T <- envir[["sig2T"]]
+	normalNP <- normalNP[, plate==uplate[p]]	
 	NP <- NP[, plate==uplate[p]]
-	sig2T <- sig2T[, plate==uplate[p]]
+	##sig2T <- sig2T[, plate==uplate[p]]
+	sig2T <- sig2T[, p]
+
 
 	##Assume that on the log-scale, that the background variance is the same...
 	tau2T <- sig2T	
 	nuT <- envir[["nuT"]]
+	nuT <- nuT[, p]
 	phiT <- envir[["phiT"]]
-	p <- plateIndex
-	plate <- envir[["plate"]]
+	phiT <- phiT[, p]
+	
 	if(missing(priorProb)) priorProb <- rep(1/4, 4) ##uniform
 	emit <- array(NA, dim=c(nrow(NP), ncol(NP), 4))##SNPs x sample x 'truth'	
 	lT <- log2(NP)
 	counter <- 1 ##state counter
 	for(CT in 0:3){
 		sds <- sqrt(tau2T*(CT==0) + sig2T*(CT > 0))
-		means <- suppressWarnings(log2(nuT[, p]+CT*phiT[, p]))
+		means <- suppressWarnings(log2(nuT+CT*phiT))
 		tmp <- dnorm(lT, mean=means, sd=sds)
 		emit[, , counter] <- tmp
 		counter <- counter+1
 	}
-	tmp2 <- apply(emit, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	mostLikelyState <- apply(emit, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
 	##Adjust for SNPs that have less than 80% of the samples in an altered state
 	##flag the remainder?
 	if(CHR != 23){
-		tmp3 <- tmp2 != 3
+		tmp3 <- mostLikelyState != 3
 	}else{
 		browser()
 		##should also consider pseudoautosomal
 		gender <- envir[["gender"]]
-		tmp3 <- tmp2
-		tmp3[, gender=="male"] <- tmp2[, gender=="male"] != 2
-		tmp3[, gender=="female"] <- tmp2[, gender=="female"] != 3
+		tmp3 <- mostLikelyState
+		tmp3[, gender=="male"] <- mostLikelyState[, gender=="male"] != 2
+		tmp3[, gender=="female"] <- mostLikelyState[, gender=="female"] != 3
 	}
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
-	propAlt <- rowMeans(tmp3)##prop normal
-	ii <- propAlt < 0.75
+	proportionSamplesAltered <- rowMeans(tmp3)##prop normal
+	ii <- proportionSamplesAltered < 0.75
 	##only exclude observations from one tail, depending on
 	##whether more are up or down
 	if(CHR != 23){
-		moreup <- rowSums(tmp2 > 3) > rowSums(tmp2 < 3)
-		notUp <-  tmp2[ii & moreup, ] <= 3
-		notDown <- tmp2[ii & !moreup, ] >= 3
+		moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3)
+		notUp <-  mostLikelyState[ii & moreup, ] <= 3
+		notDown <- mostLikelyState[ii & !moreup, ] >= 3
 		NORM <- matrix(TRUE, nrow(NP), ncol(NP))
 		NORM[ii & moreup, ] <- notUp
 		NORM[ii & !moreup, ] <- notDown
 		normalNP <- normalNP*NORM
 	}
-	flagAltered <- which(propAlt > 0.5)
+	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAlteredNP"]] <- flagAltered
 	normalNP[normalNP == FALSE] <- NA
-	envir[["normalNP"]] <- normalNP
+	tmp <- envir[["normalNP"]]
+	tmp[, plate==uplate[p]] <- normalNP
+	envir[["normalNP"]] <- tmp
 }
 

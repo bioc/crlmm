@@ -14,8 +14,8 @@
 \newcommand{\R}{\textsf{R}}
 
 \begin{document}
-\title{Estimating copy number for Affymetrix 6.0  with the crlmm Package}
-\date{February, 2009}
+\title{Trisomy analysis}
+\date{May, 2009}
 \author{Rob Scharpf}
 \maketitle
 
