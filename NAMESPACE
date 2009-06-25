@@ -1,10 +1,83 @@
 useDynLib("crlmm", .registration=TRUE)
-import(Biobase)
+
+##importClassesFrom(methods, ANY, character, data.frame, "function", integer, matrix, numeric)
+
+importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
+		  SnpSet, MIAME, Versioned, VersionedBiobase, Versions)
+
+importClassesFrom(oligoClasses, SnpLevelSet)
+
+importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
+		  assayData, "assayData<-", combine,
+		  experimentData, "experimentData<-",
+                  fData, featureData, "featureData<-", featureNames,
+		  fvarMetadata, fvarLabels,
+                  pData, phenoData, "phenoData<-", pubMedIds, rowMedians, sampleNames, scanDates,
+                  "scanDates<-", storageMode, updateObject)
+
+
+##importMethodsFrom(oligoClasses, chromosome, copyNumber, position)
+importFrom(oligoClasses, chromosome, copyNumber, position, calls)
+
+##importMethodsFrom(methods, initialize, show)
+
+##importFrom(methods, "@<-", callNextMethod, new, validObject)
+
+importFrom(Biobase, assayDataElement, assayDataElementNames,
+           assayDataElementReplace, assayDataNew, classVersion)
+
+importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
+           polygon, rect, segments, text, points)
+
+importFrom(grDevices, grey)
+
 importFrom(affyio, read.celfile.header, read.celfile)
+
 importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
+
 importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
+
 importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd)
+
 importFrom(genefilter, rowSds)
+
 importFrom(mvtnorm, dmvnorm)
-export("crlmm", "list.celfiles", "computeCopynumber", "cnrma", "celDates", "crlmmIllumina", "readIdatFiles", "snprma")
-exportMethods("calls", "confs")
+
+importFrom(ellipse, ellipse)
+
+exportClasses(ABset, CopyNumberSet, CrlmmSetList)
+##S3method(ellipse, CopyNumberSet)
+exportMethods(calls,
+	      CA,
+	      "CA<-",
+	      CB,
+	      "CB<-",
+	      cnIndex,
+	      confs,
+	      plot,
+	      points,
+	      show,
+	      snpIndex)
+
+export(celDates,
+       calls,
+       chromosome,
+       cnrma,
+       combine,
+       computeCopynumber,
+       copyNumber,
+       crlmm,
+       crlmmIllumina,
+       crlmmWrapper,
+       ellipse,
+       computeEmission,
+       list.celfiles,
+       position,
+       readIdatFiles,
+       sampleNames,
+       scanDates,
+       "scanDates<-",
+       snprma)
+
+
+

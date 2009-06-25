@@ -17,11 +17,11 @@
   where 'p' is the posterior probability of the call.
 }
 \usage{
-calls(x)
-confs(x)
+calls(object)
+confs(object)
 }
 \arguments{
-  \item{x}{SnpSet object}
+  \item{object}{SnpSet object}
 }
 \value{
   Matrix of genotype calls or confidences.

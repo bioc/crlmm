@@ -127,6 +127,127 @@ celDates <- function(celfiles){
 	return(celdts)
 }
 
+predictGender <- function(res, cdfName="genomewidesnp6", SNRMin=5){
+	pkgname <- paste(cdfName, "Crlmm", sep="")
+	path <- system.file("extdata", package=pkgname)
+        loader("23index.rda", .crlmmPkgEnv, pkgname)
+	index <- getVarInEnv("index")
+	##load(file.path(path, "23index.rda"))
+	XIndex <- index[[1]]	
+	if(class(res) != "ABset"){
+		A <- res$A
+		B <- res$B
+	} else{
+		A <- res@assayData[["A"]]
+		B <- res@assayData[["B"]]
+	}
+	XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+	SNR <- res$SNR
+	if(sum(SNR>SNRMin)==1){
+		gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
+	}else{
+		gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRMin]), max(XMedian[SNR>SNRMin])))[["cluster"]]
+	}
+	return(gender)
+}
+
+combineIntensities <- function(res, cnrmaResult, cdfName){
+	rownames(res$B) <- rownames(res$A) <- res$gns
+	colnames(res$B) <- colnames(res$A) <- res$sns
+	NP <- cnrmaResult$NP
+	blank <- matrix(NA, nrow(NP), ncol(NP))
+	dimnames(blank) <- dimnames(NP)
+	A <- rbind(res$A, NP)
+	B <- rbind(res$B, blank)
+	aD <- assayDataNew("lockedEnvironment",
+			   A=A,
+			   B=B)
+	ABset <- new("ABset",
+		     assayData=aD,
+		     featureData=annotatedDataFrameFrom(A, byrow=TRUE),
+		     phenoData=annotatedDataFrameFrom(A, byrow=FALSE),
+		     annotation="genomewidesnp6")
+	ABset$SNR <- res$SNR
+	ABset$gender <- predictGender(res=res, cdfName=cdfName)
+	return(ABset)
+}
+
+harmonizeSnpSet <- function(crlmmResult, ABset){
+	blank <- matrix(NA, length(cnNames(ABset)), ncol(ABset))
+	rownames(blank) <- cnNames(ABset)
+	colnames(blank) <- sampleNames(ABset)
+	crlmmCalls <- rbind(calls(crlmmResult), blank)
+	crlmmConf <- rbind(confs(crlmmResult), blank)
+	fD <- as.matrix(fData(crlmmResult))
+	fD2 <- matrix(NA, nrow(blank), ncol(fD))
+	rownames(fD2) <- rownames(blank)
+	fD <- rbind(fD, fD2)
+	aD <- assayDataNew("lockedEnvironment",
+			   calls=crlmmCalls,
+			   callProbability=crlmmConf)
+	##Make crlmmResult the same dimension as ABset
+	fD <- new("AnnotatedDataFrame",
+		  data=data.frame(fD),
+		  varMetadata=fvarMetadata(crlmmResult))
+	crlmmResult <- new("SnpSet",
+			   call=crlmmCalls,
+			   callProbability=crlmmConf,
+			   featureData=fD,
+			   phenoData=phenoData(crlmmResult),
+			   scanDates=scanDates(ABset),
+			   annotation=annotation(ABset))
+	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
+	crlmmResult
+}
+
+harmonizeDimnamesTo <- function(object1, object2){
+	object1 <- object1[match(featureNames(object2), featureNames(object1)), ]
+	object1 <- object1[, match(sampleNames(object2), sampleNames(object1))]
+	stopifnot(all.equal(featureNames(object1), featureNames(object2)))
+	stopifnot(all.equal(sampleNames(object1), sampleNames(object2)))
+	return(object1)
+}
+	
+crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.it, splitByChr=TRUE, ...){
+	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
+		crlmmResult <- crlmm(filenames=filenames, cdfName=cdfName, save.it=TRUE, ...)
+		if(save.it) save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
+	} else {
+		message("Loading crlmmResult...")
+		load(file.path(outdir, "crlmmResult.rda"))
+	}
+
+	##- Make crlmmResult the same dimension as ABset
+	## -Create a list object that where rows and columns can be subset using '[' methods
+	if(!file.exists(file.path(outdir, "cnrmaResult.rda"))){
+		message("Quantile normalizing the copy number probes")		
+		cnrmaResult <- cnrma(filenames=filenames, cdfName=cdfName)
+		if(save.it) save(cnrmaResult, file=file.path(outdir, "cnrmaResult.rda"))
+	} else{
+		message("Loading cnrmaResult...")		
+		load(file.path(outdir, "cnrmaResult.rda"))
+	}
+##	loader("intensities.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
+##	res <- get("res", envir=.crlmmPkgEnv)
+	load(file.path(outdir, "intensities.rda"))
+	ABset <- combineIntensities(res, cnrmaResult, cdfName)
+	scanDates(ABset) <- as.character(celDates(filenames))	
+	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset)
+	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
+	crlmmList <- list(ABset,
+			  crlmmResult)
+	crlmmList <- as(crlmmList, "CrlmmSetList")
+	
+	if(splitByChr){
+		message("Saving by chromosome")
+		splitByChromosome(crlmmList, cdfName=cdfName, outdir=outdir)
+	} else{
+		message("Saving crlmmList object to ", outdir)
+		save(crlmmList, file=file.path(outdir, "crlmmList.rda"))
+	}
+	return()
+}
+
 cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALSE){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
@@ -186,22 +307,29 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 	return(flags)
 }
 
-instantiateObjects <- function(calls, conf, NP, plate, envir, chrom, A, B,
+instantiateObjects <- function(calls, conf, NP, plate, envir,
+			       chrom,
+			       A, B,
 			       gender, SNRmin=5, SNR,
                                pkgname,
 			       locusSet){
-	pkgname <- paste(pkgname, "Crlmm", sep="")
+##	pkgname <- paste(pkgname, "Crlmm", sep="")
 	envir[["chrom"]] <- chrom
-	CHR_INDEX <- paste(chrom, "index", sep="")
-        fname <- paste(CHR_INDEX, ".rda", sep="")
-        loader(fname, .crlmmPkgEnv, pkgname)
-        index <- get("index", envir=.crlmmPkgEnv)
-##	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
-	A <- A[index[[1]], SNR > SNRmin]
-	B <- B[index[[1]], SNR > SNRmin]
-	calls <- calls[index[[1]], SNR > SNRmin]
-	conf <- conf[index[[1]], SNR > SNRmin]
-	NP <- NP[index[[2]], SNR > SNRmin]
+##	CHR_INDEX <- paste(chrom, "index", sep="")
+##        fname <- paste(CHR_INDEX, ".rda", sep="")
+##        loader(fname, .crlmmPkgEnv, pkgname)
+##        index <- get("index", envir=.crlmmPkgEnv)
+####	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
+##	A <- A[index[[1]], SNR > SNRmin]
+##	B <- B[index[[1]], SNR > SNRmin]
+##	calls <- calls[index[[1]], SNR > SNRmin]
+##	conf <- conf[index[[1]], SNR > SNRmin]
+##	NP <- NP[index[[2]], SNR > SNRmin]
+	A <- A[, SNR > SNRmin]
+	B <- B[, SNR > SNRmin]
+	calls <- calls[, SNR > SNRmin]
+	conf <- conf[, SNR > SNRmin]
+	NP <- NP[, SNR > SNRmin]
 	plate <- plate[SNR > SNRmin]
 	uplate <- unique(plate)
 	SNR <- SNR[SNR > SNRmin]
@@ -279,7 +407,7 @@ instantiateObjects <- function(calls, conf, NP, plate, envir, chrom, A, B,
 	envir[["tau2B"]] <- tau2A
 	envir[["sig2A"]] <- tau2A
 	envir[["sig2B"]] <- tau2A
-	sig2T <- matrix(NA, nrow(NP), ncol(NP))
+	sig2T <- matrix(NA, nrow(NP), length(uplate))
 	envir[["sig2T"]] <- sig2T
 	envir[["corr"]] <- tau2A
 	envir[["corrA.BB"]] <- tau2A
@@ -294,16 +422,275 @@ instantiateObjects <- function(calls, conf, NP, plate, envir, chrom, A, B,
 	envir[["normalNP"]] <- normalNP
 }
 
+computeCopynumber <- function(object,
+			      CHR,
+			      bias.adj=FALSE,
+			      batch,
+			      SNRmin=5,
+			      cdfName="genomewidesnp6", ...){
+	##require(oligoClasses)
+	if(missing(CHR)) stop("Must specify CHR")
+	if(missing(batch)) stop("Must specify batch")
+	if(length(batch) != ncol(object[[1]])) stop("Batch must be the same length as the number of samples")
+	##the AB intensities
+	Nset <- object[[1]]
+	##indices of polymorphic loci
+	index <- snpIndex(Nset)
+	ABset <- Nset[index, ]
+	##indices of nonpolymorphic loci
+	NPset <- Nset[-index, ]
+	##genotypes/confidences
+	snpset <- object[[2]][index,]
+	##previous version of compute copy number
+	envir <- new.env()
+	message("Fitting model for copy number estimation...")
+	.computeCopynumber(chrom=CHR,
+			   A=A(ABset),
+			   B=B(ABset),
+			   calls=calls(snpset),
+			   conf=confs(snpset),
+			   NP=A(NPset),
+			   plate=batch,
+			   envir=envir,
+			   SNR=ABset$SNR,
+			   bias.adj=FALSE,
+			   SNRmin=SNRmin,
+			   ...)
+	message("Organizing results...")	
+	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
+	if(bias.adj){
+		message("Running bias adjustment...")
+		.computeCopynumber(chrom=CHR,
+				   A=A(ABset),
+				   B=B(ABset),
+				   calls=calls(snpset),
+				   conf=confs(snpset),
+				   NP=A(NPset),
+				   plate=batch,
+				   envir=envir,
+				   SNR=ABset$SNR,
+				   bias.adj=TRUE,
+				   SNRmin=SNRmin,
+				   ...)
+		message("Organizing results...")			
+		locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
+		##.GlobalEnv[["locusSetAdj"]] <- locusSetAdj
+	}
+	return(locusSet)
+}
+
+##getCopyNumberEnvironment <- function(crlmmSetList, cnSet){
+##	envir <- new.env()
+##	envir[["A"]] <- A(crlmmSetList)[snpIndex(crlmmSetList), ]
+##	envir[["B"]] <- A(crlmmSetList)[snpIndex(crlmmSetList), ]
+##	envir[["CA"]] <- CA(cnSet)[snpIndex(cnSet), ]/100
+##	envir[["CB"]] <- CB(cnSet)[snpIndex(cnSet), ]/100		
+##	envir[["NP"]] <- A(crlmmSetList)[cnIndex(crlmmSetList), ]
+##	envir[["calls"]] <- calls(crlmmSetList)[snpIndex(crlmmSetList), ]
+##	envir[["chrom"]] <- unique(chromosome(cnSet))
+##	envir[["cnvs"]] <- cnNames(crlmmSetList)
+##	envir[["conf"]] <- conf(crlmmSetList)
+##	envir[["corr"]] <- fData(cnSet)$corr
+##	envir[["corrA.BB"]] <- fData(cnSet)$corrA.BB
+##	envir[["corrB.AA"]] <- fData(cnSet)$corrB.AA
+##	envir[["CT"]] <- CA(cnSet)[cnIndex(cnSet), ]/100
+##	##envir[["CT.sds"]] <- 
+##	##envir[["GT.A"]]
+##	##envir[["GT.B"]]
+##	##envir[["index"]]
+##	##envir[["muA"]]
+##	##envir[["muB"]]
+##	##envir[["normal"]]
+##	##envir[["normalNP"]]
+##	##envir[["npflags"]]
+##	##envir[["Ns"]]
+##	nuA <- fData(cnSet)[, grep("nuA", fvarLabels(cnSet))]
+##	nuB <- fData(cnSet)[, grep("nuB", fvarLabels(cnSet))]
+##	phiA <- fData(cnSet)[, grep("phiA", fvarLabels(cnSet))]
+##	phiB <- fData(cnSet)[, grep("phiB", fvarLabels(cnSet))]
+##	envir[["nuA"]] <- nuA[snpIndex(cnSet), ]
+##	envir[["nuB"]] <- nuB[snpIndex(cnSet), ]
+##	envir[["phiA"]] <- phiA[snpIndex(cnSet), ]
+##	envir[["phiB"]] <- phiB[snpIndex(cnSet), ]
+##	envir[["nuT"]] <- nuA[cnIndex(cnSet), ]
+##	envir[["phiT"]] <- phiA[cnIndex(cnSet), ]
+##	envir[["plate"]] <- cnSet$batch
+##	
+##}
+
+updateNuPhi <- function(crlmmSetList, cnSet){
+	##TODO: remove the use of environments.
+	##repopulate the environment
+	crlmmSetList <- crlmmSetList[, match(sampleNames(cnSet), sampleNames(crlmmSetList))]
+	crlmmSetList <- crlmmSetList[match(featureNames(cnSet), featureNames(crlmmSetList)), ]
+	##envir <- getCopyNumberEnvironment(crlmmSetList, cnSet)
+	Nset <- crlmmSetList[[1]]
+	##indices of polymorphic loci
+	index <- snpIndex(Nset)
+	ABset <- Nset[index, ]
+	##indices of nonpolymorphic loci
+	NPset <- Nset[-index, ]
+	##genotypes/confidences
+	snpset <- crlmmSetList[[2]][index,]
+	##previous version of compute copy number
+	envir <- new.env()	
+	message("Running bias adjustment...")
+##	.computeCopynumber(chrom=CHR,
+##			   A=A(ABset),
+##			   B=B(ABset),
+##			   calls=calls(snpset),
+##			   conf=confs(snpset),
+##			   NP=A(NPset),
+##			   plate=batch,
+##			   envir=envir,
+##			   SNR=ABset$SNR,
+##			   bias.adj=TRUE,
+##			   SNRmin=SNRmin,
+##			   ...)	
+}
+
+list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
+	if(missing(CHR)) stop("Must specify chromosome")
+	pkgname <- paste(cdfName, "Crlmm", sep="")	
+	path <- system.file("extdata", package=pkgname)
+	loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
+	cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
+	loader("snpProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
+	snpProbes <- get("snpProbes", envir=.crlmmPkgEnv)	
+	##require(oligoClasses) || stop("oligoClasses package not available")
+	if(length(ls(envir)) == 0) stop("environment empty")
+	batch <- envir[["plate"]]
+
+	##SNP copy number	
+	CA <- envir[["CA"]]
+	dimnames(CA) <- list(envir[["snps"]], envir[["sns"]])	
+	CB <- envir[["CB"]]
+	dimnames(CB) <- dimnames(CA)
+
+	##NP copy number
+	CT <- envir[["CT"]]
+	rownames(CT) <- envir[["cnvs"]]
+	colnames(CT) <- envir[["sns"]]
+	sig2T <- envir[["sig2T"]]
+	rownames(sig2T) <- rownames(CT)
+	nuT <- envir[["nuT"]]
+	colnames(nuT) <- paste("nuT", unique(batch), sep="_")
+	##nuA <- rbind(nuA, nuT)
+	##nuB <- rbind(nuA, blank)
+	phiT <- envir[["phiT"]]
+	colnames(phiT) <- paste("phiT", unique(batch), sep="_")
+	naMatrix <- matrix(NA, nrow(CT), ncol(CT))
+	dimnames(naMatrix) <- dimnames(CT)
+	
+	CA <- rbind(CA, CT)
+	CB <- rbind(CB, naMatrix)	
+
+	##SNP parameters
+	tau2A <- envir[["tau2A"]]
+	colnames(tau2A) <- paste("tau2A", unique(batch), sep="_")
+	tau2B <- envir[["tau2B"]]
+	colnames(tau2B) <- paste("tau2B", unique(batch), sep="_")
+	sig2A <- envir[["sig2A"]]
+	colnames(sig2A) <- paste("sig2A", unique(batch), sep="_")
+	sig2B <- envir[["sig2B"]]
+	colnames(sig2B) <- paste("sig2B", unique(batch), sep="_")
+	nuA <- envir[["nuA"]]
+	colnames(nuA) <- paste("nuA", unique(batch), sep="_")
+	nuB <- envir[["nuB"]]
+	colnames(nuB) <- paste("nuB", unique(batch), sep="_")
+	phiA <- envir[["phiA"]]
+	colnames(phiA) <- paste("phiA", unique(batch), sep="_")
+	phiB <- envir[["phiB"]]
+	colnames(phiB) <- paste("phiB", unique(batch), sep="_")
+	corr <- envir[["corr"]]
+	colnames(corr) <- paste("corr", unique(batch), sep="_")
+	corrA.BB <- envir[["corrA.BB"]]
+	colnames(corrA.BB) <- paste("corrA.BB", unique(batch), sep="_")
+	corrB.AA <- envir[["corrB.AA"]]
+	colnames(corrB.AA) <- paste("corrB.AA", unique(batch), sep="_")
 
 
-computeCopynumber <- function(chrom,
+	##Combine SNP and NP parameters
+	naMatrixParams <- matrix(NA, nrow(CT), length(unique(batch)))
+	dimnames(naMatrixParams) <- list(rownames(CT), unique(batch))
+	tau2A <- rbind(tau2A, naMatrixParams)
+	tau2B <- rbind(tau2B, naMatrixParams)
+	sig2A <- rbind(sig2A, sig2T)
+	sig2B <- rbind(sig2B, naMatrixParams)
+	corr <- rbind(corr, naMatrixParams)
+	corrA.BB <- rbind(corrA.BB, naMatrixParams)
+	corrB.AA <- rbind(corrB.AA, naMatrixParams)
+	nuA <- rbind(nuA, nuT)
+	phiA <- rbind(phiA, phiT)
+	nuB <- rbind(nuB, naMatrixParams)
+	phiB <- rbind(phiB, naMatrixParams)
+	rownames(tau2A) <- rownames(tau2B) <- rownames(sig2A) <- rownames(sig2B) <- rownames(CA)
+	rownames(corr) <- rownames(corrA.BB) <- rownames(corrB.AA) <- rownames(CA)
+	rownames(nuA) <- rownames(phiA) <- rownames(nuB) <- rownames(phiB) <- rownames(CA)	
+
+	##phenodata
+	phenodata <- phenoData(ABset)
+	phenodata <- phenodata[match(envir[["sns"]], sampleNames(phenodata)), ]
+	if(!("batch" %in% varLabels(phenodata))) phenodata$batch <- envir[["plate"]]
+
+	##Feature Data
+	position.snp <- snpProbes[match(envir[["snps"]], rownames(snpProbes)), "position"]
+	position.np <- cnProbes[match(envir[["cnvs"]], rownames(cnProbes)), "position"]
+	position <- c(position.snp, position.np)
+	if(!(identical(names(position), rownames(CA)))){
+		position <- position[match(rownames(CA), names(position))]
+	}
+	fd <- data.frame(cbind(CHR,
+			       position,
+			       tau2A,
+			       tau2B,
+			       sig2A,
+			       sig2B,
+			       nuA,
+			       nuB,
+			       phiA,
+			       phiB,
+			       corr,
+			       corrA.BB,
+			       corrB.AA))
+	colnames(fd)[1:2] <- c("chromosome", "position")
+	rownames(fd) <- rownames(CA)
+	fD <- new("AnnotatedDataFrame",
+		  data=fd,
+		  varMetadata=data.frame(labelDescription=colnames(fd)))	
+	assayData <- assayDataNew("lockedEnvironment",
+				  CA=CA,
+				  CB=CB)
+	cnset <- new("CopyNumberSet",
+		      assayData=assayData,
+		      featureData=fD,
+		      phenoData=phenodata,
+		      annotation="genomewidesnp6")
+	cnset <- thresholdCopyNumberSet(cnset)
+	return(cnset)
+}
+
+thresholdCopyNumberSet <- function(object){
+	ca <- CA(object)
+	cb <- CB(object)
+	ca[ca < 5] <- 5
+	ca[ca > 500] <- 500
+	cb[cb < 5] <- 5
+	cb[cb > 500] <- 500
+	CA(object) <- ca
+	CB(object) <- cb
+	return(object)
+}
+
+
+.computeCopynumber <- function(chrom,
 			      A,
 			      B,
 			      calls,
 			      conf,
 			      NP,
 			      plate,
-			      MIN.OBS=1,
+			      MIN.OBS=5,
 			      envir,
 			      P,
 			      DF.PRIOR=50,
@@ -321,11 +708,18 @@ computeCopynumber <- function(chrom,
 			stop("plate must the same length as the number of columns of A")
 	}
 	set.seed(seed)
-	if(missing(chrom)) stop("must specify chromosome")
+	##if(missing(chrom)) stop("must specify chromosome")
 	if(length(ls(envir)) == 0) {
-		instantiateObjects(calls=calls, conf=conf, NP=NP, plate=plate,
-				   envir=envir, chrom=chrom, A=A, B=B,
-				   gender=gender, SNR=SNR, SNRmin=SNRmin,
+		instantiateObjects(calls=calls,
+				   conf=conf,
+				   NP=NP,
+				   plate=plate,
+				   envir=envir,
+				   chrom=chrom,
+				   A=A, B=B,
+				   gender=gender,
+				   SNR=SNR,
+				   SNRmin=SNRmin,
 				   pkgname=cdfName)
 	}
 	plate <- envir[["plate"]]
@@ -510,7 +904,8 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		CT[, plate==uplate[p]] <- matrix(as.integer(100*T), nrow(T), ncol(T))
 
 		##Variance for prediction region
-		sig2T[, plate==uplate[[p]]] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2	
+		##sig2T[, plate==uplate[[p]]] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2
+		sig2T[, p] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2	
 		envir[["sig2T"]] <- sig2T
 		envir[["CT"]] <- CT
 		envir[["phiT"]] <- phiT
@@ -653,7 +1048,7 @@ oneBatch <- function(plateIndex,
 	Ns <- envir[["Ns"]]
 
 	##---------------------------------------------------------------------------
-	## Predict sufficient statistics for unobserved genotypes (plate-specific)
+	## Impute sufficient statistics for unobserved genotypes (plate-specific)
 	##---------------------------------------------------------------------------
 	index.AA <- which(Ns[, p, "AA"] >= 3)
 	index.AB <- which(Ns[, p, "AB"] >= 3)
@@ -1042,11 +1437,11 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 		proportionSamplesAltered <- rowMeans(mostLikelyState != 3)
 	}else{
 		##should also consider pseud
-		browser()
+##		browser()
 		gender <- envir[["gender"]]
-		tmp3 <- tmp2
-		tmp3[, gender=="male"] <- tmp2[, gender=="male"] != 2
-		tmp3[, gender=="female"] <- tmp2[, gender=="female"] != 3
+##		tmp3 <- tmp2
+##		tmp3[, gender=="male"] <- tmp2[, gender=="male"] != 2
+##		tmp3[, gender=="female"] <- tmp2[, gender=="female"] != 3
 	}
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
 	##ii <- proportionSamplesAltered < PROP
@@ -1301,7 +1696,6 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 	sig2T <- envir[["sig2T"]]
 	normalNP <- normalNP[, plate==uplate[p]]	
 	NP <- NP[, plate==uplate[p]]
-	##sig2T <- sig2T[, plate==uplate[p]]
 	sig2T <- sig2T[, p]
 
 
@@ -1358,3 +1752,159 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 	envir[["normalNP"]] <- tmp
 }
 
+
+getParams <- function(object, batch){
+	batch <- unique(object$batch)
+	if(length(batch) > 1) stop("batch variable not unique")		
+	nuA <- as.numeric(fData(object)[, match(paste("nuA", batch, sep="_"), fvarLabels(object))])
+	nuB <- as.numeric(fData(object)[, match(paste("nuB", batch, sep="_"), fvarLabels(object))])	
+	phiA <- as.numeric(fData(object)[, match(paste("phiA", batch, sep="_"), fvarLabels(object))])
+	phiB <- as.numeric(fData(object)[, match(paste("phiB", batch, sep="_"), fvarLabels(object))])	
+	tau2A <- as.numeric(fData(object)[, match(paste("tau2A", batch, sep="_"), fvarLabels(object))])
+	tau2B <- as.numeric(fData(object)[, match(paste("tau2B", batch, sep="_"), fvarLabels(object))])
+	sig2A <- as.numeric(fData(object)[, match(paste("sig2A", batch, sep="_"), fvarLabels(object))])
+	sig2B <- as.numeric(fData(object)[, match(paste("sig2B", batch, sep="_"), fvarLabels(object))])
+	corrA.BB <- as.numeric(fData(object)[, match(paste("corrA.BB", batch, sep="_"), fvarLabels(object))])
+	corrB.AA <- as.numeric(fData(object)[, match(paste("corrB.AA", batch, sep="_"), fvarLabels(object))])
+	corr <- as.numeric(fData(object)[, match(paste("corr", batch, sep="_"), fvarLabels(object))])
+	params <- list(nuA=nuA,
+		       nuB=nuB,
+		       phiA=phiA,
+		       phiB=phiB,
+		       tau2A=tau2A,
+		       tau2B=tau2B,
+		       sig2A=sig2A,
+		       sig2B=sig2B,
+		       corrA.BB=corrA.BB,
+		       corrB.AA=corrB.AA,
+		       corr=corr)
+	return(params)
+}
+
+computeEmission <- function(crlmmResults, cnset, copyNumberStates=0:5, MIN=2^3){
+	##threshold small nu's and phis
+	cnset <- thresholdModelParams(cnset, MIN=MIN)
+	index <- order(chromosome(cnset), position(cnset))
+	if(any(diff(index) > 1)) stop("must be ordered by chromosome and physical position")
+	emissionProbs <- array(NA, dim=c(nrow(cnset), ncol(cnset), length(copyNumberStates)))
+	dimnames(emissionProbs) <- list(featureNames(crlmmResults),
+					sampleNames(crlmmResults),
+					paste("copy.number_", copyNumberStates, sep=""))	
+	batch <- cnset$batch
+	for(i in seq(along=unique(batch))){
+		if(i == 1) cat("Computing emission probabilities \n")
+		message("batch ", unique(batch)[i], "...")
+		emissionProbs[, batch == unique(batch)[i], ] <- .getEmission(crlmmResults, cnset, batch=unique(batch)[i],
+				copyNumberStates=copyNumberStates)
+	}
+	emissionProbs
+}
+
+thresholdModelParams <- function(object, MIN=2^3){
+	nuA <- fData(object)[, grep("nuA", fvarLabels(object))]
+	nuB <- fData(object)[, grep("nuB", fvarLabels(object))]
+	phiA <- fData(object)[, grep("phiA", fvarLabels(object))]
+	phiB <- fData(object)[, grep("phiB", fvarLabels(object))]
+
+	nuA[nuA < MIN] <- MIN
+	nuB[nuB < MIN] <- MIN
+	phiA[phiA < MIN] <- MIN
+	phiB[phiB < MIN] <- MIN
+	fData(object)[, grep("nuA", fvarLabels(object))] <- nuA
+	fData(object)[, grep("nuB", fvarLabels(object))] <- nuB
+	fData(object)[, grep("phiA", fvarLabels(object))] <- phiA
+	fData(object)[, grep("phiB", fvarLabels(object))] <- phiB
+	object
+}
+
+.getEmission <- function(crlmmResults, cnset, batch, copyNumberStates){
+	if(length(batch) > 1) stop("batch variable not unique")
+	crlmmResults <- crlmmResults[, cnset$batch==batch]
+	cnset <- cnset[, cnset$batch == batch]	
+	emissionProbs <- array(NA, dim=c(nrow(crlmmResults[[1]]), ncol(crlmmResults[[1]]), length(copyNumberStates)))
+
+	snpset <- cnset[snpIndex(cnset), ]
+	params <- getParams(snpset, batch=batch)
+	##attach(params)
+	corr <- params[["corr"]]
+	corrA.BB <- params[["corrA.BB"]]
+	corrB.AA <- params[["corrB.AA"]]	
+	nuA <- params[["nuA"]]
+	nuB <- params[["nuB"]]
+	phiA <- params[["phiA"]]
+	phiB <- params[["phiB"]]
+	sig2A <- params[["sig2A"]]
+	sig2B <- params[["sig2B"]]
+	tau2A <- params[["tau2A"]]
+	tau2B <- params[["tau2B"]]
+	a <- as.numeric(log2(A(crlmmResults[snpIndex(crlmmResults), ])))
+	b <- as.numeric(log2(B(crlmmResults[snpIndex(crlmmResults), ])))
+	for(k in seq(along=copyNumberStates)){
+		##cat(k, " ")
+		CN <- copyNumberStates[k]
+		f.x.y <- matrix(0, nrow(snpset), ncol(snpset))
+		for(CA in 0:CN){
+			CB <- CN-CA
+			sigmaA <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
+			sigmaB <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
+			if(CA == 0 & CB > 0) r <- corrA.BB
+			if(CA > 0 & CB == 0) r <- corrB.AA
+			if(CA > 0 & CB > 0) r <- corr
+			if(CA == 0 & CB == 0) r <- 0
+			muA <- log2(nuA+CA*phiA)
+			muB <- log2(nuB+CB*phiB)		
+
+			##might want to allow the variance to be sample-specific
+			##TODO:
+			## rho, sd.A, and sd.B are locus-specific
+			## Some samples are more noisy than others.
+			##
+			##  - scale the variances by a sample-specific estimate of the variances
+			## var(I_A, ijp) = sigma_A_ip * sigma_A_jp
+
+			meanA <- as.numeric(matrix(muA, nrow(snpset), ncol(snpset)))
+			meanB <- as.numeric(matrix(muB, nrow(snpset), ncol(snpset)))			
+			rho <- as.numeric(matrix(r, nrow(snpset), ncol(snpset)))
+			sd.A <- as.numeric(matrix(sigmaA, nrow(snpset), ncol(snpset)))
+			sd.B <- as.numeric(matrix(sigmaB, nrow(snpset), ncol(snpset)))
+			Q.x.y <- 1/(1-rho^2)*(((a - meanA)/sd.A)^2 + ((b - meanB)/sd.B)^2 - 2*rho*((a - meanA)*(b - meanB))/(sd.A*sd.B))
+			##for CN states > 1, assume that any of the possible genotypes are equally likely a priori...just take the sum
+			##for instance, for state copy number 2 there are three combinations: AA, AB, BB
+			##   -- two of the three combinations should be near zero.
+			## TODO: copy-neutral LOH would put near-zero mass on CA > 0, CB > 0
+			f.x.y <- f.x.y + matrix(1/(2*pi*sd.A*sd.B*sqrt(1-rho^2))*exp(-0.5*Q.x.y), nrow(snpset), ncol(snpset))
+		}
+		emissionProbs[snpIndex(crlmmResults), , k] <- log(f.x.y)
+	}
+
+	
+	cnset <- cnset[cnIndex(cnset), ]
+	params <- getParams(cnset, batch=batch)
+	nuA <- params[["nuA"]]
+	phiA <- params[["phiA"]]
+	sig2A <- params[["sig2A"]]
+	a <- as.numeric(log2(A(crlmmResults[cnIndex(crlmmResults), ])))
+
+##	ids=featureNames(crlmmResults)[index]
+##	aa=A(crlmmResults[cnIndex(crlmmResults), ])
+##	ii <- match(ids, rownames(aa))
+##	ii <- ii[!is.na(ii)]
+##	##putative deletion
+##	log2(aa[ii, 1])
+##	M <- matrix(NA, length(ii), length(copyNumberStates))
+##	copynumber=1/phiA[ii]*(aa[ii, 1] - nuA[ii])
+	for(k in seq(along=copyNumberStates)){
+		CT <- copyNumberStates[k]
+		mus.matrix=matrix(log2(nuA + CT*phiA), nrow(cnset), ncol(cnset))
+		mus <- as.numeric(matrix(log2(nuA + CT*phiA), nrow(cnset), ncol(cnset)))
+		##Again, should make sds sample-specific
+		sds.matrix <- matrix(sqrt(sig2A), nrow(cnset), ncol(cnset))
+		sds <- as.numeric(matrix(sqrt(sig2A), nrow(cnset), ncol(cnset)))
+		
+		tmp <- matrix(dnorm(a, mean=mus, sd=sds), nrow(cnset), ncol(cnset))
+		emissionProbs[cnIndex(crlmmResults), , k] <- log(tmp)
+		##first samples emission probs
+##		M[, k] <- log(tmp)[ii, 1]
+	}
+	emissionProbs
+}

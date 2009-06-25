@@ -23,9 +23,12 @@ B Carvalho
 ### FOR CNRMA
 #####################################
 - Bias adjustment for X chromosome
+
 - adjust nu for altered copy number (crosshyb)
-- a class for the assay data elements and metadata -- oligoSnpSet?
-      - should we consider a name change -- e.g., LocusSet
-- a class for the intermediate files and methods for SNP-specific plots
-- uncertainty estimates for copy number.  Put in cnConfidence slot
+
+- should store parameters in something besides the featureData slot
+
+        - Perhaps add a slot for parameters and a slot for batch.
+
+
 

@@ -33,7 +33,7 @@ snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbo
     Seed to be used when sampling.
 }
   \item{cdfName}{
-    cdfName: 'GenomeWideSnp_5', 'GenomeWideSnp_6'
+    cdfName: 'GenomeWideSnp\_5', 'GenomeWideSnp\_6'
 }
   \item{sns}{
     Sample names.

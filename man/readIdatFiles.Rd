@@ -35,7 +35,7 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     named 'SentrixPosition') and this should be specified as
     \code{list(barcode=NULL, position="SentrixPosition")}}
   \item{highDensity}{logical (used when \code{sampleSheet} is
-    specified). If \code{TRUE}, array extensions '_A', '_B' in
+    specified). If \code{TRUE}, array extensions '\_A', '\_B' in
     sampleSheet are replaced with 'R01C01', 'R01C02' etc.}
   \item{sep}{character string specifying separator used in .idat file
     names.}
@@ -51,8 +51,8 @@ were used in each channel and standard errors (all on the orginal scale)
 are read in from the .idat files.
 
 Where available, a \code{sampleSheet} data.frame, in the same format
-as used by BeadStudio (columns 'Sample_ID', 'SentrixBarcode_A' and
-'SentrixPosition_A' are required) which keeps track of sample
+as used by BeadStudio (columns 'Sample\_ID', 'SentrixBarcode\_A' and
+'SentrixPosition\_A' are required) which keeps track of sample
 information can be specified.
 
 Thanks to Keith Baggerly who provided the code to read in the binary .idat files.
