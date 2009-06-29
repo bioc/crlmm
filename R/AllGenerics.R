@@ -1,0 +1,18 @@
+setGeneric("A", function(object) standardGeneric("A"))
+setGeneric("B", function(object) standardGeneric("B"))
+##setGeneric("calls", function(x) standardGeneric("calls"))
+
+setGeneric("confs", function(object) standardGeneric("confs"))
+setGeneric("CA", function(object) standardGeneric("CA"))
+setGeneric("CB", function(object) standardGeneric("CB"))
+setGeneric("CA<-", function(object, value) standardGeneric("CA<-"))
+setGeneric("CB<-", function(object, value) standardGeneric("CB<-"))
+##setGeneric("chromosome", function(object) standardGeneric("chromosome"))
+setGeneric("cnIndex", function(object) standardGeneric("cnIndex"))
+setGeneric("cnNames", function(object) standardGeneric("cnNames"))
+##setGeneric("copyNumber", function(object) standardGeneric("copyNumber"))
+##setGeneric("position", function(object) standardGeneric("position"))
+setGeneric("snpIndex", function(object) standardGeneric("snpIndex"))
+setGeneric("snpNames", function(object) standardGeneric("snpNames"))
+setGeneric("splitByChromosome", function(object, ...) standardGeneric("splitByChromosome"))
+

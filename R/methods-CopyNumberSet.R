@@ -1,0 +1,65 @@
+setValidity("CopyNumberSet", function(object) {
+	##msg <- validMsg(NULL, Biobase:::isValidVersion(object, "CopyNumberSet"))
+	msg <- validMsg(NULL, assayDataValidMembers(assayData(object), c("CA", "CB")))
+	if (is.null(msg)) TRUE else msg
+})
+setMethod("CA", "CopyNumberSet", function(object) assayData(object)[["CA"]])
+setMethod("CB", "CopyNumberSet", function(object) assayData(object)[["CB"]])
+setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value) assayDataElementReplace(object, "CB", value))
+setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value) assayDataElementReplace(object, "CA", value))
+
+setMethod("chromosome", "CopyNumberSet", function(object) fData(object)$chromosome)
+setMethod("position", "CopyNumberSet", function(object) fData(object)$position)
+
+setMethod("copyNumber", "CopyNumberSet", function(object){
+	##ensure that 2 + NA = 2 by replacing NA's with zero
+	CA <- CA(object)
+	CB <- CB(object)
+	nas <- is.na(CA) & is.na(CB)
+	CA[is.na(CA)] <- 0
+	CB[is.na(CB)] <- 0
+	CN <- CA/100 + CB/100
+	##if both CA and CB are NA, report NA
+	CN[nas] <- NA
+	CN
+})
+
+##setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
+ellipse.CopyNumberSet <- function(x, copynumber, ...){
+	##fittedOrder <- unique(sapply(basename(celFiles), function(x) strsplit(x, "_")[[1]][2]))
+	##index <- match(plates, fittedOrder)
+	if(nrow(x) > 1) stop("only 1 snp at a time")
+	batch <- unique(x$batch)
+	if(length(batch) > 1) stop("batch variable not unique")
+	nuA <- as.numeric(fData(x)[, match(paste("nuA", batch, sep="_"), fvarLabels(x))])
+	nuB <- as.numeric(fData(x)[, match(paste("nuB", batch, sep="_"), fvarLabels(x))])	
+	phiA <- as.numeric(fData(x)[, match(paste("phiA", batch, sep="_"), fvarLabels(x))])
+	phiB <- as.numeric(fData(x)[, match(paste("phiB", batch, sep="_"), fvarLabels(x))])	
+	tau2A <- as.numeric(fData(x)[, match(paste("tau2A", batch, sep="_"), fvarLabels(x))])
+	tau2B <- as.numeric(fData(x)[, match(paste("tau2B", batch, sep="_"), fvarLabels(x))])
+	sig2A <- as.numeric(fData(x)[, match(paste("sig2A", batch, sep="_"), fvarLabels(x))])
+	sig2B <- as.numeric(fData(x)[, match(paste("sig2B", batch, sep="_"), fvarLabels(x))])
+	corrA.BB <- as.numeric(fData(x)[, match(paste("corrA.BB", batch, sep="_"), fvarLabels(x))])
+	corrB.AA <- as.numeric(fData(x)[, match(paste("corrB.AA", batch, sep="_"), fvarLabels(x))])
+	corr <- as.numeric(fData(x)[, match(paste("corr", batch, sep="_"), fvarLabels(x))])
+	for(CN in copynumber){
+		for(CA in 0:CN){
+			CB <- CN-CA
+			A.scale <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
+			B.scale <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
+			scale <- c(A.scale, B.scale)
+			if(CA == 0 & CB > 0) rho <- corrA.BB
+			if(CA > 0 & CB == 0) rho <- corrB.AA
+			if(CA > 0 & CB > 0) rho <- corr
+			lines(ellipse(x=rho, centre=c(log2(nuA+CA*phiA),
+					     log2(nuB+CB*phiB)),
+				      scale=scale), ...)
+		}
+	}
+}
+
+
+
+

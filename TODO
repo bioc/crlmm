@@ -19,16 +19,21 @@ B Carvalho
 
 - crlmm should return results in CHP files
 
-#####################################
-### FOR CNRMA
-#####################################
-- Bias adjustment for X chromosome
+  ***********************************************************
+  *                                                         *       
+  *                FOR CNRMA                                *
+  *                                                         *
+  ***********************************************************
 
-- adjust nu for altered copy number (crosshyb)
+  o Bias adjustment for X chromosome
 
-- should store parameters in something besides the featureData slot
+  o Adjust nu for altered copy number (crosshyb)
 
-        - Perhaps add a slot for parameters and a slot for batch.
+  o Should store parameters in something besides the featureData slot
+
+    - Perhaps add a matrix slot for parameters and a slot for batch.
+
+    - Need accessors
 
 
 

@@ -146,24 +146,13 @@ save(example.crlmmResults, file="~/madman/Rpacks/crlmm/inst/scripts/example.crlm
 The above algorithm for estimating copy number is predicated on the
 assumption that most samples within a batch have copy number 2 at any
 given locus.  For common copy number variants, this assumption may not
-hold.  An additional iteration using a bias correction can improve the
-estimates.  Set the \Robject{bias.adj} argument to \Robject{TRUE}.
+hold.  An additional iteration using a bias correction provides
+additional robustness to this assumption.  Set the \Robject{bias.adj}
+argument to \Robject{TRUE}:
 
-<<biasAdjustment, eval=FALSE, echo=FALSE>>=
-library(oligoClasses);library(genefilter)
-source("~/madman/Rpacks/crlmm/R/AllClasses.R")
-source("~/madman/Rpacks/crlmm/R/AllGenerics.R")
-source("~/madman/Rpacks/crlmm/R/cnrma-functions.R")
-source("~/madman/Rpacks/crlmm/R/methods-eSet.R")
-source("~/madman/Rpacks/crlmm/R/methods-ABset.R")
-source("~/madman/Rpacks/crlmm/R/methods-CrlmmSetList.R")
-source("~/madman/Rpacks/crlmm/R/methods-CopyNumberSet.R")
-source("~/madman/Rpacks/crlmm/R/utils.R")
-.crlmmPkgEnv <- new.env()
-envir2 <- envir
-envir <- getCopyNumberEnvironment(crlmmSetList, cnSet)
-updateNuPhi(crlmmSetList, cnSet)
-##TODO
+<<biasAdjustment, eval=FALSE>>=
+cnset <- computeCopynumber(crlmmResults, SNRmin=5, batch=batch, CHR=CHR, 
+			   cdfName="genomewidesnp6", bias.adj=TRUE)
 @ 
 
 \section{Suggested plots}
@@ -352,8 +341,8 @@ dev.off()
 @ 
 
 \section{Session information}
-<<>>=
-sessionInfo()
+<<sessionInfo, results=tex>>=
+toLatex(sessionInfo())
 @ 
 
 

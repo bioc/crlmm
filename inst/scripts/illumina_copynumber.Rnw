@@ -46,7 +46,9 @@ if(!exists("res.rda")){
 		load(file.path(outdir, "crlmmOut.rda"))		
 	}
 }
-@ 
+@
+
+TODO: The code below needs to be udpated for the Illumina platform.
 
 <<SNR>>=
 hist(crlmmOut$SNR) ##approx. 5-fold higher than what we see in Affy!

@@ -45,9 +45,12 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
+S3method(ellipse,CopyNumberSet)
+
 exportClasses(ABset, CopyNumberSet, CrlmmSetList)
 ##S3method(ellipse, CopyNumberSet)
-exportMethods(calls,
+exportMethods(A, B,
+	      calls,
 	      CA,
 	      "CA<-",
 	      CB,

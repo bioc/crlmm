@@ -456,8 +456,7 @@ computeCopynumber <- function(object,
 			   bias.adj=FALSE,
 			   SNRmin=SNRmin,
 			   ...)
-	message("Organizing results...")	
-	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
+
 	if(bias.adj){
 		message("Running bias adjustment...")
 		.computeCopynumber(chrom=CHR,
@@ -472,10 +471,9 @@ computeCopynumber <- function(object,
 				   bias.adj=TRUE,
 				   SNRmin=SNRmin,
 				   ...)
-		message("Organizing results...")			
-		locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
-		##.GlobalEnv[["locusSetAdj"]] <- locusSetAdj
 	}
+	message("Organizing results...")			
+	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
 	return(locusSet)
 }
 
