@@ -24,7 +24,7 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
                arrayNames = sub(paste(sep, i, sep=""), paste(sep, hdExt[[i]], sep=""), arrayNames)
             }
          }
-#         pd = new("AnnotatedDataFrame", data = sampleSheet)
+         pd = new("AnnotatedDataFrame", data = sampleSheet)
        }
        if(is.null(arrayNames)) {
          arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -32,6 +32,7 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
            sampleSheet=NULL
            cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
          }
+         pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
@@ -59,21 +60,10 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
        for(i in seq(along=arrayNames)) {
          cat("reading", arrayNames[i], "\t")
          idsG = idsR = G = R = NULL
-#         if(grnfiles[i] %in% dir(path=path)) {
+
          cat(paste(sep, fileExt$green, sep=""), "\t")
          G = readIDAT(grnidats[i])
          idsG = rownames(G$Quants)
-#         }
-#         else
-#           stop("Could not find ", grnidats[i])
-         
-#         if(redfiles[i] %in% dir(path=path)) {
-          cat(paste(sep, fileExt$red, sep=""), "\n")
-          R = readIDAT(redidats[i])
-          idsR = rownames(R$Quants)
-#         }
-#         else
-#           stop("Could not find ", redidats[i])
          
          headerInfo$nProbes[i] = G$nSNPsRead
          headerInfo$Barcode[i] = G$Barcode
@@ -81,10 +71,13 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
          headerInfo$Manifest[i] = G$Unknown$MostlyNull
          headerInfo$Position[i] = G$Unknowns$MostlyA
          
-         if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1])
+         if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
                   # || headerInfo$nProbes[i]!=headerInfo$nProbes[1] ## removed this condition as some arrays used the same manifest
                   # but differed by a few SNPs for some reason - most of the chip was the same though
-           stop("Chips are not of all of the same type - please check your data")
+#           stop("Chips are not of all of the same type - please check your data")
+           warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
+           next()
+         }
 
          dates$decode[i] = G$RunInfo[1, 1]
          dates$scan[i] = G$RunInfo[2, 1]
@@ -96,57 +89,62 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
              stop("Could not find probe IDs")
            nprobes = length(ids)
            narrays = length(arrayNames)
-           Gintens = Rintens = Gnobeads = Rnobeads = Gstderr = Rstderr = matrix(NA, nprobes, narrays)
-           rownames(Gintens) = rownames(Rintens) = rownames(Gnobeads) = rownames(Rnobeads) = rownames(Gstderr) = rownames(Rstderr) = ids
+           
+           tmpmat = matrix(NA, nprobes, narrays)
+           rownames(tmpmat) = ids
            if(!is.null(sampleSheet))
-             colnames(Gintens) = colnames(Rintens) =  colnames(Gnobeads) = colnames(Rnobeads) = colnames(Gstderr) = colnames(Rstderr) = sampleSheet$Sample_ID
+             colnames(tmpmat) = sampleSheet$Sample_ID
            else
-             colnames(Gintens) = colnames(Rintens) =  colnames(Gnobeads) = colnames(Rnobeads) = colnames(Gstderr) = colnames(Rstderr) = arrayNames
+             colnames(tmpmat) = arrayNames
+
+           RG = new("NChannelSet",
+                     R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
+                     Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
+                     phenoData=pd, storage.mode="environment")
+           rm(tmpmat)
+           gc()
          }
          
          if(length(ids)==length(idsG)) {
            if(sum(ids==idsG)==nprobes) {
-             Gintens[,i] = G$Quants[, "Mean"]
-             Gnobeads[,i] = G$Quants[, "NBeads"]
-             Gstderr[,i] = G$Quants[, "SD"]
+             RG@assayData$G[,i] = G$Quants[, "Mean"]
+             RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
+             RG@assayData$Gse[,i] = G$Quants[, "SD"]
            }
          }
          else {
            indG = match(ids, idsG)
-           Gintens[,i] = G$Quants[indG, "Mean"]
-           Gnobeads[,i] = G$Quants[indG, "NBeads"]
-           Gstderr[,i] = G$Quants[indG, "SD"]
+           RG@assayData$G[,i] = G$Quants[indG, "Mean"]
+           RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
+           RG@assayData$Gse[,i] = G$Quants[indG, "SD"]
          }
+         rm(G)
+         gc()
+         
+         cat(paste(sep, fileExt$red, sep=""), "\n")
+         R = readIDAT(redidats[i])
+         idsR = rownames(R$Quants)
+         
          if(length(ids)==length(idsG)) {   
            if(sum(ids==idsR)==nprobes) {
-             Rintens[,i] = R$Quants[ ,"Mean"]
-             Rnobeads[,i] = R$Quants[ ,"NBeads"]
-             Rstderr[,i] = R$Quants[ ,"SD"]
+             RG@assayData$R[,i] = R$Quants[ ,"Mean"]
+             RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
+             RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
            }
          }
          else {
            indR = match(ids, idsR)
-           Rintens[,i] = R$Quants[indR, "Mean"]
-           Rnobeads[,i] = R$Quants[indR, "NBeads"]
-           Rstderr[,i] = R$Quants[indR, "SD"]
+           RG@assayData$R[,i] = R$Quants[indR, "Mean"]
+           RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]
+           RG@assayData$Rse[,i] = R$Quants[indR, "SD"]
          }
+         rm(R)
+         gc()
        }
-       if(is.null(sampleSheet)) {
-         if(saveDate)
-           pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames, DecodeDate=dates$decode, ScanDate=dates$scan))
-         else
-           pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
-       }
-       else {
-         if(saveDate)
-           pd = new("AnnotatedDataFrame", data = cbind(sampleSheet, DecodeDate=dates$decode, ScanDate=dates$scan))
-         else
-           pd = new("AnnotatedDataFrame", data = sampleSheet)
-       }
-       RG = new("NChannelSet",
-                R=Rintens, G=Gintens, Rnb=Rnobeads, Gnb=Gnobeads,
-                Rse=Rstderr, Gse=Gstderr, annotation=headerInfo$Manifest[1],
-                phenoData=pd)
+       if(saveDate)
+         RG@scanDates = dates$scan
+       storageMode(RG) = "lockedEnvironment"
+       RG
 }
 
 
@@ -455,17 +453,23 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   bord = match(bids, featureNames(RG)) # and here
 #  argrg = aids[rrgg]
 #  brgrg = bids[rrgg]
-  X = Y = Xnb = Ynb = Xse = Yse = zero = matrix(0, nsnps, narrays)
-  rownames(X) = rownames(Y) = rownames(Xnb) = rownames(Ynb) = rownames(Xse) = rownames(Yse) = ids
-  colnames(X) = colnames(Y) = colnames(Xnb) = colnames(Ynb) = colnames(Xse) = colnames(Yse) = sampleNames(RG) #$G
 
+  tmpmat = matrix(0, nsnps, narrays)
+  rownames(tmpmat) = ids
+  colnames(tmpmat) = sampleNames(RG)
+  XY = new("NChannelSet", X=tmpmat, Y=tmpmat, Xnb=tmpmat, Ynb=tmpmat, Xse=tmpmat, Yse=tmpmat, zero=tmpmat,
+                 annotation=chipType, phenoData=RG@phenoData, scanDates=RG@scanDates, storage.mode="environment")
+  rm(tmpmat)
+  gc()
+  
   # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
-  X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
-  Y[!is.na(aord),] = exprs(channel(RG, "G"))[aord[!is.na(aord)],] # mostly green
-  Xnb[!is.na(aord),] = exprs(channel(RG, "Rnb"))[aord[!is.na(aord)],]
-  Ynb[!is.na(aord),] = exprs(channel(RG, "Gnb"))[aord[!is.na(aord)],]
-  Xse[!is.na(aord),] = exprs(channel(RG, "Rse"))[aord[!is.na(aord)],]
-  Yse[!is.na(aord),] = exprs(channel(RG, "Gse"))[aord[!is.na(aord)],]
+  XY@assayData$X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
+  XY@assayData$Y[!is.na(aord),] = exprs(channel(RG, "G"))[aord[!is.na(aord)],] # mostly green
+  XY@assayData$Xnb[!is.na(aord),] = exprs(channel(RG, "Rnb"))[aord[!is.na(aord)],]
+  XY@assayData$Ynb[!is.na(aord),] = exprs(channel(RG, "Gnb"))[aord[!is.na(aord)],]
+  XY@assayData$Xse[!is.na(aord),] = exprs(channel(RG, "Rse"))[aord[!is.na(aord)],]
+  XY@assayData$Yse[!is.na(aord),] = exprs(channel(RG, "Gse"))[aord[!is.na(aord)],]
+  gc()
   
   ## Warning - not 100% sure that the code below is correct - could be more complicated than this
   
@@ -490,24 +494,18 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 #  Yse[infIGG,] = exprs(channel(RG, "Gse"))[bord[infIGG],]
     
   #  For now zero out Infinium I probes
-  X[infI,] = 0
-  Y[infI,] = 0
-  Xnb[infI,] = 0
-  Ynb[infI,] = 0
-  Xse[infI,] = 0
-  Yse[infI,] = 0
+  XY@assayData$X[infI,] = 0
+  XY@assayData$Y[infI,] = 0
+  XY@assayData$Xnb[infI,] = 0
+  XY@assayData$Ynb[infI,] = 0
+  XY@assayData$Xse[infI,] = 0
+  XY@assayData$Yse[infI,] = 0
 
-  zero[X==0 | Y==0] = 1
-  
+  XY@assayData$zero[XY@assayData$X==0 | XY@assayData$Y==0] = 1
   gc()
-  
-  XY = new("NChannelSet",
-           X=X, Y=Y,
-           Xnb=Xnb, Ynb=Ynb,
-           Xse=Xse, Yse=Yse,
-           zero=zero,
-           annotation=chipType,
-           phenoData=RG@phenoData)
+
+#  storageMode(XY) = "lockedEnvironment"
+  XY
 }
 
 stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
@@ -528,9 +526,9 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
   if(useTarget)
     targetdist = getVarInEnv("reference")
   
-  Xqws = Yqws = matrix(0, nrow(XY), ncol(XY))
-  colnames(Xqws) = colnames(Yqws) = sampleNames(XY) #$X
-  rownames(Xqws) = rownames(Yqws) = featureNames(XY)
+#  Xqws = Yqws = matrix(0, nrow(XY), ncol(XY))
+#  colnames(Xqws) = colnames(Yqws) = sampleNames(XY) #$X
+#  rownames(Xqws) = rownames(Yqws) = featureNames(XY)
 
   if(verbose){
     message("Quantile normalizing ", ncol(XY), " arrays by ", max(stripnum), " strips.")
@@ -548,23 +546,26 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
       tmp = normalize.quantiles.use.target(as.matrix(cbind(subX, subY)), targetdist[[s]])
     else
       tmp = normalize.quantiles(as.matrix(cbind(subX, subY)))
-    Xqws[sel,] = tmp[,1:(ncol(tmp)/2)]
-    Yqws[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
+    XY@assayData$X[sel,] = tmp[,1:(ncol(tmp)/2)]
+    XY@assayData$Y[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
+#    Xqws[sel,] = tmp[,1:(ncol(tmp)/2)]
+#    Yqws[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
     rm(subX, subY, tmp, sel)
     gc()
   }
   if(verbose)
     cat("\n")
-  XYNorm = new("NChannelSet",
-                X=Xqws+16,
-                Y=Yqws+16,
-                Xnb=exprs(channel(XY, "Xnb")),
-                Ynb=exprs(channel(XY, "Ynb")),
-                Xse=exprs(channel(XY, "Xse")),
-                Yse=exprs(channel(XY, "Yse")),
-                zero=exprs(channel(XY, "zero")),
-                annotation=annotation(XY),
-                phenoData=XY@phenoData)
+  XY
+#  XYNorm = new("NChannelSet",
+#                X=Xqws+16,
+#                Y=Yqws+16,
+#                Xnb=exprs(channel(XY, "Xnb")),
+#                Ynb=exprs(channel(XY, "Ynb")),
+#                Xse=exprs(channel(XY, "Xse")),
+#                Yse=exprs(channel(XY, "Yse")),
+#                zero=exprs(channel(XY, "zero")),
+#                annotation=annotation(XY),
+#                phenoData=XY@phenoData)
 }
 
 

@@ -179,4 +179,10 @@ is decoded and scanned
 * updated computeCopynumber
 * export A, B methods for ABset class
 
+2009-07-01 M Ritchie - committed version 1.3.7
+
+* made memory savings to reading and normalization if Illumina data
+* Now use 'scanDates' slot to save scan dates instead of saving them in phenoData slot
+* added vignette for genoytping illumina data (crlmmIllumina.pdf in inst/doc and crlmmIllumina.Rnw in inst/scripts)
+* Changed stop() to warning() when idats are of different type in readIdatFiles()
 
