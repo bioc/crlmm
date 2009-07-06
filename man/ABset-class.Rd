@@ -1,0 +1,45 @@
+\name{ABset-class}
+\Rdversion{1.1}
+\docType{class}
+\alias{ABset-class}
+\alias{A}
+\alias{A,ABset-method}
+\alias{B}
+\alias{B,ABset-method}
+\title{Class "ABset"}
+\description{Containter for quantile-normalized intensities}
+\section{Objects from the Class}{
+Objects can be created by calls of the form \code{new("ABset", assayData, phenoData, featureData, experimentData, annotation, scanDates, ...)}.
+}
+\section{Slots}{
+	 \describe{
+    \item{\code{assayData}:}{Object of class \code{"AssayData"} }
+    \item{\code{phenoData}:}{Object of class \code{"AnnotatedDataFrame"}  }
+    \item{\code{featureData}:}{Object of class \code{"AnnotatedDataFrame"} }
+    \item{\code{experimentData}:}{Object of class \code{"MIAME"} }
+    \item{\code{annotation}:}{Object of class \code{"character"}  }
+    \item{\code{scanDates}:}{Object of class \code{"character"}  }
+    \item{\code{.__classVersion__}:}{Object of class \code{"Versions"}  }
+  }
+}
+\section{Extends}{
+Class \code{"\linkS4class{eSet}"}, directly.
+Class \code{"\linkS4class{VersionedBiobase}"}, by class "eSet", distance 2.
+Class \code{"\linkS4class{Versioned}"}, by class "eSet", distance 3.
+}
+\section{Methods}{
+  \describe{
+    \item{A}{\code{signature(object="ABset")}: accessor for the
+      quantile-normalized intensities of allele A for polymorphic probes
+      and the quantile normalized intensities for the copy number probes.}
+    \item{B}{\code{signature(object="ABset")}: accessor for the
+      quantile-normalized intensities of allele B for polymorphic probes.}    
+    \item{plot}{\code{signature(x = "ABset", y = "CopyNumberSet")}:
+... }}
+
+}
+\author{R. Scharpf}
+\examples{
+showClass("ABset")
+}
+\keyword{classes}

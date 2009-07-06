@@ -3,15 +3,15 @@ setValidity("CopyNumberSet", function(object) {
 	msg <- validMsg(NULL, assayDataValidMembers(assayData(object), c("CA", "CB")))
 	if (is.null(msg)) TRUE else msg
 })
-setMethod("CA", "CopyNumberSet", function(object) assayData(object)[["CA"]])
-setMethod("CB", "CopyNumberSet", function(object) assayData(object)[["CB"]])
+setMethod("CA", "CopyNumberSet", function(object) assayData(object)[["CA"]]/100)
+setMethod("CB", "CopyNumberSet", function(object) assayData(object)[["CB"]]/100)
 setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
 		 function(object, value) assayDataElementReplace(object, "CB", value))
 setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
 		 function(object, value) assayDataElementReplace(object, "CA", value))
 
 setMethod("chromosome", "CopyNumberSet", function(object) fData(object)$chromosome)
-setMethod("position", "CopyNumberSet", function(object) fData(object)$position)
+
 
 setMethod("copyNumber", "CopyNumberSet", function(object){
 	##ensure that 2 + NA = 2 by replacing NA's with zero
@@ -20,14 +20,17 @@ setMethod("copyNumber", "CopyNumberSet", function(object){
 	nas <- is.na(CA) & is.na(CB)
 	CA[is.na(CA)] <- 0
 	CB[is.na(CB)] <- 0
-	CN <- CA/100 + CB/100
+	CN <- CA + CB
 	##if both CA and CB are NA, report NA
 	CN[nas] <- NA
 	CN
 })
 
+setMethod("position", "CopyNumberSet", function(object) fData(object)$position)
+
 ##setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
-ellipse.CopyNumberSet <- function(x, copynumber, ...){
+##ellipse.CopyNumberSet <- function(x, copynumber, ...){
+setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
 	##fittedOrder <- unique(sapply(basename(celFiles), function(x) strsplit(x, "_")[[1]][2]))
 	##index <- match(plates, fittedOrder)
 	if(nrow(x) > 1) stop("only 1 snp at a time")
@@ -58,7 +61,7 @@ ellipse.CopyNumberSet <- function(x, copynumber, ...){
 				      scale=scale), ...)
 		}
 	}
-}
+})
 
 
 

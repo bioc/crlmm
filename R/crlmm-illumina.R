@@ -3,47 +3,47 @@
 # or to use the optional 'Path' column in sampleSheet
 # - there is a lot of header information that is currently discarded - could try and store this somewhere in the resulting NChannelSet
 
-readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
-                                arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-                                highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), saveDate=FALSE) {
+readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
+			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+			  highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), saveDate=FALSE) {
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
-         arrayNames=NULL
-         if(!is.null(arrayInfoColNames$barcode) && (arrayInfoColNames$barcode %in% colnames(sampleSheet))) {
-           barcode = sampleSheet[,arrayInfoColNames$barcode]
-           arrayNames=barcode
-         }
-         if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {  
-           position = sampleSheet[,arrayInfoColNames$position]
-           if(is.null(arrayNames))
-             arrayNames=position
-           else
-             arrayNames = paste(arrayNames, position, sep=sep)
-           if(highDensity) {
-             hdExt = list(A="R01C01", B="R01C02", C="R02C01", D="R02C02")
-             for(i in names(hdExt))
-               arrayNames = sub(paste(sep, i, sep=""), paste(sep, hdExt[[i]], sep=""), arrayNames)
-            }
-         }
-         pd = new("AnnotatedDataFrame", data = sampleSheet)
+	       arrayNames=NULL
+	       if(!is.null(arrayInfoColNames$barcode) && (arrayInfoColNames$barcode %in% colnames(sampleSheet))) {
+		       barcode = sampleSheet[,arrayInfoColNames$barcode]
+		       arrayNames=barcode
+	       }
+	       if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {  
+		       position = sampleSheet[,arrayInfoColNames$position]
+		       if(is.null(arrayNames))
+			       arrayNames=position
+		       else
+			       arrayNames = paste(arrayNames, position, sep=sep)
+		       if(highDensity) {
+			       hdExt = list(A="R01C01", B="R01C02", C="R02C01", D="R02C02")
+			       for(i in names(hdExt))
+				       arrayNames = sub(paste(sep, i, sep=""), paste(sep, hdExt[[i]], sep=""), arrayNames)
+		       }
+	       }
+	       pd = new("AnnotatedDataFrame", data = sampleSheet)
        }
        if(is.null(arrayNames)) {
-         arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
-         if(!is.null(sampleSheet)) {
-           sampleSheet=NULL
-           cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
-         }
-         pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
+	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
+	       if(!is.null(sampleSheet)) {
+		       sampleSheet=NULL
+		       cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
+	       }
+	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
        redfiles = paste(arrayNames, fileExt$red, sep=sep)
        if(length(grnfiles)==0 || length(redfiles)==0)
-         stop("Cannot find .idat files")
+	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
-         stop("Cannot find matching .idat files")
+	       stop("Cannot find matching .idat files")
        if(!all(c(redfiles,grnfiles) %in% dir(path=path)))
-         stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
-                 paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
+	       stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
+		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
        grnidats = file.path(path, grnfiles)
        redidats = file.path(path, redfiles)
        
@@ -58,97 +58,95 @@ readIdatFiles = function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 
        # read in the data
        for(i in seq(along=arrayNames)) {
-         cat("reading", arrayNames[i], "\t")
-         idsG = idsR = G = R = NULL
-
-         cat(paste(sep, fileExt$green, sep=""), "\t")
-         G = readIDAT(grnidats[i])
-         idsG = rownames(G$Quants)
+	       cat("reading", arrayNames[i], "\t")
+	       idsG = idsR = G = R = NULL
+	       cat(paste(sep, fileExt$green, sep=""), "\t")
+	       G = readIDAT(grnidats[i])
+	       idsG = rownames(G$Quants)
+	       headerInfo$nProbes[i] = G$nSNPsRead
+	       headerInfo$Barcode[i] = G$Barcode
+	       headerInfo$ChipType[i] = G$ChipType
+	       headerInfo$Manifest[i] = G$Unknown$MostlyNull
+	       headerInfo$Position[i] = G$Unknowns$MostlyA
          
-         headerInfo$nProbes[i] = G$nSNPsRead
-         headerInfo$Barcode[i] = G$Barcode
-         headerInfo$ChipType[i] = G$ChipType
-         headerInfo$Manifest[i] = G$Unknown$MostlyNull
-         headerInfo$Position[i] = G$Unknowns$MostlyA
-         
-         if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
-                  # || headerInfo$nProbes[i]!=headerInfo$nProbes[1] ## removed this condition as some arrays used the same manifest
-                  # but differed by a few SNPs for some reason - most of the chip was the same though
-#           stop("Chips are not of all of the same type - please check your data")
-           warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
-           next()
-         }
+	       if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
+		       ## || headerInfo$nProbes[i]!=headerInfo$nProbes[1] ## removed this condition as some arrays used the same manifest
+		       ## but differed by a few SNPs for some reason - most of the chip was the same though
+		       ##           stop("Chips are not of all of the same type - please check your data")
+		       warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
+		       next()
+	       }
+	       
+	       dates$decode[i] = G$RunInfo[1, 1]
+	       dates$scan[i] = G$RunInfo[2, 1]
 
-         dates$decode[i] = G$RunInfo[1, 1]
-         dates$scan[i] = G$RunInfo[2, 1]
-
-         if(i==1) {
-           if(is.null(ids) && !is.null(G))
-             ids = idsG
-           else
-             stop("Could not find probe IDs")
-           nprobes = length(ids)
-           narrays = length(arrayNames)
+	       if(i==1) {
+		       if(is.null(ids) && !is.null(G))
+			       ids = idsG
+		       else
+			       stop("Could not find probe IDs")
+		       nprobes = length(ids)
+		       narrays = length(arrayNames)
            
-           tmpmat = matrix(NA, nprobes, narrays)
-           rownames(tmpmat) = ids
-           if(!is.null(sampleSheet))
-             colnames(tmpmat) = sampleSheet$Sample_ID
-           else
-             colnames(tmpmat) = arrayNames
+		       tmpmat = matrix(NA, nprobes, narrays)
+		       rownames(tmpmat) = ids
+		       if(!is.null(sampleSheet))
+			       colnames(tmpmat) = sampleSheet$Sample_ID
+		       else
+			       colnames(tmpmat) = arrayNames
 
-           RG = new("NChannelSet",
-                     R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
-                     Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
-                     phenoData=pd, storage.mode="environment")
-           rm(tmpmat)
-           gc()
-         }
+		       RG = new("NChannelSet",
+		       R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
+		       Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
+		       phenoData=pd, storage.mode="environment")
+		       rm(tmpmat)
+		       gc()
+	       }
          
-         if(length(ids)==length(idsG)) {
-           if(sum(ids==idsG)==nprobes) {
-             RG@assayData$G[,i] = G$Quants[, "Mean"]
-             RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
-             RG@assayData$Gse[,i] = G$Quants[, "SD"]
-           }
-         }
-         else {
-           indG = match(ids, idsG)
-           RG@assayData$G[,i] = G$Quants[indG, "Mean"]
-           RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
-           RG@assayData$Gse[,i] = G$Quants[indG, "SD"]
-         }
-         rm(G)
-         gc()
+	       if(length(ids)==length(idsG)) {
+		       if(sum(ids==idsG)==nprobes) {
+			       RG@assayData$G[,i] = G$Quants[, "Mean"]
+			       RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
+			       RG@assayData$Gse[,i] = G$Quants[, "SD"]
+		       }
+	       }
+	       else {
+		       indG = match(ids, idsG)
+		       RG@assayData$G[,i] = G$Quants[indG, "Mean"]
+		       RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
+		       RG@assayData$Gse[,i] = G$Quants[indG, "SD"]
+	       }
+	       rm(G)
+	       gc()
          
-         cat(paste(sep, fileExt$red, sep=""), "\n")
-         R = readIDAT(redidats[i])
-         idsR = rownames(R$Quants)
+	       cat(paste(sep, fileExt$red, sep=""), "\n")
+	       R = readIDAT(redidats[i])
+	       idsR = rownames(R$Quants)
          
-         if(length(ids)==length(idsG)) {   
-           if(sum(ids==idsR)==nprobes) {
-             RG@assayData$R[,i] = R$Quants[ ,"Mean"]
-             RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
-             RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
-           }
-         }
-         else {
-           indR = match(ids, idsR)
-           RG@assayData$R[,i] = R$Quants[indR, "Mean"]
-           RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]
-           RG@assayData$Rse[,i] = R$Quants[indR, "SD"]
-         }
-         rm(R)
-         gc()
+	       if(length(ids)==length(idsG)) {   
+		       if(sum(ids==idsR)==nprobes) {
+			       RG@assayData$R[,i] = R$Quants[ ,"Mean"]
+			       RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
+			       RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
+		       }
+	       }
+	       else {
+		       indR = match(ids, idsR)
+		       RG@assayData$R[,i] = R$Quants[indR, "Mean"]
+		       RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]
+		       RG@assayData$Rse[,i] = R$Quants[indR, "SD"]
+	       }
+	       rm(R)
+	       gc()
        }
        if(saveDate)
-         RG@scanDates = dates$scan
+	       RG@scanDates = dates$scan
        storageMode(RG) = "lockedEnvironment"
        RG
 }
 
 
-# the readIDAT() and readBPM() functions below were provided by Keith Baggerly, 27/8/2008
+## the readIDAT() and readBPM() functions below were provided by Keith Baggerly, 27/8/2008
 readIDAT <- function(idatFile){
 
   fileSize <- file.info(idatFile)$size
@@ -692,7 +690,6 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7) {
-
   if ((load.it | save.it) & missing(intensityFile))
     stop("'intensityFile' is missing, and you chose either load.it or save.it")
   if (!missing(intensityFile))

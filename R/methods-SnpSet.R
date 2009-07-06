@@ -2,4 +2,4 @@
 
 
 setMethod("calls", "SnpSet", function(object) assayData(object)$call)
-setMethod("confs", "SnpSet", function(x) assayData(x)$callProbability)
+setMethod("confs", "SnpSet", function(object) assayData(object)$callProbability)

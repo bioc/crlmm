@@ -39,7 +39,7 @@ setMethod("combine", signature=signature(x="CrlmmSetList", y="CrlmmSetList"),
 		  abset <- combine(x.abset, y.abset)
 
 		  ##we have hijacked the featureData slot to store parameters.  Biobase will not allow combining our 'feature' data.
-		  warning("removing featureData")
+		  warning("the featureData is not easily combined...  removing the featureData")
 		  ##fd1 <- featureData(x.snpset)
 		  ##fd2 <- featureData(y.snpset)
 		  featureData(x.snpset) <- annotatedDataFrameFrom(calls(x.snpset), byrow=TRUE)
@@ -53,18 +53,21 @@ setMethod("combine", signature=signature(x="CrlmmSetList", y="CrlmmSetList"),
 
 
 setMethod("featureNames", "CrlmmSetList", function(object) featureNames(object[[1]]))
+
 setMethod("plot", signature(x="CrlmmSetList"),
 	  function(x, y, ...){
 		  A <- log2(A(x))
 		  B <- log2(B(x))
 		  plot(A, B, ...)
 	  })
+
 setMethod("points", signature(x="CrlmmSetList"),
 	  function(x, y, ...){
 		  A <- log2(A(x))
 		  B <- log2(B(x))
 		  points(A, B, ...)
 	  })
+
 setMethod("sampleNames", "CrlmmSetList", function(object) sampleNames(object[[1]]))
 setMethod("scanDates", "CrlmmSetList", function(object) scanDates(object[[1]]))
 setMethod("show", "CrlmmSetList", function(object){
@@ -78,8 +81,8 @@ setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir)
 	load(file.path(path, "cnProbes.rda"))				
 	for(CHR in 1:24){
 		cat("Chromosome ", CHR, "\n")
-		snps <- rownames(snpProbes)[snpProbes[, "chrom"] == CHR]
-		cnps <- rownames(cnProbes)[cnProbes[, "chrom"] == CHR]
+		snps <- rownames(snpProbes)[snpProbes$chr == CHR]
+		cnps <- rownames(cnProbes)[cnProbes$chr == CHR]
 		index <- c(match(snps, featureNames(object)),
 			   match(cnps, featureNames(object)))
 		crlmmResults <- object[index, ]

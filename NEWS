@@ -1,0 +1,51 @@
+        **************************************************
+        *                                                *
+        *              1.3 SERIES NEWS                   *
+        *                                                *
+        **************************************************
+
+USER VISIBLE CHANGES
+
+     o 3 new classes created:
+
+        i.  'ABset': container for quantile-normalized A and B
+       	    intensities for both SNP and copy number probes.  Required
+       	    assay data elements are 'A' and 'B'.  Extends eSet
+       	    directly.
+
+                - For nonpolymorphic probes, the quantile normalized
+                  intensity is stored in the 'A' assay data element.
+                  The corresponding row in the 'B' assay data element
+                  is NA.  This is a bit inefficient, but greatly
+                  simplifies downstream analyses.  In particular, '['
+                  works.
+
+        ii.  'CrlmmSetList': container for results from preprocessing
+	     and genotyping.  This object is a list.  The first
+	     element of the list is an ABset.  The second element is a
+	     SnpSet containing genotype calls.  The two elements are
+	     required to have identical featureNames and sampleNames.
+
+       		- added several methods for subsetting and accessing
+ 		  elements of this object, including featureNames,
+ 		  sampleNames, and "[".
+
+         iii. 'CopyNumberSet': contains locus-level estimates of copy
+  	      number for SNPs and polymorphic probes.
+
+       	        - Required assay data elements are 'CA' and 'CB',
+                  corresponding to the absolute copy number for allele
+                  A and B, respectively.
+
+	        - For nonpolymorphic probes, the total copy number is
+                  stored in the 'CA' slot and a NA is recorded for the
+                  corresponding row in the CB matrix. 
+
+		- Useful methods: 'copyNumber', 'ellipse', 'points'
+
+     o 'crlmmWrapper' function does preprocessing
+       (quantile-normalization) and genotyping, saving an object of
+       class CrlmmSetList for each chromosome
+
+     o 'computeCopynumber' now requires an object of class
+        'CrlmmSetList' and returns an object of class 'CopyNumberSet'.

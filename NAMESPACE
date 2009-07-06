@@ -45,7 +45,7 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-S3method(ellipse,CopyNumberSet)
+##S3method(ellipse,CopyNumberSet)
 
 exportClasses(ABset, CopyNumberSet, CrlmmSetList)
 ##S3method(ellipse, CopyNumberSet)
@@ -73,7 +73,7 @@ export(celDates,
        crlmmIllumina,
        crlmmWrapper,
        ellipse,
-       computeEmission,
+##       computeEmission,
        list.celfiles,
        position,
        readIdatFiles,

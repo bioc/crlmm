@@ -154,11 +154,16 @@ predictGender <- function(res, cdfName="genomewidesnp6", SNRMin=5){
 combineIntensities <- function(res, cnrmaResult, cdfName){
 	rownames(res$B) <- rownames(res$A) <- res$gns
 	colnames(res$B) <- colnames(res$A) <- res$sns
-	NP <- cnrmaResult$NP
-	blank <- matrix(NA, nrow(NP), ncol(NP))
-	dimnames(blank) <- dimnames(NP)
-	A <- rbind(res$A, NP)
-	B <- rbind(res$B, blank)
+	if(!is.null(cnrmaResult)){
+		NP <- cnrmaResult$NP
+		blank <- matrix(NA, nrow(NP), ncol(NP))
+		dimnames(blank) <- dimnames(NP)
+		A <- rbind(res$A, NP)
+		B <- rbind(res$B, blank)
+	} else {
+		A <- res$A
+		B <- res$B
+	}
 	aD <- assayDataNew("lockedEnvironment",
 			   A=A,
 			   B=B)
@@ -166,7 +171,7 @@ combineIntensities <- function(res, cnrmaResult, cdfName){
 		     assayData=aD,
 		     featureData=annotatedDataFrameFrom(A, byrow=TRUE),
 		     phenoData=annotatedDataFrameFrom(A, byrow=FALSE),
-		     annotation="genomewidesnp6")
+		     annotation=cdfName)
 	ABset$SNR <- res$SNR
 	ABset$gender <- predictGender(res=res, cdfName=cdfName)
 	return(ABset)
@@ -207,8 +212,48 @@ harmonizeDimnamesTo <- function(object1, object2){
 	stopifnot(all.equal(sampleNames(object1), sampleNames(object2)))
 	return(object1)
 }
+
+crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
+				 save.intermediate=FALSE,
+				 splitByChr=TRUE,...){
+	if(file.exists(file.path(outdir, "RG.rda"))) load(file.path(outdir, "RG.rda"))
+	else {
+		RG <- readIdatFiles(sampleSheet=samplesheet5, arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), saveDate=TRUE,
+				    path=path)
+		J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
+		RG <- RG[, -J]
+		if(save.intermediate) save(RG, file=file.path(outdir, "RG.rda"))  ##935M for 91 samples...better not to save this
+	}	
+	if(!file.exists(file.path(outdir, "res.rda"))){
+		crlmmOut <- crlmmIllumina(RG=RG, cdfName=cdfName, sns=pData(RG)$ID, returnParams=TRUE, save.it=TRUE, intensityFile=file.path(outdir, "res.rda"))
+		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))				
+	} else{
+		message("Loading...")		
+		load(file.path(outdir, "res.rda"))
+		load(file.path(outdir, "crlmmOut.rda"))		
+	}
+	ABset <- combineIntensities(res, NULL, cdfName=cdfName)
+	scanDates(ABset) <- as.character(pData(RG)$ScanDate)
+	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset)
+	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
+	crlmmList <- list(ABset,
+			  crlmmResult)
+	crlmmList <- as(crlmmList, "CrlmmSetList")
+	if(splitByChr){
+		message("Saving by chromosome")
+		splitByChromosome(crlmmList, cdfName=cdfName, outdir=outdir)
+	} else{
+		message("Saving crlmmList object to ", outdir)
+		save(crlmmList, file=file.path(outdir, "crlmmList.rda"))
+	}
+	message("CrlmmSetList objects saved to ", outdir)
+}
 	
-crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.it, splitByChr=TRUE, ...){
+	
+	
+crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.it,
+			 splitByChr=TRUE, ...){
+	##no visible binding for res
 	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
 		crlmmResult <- crlmm(filenames=filenames, cdfName=cdfName, save.it=TRUE, ...)
 		if(save.it) save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
@@ -247,6 +292,8 @@ crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.
 	}
 	return()
 }
+
+
 
 cnrma <- function(filenames, cdfName="genomewidesnp6", sns, seed=1, verbose=FALSE){
 	pkgname <- getCrlmmAnnotationName(cdfName)
@@ -307,29 +354,20 @@ goodSnps <- function(phi.thr, envir, fewAA=20, fewBB=20){
 	return(flags)
 }
 
+##Needs to allow for NULL NP
 instantiateObjects <- function(calls, conf, NP, plate, envir,
 			       chrom,
 			       A, B,
 			       gender, SNRmin=5, SNR,
                                pkgname,
 			       locusSet){
-##	pkgname <- paste(pkgname, "Crlmm", sep="")
 	envir[["chrom"]] <- chrom
-##	CHR_INDEX <- paste(chrom, "index", sep="")
-##        fname <- paste(CHR_INDEX, ".rda", sep="")
-##        loader(fname, .crlmmPkgEnv, pkgname)
-##        index <- get("index", envir=.crlmmPkgEnv)
-####	data(list=CHR_INDEX, package="genomewidesnp6Crlmm")
-##	A <- A[index[[1]], SNR > SNRmin]
-##	B <- B[index[[1]], SNR > SNRmin]
-##	calls <- calls[index[[1]], SNR > SNRmin]
-##	conf <- conf[index[[1]], SNR > SNRmin]
-##	NP <- NP[index[[2]], SNR > SNRmin]
 	A <- A[, SNR > SNRmin]
 	B <- B[, SNR > SNRmin]
 	calls <- calls[, SNR > SNRmin]
 	conf <- conf[, SNR > SNRmin]
-	NP <- NP[, SNR > SNRmin]
+	if(!is.null(NP))
+		NP <- NP[, SNR > SNRmin]
 	plate <- plate[SNR > SNRmin]
 	uplate <- unique(plate)
 	SNR <- SNR[SNR > SNRmin]
@@ -342,9 +380,12 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 	envir[["calls"]] <- calls
 	envir[["conf"]] <- conf
 	snps <- rownames(calls)
-	cnvs <- rownames(NP)
+	if(!is.null(NP)){	
+		cnvs <- rownames(NP)
+	} else cnvs <- NULL
 	sns <- basename(colnames(calls))
-	stopifnot(identical(colnames(calls), colnames(NP)))
+	if(!is.null(NP))
+		stopifnot(identical(colnames(calls), colnames(NP)))
 	envir[["sns"]] <- sns
 	envir[["snps"]] <- snps
 	envir[["cnvs"]] <- cnvs
@@ -354,7 +395,6 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 			message("Estimating gender")
 			XMedian <- apply(log2(A[, , drop=FALSE]) + log2(B[, , drop=FALSE]), 2, median)/2
 			gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRmin]), max(XMedian[SNR>SNRmin])))[["cluster"]]			
-			##gender <- getGender(res)
 			gender[gender==2] <- "female"
 			gender[gender=="1"] <- "male"
 			envir[["gender"]] <- gender
@@ -373,41 +413,34 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 	envir[["Ns"]] <- envir[["muB"]] <- envir[["muA"]] <- Ns
 	envir[["vB"]] <- envir[["vA"]] <- Ns
 
-	CT.sds <- CT <- matrix(NA, nrow(NP), length(sns))
-	##NP.CT <- matrix(NA, nrow(NP), ncol(NP))
-	##NP.sds <- matrix(NA, nrow(NP), ncol(NP))
+	if(!is.null(NP)){
+		CT.sds <- CT <- matrix(NA, nrow(NP), length(sns))
+		nuT <- matrix(NA, nrow(NP), length(uplate))
+		phiT <- nuT
+		normalNP <- matrix(TRUE, nrow(NP), ncol(NP))
+		sig2T <- matrix(NA, nrow(NP), length(uplate))		
+	} else{
+		sig2T <- normalNP <- nuT <- phiT <- CT.sds <- CT <- NULL
+	}
 	envir[["CT"]] <- CT
 	envir[["CT.sds"]] <- CT.sds
-
-	##assign("NP.CT", NP.CT, envir)
-	##assign("NP.sds", NP.sds, envir)
-	nuT <- matrix(NA, nrow(NP), length(uplate))
-	phiT <- nuT
 	envir[["nuT"]] <- nuT
 	envir[["phiT"]] <- phiT
-	##assign("nus", nus, envir=envir)  
-	##assign("phis", nus, envir=envir)
-
 	plates.completed <- rep(FALSE, length(uplate))
 	envir[["plates.completed"]] <- plates.completed
-
 	steps <- rep(FALSE, 4)
 	names(steps) <- c("suffStats", "coef", "snp-cn", "np-cn")
 	envir[["steps"]] <- steps
-
 	snpflags <- matrix(FALSE, length(snps), length(uplate))
 	npflags <- matrix(FALSE, length(cnvs), length(uplate))
-	##assign("snpflags", snpflags, envir=envir)
-	##assign("npflags", npflags, envir=envir)
 	envir[["snpflags"]] <- snpflags
 	envir[["npflags"]] <- npflags
-
 	tau2A <- matrix(NA, nrow(calls), length(uplate))
 	envir[["tau2A"]] <- tau2A
 	envir[["tau2B"]] <- tau2A
 	envir[["sig2A"]] <- tau2A
 	envir[["sig2B"]] <- tau2A
-	sig2T <- matrix(NA, nrow(NP), length(uplate))
+
 	envir[["sig2T"]] <- sig2T
 	envir[["corr"]] <- tau2A
 	envir[["corrA.BB"]] <- tau2A
@@ -417,7 +450,6 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 	envir[["nuB.se"]] <- envir[["nuA.se"]] <- tau2A
 	envir[["phiB.se"]] <- envir[["phiA.se"]] <- tau2A
 	normal <- matrix(TRUE, nrow(A), ncol(A))
-	normalNP <- matrix(TRUE, nrow(NP), ncol(NP))	
 	envir[["normal"]] <- normal
 	envir[["normalNP"]] <- normalNP
 }
@@ -430,6 +462,7 @@ computeCopynumber <- function(object,
 			      cdfName="genomewidesnp6", ...){
 	##require(oligoClasses)
 	if(missing(CHR)) stop("Must specify CHR")
+	if(CHR == 24) stop("Nothing available yet for chromosome Y")
 	if(missing(batch)) stop("Must specify batch")
 	if(length(batch) != ncol(object[[1]])) stop("Batch must be the same length as the number of samples")
 	##the AB intensities
@@ -455,6 +488,7 @@ computeCopynumber <- function(object,
 			   SNR=ABset$SNR,
 			   bias.adj=FALSE,
 			   SNRmin=SNRmin,
+			   cdfName=cdfName,
 			   ...)
 
 	if(bias.adj){
@@ -470,10 +504,60 @@ computeCopynumber <- function(object,
 				   SNR=ABset$SNR,
 				   bias.adj=TRUE,
 				   SNRmin=SNRmin,
+				   cdfName=cdfName,
 				   ...)
 	}
 	message("Organizing results...")			
 	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
+	return(locusSet)
+}
+
+cnIllumina <- function(object,
+		       CHR,
+		       bias.adj=FALSE,
+		       batch,
+		       SNRmin=5,
+		       cdfName="genomewidesnp6", ...){
+	if(missing(CHR)) stop("Must specify CHR")
+	if(missing(batch)) stop("Must specify batch")
+	if(length(batch) != ncol(object[[1]])) stop("Batch must be the same length as the number of samples")
+	ABset <- object[[1]]
+	snpset <- object[[2]]
+	envir <- new.env()
+	NP <- NULL
+	message("Fitting model for copy number estimation...")
+	.computeCopynumber(chrom=CHR,
+			   A=A(ABset),
+			   B=B(ABset),
+			   calls=calls(snpset),
+			   conf=confs(snpset),
+			   NP=NULL,
+			   plate=batch,
+			   envir=envir,
+			   SNR=ABset$SNR,
+			   bias.adj=FALSE,
+			   SNRmin=SNRmin,
+			   cdfName=cdfName,
+			   ...)
+
+	if(bias.adj){
+		message("Running bias adjustment...")
+		.computeCopynumber(chrom=CHR,
+				   A=A(ABset),
+				   B=B(ABset),
+				   calls=calls(snpset),
+				   conf=confs(snpset),
+				   NP=NULL,
+				   plate=batch,
+				   envir=envir,
+				   SNR=ABset$SNR,
+				   bias.adj=TRUE,
+				   SNRmin=SNRmin,
+				   cdfName=cdfName,
+				   ...)
+	}
+	message("Organizing results...")			
+	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NULL, CHR=CHR, cdfName=cdfName)
 	return(locusSet)
 }
 
@@ -558,7 +642,6 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 	##require(oligoClasses) || stop("oligoClasses package not available")
 	if(length(ls(envir)) == 0) stop("environment empty")
 	batch <- envir[["plate"]]
-
 	##SNP copy number	
 	CA <- envir[["CA"]]
 	dimnames(CA) <- list(envir[["snps"]], envir[["sns"]])	
@@ -566,20 +649,21 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 	dimnames(CB) <- dimnames(CA)
 
 	##NP copy number
-	CT <- envir[["CT"]]
-	rownames(CT) <- envir[["cnvs"]]
-	colnames(CT) <- envir[["sns"]]
-	sig2T <- envir[["sig2T"]]
-	rownames(sig2T) <- rownames(CT)
-	nuT <- envir[["nuT"]]
-	colnames(nuT) <- paste("nuT", unique(batch), sep="_")
-	##nuA <- rbind(nuA, nuT)
-	##nuB <- rbind(nuA, blank)
-	phiT <- envir[["phiT"]]
-	colnames(phiT) <- paste("phiT", unique(batch), sep="_")
-	naMatrix <- matrix(NA, nrow(CT), ncol(CT))
-	dimnames(naMatrix) <- dimnames(CT)
-	
+	if(!is.null(NPset)){
+		CT <- envir[["CT"]]
+		rownames(CT) <- envir[["cnvs"]]
+		colnames(CT) <- envir[["sns"]]
+		sig2T <- envir[["sig2T"]]
+		rownames(sig2T) <- rownames(CT)
+		nuT <- envir[["nuT"]]
+		colnames(nuT) <- paste("nuT", unique(batch), sep="_")
+		phiT <- envir[["phiT"]]
+		colnames(phiT) <- paste("phiT", unique(batch), sep="_")
+		naMatrix <- matrix(NA, nrow(CT), ncol(CT))
+		dimnames(naMatrix) <- dimnames(CT)
+	} else{
+		sig2T <- nuT <- phiT <- naMatrix <- CT <- NULL
+	}
 	CA <- rbind(CA, CT)
 	CB <- rbind(CB, naMatrix)	
 
@@ -609,8 +693,12 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 
 
 	##Combine SNP and NP parameters
-	naMatrixParams <- matrix(NA, nrow(CT), length(unique(batch)))
-	dimnames(naMatrixParams) <- list(rownames(CT), unique(batch))
+	if(!is.null(NPset)){
+		naMatrixParams <- matrix(NA, nrow(CT), length(unique(batch)))
+		dimnames(naMatrixParams) <- list(rownames(CT), unique(batch))
+	} else{
+		naMatrixParams <- NULL
+	}
 	tau2A <- rbind(tau2A, naMatrixParams)
 	tau2B <- rbind(tau2B, naMatrixParams)
 	sig2A <- rbind(sig2A, sig2T)
@@ -625,7 +713,6 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 	rownames(tau2A) <- rownames(tau2B) <- rownames(sig2A) <- rownames(sig2B) <- rownames(CA)
 	rownames(corr) <- rownames(corrA.BB) <- rownames(corrB.AA) <- rownames(CA)
 	rownames(nuA) <- rownames(phiA) <- rownames(nuB) <- rownames(phiB) <- rownames(CA)	
-
 	##phenodata
 	phenodata <- phenoData(ABset)
 	phenodata <- phenodata[match(envir[["sns"]], sampleNames(phenodata)), ]
@@ -633,32 +720,41 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 
 	##Feature Data
 	position.snp <- snpProbes[match(envir[["snps"]], rownames(snpProbes)), "position"]
-	position.np <- cnProbes[match(envir[["cnvs"]], rownames(cnProbes)), "position"]
+	names(position.snp) <- envir[["snps"]]
+	if(!is.null(NPset)){
+		position.np <- cnProbes[match(envir[["cnvs"]], rownames(cnProbes)), "position"]
+		names(position.np) <- envir[["cnvs"]]
+	} else position.np <- NULL
 	position <- c(position.snp, position.np)
 	if(!(identical(names(position), rownames(CA)))){
 		position <- position[match(rownames(CA), names(position))]
 	}
+	if(sum(duplicated(names(position))) > 0){
+		warning("Removing rows with NA identifiers...")
+		##RS: fix this
+		I <- which(!is.na(names(position)))
+	}  else I <- seq(along=names(position))
 	fd <- data.frame(cbind(CHR,
-			       position,
-			       tau2A,
-			       tau2B,
-			       sig2A,
-			       sig2B,
-			       nuA,
-			       nuB,
-			       phiA,
-			       phiB,
-			       corr,
-			       corrA.BB,
-			       corrB.AA))
+			       position[I],
+			       tau2A[I,, drop=FALSE],
+			       tau2B[I,, drop=FALSE],
+			       sig2A[I,, drop=FALSE],
+			       sig2B[I,, drop=FALSE],
+			       nuA[I,, drop=FALSE],
+			       nuB[I,, drop=FALSE],
+			       phiA[I,, drop=FALSE],
+			       phiB[I,, drop=FALSE],
+			       corr[I,, drop=FALSE],
+			       corrA.BB[I,, drop=FALSE],
+			       corrB.AA[I,, drop=FALSE]))
 	colnames(fd)[1:2] <- c("chromosome", "position")
-	rownames(fd) <- rownames(CA)
+	rownames(fd) <- rownames(CA)[I]
 	fD <- new("AnnotatedDataFrame",
 		  data=fd,
 		  varMetadata=data.frame(labelDescription=colnames(fd)))	
 	assayData <- assayDataNew("lockedEnvironment",
-				  CA=CA,
-				  CB=CB)
+				  CA=CA[I, ],
+				  CB=CB[I, ])
 	cnset <- new("CopyNumberSet",
 		      assayData=assayData,
 		      featureData=fD,
@@ -671,10 +767,14 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 thresholdCopyNumberSet <- function(object){
 	ca <- CA(object)
 	cb <- CB(object)
-	ca[ca < 5] <- 5
-	ca[ca > 500] <- 500
-	cb[cb < 5] <- 5
-	cb[cb > 500] <- 500
+	ca[ca < 0.05] <- 0.05
+	ca[ca > 5] <- 5
+	cb[cb < 0.05] <- 0.05
+	cb[cb > 5] <- 5
+	ca <- matrix(as.integer(ca*100), nrow(ca), ncol(ca))
+	cb <- matrix(as.integer(cb*100), nrow(cb), ncol(cb))
+	rownames(ca) <- rownames(cb) <- featureNames(object)
+	colnames(ca) <- colnames(cb) <- sampleNames(object)
 	CA(object) <- ca
 	CB(object) <- cb
 	return(object)
@@ -682,31 +782,31 @@ thresholdCopyNumberSet <- function(object){
 
 
 .computeCopynumber <- function(chrom,
-			      A,
-			      B,
-			      calls,
-			      conf,
-			      NP,
-			      plate,
-			      MIN.OBS=5,
-			      envir,
-			      P,
-			      DF.PRIOR=50,
-			      CONF.THR=0.99,
-			      bias.adj=FALSE,
-			      priorProb,
-			      gender=NULL,
-			      SNR,
-			      SNRmin=5, seed=123,
-			      cdfName="genomewidesnp6",
-			      verbose=TRUE, ...){
+			       A,
+			       B,
+			       calls,
+			       conf,
+			       NP,
+			       plate,
+			       MIN.OBS=5,
+			       envir,
+			       P,
+			       DF.PRIOR=50,
+			       CONF.THR=0.99,
+			       bias.adj=FALSE,
+			       priorProb,
+			       gender=NULL,
+			       SNR,
+			       SNRmin=5, seed=123,
+			       cdfName,
+			       verbose=TRUE, ...){
+	if(missing(cdfName)) stop("cdfName must be provided")
 	require(paste(cdfName, "Crlmm", sep=""), character.only=TRUE) || stop(paste("cdf ", cdfName, "Crlmm", " not available.", sep=""))
 	if(!missing(plate)){
 		if(length(plate) != ncol(A))
 			stop("plate must the same length as the number of columns of A")
 	}
 	set.seed(seed)
-	##if(missing(chrom)) stop("must specify chromosome")
 	if(length(ls(envir)) == 0) {
 		instantiateObjects(calls=calls,
 				   conf=conf,
@@ -741,13 +841,16 @@ thresholdCopyNumberSet <- function(object){
 			cat(".")
 			if(sum(plate == uplate[p]) < 10) next()
 			J <- plate==uplate[p]
+			if(!is.null(NP)){
+				npMatrix <- NP[, J]
+			} else npMatrix <- NULL
 			oneBatch(plateIndex=p,
 				 A=A[, J],
 				 B=B[, J],
 				 calls=calls[, J],
 				 conf=conf[, J],
 				 gender=NULL,
-				 NP[, J],
+				 npMatrix,
 				 plate[J],
 				 MIN.OBS=1,
 				 envir=envir,
@@ -782,12 +885,14 @@ thresholdCopyNumberSet <- function(object){
 		envir[["steps"]] <- steps						
 	}
 	if(!steps[4]){
-		message("\nCopy number for nonpolymorphic probes...")	
-		for(p in P){
-			cat(".")
-			nonpolymorphic(plateIndex=p,
-				       NP=NP[, plate==uplate[p]],
-				       envir=envir)
+		if(!is.null(NP)){
+			message("\nCopy number for nonpolymorphic probes...")	
+			for(p in P){
+				cat(".")
+				nonpolymorphic(plateIndex=p,
+					       NP=NP[, plate==uplate[p]],
+					       envir=envir)
+			}
 		}
 		steps[4] <- TRUE
 		envir[["step"]] <- steps
@@ -841,44 +946,38 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 	} else {
 		ix <- 1:nrow(X)
 	}
-	##X <- X[ix, ]
-	##Y <- Y[ix]
 	betahat <- solve(crossprod(X[ix, ]), crossprod(X[ix, ], Y[ix]))
-##	Yhat <- X%*%betahat
-##	phihat <- 2^Yhat
-##	nuhat <- 2^X[, 2] - 2*phihat
-##	nuAB <- c(nuA[!flagsA], nuB[!flagsB])
-##	plot(log2(nuhat), log2(nuAB), pch=".")
-##	plot(log2(nuhat)-log2(nuAB), pch=".")
-##	hist(log2(nuAB))
-	##plot(Y-Yhat, pch=".")
-	##plot(Y, Yhat, pch=".")
-	##calculate R2
 	if(CHR == 23){
+		normalNP <- envir[["normalNP"]]
+		normalNP <- normalNP[, plate==uplate[p]]
+		nuT <- envir[["nuT"]]
+		phiT <- envir[["phiT"]]
+		
 		cnvs <- envir[["cnvs"]]
                 loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
                 cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
-##		data(cnProbes, package="genomewidesnp6Crlmm")
 		cnProbes <- cnProbes[match(cnvs, rownames(cnProbes)), ]
-		##par:pseudo-autosomal regions
-		par <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
-		gender <- envir[["gender"]]
-		mu1 <- rowMedians(NP[, gender=="male"], na.rm=TRUE)
-		mu2 <- rowMedians(NP[, gender=="female"], na.rm=TRUE)
-		mus <- log(cbind(mu1, mu2))
-		X <- cbind(1, mus[, 1])
+
 		##For build Hg18
 		##http://genome.ucsc.edu/cgi-bin/hgGateway
 		##pseudo-autosomal regions on X
 		##chrX:1-2,709,520 and chrX:154584237-154913754, respectively
-		Yhat1 <- as.numeric(X %*% betahat)
-		X <- cbind(1, mus[, 2])		
-		Yhat2 <- as.numeric(X %*% betahat)
-		phi1 <- exp(Yhat1)
-		phi2 <- exp(Yhat2)
-		nu1 <- exp(mus[, 1]) - phi1
-		nu1[par] <- exp(mus[par, 1]) - 2*phi1[par]
-		nu2 <- exp(mus[, 2]) - 2*phi2
+		##par:pseudo-autosomal regions
+		pseudoAR <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
+		gender <- envir[["gender"]]
+		mu1 <- rowMedians(NP[, gender=="male"], na.rm=TRUE)
+		mu2 <- rowMedians(NP[, gender=="female"], na.rm=TRUE)
+		mus <- log2(cbind(mu1, mu2))
+		X.men <- cbind(1, mus[, 1])
+		X.fem <- cbind(1, mus[, 2])
+		
+		Yhat1 <- as.numeric(X.men %*% betahat)
+		Yhat2 <- as.numeric(X.fem %*% betahat)
+		phi1 <- 2^(Yhat1)
+		phi2 <- 2^(Yhat2)
+		nu1 <- 2^(mus[, 1]) - phi1
+		nu2 <- 2^(mus[, 2]) - 2*phi2		
+		nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
 		CT1 <- 1/phi1*(NP[, gender=="male"]-nu1)
 		CT2 <- 1/phi2*(NP[, gender=="female"]-nu2)
 		CT1 <- matrix(as.integer(100*CT1), nrow(CT1), ncol(CT1))
@@ -887,6 +986,16 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		CT[, plate==uplate[p] & gender=="male"] <- CT1
 		CT[, plate==uplate[p] & gender=="female"] <- CT2
 		envir[["CT"]] <- CT
+
+		##only using females to compute the variance
+		normalNP[, gender=="male"] <- NA		
+		sig2T[, p] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2
+		nuT[, p] <- nu2
+		phiT[, p] <- phi2
+		envir[["sig2T"]] <- sig2T
+		envir[["CT"]] <- CT
+		envir[["phiT"]] <- nuT
+		envir[["nuT"]] <- phiT
 	} else {
 		normalNP <- envir[["normalNP"]]
 		normalNP <- normalNP[, plate==uplate[p]]
@@ -934,7 +1043,6 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 		IX <- matrix(gender, nrow(G), ncol(G), byrow=TRUE)
 		IX <- IX == "female"
 	} else IX <- matrix(TRUE, nrow(G), ncol(G))
-	
 	index <- GT.B <- GT.A <- vector("list", 3)
 	names(index) <- names(GT.B) <- names(GT.A) <- c("AA", "AB", "BB")
 	##--------------------------------------------------
@@ -1024,7 +1132,8 @@ oneBatch <- function(plateIndex,
 		}
 		message("running bias adjustment")		
 		##adjustment for nonpolymorphic probes
-		biasAdjNP(plateIndex=p, envir=envir, priorProb=priorProb)
+		if(!is.null(NP))
+			biasAdjNP(plateIndex=p, envir=envir, priorProb=priorProb)
 		##adjustment for SNPs
 		biasAdj(plateIndex=p, envir=envir, priorProb=priorProb)
 		message("Recomputing location and scale parameters")		
@@ -1356,6 +1465,7 @@ polymorphic <- function(plateIndex, A, B, envir){
 
 
 biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
+	gender <- envir[["gender"]]
 	CHR <- envir[["chrom"]]
 	if(CHR == 23){
 		phiAx <- envir[["phiAx"]]
@@ -1429,18 +1539,13 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	posteriorProb[, , 3] <- norm
 	posteriorProb[, , 4] <- amp
 	mostLikelyState <- apply(posteriorProb, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	if(CHR == 23){
+		##so state index 3 is the most likely state for men and women
+		mostLikelyState[, gender=="male"] <- mostLikelyState[, gender=="male"] + 1
+	}
 	##Adjust for SNPs that have less than 80% of the samples in an altered state
 	##flag the remainder?
-	if(CHR != 23){
-		proportionSamplesAltered <- rowMeans(mostLikelyState != 3)
-	}else{
-		##should also consider pseud
-##		browser()
-		gender <- envir[["gender"]]
-##		tmp3 <- tmp2
-##		tmp3[, gender=="male"] <- tmp2[, gender=="male"] != 2
-##		tmp3[, gender=="female"] <- tmp2[, gender=="female"] != 3
-	}
+	proportionSamplesAltered <- rowMeans(mostLikelyState != 3)
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
 	##ii <- proportionSamplesAltered < PROP
 	##ii <- proportionSamplesAltered > 0.05
@@ -1448,46 +1553,45 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	ii <- proportionSamplesAltered < 0.8 & proportionSamplesAltered > 0.01
 	##only exclude observations from one tail, depending on
 	##whether more are up or down
-	if(CHR != 23){
-		moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3) ##3 is normal
-		NORM <- matrix(FALSE, nrow(A), ncol(A))
-		NORM[proportionSamplesAltered > 0.8, ] <- FALSE
-		##big and greater than 1 if copy number 3 is more likely
-		ratioUp <- posteriorProb[, , 4]/posteriorProb[, , 3]
-		##large values will have small ranks
-		##rankUP <- t(apply(ratio, 1, rank))
-		## drop small ranks up to the maximum number, unless the ratio is greater than 1 
-		##NORM[ii & moreup, ] <- !(rankUP <= maxNumberToDrop) | (ratio < 1)
-		NORM[ii & moreup, ] <- ratioUp[moreup & ii] < 1  ##normal more likely
-		##big and greater than 1 if copy number 1 is more likely than 2
-		ratioDown <- posteriorProb[, , 2]/posteriorProb[, , 3]
-		##big values have small ranks
-		##rankDown <- t(apply(ratio, 1, rank))		
-		##NORM[ii & !moreup, ] <- !(rankDown <= maxNumberToDrop) | (ratio < 1)
-		NORM[ii & !moreup, ] <- ratioDown[!moreup & ii] < 1  ##normal more likely
-##		NORM[ii & !moreup, ] <- up
-		##Define NORM so that we can iterate this step
-		##NA's in the previous iteration (normal) will be propogated
-		normal <- NORM*normal
-	} else{
-		fem <- mostLikelyState[, gender=="female"]
-		mal <- mostLikelyState[, gender=="male"]
-		moreupF <- rowSums(fem > 3) > rowSums(fem < 3)
-		moreupM <- rowSums(mal > 2) > rowSums(mal < 2)
-		notUpF <-  fem[ii & moreupF, ] <= 3
-		notUpM <-  fem[ii & moreupM, ] <= 2	       
-		notDownF <- fem[ii & !moreupF, ] >= 3
-		notDownM <- mal[ii & !moreupM, ] >= 2
-		normalF <- matrix(TRUE, nrow(fem), ncol(fem))
-		normalF[ii & moreupF, ] <- notUpF
-		normalF[ii & !moreupF, ] <- notDownF
-		normalM <- matrix(TRUE, nrow(mal), ncol(mal))
-		normalM[ii & moreupM, ] <- notUpM
-		normalM[ii & !moreupM, ] <- notDownM
-		normal <- matrix(TRUE, nrow(A), ncol(A))
-		normal[, gender=="female"] <- normalF
-		normal[, gender=="male"] <- normalM
-	}
+	moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3) ##3 is normal
+	NORM <- matrix(FALSE, nrow(A), ncol(A))
+	NORM[proportionSamplesAltered > 0.8, ] <- FALSE
+	##big and greater than 1 if copy number 3 is more likely
+	ratioUp <- posteriorProb[, , 4]/posteriorProb[, , 3]
+	##large values will have small ranks
+	##rankUP <- t(apply(ratio, 1, rank))
+	## drop small ranks up to the maximum number, unless the ratio is greater than 1 
+	##NORM[ii & moreup, ] <- !(rankUP <= maxNumberToDrop) | (ratio < 1)
+	NORM[ii & moreup, ] <- ratioUp[moreup & ii] < 1  ##normal more likely
+	##big and greater than 1 if copy number 1 is more likely than 2
+	ratioDown <- posteriorProb[, , 2]/posteriorProb[, , 3]
+	##big values have small ranks
+	##rankDown <- t(apply(ratio, 1, rank))		
+	##NORM[ii & !moreup, ] <- !(rankDown <= maxNumberToDrop) | (ratio < 1)
+	NORM[ii & !moreup, ] <- ratioDown[!moreup & ii] < 1  ##normal more likely
+	##		NORM[ii & !moreup, ] <- up
+	##Define NORM so that we can iterate this step
+	##NA's in the previous iteration (normal) will be propogated
+	normal <- NORM*normal
+##	} else{
+##		fem <- mostLikelyState[, gender=="female"]
+##		mal <- mostLikelyState[, gender=="male"]
+##		moreupF <- rowSums(fem > 3) > rowSums(fem < 3)
+##		moreupM <- rowSums(mal > 2) > rowSums(mal < 2)
+##		notUpF <-  fem[ii & moreupF, ] <= 3
+##		notUpM <-  fem[ii & moreupM, ] <= 2	       
+##		notDownF <- fem[ii & !moreupF, ] >= 3
+##		notDownM <- mal[ii & !moreupM, ] >= 2
+##		normalF <- matrix(TRUE, nrow(fem), ncol(fem))
+##		normalF[ii & moreupF, ] <- notUpF
+##		normalF[ii & !moreupF, ] <- notDownF
+##		normalM <- matrix(TRUE, nrow(mal), ncol(mal))
+##		normalM[ii & moreupM, ] <- notUpM
+##		normalM[ii & !moreupM, ] <- notDownM
+##		normal <- matrix(TRUE, nrow(A), ncol(A))
+##		normal[, gender=="female"] <- normalF
+##		normal[, gender=="male"] <- normalM
+##	}
 	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAltered"]] <- flagAltered
 	normal[normal == FALSE] <- NA
@@ -1692,6 +1796,7 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 	plate <- envir[["plate"]]
 	uplate <- envir[["uplate"]]
 	sig2T <- envir[["sig2T"]]
+	gender <- envir[["gender"]]
 	normalNP <- normalNP[, plate==uplate[p]]	
 	NP <- NP[, plate==uplate[p]]
 	sig2T <- sig2T[, p]
@@ -1716,32 +1821,23 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 		counter <- counter+1
 	}
 	mostLikelyState <- apply(emit, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
-	##Adjust for SNPs that have less than 80% of the samples in an altered state
-	##flag the remainder?
-	if(CHR != 23){
-		tmp3 <- mostLikelyState != 3
-	}else{
-		browser()
-		##should also consider pseudoautosomal
-		gender <- envir[["gender"]]
-		tmp3 <- mostLikelyState
-		tmp3[, gender=="male"] <- mostLikelyState[, gender=="male"] != 2
-		tmp3[, gender=="female"] <- mostLikelyState[, gender=="female"] != 3
+	if(CHR == 23){
+		## the state index for male on chromosome 23  is 2
+		## add 1 so that the state index is 3 for 'normal' state
+		mostLikelyState[, gender=="male"] <- mostLikelyState[, gender=="male"] + 1
 	}
+	tmp3 <- mostLikelyState != 3
 	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
 	proportionSamplesAltered <- rowMeans(tmp3)##prop normal
 	ii <- proportionSamplesAltered < 0.75
-	##only exclude observations from one tail, depending on
-	##whether more are up or down
-	if(CHR != 23){
-		moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3)
-		notUp <-  mostLikelyState[ii & moreup, ] <= 3
-		notDown <- mostLikelyState[ii & !moreup, ] >= 3
-		NORM <- matrix(TRUE, nrow(NP), ncol(NP))
-		NORM[ii & moreup, ] <- notUp
-		NORM[ii & !moreup, ] <- notDown
-		normalNP <- normalNP*NORM
-	}
+	moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3)
+	notUp <-  mostLikelyState[ii & moreup, ] <= 3
+	notDown <- mostLikelyState[ii & !moreup, ] >= 3
+	NORM <- matrix(TRUE, nrow(NP), ncol(NP))
+	NORM[ii & moreup, ] <- notUp
+	NORM[ii & !moreup, ] <- notDown
+	normalNP <- normalNP*NORM
+
 	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAlteredNP"]] <- flagAltered
 	normalNP[normalNP == FALSE] <- NA

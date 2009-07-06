@@ -39,7 +39,6 @@ vignette.
 <<test, eval=FALSE, echo=FALSE>>=
 library(crlmm)
 load("~/madman/Rpacks/crlmm/inst/scripts/example.cnset.rda")
-
 chromosome(example.cnset)[1:5]
 position(example.cnset)[1:5]
 scanDates(example.cnset)[1:5]
@@ -52,6 +51,7 @@ library(genomewidesnp6Crlmm)
 
 Specify the complete path for the CEL files and a directory in which to
 store intermediate files:
+
 
 <<celfiles>>=
 celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
@@ -299,7 +299,7 @@ if(!exists("fit")){
 			       emission=emission.cn,
 			       tau=tau[, "transitionPr"],
 			       arm=tau[, "arm"], 
-			       normalIndex=2,
+			       normalIndex=3,
 			       normal2altered=0.005,
 			       altered2normal=0.5,
 			       altered2altered=0.0025)

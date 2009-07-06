@@ -1,7 +1,6 @@
 setGeneric("A", function(object) standardGeneric("A"))
 setGeneric("B", function(object) standardGeneric("B"))
 ##setGeneric("calls", function(x) standardGeneric("calls"))
-
 setGeneric("confs", function(object) standardGeneric("confs"))
 setGeneric("CA", function(object) standardGeneric("CA"))
 setGeneric("CB", function(object) standardGeneric("CB"))
