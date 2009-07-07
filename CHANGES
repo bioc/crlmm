@@ -195,3 +195,7 @@ is decoded and scanned
 
 * some improvements to chromosome X copy number estimation
 
+2009-07-06 R Scharpf - committed version 1.3.9
+
+* fixed bugs in biasAdj and biasAdjNP
+

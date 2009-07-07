@@ -1445,9 +1445,9 @@ polymorphic <- function(plateIndex, A, B, envir){
 	if(CHR == 23){
 		phiAx <- as.matrix(envir[["phiAx"]])
 		phiBx <- as.matrix(envir[["phiBx"]])
-		phiAx <- phiAx[, p]
-		phiBx <- phiBx[, p]
-		phistar <- phiBx/phiA
+		phiAx <- phiAx[, p]  ##nonspecific hybridization slope
+		phiBx <- phiBx[, p]  ##nonspecific hybridization slope
+		phistar <- phiBx/phiA  
 		tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
 		copyB <- tmp/(1-phistar*phiAx/phiB)
 		copyA <- (A-nuA-phiAx*copyB)/phiA
@@ -1504,10 +1504,11 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 			if(CA > 0 & CB == 0) rho <- corrB.AA[, p]
 			if(CA > 0 & CB > 0) rho <- corr[, p]
 			if(CHR == 23){
-				means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p] + CB*phiAx[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p] + CA*phiBx[, p])))
-				browser()
+				##means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p] + CB*phiAx[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p] + CA*phiBx[, p])))
+				meanA <- suppressWarnings(log2(nuA[, p]+CA*phiA[, p] + CB*phiAx[, p]))
+				meanB <- suppressWarnings(log2(nuB[, p]+CB*phiB[, p] + CA*phiBx[, p]))				
 			} else{
-				means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p])))
+				##means <- cbind(suppressWarnings(log2(nuA[, p]+CA*phiA[, p])), suppressWarnings(log2(nuB[, p]+CB*phiB[, p])))
 				meanA <- suppressWarnings(log2(nuA[, p]+CA*phiA[, p]))
 				meanB <- suppressWarnings(log2(nuB[, p]+CB*phiB[, p]))
 				covs <- rho*A.scale*B.scale
@@ -1528,7 +1529,8 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 	hemDel <- hemDel[, , 1] + hemDel[, , 2]
 	norm <- norm[, , 1] + norm[, , 2] + norm[, , 3]
 	amp <- amp[, , 1] + amp[, , 2] + amp[ , , 3] + amp[, , 4]
-	total <- hemDel + norm + amp
+	total <- homDel + hemDel + norm + amp
+	homDel <- homDel/total
 	hemDel <- hemDel/total
 	norm <- norm/total
 	amp <- amp/total
@@ -1543,58 +1545,23 @@ biasAdj <- function(plateIndex, envir, priorProb, PROP=0.75){
 		##so state index 3 is the most likely state for men and women
 		mostLikelyState[, gender=="male"] <- mostLikelyState[, gender=="male"] + 1
 	}
-	##Adjust for SNPs that have less than 80% of the samples in an altered state
-	##flag the remainder?
 	proportionSamplesAltered <- rowMeans(mostLikelyState != 3)
-	##Those near 1 have NaNs for nu and phi.  this occurs by NaNs in the muA[,, "A"] or muA[, , "B"] for X chromosome
-	##ii <- proportionSamplesAltered < PROP
-	##ii <- proportionSamplesAltered > 0.05
-	##Figure out why the proportion altered can be near 1...
 	ii <- proportionSamplesAltered < 0.8 & proportionSamplesAltered > 0.01
-	##only exclude observations from one tail, depending on
-	##whether more are up or down
+	
+	##  only exclude observations from one tail, depending on
+	##  whether more are up or down
+	
 	moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3) ##3 is normal
 	NORM <- matrix(FALSE, nrow(A), ncol(A))
 	NORM[proportionSamplesAltered > 0.8, ] <- FALSE
-	##big and greater than 1 if copy number 3 is more likely
 	ratioUp <- posteriorProb[, , 4]/posteriorProb[, , 3]
-	##large values will have small ranks
-	##rankUP <- t(apply(ratio, 1, rank))
-	## drop small ranks up to the maximum number, unless the ratio is greater than 1 
-	##NORM[ii & moreup, ] <- !(rankUP <= maxNumberToDrop) | (ratio < 1)
 	NORM[ii & moreup, ] <- ratioUp[moreup & ii] < 1  ##normal more likely
-	##big and greater than 1 if copy number 1 is more likely than 2
 	ratioDown <- posteriorProb[, , 2]/posteriorProb[, , 3]
-	##big values have small ranks
-	##rankDown <- t(apply(ratio, 1, rank))		
-	##NORM[ii & !moreup, ] <- !(rankDown <= maxNumberToDrop) | (ratio < 1)
 	NORM[ii & !moreup, ] <- ratioDown[!moreup & ii] < 1  ##normal more likely
-	##		NORM[ii & !moreup, ] <- up
-	##Define NORM so that we can iterate this step
-	##NA's in the previous iteration (normal) will be propogated
 	normal <- NORM*normal
-##	} else{
-##		fem <- mostLikelyState[, gender=="female"]
-##		mal <- mostLikelyState[, gender=="male"]
-##		moreupF <- rowSums(fem > 3) > rowSums(fem < 3)
-##		moreupM <- rowSums(mal > 2) > rowSums(mal < 2)
-##		notUpF <-  fem[ii & moreupF, ] <= 3
-##		notUpM <-  fem[ii & moreupM, ] <= 2	       
-##		notDownF <- fem[ii & !moreupF, ] >= 3
-##		notDownM <- mal[ii & !moreupM, ] >= 2
-##		normalF <- matrix(TRUE, nrow(fem), ncol(fem))
-##		normalF[ii & moreupF, ] <- notUpF
-##		normalF[ii & !moreupF, ] <- notDownF
-##		normalM <- matrix(TRUE, nrow(mal), ncol(mal))
-##		normalM[ii & moreupM, ] <- notUpM
-##		normalM[ii & !moreupM, ] <- notDownM
-##		normal <- matrix(TRUE, nrow(A), ncol(A))
-##		normal[, gender=="female"] <- normalF
-##		normal[, gender=="male"] <- normalM
-##	}
+	
 	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAltered"]] <- flagAltered
-	normal[normal == FALSE] <- NA
 	envir[["normal"]] <- normal
 }
 
@@ -1840,7 +1807,6 @@ biasAdjNP <- function(plateIndex, envir, priorProb){
 
 	flagAltered <- which(proportionSamplesAltered > 0.5)
 	envir[["flagAlteredNP"]] <- flagAltered
-	normalNP[normalNP == FALSE] <- NA
 	tmp <- envir[["normalNP"]]
 	tmp[, plate==uplate[p]] <- normalNP
 	envir[["normalNP"]] <- tmp
@@ -1916,7 +1882,6 @@ thresholdModelParams <- function(object, MIN=2^3){
 	crlmmResults <- crlmmResults[, cnset$batch==batch]
 	cnset <- cnset[, cnset$batch == batch]	
 	emissionProbs <- array(NA, dim=c(nrow(crlmmResults[[1]]), ncol(crlmmResults[[1]]), length(copyNumberStates)))
-
 	snpset <- cnset[snpIndex(cnset), ]
 	params <- getParams(snpset, batch=batch)
 	##attach(params)
@@ -1971,22 +1936,18 @@ thresholdModelParams <- function(object, MIN=2^3){
 		emissionProbs[snpIndex(crlmmResults), , k] <- log(f.x.y)
 	}
 
-	
+
+	##**************************************************
+	##
+	##Emission probabilities for nonpolymorphic probes
+	##	
+	##**************************************************	
 	cnset <- cnset[cnIndex(cnset), ]
 	params <- getParams(cnset, batch=batch)
 	nuA <- params[["nuA"]]
 	phiA <- params[["phiA"]]
 	sig2A <- params[["sig2A"]]
 	a <- as.numeric(log2(A(crlmmResults[cnIndex(crlmmResults), ])))
-
-##	ids=featureNames(crlmmResults)[index]
-##	aa=A(crlmmResults[cnIndex(crlmmResults), ])
-##	ii <- match(ids, rownames(aa))
-##	ii <- ii[!is.na(ii)]
-##	##putative deletion
-##	log2(aa[ii, 1])
-##	M <- matrix(NA, length(ii), length(copyNumberStates))
-##	copynumber=1/phiA[ii]*(aa[ii, 1] - nuA[ii])
 	for(k in seq(along=copyNumberStates)){
 		CT <- copyNumberStates[k]
 		mus.matrix=matrix(log2(nuA + CT*phiA), nrow(cnset), ncol(cnset))
@@ -1997,8 +1958,6 @@ thresholdModelParams <- function(object, MIN=2^3){
 		
 		tmp <- matrix(dnorm(a, mean=mus, sd=sds), nrow(cnset), ncol(cnset))
 		emissionProbs[cnIndex(crlmmResults), , k] <- log(tmp)
-		##first samples emission probs
-##		M[, k] <- log(tmp)[ii, 1]
 	}
 	emissionProbs
 }
