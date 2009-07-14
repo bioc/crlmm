@@ -53,13 +53,22 @@ verbose=TRUE, ...)
 
 \details{
   
-  This function transforms the intensities to a copy number scale.  We
-  assume that the median within-SNP intensity across samples is 2.  We
-  make no assumption about the chromosomal copy number. This function is
-  useful for detecting rare variants (e.g., variants that would not
-  affect the SNP-specific quantile-based estimators of location and
-  scale).  A correction for more common variants is coming, as well as
-  improved estimates of the uncertainty.
+  Parameters for copy number are estimated using a linear model based on
+  the diallelic genotype calls.  No training data is used to estimate
+  model parameters. Therefore, this function requires at least 10
+  samples to estimate copy number.  For small sample sizes (e.g., 10 -
+  30 samples), this function will impute model parameters for a large
+  number of loci and the precision of the estimates will be reduced.
+  
+  Key assumption:
+
+  - we assume that the median copy number at any given locus is two for
+    each batch.  This assumption may not be appropriate for many
+    datasets (e.g., a cancer dataset without normals processed in the
+    same batch).
+
+    The developmental version of this package available from
+    Bioconductor has many improvements to this function.
   
 }
 

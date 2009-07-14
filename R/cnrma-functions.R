@@ -315,6 +315,12 @@ computeCopynumber <- function(chrom,
 			      SNRmin=5, seed=123,
 			      cdfName="genomewidesnp6",
 			      verbose=TRUE, ...){
+	if(missing(plate))
+		stop("must specify plate")
+	if(length(plate) != ncol(calls))
+		stop("length of plate argument must be the same as the number of samples")
+	if(length(plate) < 10)
+		stop("must have at least 10 samples per batch (plate) to estimate copy number.  Preferably, 70+ samples per plate.")
 	require(paste(cdfName, "Crlmm", sep=""), character.only=TRUE) || stop(paste("cdf ", cdfName, "Crlmm", " not available.", sep=""))
 	set.seed(seed)
 	if(missing(chrom)) stop("must specify chromosome")
