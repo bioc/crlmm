@@ -10,7 +10,7 @@
   confidence scores are assigned using the crlmm algorithm.
 }
 \usage{
-crlmmWrapper(filenames, outdir = "./", cdfName = "genomewidesnp6", save.it, splitByChr=TRUE, ...)
+crlmmWrapper(filenames, outdir = "./", cdfName = "genomewidesnp6", save.it=FALSE, splitByChr=TRUE, ...)
 }
 \arguments{
   \item{filenames}{

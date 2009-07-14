@@ -35,5 +35,27 @@ B Carvalho
 
     - Need accessors
 
+    - how to store parameters for chromosome X (should be nu_A_male,
+      nu_A_female, etc.)?
+
+  o Provide a SNP- and sample-specific estimate of the variance for
+    computing emission probabilities.  (Currently, only SNP-specific)
+
+    (DONE -- version 1.3.10
+
+  o Allow a copy-neutral ROH state by not having an equal prior on the
+    ellipses.  For instance,
+
+    normal state:  1/4 AA, 1/2 AB, 1/4 BB
+    
+    copy-neutral ROH:  (1-epsilon)/2 AA,  epsilon AB,  (1-epsilon)/2
+    BB
+
+  o add caConfidence and cbConfidence slots (but what about the correlation)
+
+
+
+
+
 
 

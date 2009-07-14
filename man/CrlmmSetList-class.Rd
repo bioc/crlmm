@@ -3,13 +3,22 @@
 \docType{class}
 \alias{CrlmmSetList-class}
 \alias{[,CrlmmSetList-method}
+\alias{$,CrlmmSetList-method}
 \alias{A,CrlmmSetList-method}
 \alias{B,CrlmmSetList-method}
+\alias{batch,CrlmmSetList-method}
+\alias{CA,CrlmmSetList-method}
+\alias{CB,CrlmmSetList-method}
 \alias{calls,CrlmmSetList-method}
+\alias{chromosome,CrlmmSetList-method}
 \alias{cnIndex,CrlmmSetList-method}
 \alias{combine,CrlmmSetList,CrlmmSetList-method}
+\alias{copyNumber,CrlmmSetList-method}
+\alias{nrow,CrlmmSetList-method}
+\alias{ncol,CrlmmSetList-method}
 \alias{plot,CrlmmSetList,ANY-method}
 \alias{points,CrlmmSetList-method}
+\alias{position,CrlmmSetList-method}
 \alias{sampleNames,CrlmmSetList-method}
 \alias{scanDates,CrlmmSetList-method}
 \alias{show,CrlmmSetList-method}
@@ -59,16 +68,34 @@
 }
 \section{Methods}{
   \describe{
-    \item{"["}{\code{signature(x = "CrlmmSetList")}: subsets both the }
+    \item{"["}{\code{signature(x = "CrlmmSetList")}: subsets both the
+  features and samples of each element in th elist}
+
+    \item{"$"}{\code{signature(x = "CrlmmSetList")}: used to access
+    element from the \code{featureData} of the \code{CopyNumberSet}
+    element.  In particular, useful for extract the SNP- and
+    batch-specific parameters used to estimate copy number that are
+    currently stored in the \code{featureData} of \code{CopyNumberSet}
+    objects. }
   
     \item{"A"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the A allele in the
       \code{ABset} element.}
-    
   
     \item{"B"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the B allele in the
       \code{ABset} element.}
+
+    \item{"batch"}{\code{signature(object = "CrlmmSetList")}: extracts the
+      batch information used to estimate copy number.}    
+
+    \item{"CA"}{\code{signature(object = "CrlmmSetList")}: extracts the
+      copy number for allele A at polymorphic loci. For nonpolymorphic
+      probes, CA returns the total copy number.}
+  
+    \item{"CB"}{\code{signature(object = "CrlmmSetList")}: extracts the
+      copy number for allele B at polymorphic loci. For nonpolymorphic
+      probes, CB returns 'NA'.}    
 
     \item{"calls"}{\code{signature(object = "CrlmmSetList")}: extracts
       the genotype calls from the \code{SnpSet} element.}
@@ -78,7 +105,13 @@
 
     \item{"combine"}{\code{signature(x = "CrlmmSetList", y = "CrlmmSetList")}: combines
       objects of the class.  }
-
+    
+    \item{"nrow"}{\code{signature(x = "CrlmmSetList")}: Number of rows
+    (features) of each element in the list.  }
+    
+    \item{"ncol"}{\code{signature(x = "CrlmmSetList")}: Number of columns
+    (samples) of each element in the list.  }    
+	
     \item{"plot"}{\code{signature(x = "CrlmmSetList")}: For A versus B
       scatterplots.  }
 

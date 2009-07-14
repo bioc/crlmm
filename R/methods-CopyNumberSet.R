@@ -3,8 +3,9 @@ setValidity("CopyNumberSet", function(object) {
 	msg <- validMsg(NULL, assayDataValidMembers(assayData(object), c("CA", "CB")))
 	if (is.null(msg)) TRUE else msg
 })
-setMethod("CA", "CopyNumberSet", function(object) assayData(object)[["CA"]]/100)
-setMethod("CB", "CopyNumberSet", function(object) assayData(object)[["CB"]]/100)
+##may want to allow thresholding here (... arg)
+setMethod("CA", "CopyNumberSet", function(object, ...) assayData(object)[["CA"]]/100)
+setMethod("CB", "CopyNumberSet", function(object, ...) assayData(object)[["CB"]]/100)
 setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
 		 function(object, value) assayDataElementReplace(object, "CB", value))
 setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
@@ -12,6 +13,14 @@ setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
 
 setMethod("chromosome", "CopyNumberSet", function(object) fData(object)$chromosome)
 
+setMethod("batch", "CopyNumberSet", function(object){
+	if("batch" %in% varLabels(object)){
+		result <- object$batch
+	} else {
+		stop("batch not in varLabels of CopyNumberSet")
+	}
+	return(result)
+})
 
 setMethod("copyNumber", "CopyNumberSet", function(object){
 	##ensure that 2 + NA = 2 by replacing NA's with zero
@@ -29,8 +38,8 @@ setMethod("copyNumber", "CopyNumberSet", function(object){
 setMethod("position", "CopyNumberSet", function(object) fData(object)$position)
 
 ##setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
-##ellipse.CopyNumberSet <- function(x, copynumber, ...){
-setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
+ellipse.CopyNumberSet <- function(x, copynumber, ...){
+##setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
 	##fittedOrder <- unique(sapply(basename(celFiles), function(x) strsplit(x, "_")[[1]][2]))
 	##index <- match(plates, fittedOrder)
 	if(nrow(x) > 1) stop("only 1 snp at a time")
@@ -61,7 +70,7 @@ setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
 				      scale=scale), ...)
 		}
 	}
-})
+}
 
 
 

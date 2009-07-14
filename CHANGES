@@ -199,3 +199,24 @@ is decoded and scanned
 
 * fixed bugs in biasAdj and biasAdjNP
 
+2009-07-09 R Scharpf - committed version 1.3.10
+
+* changed defaults for crlmmWrapper: save.it=FALSE
+
+* splitByChr method looks for 'chr' or 'chromosome' in colnames 
+
+* sample-specific standard deviations in the .getEmission function
+
+* add check for duplicated positions in creating locusset object
+
+* computeCopynumber returns an object of class CrlmmSetList
+  
+  - dimnames for the elements in the list are the same
+
+  - elements in the list are ordered by chromosome and physical
+    position
+
+  - copy number parameters in the featureData of the CopyNumberSet
+    element are thresholded
+
+

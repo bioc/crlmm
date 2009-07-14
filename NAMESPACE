@@ -8,12 +8,12 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 importClassesFrom(oligoClasses, SnpLevelSet)
 
 importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
-		  assayData, "assayData<-", combine,
+		  assayData, "assayData<-", combine, dims,
 		  experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
 		  fvarMetadata, fvarLabels,
                   pData, phenoData, "phenoData<-", pubMedIds, rowMedians, sampleNames, scanDates,
-                  "scanDates<-", storageMode, "storageMode<-", updateObject)
+                  "scanDates<-", storageMode, "storageMode<-", updateObject, varLabels)
 
 
 ##importMethodsFrom(oligoClasses, chromosome, copyNumber, position)
@@ -24,7 +24,7 @@ importFrom(oligoClasses, chromosome, copyNumber, position, calls)
 ##importFrom(methods, "@<-", callNextMethod, new, validObject)
 
 importFrom(Biobase, assayDataElement, assayDataElementNames,
-           assayDataElementReplace, assayDataNew, classVersion)
+           assayDataElementReplace, assayDataNew, classVersion, validMsg)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points)
@@ -46,10 +46,11 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 
 ##S3method(ellipse,CopyNumberSet)
-
+##S3method(boxplot,CrlmmSetList)
 exportClasses(ABset, CopyNumberSet, CrlmmSetList)
 ##S3method(ellipse, CopyNumberSet)
-exportMethods(A, B,
+exportMethods("[", ##"[[",
+	      "$", A, B,
 	      calls,
 	      CA,
 	      "CA<-",
@@ -62,7 +63,8 @@ exportMethods(A, B,
 	      show,
 	      snpIndex)
 
-export(celDates,
+export(batch,
+       celDates,
        calls,
        chromosome,
        cnrma,
@@ -72,7 +74,7 @@ export(celDates,
        crlmm,
        crlmmIllumina,
        crlmmWrapper,
-       ellipse,
+##       ellipse,
 ##       computeEmission,
        list.celfiles,
        position,

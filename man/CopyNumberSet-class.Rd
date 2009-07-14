@@ -2,6 +2,7 @@
 \Rdversion{1.1}
 \docType{class}
 \alias{CopyNumberSet-class}
+\alias{batch,CopyNumberSet-method}
 \alias{CA}
 \alias{CA<-}
 \alias{CA,CopyNumberSet-method}
@@ -40,14 +41,17 @@ Class \code{"\linkS4class{Versioned}"}, by class "eSet", distance 3.
 \section{Methods}{
   \describe{
 
-    \item{CA}{\code{signature(object = "CopyNumberSet")}: Extracts the
+    \item{batch}{\code{signature(object="CopyNumberSet")}: Extracts the
+    batch information used to estimate copy number.}
+
+    \item{CA}{\code{signature(object = "CopyNumberSet", ...)}: Extracts the
       copy number for allele 'A' at polymorphic loci. At nonpolymorphic
       loci, the total copy number is returned.}
 
     \item{CA<-}{\code{signature(object = "CopyNumberSet",
     value="matrix")}: Replaces CA matrix with supplied value.}    
 
-    \item{CB}{\code{signature(object = "CopyNumberSet")}:
+    \item{CB}{\code{signature(object = "CopyNumberSet", ...)}:
       Extracts copy number for allele 'B' at polymorphic loci. NAs are
       returned for nonpolymorphic loci.}    
 

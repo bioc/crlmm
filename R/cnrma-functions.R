@@ -206,6 +206,8 @@ harmonizeSnpSet <- function(crlmmResult, ABset){
 }
 
 harmonizeDimnamesTo <- function(object1, object2){
+	#object2 should be a subset of object 1
+	object2 <- object2[featureNames(object2) %in% featureNames(object1), ]
 	object1 <- object1[match(featureNames(object2), featureNames(object1)), ]
 	object1 <- object1[, match(sampleNames(object2), sampleNames(object1))]
 	stopifnot(all.equal(featureNames(object1), featureNames(object2)))
@@ -251,7 +253,8 @@ crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
 	
 	
 	
-crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.it,
+crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6",
+			 save.it=FALSE,
 			 splitByChr=TRUE, ...){
 	##no visible binding for res
 	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
@@ -261,9 +264,6 @@ crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.
 		message("Loading crlmmResult...")
 		load(file.path(outdir, "crlmmResult.rda"))
 	}
-
-	##- Make crlmmResult the same dimension as ABset
-	## -Create a list object that where rows and columns can be subset using '[' methods
 	if(!file.exists(file.path(outdir, "cnrmaResult.rda"))){
 		message("Quantile normalizing the copy number probes")		
 		cnrmaResult <- cnrma(filenames=filenames, cdfName=cdfName)
@@ -272,23 +272,25 @@ crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6", save.
 		message("Loading cnrmaResult...")		
 		load(file.path(outdir, "cnrmaResult.rda"))
 	}
-##	loader("intensities.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
-##	res <- get("res", envir=.crlmmPkgEnv)
 	load(file.path(outdir, "intensities.rda"))
 	ABset <- combineIntensities(res, cnrmaResult, cdfName)
 	scanDates(ABset) <- as.character(celDates(filenames))	
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
-	crlmmList <- list(ABset,
-			  crlmmResult)
-	crlmmList <- as(crlmmList, "CrlmmSetList")
+	crlmmResults <- list(ABset,
+			     crlmmResult)
+	crlmmResults <- as(crlmmResults, "CrlmmSetList")
 	
 	if(splitByChr){
 		message("Saving by chromosome")
-		splitByChromosome(crlmmList, cdfName=cdfName, outdir=outdir)
+		splitByChromosome(crlmmResults, cdfName=cdfName, outdir=outdir)
 	} else{
 		message("Saving crlmmList object to ", outdir)
-		save(crlmmList, file=file.path(outdir, "crlmmList.rda"))
+		save(crlmmResults, file=file.path(outdir, "crlmmResults.rda"))
+	}
+	if(!save.it){
+		message("Cleaning up")
+		unlink(file.path(outdir, "intensities.rda"))
 	}
 	return()
 }
@@ -509,7 +511,18 @@ computeCopynumber <- function(object,
 	}
 	message("Organizing results...")			
 	locusSet <- list2locusSet(envir, ABset=ABset, NPset=NPset, CHR=CHR, cdfName=cdfName)
-	return(locusSet)
+	if(anyDuplicated(position(locusSet))){
+		message("duplicated physical positions removed from CopyNumberSet object")
+		locusSet <- locusSet[!duplicated(position(locusSet)), ]
+	}
+	message("Thresholding model parameters")
+	locusSet <- thresholdModelParams(locusSet)
+	object[[3]] <- locusSet
+	message("harmonizing dimnames of the elements in CrlmmSetList...")
+	object <- .harmonizeDimnames(object)
+	message("Reordering features by chromosome and physical position...")
+	object <- object[order(chromosome(object), position(object)), ]	
+	return(object)
 }
 
 cnIllumina <- function(object,
@@ -1841,21 +1854,30 @@ getParams <- function(object, batch){
 	return(params)
 }
 
-computeEmission <- function(crlmmResults, cnset, copyNumberStates=0:5, MIN=2^3){
+computeEmission <- function(crlmmResults, copyNumberStates=0:5, MIN=2^3,
+			    EMIT.THR,
+			    scaleSds=TRUE){
 	##threshold small nu's and phis
-	cnset <- thresholdModelParams(cnset, MIN=MIN)
+	cnset <- thresholdModelParams(crlmmResults[[3]], MIN=MIN)
 	index <- order(chromosome(cnset), position(cnset))
+	
 	if(any(diff(index) > 1)) stop("must be ordered by chromosome and physical position")
 	emissionProbs <- array(NA, dim=c(nrow(cnset), ncol(cnset), length(copyNumberStates)))
 	dimnames(emissionProbs) <- list(featureNames(crlmmResults),
 					sampleNames(crlmmResults),
 					paste("copy.number_", copyNumberStates, sep=""))	
-	batch <- cnset$batch
-	for(i in seq(along=unique(batch))){
+	b <- batch(cnset)
+	for(i in seq(along=unique(b))){
 		if(i == 1) cat("Computing emission probabilities \n")
-		message("batch ", unique(batch)[i], "...")
-		emissionProbs[, batch == unique(batch)[i], ] <- .getEmission(crlmmResults, cnset, batch=unique(batch)[i],
-				copyNumberStates=copyNumberStates)
+		message("batch ", unique(b)[i], "...")
+		emissionProbs[, b == unique(b)[i], ] <- .getEmission(crlmmResults, cnset, batch=unique(b)[i],
+				copyNumberStates=copyNumberStates,
+				scaleSds=scaleSds)
+	}
+	if(missing(EMIT.THR)){
+		EMIT.THR <- quantile(emissionProbs, probs=0.25, na.rm=TRUE)
+		message("Thresholding emission probabilities at a small negative value (", round(EMIT.THR, 1), ") to reduce influence of outliers.")
+		emissionProbs[emissionProbs < EMIT.THR] <- EMIT.THR
 	}
 	emissionProbs
 }
@@ -1877,11 +1899,35 @@ thresholdModelParams <- function(object, MIN=2^3){
 	object
 }
 
-.getEmission <- function(crlmmResults, cnset, batch, copyNumberStates){
+.getEmission <- function(crlmmResults, cnset, batch, copyNumberStates, scaleSds=TRUE){
 	if(length(batch) > 1) stop("batch variable not unique")
 	crlmmResults <- crlmmResults[, cnset$batch==batch]
-	cnset <- cnset[, cnset$batch == batch]	
-	emissionProbs <- array(NA, dim=c(nrow(crlmmResults[[1]]), ncol(crlmmResults[[1]]), length(copyNumberStates)))
+	cnset <- cnset[, cnset$batch == batch]
+
+##	a <- A(crlmmResults)
+##	b <- B(crlmmResults)	
+##	sds.a <- apply(log2(a), 2, sd, na.rm=TRUE)
+##	sds.b <- apply(log2(b), 2, sd, na.rm=TRUE)
+	if(scaleSds){
+		a <- CA(crlmmResults)
+		b <- CB(crlmmResults)
+		sds.a <- apply(a, 2, sd, na.rm=TRUE)
+		sds.b <- apply(b, 2, sd, na.rm=TRUE)	
+	
+		sds.a <- log2(sds.a/median(sds.a))
+		sds.b <- log2(sds.b/median(sds.b))
+		
+		sds.a <- matrix(sds.a, nrow(cnset), ncol(cnset), byrow=TRUE)
+		sds.b <- matrix(sds.b, nrow(cnset), ncol(cnset), byrow=TRUE)
+
+	} else sds.a <- sds.b <- matrix(0, nrow(cnset), ncol(cnset))
+##	ca <- CA(cnset)
+##	sds.ca <- apply(ca, 2, sd, na.rm=T)
+##	sds.ca <- sds.ca/median(sds.ca)
+##	sds.scale <- sds/median(sds)  #scale snp-specific variance by measure of the relative sample noise
+	
+	emissionProbs <- array(NA, dim=c(nrow(crlmmResults[[1]]),
+				   ncol(crlmmResults[[1]]), length(copyNumberStates)))
 	snpset <- cnset[snpIndex(cnset), ]
 	params <- getParams(snpset, batch=batch)
 	##attach(params)
@@ -1911,7 +1957,12 @@ thresholdModelParams <- function(object, MIN=2^3){
 			if(CA > 0 & CB > 0) r <- corr
 			if(CA == 0 & CB == 0) r <- 0
 			muA <- log2(nuA+CA*phiA)
-			muB <- log2(nuB+CB*phiB)		
+			muB <- log2(nuB+CB*phiB)
+
+			sigmaA <- matrix(sigmaA, nrow=length(sigmaA), ncol=ncol(cnset), byrow=FALSE)
+			sigmaB <- matrix(sigmaB, nrow=length(sigmaB), ncol=ncol(cnset), byrow=FALSE)
+			sigmaA <- sigmaA+sds.a[snpIndex(crlmmResults), ]
+			sigmaB <- sigmaB+sds.b[snpIndex(crlmmResults), ]			
 
 			##might want to allow the variance to be sample-specific
 			##TODO:
@@ -1954,9 +2005,10 @@ thresholdModelParams <- function(object, MIN=2^3){
 		mus <- as.numeric(matrix(log2(nuA + CT*phiA), nrow(cnset), ncol(cnset)))
 		##Again, should make sds sample-specific
 		sds.matrix <- matrix(sqrt(sig2A), nrow(cnset), ncol(cnset))
-		sds <- as.numeric(matrix(sqrt(sig2A), nrow(cnset), ncol(cnset)))
-		
-		tmp <- matrix(dnorm(a, mean=mus, sd=sds), nrow(cnset), ncol(cnset))
+
+		sds.matrix <- sds.matrix + sds.a[cnIndex(crlmmResults), ]
+		sds <- as.numeric(sds.matrix)
+		suppressWarnings(tmp <- matrix(dnorm(a, mean=mus, sd=sds), nrow(cnset), ncol(cnset)))
 		emissionProbs[cnIndex(crlmmResults), , k] <- log(tmp)
 	}
 	emissionProbs

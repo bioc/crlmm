@@ -47,6 +47,7 @@ scanDates(example.cnset)[1:5]
 <<requiredPackages>>=
 library(crlmm)
 library(genomewidesnp6Crlmm)
+library(Biobase)
 @ 
 
 Specify the complete path for the CEL files and a directory in which to
@@ -111,9 +112,9 @@ batch. Here we make a table of date versus ancestry:
 <<specifyBatch>>=
 sns <- sampleNames(crlmmResults)
 sns[1]
-batch <- substr(basename(sns), 13, 13)
-table(batch)
-table(format(as.POSIXlt(scanDates(crlmmResults)), "%d %b %Y"), batch)
+plate <- substr(basename(sns), 13, 13)
+table(plate)
+table(format(as.POSIXlt(scanDates(crlmmResults)), "%d %b %Y"), plate)
 @ 
 
 As all of these samples were run on the first week of March, we would
@@ -124,22 +125,35 @@ chemistry plate as an argument for \Robject{batch} in the
 \Robject{computeCopynumber} function.
 
 <<computeCopynumber>>=
-if(!exists("cnset")){
-	if(file.exists(file.path(outdir, paste("cnset_", CHR, ".rda", sep="")))) load(file.path(outdir, paste("cnset_", CHR, ".rda", sep="")))	
-	else {
-		cnset <- computeCopynumber(crlmmResults, SNRmin=5, batch=batch, CHR=CHR, cdfName="genomewidesnp6")
-		save(cnset, file=file.path(outdir, paste("cnset_", CHR, ".rda", sep="")))
-	}
+if(!exists("crlmmResults2")){
+	crlmmResults2 <- crlmmResults
+	crlmmResults <- computeCopynumber(crlmmResults, SNRmin=5, batch=plate, CHR=CHR, cdfName="genomewidesnp6")
+	scanDates(crlmmResults[[3]]) <- scanDates(crlmmResults[[3]])
 }
-scanDates(cnset) <- scanDates(crlmmResults)
-cnset <- cnset[order(chromosome(cnset), position(cnset)), ]
-crlmmResults <- crlmm:::harmonizeDimnamesTo(crlmmResults, cnset)
 @ 
+
+**Note: the number of samples in the \Robject{CrlmmSetList} object after
+copy number estimation may be fewer than the number of samples in the
+\Robject{CrlmmSetList} object after preprocessing/genotyping.  This
+occurs when 1 or more samples have a signal-to-noise ratio less than
+value passed to \Robject{SNRmin}.  By default, intermediate forms of the
+data are stored in one object to ensure that each element in the
+\Robject{CrlmmSetList} have the same ordering of probes and samples.
+The object returned by \Robject{computeCopynumber} is ordered by
+chromosome and physical position (useful for downstream methods that
+smooth the copy number as a function of the physical position).  **
+
+<<dimnamesMayDiffer>>=
+identical(featureNames(crlmmResults), featureNames(crlmmResults2)) ##not identical
+identical(sampleNames(crlmmResults), sampleNames(crlmmResults2))
+gc()
+@ 
+
 
 <<example.cnset, eval=FALSE, echo=FALSE>>=
 example.crlmmResults <- crlmmResults[1:1000, 1:100]
-example.cnset <- cnset[1:1000, 1:100]
-save(example.cnset, file="~/madman/Rpacks/crlmm/inst/scripts/example.cnset.rda")
+##example.cnset <- cnset[1:1000, 1:100]
+##save(example.cnset, file="~/madman/Rpacks/crlmm/inst/scripts/example.cnset.rda")
 save(example.crlmmResults, file="~/madman/Rpacks/crlmm/inst/scripts/example.crlmmResults.rda")
 @ 
 
@@ -151,8 +165,8 @@ additional robustness to this assumption.  Set the \Robject{bias.adj}
 argument to \Robject{TRUE}:
 
 <<biasAdjustment, eval=FALSE>>=
-cnset <- computeCopynumber(crlmmResults, SNRmin=5, batch=batch, CHR=CHR, 
-			   cdfName="genomewidesnp6", bias.adj=TRUE)
+crlmmResults[[3]] <- computeCopynumber(crlmmResults, SNRmin=5, batch=plate, CHR=CHR, 
+				       cdfName="genomewidesnp6", bias.adj=TRUE)
 @ 
 
 \section{Suggested plots}
@@ -165,12 +179,12 @@ integer.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE, eval=FALSE>>=
 par(las=1)
-plot(position(cnset), copyNumber(cnset)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
+plot(position(crlmmResults), copyNumber(crlmmResults)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
      ylab="copy number", xlab="physical position (Mb)",
-     main=paste(sampleNames(cnset)[1], ", CHR:", unique(chromosome(cnset))))
-points(position(cnset)[cnIndex(cnset)], copyNumber(cnset)[cnIndex(cnset), 1],
+     main=paste(sampleNames(crlmmResults)[1], ", CHR:", unique(chromosome(crlmmResults))))
+points(position(crlmmResults)[cnIndex(crlmmResults)], copyNumber(crlmmResults)[cnIndex(crlmmResults), 1],
        pch=".", cex=2, col="lightblue")
-axis(1, at=pretty(range(position(cnset))), labels=pretty(range(position(cnset)))/1e6)
+axis(1, at=pretty(range(position(crlmmResults))), labels=pretty(range(position(crlmmResults)))/1e6)
 @ 
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
@@ -216,7 +230,7 @@ for(i in indices[[j]]){
 <<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
 require(RColorBrewer)
 greens <- brewer.pal(9, "Greens")
-J <- split(1:ncol(cnset), cnset$batch)
+J <- split(1:ncol(crlmmResults), batch(crlmmResults))
 colors <- c("red", "blue", "green3")
 cex <- 0.6
 colors <- c("blue", greens[8], "red")
@@ -242,15 +256,15 @@ for(j in seq(along=indices)[1:10]){
 		     xlim=xlim, ylim=ylim,
 		     type="n")
 		if(plotpoints){
-			for(b in seq(along=unique(cnset$batch))){
+			for(b in seq(along=unique(batch(crlmmResults)))){
 				points(crlmmResults[i, J[[b]]], 
 				       pch=pch, 
 				       col=colors[b], bg=colors[b], cex=cex,
 				       xlim=xlim, ylim=ylim)
 			}
 		}
-		for(b in seq(along=unique(cnset$batch))){
-			ellipse(cnset[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
+		for(b in seq(along=unique(batch(crlmmResults)))){
+			ellipse(crlmmResults[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
 		}
 		##legend("bottomright", bty="n", legend=featureNames(crlmmResults)[i])
 		if(k == 1) {
@@ -264,10 +278,7 @@ for(j in seq(along=indices)[1:10]){
 dev.off()
 @
 
-<<problems, echo=FALSE, eval=FALSE>>=
-##8300117, 8469401, 8706404, 2296864, 8659838, 1936806, 4198761, 8584395
 
-@ 
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-predictionRegion}
@@ -285,14 +296,13 @@ with the Birdseye HMM, the same transition probabilities are specified.
 <<segment>>=
 library(VanillaICE)
 copyNumberStates <- 0:5
-require(Biobase)
-cnset <- crlmm:::thresholdModelParams(cnset)
+##crlmmResults <- crlmm:::thresholdModelParams(crlmmResults)
 if(!exists("fit")){
 	if(file.exists(file.path(outdir, paste("fit_", CHR, ".rda", sep="")))) load(file.path(outdir, paste("fit_", CHR, ".rda", sep="")))
 	else {
-		emission.cn <- computeEmission(crlmmResults, cnset, copyNumberStates)
-		tau <- transitionProbability(chromosome=chromosome(cnset),
-					     position=position(cnset),
+		emission.cn <- crlmm:::computeEmission(crlmmResults, copyNumberStates)
+		tau <- transitionProbability(chromosome=chromosome(crlmmResults),
+					     position=position(crlmmResults),
 					     TAUP=1e8)
 		initialP <- rep(1/length(copyNumberStates), length(copyNumberStates))
 		fit <- viterbi(initialStateProbs=log(initialP),
@@ -304,8 +314,7 @@ if(!exists("fit")){
 			       altered2normal=0.5,
 			       altered2altered=0.0025)
 		brks <- breaks(x=fit, states=copyNumberStates, position=tau[, "position"],
-			       chromosome=tau[, "chromosome"],
-			       sampleNames=sampleNames(cnset))
+			       chromosome=tau[, "chromosome"])
 	}
 }
 @ 
@@ -314,36 +323,34 @@ if(!exists("fit")){
 dir.create("figures")
 par(las=1, mfrow=c(1,1), ask=FALSE)
 bmp("figures/chr22plots%02d.png", width=800, height=500)
-for(j in 1:ncol(cnset)){
+for(j in 1:ncol(crlmmResults)){
 	cat(j, " ")
 	##A region that we would miss if we only looked at the polymorphic probes...is it real?
-	##index <- which(position(cnset) > 21.2*1e6 & position(cnset) < 21.6*1e6 & mns < 1)
+	##index <- which(position(crlmmResults) > 21.2*1e6 & position(crlmmResults) < 21.6*1e6 & mns < 1)
 	##fit <- fit[index,]
 	index <- 1:nrow(fit)
-	plot(0:1, type="n", xlim=range(position(cnset)[index]),
+	plot(0:1, type="n", xlim=range(position(crlmmResults)[index]),
 	     xaxt="n", ylim=c(-0.5, 6), 
 	     ylab="copy number", xlab="physical position (Mb)",
-	     main=paste(sampleNames(cnset)[j], ", CHR:", unique(chromosome(cnset))), 
+	     main=paste(sampleNames(crlmmResults)[j], ", CHR:", unique(chromosome(crlmmResults))), 
 	     lwd=2,
 	     col="blue")
-	points(position(cnset)[index], copyNumber(cnset)[index, j], pch=".", cex=2, col="grey60")
-	lines(position(cnset)[index], fit[index, j]-1, type="s", lwd=2, col="blue")
+	points(position(crlmmResults)[index], copyNumber(crlmmResults)[index, j], pch=".", cex=2, col="grey60")
+	lines(position(crlmmResults)[index], fit[index, j]-1, type="s", lwd=2, col="blue")
 	abline(h=0:4, col="grey60")
-	axis(1, at=pretty(range(position(cnset)[index])), labels=pretty(range(position(cnset)[index]))/1e6)
+	axis(1, at=pretty(range(position(crlmmResults)[index])), labels=pretty(range(position(crlmmResults)[index]))/1e6)
 }
 dev.off()
 @ 
 
-<<fixProblems, eval=FALSE>>=
-## NA18522, NA18978 (missed deletion), NA18944 (noisy), NA19098 and NA19130 (missed amplification), 
-## NA19138 (looks like deletion with contamination), NA19143 (missed amplification)
-## NA19204 (looks like homozygous deletion)
-@ 
+
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
 @ 
+
+
 
 
 \end{document}
