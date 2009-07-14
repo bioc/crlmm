@@ -29,7 +29,17 @@ options(prompt="R> ")
 
 At present, software for copy number estimation is provided only for the
 Affymetrix 6.0 platform.  This vignette estimates copy number for the
-HapMap samples.
+HapMap samples.  
+
+One may want to explore the devel branch of this \Rpackage{crlmm} for
+improvements to the copy number vignette. In particular, a more friendly
+user interface, more error checking, and further development of the
+uncertainty estimates for copy number, as well as suggested
+visualizations and downstream approaches for smoothing the locus-level
+estimates.  A tech report for the estimation algorithm (available here:
+\texttt{http://www.bepress.com/cgi/viewcontent.cgi?article=1193&context=jhubiostat})
+is based on the developmental version.
+
 
 \subsection{Preprocess and genotype the samples}
 
