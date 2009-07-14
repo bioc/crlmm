@@ -462,6 +462,9 @@ computeCopynumber <- function(object,
 			      batch,
 			      SNRmin=5,
 			      cdfName="genomewidesnp6", ...){
+	if(ncol(object) < 10)
+		stop("Must have at least 10 samples in each batch to estimate model parameters....preferably closer to 90 samples per batch")
+
 	##require(oligoClasses)
 	if(missing(CHR)) stop("Must specify CHR")
 	if(CHR == 24) stop("Nothing available yet for chromosome Y")

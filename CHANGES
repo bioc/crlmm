@@ -219,4 +219,8 @@ is decoded and scanned
   - copy number parameters in the featureData of the CopyNumberSet
     element are thresholded
 
+2009-07-14 R Scharpf - committed version 1.3.11
+
+* computeCopynumber requires 10 or more samples
+
 

@@ -25,17 +25,19 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
 }
 
 \details{
+
+  This function requires 10 or more samples to estimate model
+  parameters.  Preferably, 70+ samples would be processed together in a
+  batch.
   
-  This function transforms the intensities to a copy number scale.  We
-  assume that the median within-SNP intensity across samples is 2.  We
-  make no assumption about the chromosomal copy number. This function is
-  useful for detecting rare variants (e.g., variants that would not
-  effect the SNP-specific quantile-based estimators of location and
-  scale).  When \code{bias.adj=TRUE}, an extra iteration is performed
-  whereby samples with a high posterior probability of having a
-  non-normal copy number are excluded.  The resulting within-genotype
-  estimators of location and scale are more robust to a large number of
-  samples having a copy number variant.
+  This function transforms the quantile-normalized fluorescence
+  intensities to the scale of copy number.  We assume that for any given
+  locus the median copy number is two for each batch. When
+  \code{bias.adj=TRUE}, an extra iteration is performed whereby samples
+  with a high posterior probability of having a non-normal copy number
+  are excluded.  The resulting within-genotype estimators of location
+  and scale are more robust to a large number of samples having a copy
+  number variant.
 
 }
 
