@@ -91,6 +91,11 @@ setMethod("points", signature(x="CrlmmSetList"),
 
 setMethod("sampleNames", "CrlmmSetList", function(object) sampleNames(object[[1]]))
 setMethod("scanDates", "CrlmmSetList", function(object) scanDates(object[[1]]))
+setReplaceMethod("scanDates", signature(object="CrlmmSetList", value="character"), function(object, value){
+	scanDates(object[[1]]) <- value
+	return(object)
+}) 
+
 setMethod("show", "CrlmmSetList", function(object){
 	for(i in seq(along=object)) show(object[[i]])
 })

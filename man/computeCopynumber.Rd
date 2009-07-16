@@ -20,8 +20,7 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
   \item{SNRmin}{The minimum value for the SNR -- we suggest 5. Samples
     with SNR below SNRmin are dropped.}
   \item{cdfName}{Annotation package }
-  \item{\dots}{arguments to \code{.computeCopynumber} -- not called by
-    the user.}
+  \item{\dots}{arguments to \code{.computeCopynumber}.}
 }
 
 \details{
@@ -48,9 +47,8 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
 }
 
 \seealso{
-  \code{\linkS4class{CopyNumberSet-class}}
+  \code{\linkS4class{CopyNumberSet}},   \code{\link{".computeCopynumber"}}
 }
-\references{Nothing yet.}
 \author{Rob Scharpf}
 \keyword{manip}
 \keyword{models}

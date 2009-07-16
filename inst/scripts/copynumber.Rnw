@@ -36,18 +36,10 @@ HapMap samples.
 We preprocess and genotype the samples as described in the CRLMM
 vignette.
 
-<<test, eval=FALSE, echo=FALSE>>=
-library(crlmm)
-load("~/madman/Rpacks/crlmm/inst/scripts/example.cnset.rda")
-chromosome(example.cnset)[1:5]
-position(example.cnset)[1:5]
-scanDates(example.cnset)[1:5]
-@ 
-
 <<requiredPackages>>=
 library(crlmm)
 library(genomewidesnp6Crlmm)
-library(Biobase)
+library(Biobase) 
 @ 
 
 Specify the complete path for the CEL files and a directory in which to
@@ -55,7 +47,8 @@ store intermediate files:
 
 
 <<celfiles>>=
-celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
+celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", 
+			  full.names=TRUE, pattern=".CEL")
 outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
 @ 
 
@@ -115,6 +108,7 @@ sns[1]
 plate <- substr(basename(sns), 13, 13)
 table(plate)
 table(format(as.POSIXlt(scanDates(crlmmResults)), "%d %b %Y"), plate)
+dts <- scanDates(crlmmResults)
 @ 
 
 As all of these samples were run on the first week of March, we would

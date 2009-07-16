@@ -21,6 +21,7 @@
 \alias{position,CrlmmSetList-method}
 \alias{sampleNames,CrlmmSetList-method}
 \alias{scanDates,CrlmmSetList-method}
+\alias{scanDates<-,CrlmmSetList,character-method}
 \alias{show,CrlmmSetList-method}
 \alias{snpIndex,CrlmmSetList-method}
 
@@ -121,9 +122,15 @@
     \item{"sampleNames"}{\code{signature(object = "CrlmmSetList")}:
       Accessor for the column identifiers of the assay data elements.  }
 
+    \item{"scanDates"}{\code{signature(object = "CrlmmSetList")}:
+      Accessor for the timestamp when the array was processed.  }
+
+    \item{"scanDates<-"}{\code{signature(object = "CrlmmSetList",
+      value="character")}: Add dates to the scanDates slot in the first
+      element of the \code{CrlmmSetList} object.  }
+
     \item{"show"}{\code{signature(object = "CrlmmSetList")}:
       Shows the \code{ABset} and \code{SnpSet} elements of the list.  }
-
 
     \item{"snpIndex"}{\code{signature(object = "CrlmmSetList")}: returns
       the row indices of the polymorphic probes.}

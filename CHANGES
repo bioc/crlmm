@@ -224,3 +224,12 @@ is decoded and scanned
 * computeCopynumber requires 10 or more samples
 
 
+2009-07-16 R Scharpf - committed version 1.3.12
+
+* scanDates replacement method for CrlmmSetList objects
+
+* added .man page for .computeCopynumber 
+
+* Suggests VanillaICE (>= 1.7.8)  -- needed to run the copynumber.Rnw vignette
+
+

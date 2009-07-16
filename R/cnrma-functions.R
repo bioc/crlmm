@@ -482,6 +482,7 @@ computeCopynumber <- function(object,
 	##previous version of compute copy number
 	envir <- new.env()
 	message("Fitting model for copy number estimation...")
+	message("Using ", DF.PRIOR, " df for inverse chi squares.")	
 	.computeCopynumber(chrom=CHR,
 			   A=A(ABset),
 			   B=B(ABset),
@@ -1050,7 +1051,8 @@ withinGenotypeMoments <- function(p, A, B, calls, conf, CONF.THR, DF.PRIOR, envi
 	plate <- envir[["plate"]]
 	uplate <- envir[["uplate"]]
 	normal <- envir[["normal"]][, plate==uplate[p]]
-	G <- calls; rm(calls); gc()	
+	G <- calls; rm(calls); gc()
+
 
 	highConf <- 1-exp(-conf/1000)
 	highConf <- highConf > CONF.THR
