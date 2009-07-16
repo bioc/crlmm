@@ -237,4 +237,8 @@ is decoded and scanned
 
 * fixed bug 'DF.PRIOR not found'
 
+2009-07-16 R Scharpf - committed version 1.3.14
+
+* fixed malformed DESCRIPTION file
+
 
