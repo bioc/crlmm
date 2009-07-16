@@ -482,7 +482,7 @@ computeCopynumber <- function(object,
 	##previous version of compute copy number
 	envir <- new.env()
 	message("Fitting model for copy number estimation...")
-	message("Using ", DF.PRIOR, " df for inverse chi squares.")	
+
 	.computeCopynumber(chrom=CHR,
 			   A=A(ABset),
 			   B=B(ABset),
@@ -823,6 +823,7 @@ thresholdCopyNumberSet <- function(object){
 		if(length(plate) != ncol(A))
 			stop("plate must the same length as the number of columns of A")
 	}
+	message("Using ", DF.PRIOR, " df for inverse chi squares.")		
 	set.seed(seed)
 	if(length(ls(envir)) == 0) {
 		instantiateObjects(calls=calls,
