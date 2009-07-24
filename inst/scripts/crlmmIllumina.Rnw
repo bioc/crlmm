@@ -80,7 +80,7 @@ was 1.2 GB of RAM on our linux system.
 The \Robject{RG} object is an \Rclass{NChannelSet} which stores the 
 Red and Green intensities, the number of beads and standard errors for 
 each bead-type.  
-The scanning date of each array is stored in the \Robject{scanDates} slot.
+The scanning date of each array is stored in the \Robject{protocolData} slot.
 
 <<explore>>=
 class(RG)
@@ -92,7 +92,7 @@ exprs(channel(RG, "G"))[1:5,1:5]
 pd = pData(RG)
 pd[1:5,]
 
-scandatetime = strptime(scanDates(RG), "%m/%d/%Y %H:%M:%S %p")
+scandatetime = strptime(protocolData(RG)[["ScanDate"]], "%m/%d/%Y %H:%M:%S %p")
 datescanned = substr(scandatetime, 1, 10)
 scanbatch =  factor(datescanned)
 levels(scanbatch) = 1:16

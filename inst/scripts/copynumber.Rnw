@@ -107,8 +107,8 @@ sns <- sampleNames(crlmmResults)
 sns[1]
 plate <- substr(basename(sns), 13, 13)
 table(plate)
-table(format(as.POSIXlt(scanDates(crlmmResults)), "%d %b %Y"), plate)
-dts <- scanDates(crlmmResults)
+table(format(as.POSIXlt(protocolData(crlmmResults)[["ScanDate"]]), "%d %b %Y"), plate)
+dts <- protocolData(crlmmResults)[["ScanDate"]]
 @ 
 
 As all of these samples were run on the first week of March, we would
@@ -122,7 +122,7 @@ chemistry plate as an argument for \Robject{batch} in the
 if(!exists("crlmmResults2")){
 	crlmmResults2 <- crlmmResults
 	crlmmResults <- computeCopynumber(crlmmResults, SNRmin=5, batch=plate, CHR=CHR, cdfName="genomewidesnp6")
-	scanDates(crlmmResults[[3]]) <- scanDates(crlmmResults[[3]])
+	protocolData(crlmmResults[[3]])[["ScanDate"]] <- protocolData(crlmmResults[[3]])[["ScanDate"]]
 }
 @ 
 

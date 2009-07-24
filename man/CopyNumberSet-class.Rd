@@ -20,7 +20,7 @@
 \description{Container for allele-specific estimates of copy number and
   the corresponding uncertainty}
 \section{Objects from the Class}{
-Objects can be created by calls of the form \code{new("CopyNumberSet", assayData, phenoData, featureData, experimentData, annotation, scanDates, ...)}.
+Objects can be created by calls of the form \code{new("CopyNumberSet", assayData, phenoData, featureData, experimentData, annotation, protocolData, ...)}.
 }
 \section{Slots}{
 	 \describe{
@@ -29,7 +29,7 @@ Objects can be created by calls of the form \code{new("CopyNumberSet", assayData
     \item{\code{featureData}:}{Object of class \code{"AnnotatedDataFrame"} }
     \item{\code{experimentData}:}{Object of class \code{"MIAME"}  }
     \item{\code{annotation}:}{Object of class \code{"character"}  }
-    \item{\code{scanDates}:}{Object of class \code{"character"} }
+    \item{\code{protocolData}:}{Object of class \code{"AnnotatedDataFrame"} }
     \item{\code{.__classVersion__}:}{Object of class \code{"Versions"}  }
   }
 }

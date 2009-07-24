@@ -8,12 +8,13 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 importClassesFrom(oligoClasses, SnpLevelSet)
 
 importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
-		  assayData, "assayData<-", combine, dims,
-		  experimentData, "experimentData<-",
+                  assayData, "assayData<-", combine, dims,
+                  experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
-		  fvarMetadata, fvarLabels,
-                  pData, phenoData, "phenoData<-", pubMedIds, rowMedians, sampleNames, scanDates,
-                  "scanDates<-", storageMode, "storageMode<-", updateObject, varLabels)
+                  fvarMetadata, fvarLabels,
+                  pData, phenoData, "phenoData<-", protocolData, "protocolData<-",
+                  pubMedIds, rowMedians, sampleNames,
+                  storageMode, "storageMode<-", updateObject, varLabels)
 
 
 ##importMethodsFrom(oligoClasses, chromosome, copyNumber, position)
@@ -82,8 +83,8 @@ export(batch,
        position,
        readIdatFiles,
        sampleNames,
-       scanDates,
-       "scanDates<-",
+       protocolData,
+       "protocolData<-",
        snprma)
 
 

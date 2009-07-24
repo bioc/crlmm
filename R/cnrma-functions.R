@@ -199,7 +199,7 @@ harmonizeSnpSet <- function(crlmmResult, ABset){
 			   callProbability=crlmmConf,
 			   featureData=fD,
 			   phenoData=phenoData(crlmmResult),
-			   scanDates=scanDates(ABset),
+			   protocolData=protocolData(ABset),
 			   annotation=annotation(ABset))
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
 	crlmmResult
@@ -235,7 +235,7 @@ crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
 		load(file.path(outdir, "crlmmOut.rda"))		
 	}
 	ABset <- combineIntensities(res, NULL, cdfName=cdfName)
-	scanDates(ABset) <- as.character(pData(RG)$ScanDate)
+	protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
 	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset)
 	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
 	crlmmList <- list(ABset,
@@ -274,7 +274,7 @@ crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6",
 	}
 	load(file.path(outdir, "intensities.rda"))
 	ABset <- combineIntensities(res, cnrmaResult, cdfName)
-	scanDates(ABset) <- as.character(celDates(filenames))	
+	protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
 	crlmmResults <- list(ABset,

@@ -139,8 +139,9 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	       rm(R)
 	       gc()
        }
-       if(saveDate)
-	       RG@scanDates = dates$scan
+       if(saveDate) {
+	       protocolData(RG)[["ScanDate"]] = dates$scan
+       }
        storageMode(RG) = "lockedEnvironment"
        RG
 }
@@ -456,7 +457,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   rownames(tmpmat) = ids
   colnames(tmpmat) = sampleNames(RG)
   XY = new("NChannelSet", X=tmpmat, Y=tmpmat, Xnb=tmpmat, Ynb=tmpmat, Xse=tmpmat, Yse=tmpmat, zero=tmpmat,
-                 annotation=chipType, phenoData=RG@phenoData, scanDates=RG@scanDates, storage.mode="environment")
+                 annotation=chipType, phenoData=RG@phenoData, protocolData=RG@protocolData, storage.mode="environment")
   rm(tmpmat)
   gc()
   
