@@ -47,7 +47,7 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
 }
 
 \seealso{
-  \code{\linkS4class{CopyNumberSet}},   \code{\link{".computeCopynumber"}}
+  \code{\linkS4class{CopyNumberSet}},   \code{.computeCopynumber}
 }
 \author{Rob Scharpf}
 \keyword{manip}

@@ -84,7 +84,7 @@ SEXP gtypeCallerPart1nm(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   //const int lenLists=3;
 
   // Buffers
-  int intbuffer, ibv1[colsAB], ibv2[colsAB], ib2;
+  int intbuffer, ibv1[colsAB], ib2;
   double buffer;
 
   // All pointers appear here
@@ -304,10 +304,10 @@ SEXP gtypeCallerPart2nm(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   double likelihood[colsAB*3], M[colsAB], S[colsAB], f[colsAB];
 
   // Constants
-  const int lenLists=3;
+  // const int lenLists=3;
 
   // Buffers
-  int intbuffer, ibv1[colsAB], ibv2[colsAB], ib2, ib3, ibSnpLevel1=0, ibSnpLevel2=0;
+  int intbuffer, ib2, ib3, ibSnpLevel1=0, ibSnpLevel2=0;
   double buffer;
 
   ib2 = GET_LENGTH(noTraining);

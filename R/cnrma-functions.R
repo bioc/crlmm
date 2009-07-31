@@ -220,21 +220,26 @@ crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
 				 splitByChr=TRUE,...){
 	if(file.exists(file.path(outdir, "RG.rda"))) load(file.path(outdir, "RG.rda"))
 	else {
-		RG <- readIdatFiles(sampleSheet=samplesheet5, arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), saveDate=TRUE,
-				    path=path)
+		RG <- readIdatFiles(sampleSheet=get("samplesheet5"),
+                                    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+                                    saveDate=TRUE, path=get("path"))
 		J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
 		RG <- RG[, -J]
 		if(save.intermediate) save(RG, file=file.path(outdir, "RG.rda"))  ##935M for 91 samples...better not to save this
 	}	
 	if(!file.exists(file.path(outdir, "res.rda"))){
-		crlmmOut <- crlmmIllumina(RG=RG, cdfName=cdfName, sns=pData(RG)$ID, returnParams=TRUE, save.it=TRUE, intensityFile=file.path(outdir, "res.rda"))
+		crlmmOut <- crlmmIllumina(RG=RG, cdfName=cdfName,
+                                          sns=pData(RG)$ID,
+                                          returnParams=TRUE,
+                                          save.it=TRUE,
+                                          intensityFile=file.path(outdir, "res.rda"))
 		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))				
 	} else{
 		message("Loading...")		
 		load(file.path(outdir, "res.rda"))
 		load(file.path(outdir, "crlmmOut.rda"))		
 	}
-	ABset <- combineIntensities(res, NULL, cdfName=cdfName)
+	ABset <- combineIntensities(get("res"), NULL, cdfName=cdfName)
 	protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
 	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset)
 	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
@@ -273,7 +278,7 @@ crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6",
 		load(file.path(outdir, "cnrmaResult.rda"))
 	}
 	load(file.path(outdir, "intensities.rda"))
-	ABset <- combineIntensities(res, cnrmaResult, cdfName)
+	ABset <- combineIntensities(get("res"), cnrmaResult, cdfName)
 	protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
