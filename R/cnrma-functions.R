@@ -819,7 +819,7 @@ thresholdCopyNumberSet <- function(object){
 			       priorProb,
 			       gender=NULL,
 			       SNR,
-			       SNRmin=5, seed=123,
+			       SNRmin, seed=123,
 			       cdfName,
 			       verbose=TRUE, ...){
 	if(missing(cdfName)) stop("cdfName must be provided")

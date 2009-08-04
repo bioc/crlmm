@@ -7,21 +7,23 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
 			  highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), saveDate=FALSE) {
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
-	       arrayNames=NULL
-	       if(!is.null(arrayInfoColNames$barcode) && (arrayInfoColNames$barcode %in% colnames(sampleSheet))) {
-		       barcode = sampleSheet[,arrayInfoColNames$barcode]
-		       arrayNames=barcode
-	       }
-	       if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {  
-		       position = sampleSheet[,arrayInfoColNames$position]
-		       if(is.null(arrayNames))
-			       arrayNames=position
-		       else
-			       arrayNames = paste(arrayNames, position, sep=sep)
-		       if(highDensity) {
-			       hdExt = list(A="R01C01", B="R01C02", C="R02C01", D="R02C02")
-			       for(i in names(hdExt))
-				       arrayNames = sub(paste(sep, i, sep=""), paste(sep, hdExt[[i]], sep=""), arrayNames)
+	       if(!is.null(arrayNames)){
+		       ##arrayNames=NULL
+		       if(!is.null(arrayInfoColNames$barcode) && (arrayInfoColNames$barcode %in% colnames(sampleSheet))) {
+			       barcode = sampleSheet[,arrayInfoColNames$barcode]
+			       arrayNames=barcode
+		       }
+		       if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {  
+			       position = sampleSheet[,arrayInfoColNames$position]
+			       if(is.null(arrayNames))
+				       arrayNames=position
+			       else
+				       arrayNames = paste(arrayNames, position, sep=sep)
+			       if(highDensity) {
+				       hdExt = list(A="R01C01", B="R01C02", C="R02C01", D="R02C02")
+				       for(i in names(hdExt))
+					       arrayNames = sub(paste(sep, i, sep=""), paste(sep, hdExt[[i]], sep=""), arrayNames)
+			       }
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
@@ -46,17 +48,14 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
        grnidats = file.path(path, grnfiles)
        redidats = file.path(path, redfiles)
-       
        headerInfo = list(nProbes = rep(NA, narrays),
                          Barcode = rep(NA, narrays),
                          ChipType = rep(NA, narrays),
                          Manifest = rep(NA, narrays), # not sure about this one - sometimes blank
                          Position = rep(NA, narrays)) # this may also vary a bit
-
        dates = list(decode=rep(NA, narrays),
                     scan=rep(NA, narrays))
-
-       # read in the data
+       ## read in the data
        for(i in seq(along=arrayNames)) {
 	       cat("reading", arrayNames[i], "\t")
 	       idsG = idsR = G = R = NULL
@@ -68,7 +67,6 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	       headerInfo$ChipType[i] = G$ChipType
 	       headerInfo$Manifest[i] = G$Unknown$MostlyNull
 	       headerInfo$Position[i] = G$Unknowns$MostlyA
-         
 	       if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
 		       ## || headerInfo$nProbes[i]!=headerInfo$nProbes[1] ## removed this condition as some arrays used the same manifest
 		       ## but differed by a few SNPs for some reason - most of the chip was the same though
@@ -76,29 +74,23 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 		       warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
 		       next()
 	       }
-	       
 	       dates$decode[i] = G$RunInfo[1, 1]
 	       dates$scan[i] = G$RunInfo[2, 1]
-
 	       if(i==1) {
-		       if(is.null(ids) && !is.null(G))
+		       if(is.null(ids) && !is.null(G)){
 			       ids = idsG
-		       else
-			       stop("Could not find probe IDs")
+		       }else stop("Could not find probe IDs")
 		       nprobes = length(ids)
 		       narrays = length(arrayNames)
-           
 		       tmpmat = matrix(NA, nprobes, narrays)
 		       rownames(tmpmat) = ids
-		       if(!is.null(sampleSheet))
+		       if(!is.null(sampleSheet)){
 			       colnames(tmpmat) = sampleSheet$Sample_ID
-		       else
-			       colnames(tmpmat) = arrayNames
-
-		       RG = new("NChannelSet",
-		       R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
-		       Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
-		       phenoData=pd, storage.mode="environment")
+		       }else  colnames(tmpmat) = arrayNames
+		       RG <- new("NChannelSet",
+				 R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
+				 Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
+				 phenoData=pd, storage.mode="environment")
 		       rm(tmpmat)
 		       gc()
 	       }
@@ -109,8 +101,7 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 			       RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
 			       RG@assayData$Gse[,i] = G$Quants[, "SD"]
 		       }
-	       }
-	       else {
+	       } else {
 		       indG = match(ids, idsG)
 		       RG@assayData$G[,i] = G$Quants[indG, "Mean"]
 		       RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
@@ -129,8 +120,7 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 			       RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
 			       RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
 		       }
-	       }
-	       else {
+	       } else {
 		       indR = match(ids, idsR)
 		       RG@assayData$R[,i] = R$Quants[indR, "Mean"]
 		       RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]

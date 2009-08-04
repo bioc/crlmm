@@ -14,7 +14,7 @@
 \newcommand{\R}{\textsf{R}}
 
 \begin{document}
-\title{Trisomy analysis}
+\title{Copy number estimation}
 \date{May, 2009}
 \author{Rob Scharpf}
 \maketitle
@@ -171,7 +171,7 @@ Plot physical position versus copy number for the first sample.  Recall
 that the copy number estimates were multiplied by 100 and stored as an
 integer.
 
-<<oneSample, fig=TRUE, width=8, height=4, include=FALSE, eval=FALSE>>=
+<<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1)
 plot(position(crlmmResults), copyNumber(crlmmResults)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
      ylab="copy number", xlab="physical position (Mb)",
@@ -199,7 +199,7 @@ plate. Plotting symbols are the genotype calls (1=AA, 2=AB, 3=BB); light
 grey points are from other plates. One could also add the prediction
 regions for 0-4 copies, but it gets crowded.
 
-<<genotypeCalls, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
+<<genotypeCalls, fig=TRUE, width=8, height=8, include=FALSE>>=
 xlim <- ylim <- c(6.5,13)
 pch <- 21
 colors <- c("red", "blue", "green3")
@@ -221,7 +221,7 @@ for(i in indices[[j]]){
 }
 @ 
 
-<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
+<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE>>=
 require(RColorBrewer)
 greens <- brewer.pal(9, "Greens")
 J <- split(1:ncol(crlmmResults), batch(crlmmResults))
