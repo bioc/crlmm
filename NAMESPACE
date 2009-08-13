@@ -30,6 +30,8 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points)
 
+importFrom(stats, update)
+
 importFrom(grDevices, grey)
 
 importFrom(affyio, read.celfile.header, read.celfile)
@@ -74,6 +76,7 @@ export(batch,
        copyNumber,
        crlmm,
        crlmmIllumina,
+       crlmmIlluminaWrapper,
        crlmmWrapper,
 ##       ellipse,
 ##       computeEmission,
@@ -85,7 +88,7 @@ export(batch,
        sampleNames,
        protocolData,
        "protocolData<-",
-       snprma)
+       snprma, update)
 
 
 

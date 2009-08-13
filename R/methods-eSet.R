@@ -1,5 +1,20 @@
-setMethod("cnIndex", "eSet", function(object) match(cnNames(object), featureNames(object)))
-setMethod("cnNames", "eSet", function(object) featureNames(object)[grep("CN_", featureNames(object))])
+setMethod("cnIndex", "eSet", function(object, cdfName) match(cnNames(object, cdfName), featureNames(object)))
+setMethod("cnNames", "eSet", function(object, cdfName) {
+	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+	load(file.path(path, "cnProbes.rda"))
+	cnps <- rownames(cnProbes)
+	cnps <- cnps[cnps %in% featureNames(object)]
+	featureNames(object)[match(cnps, featureNames(object))]	
+	##featureNames(object)[grep("CN_", featureNames(object))])
+  })
+setMethod("snpIndex", "eSet", function(object, cdfName) match(snpNames(object, cdfName), featureNames(object)))
+setMethod("snpNames", "eSet", function(object, cdfName){
+	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+	load(file.path(path, "snpProbes.rda"))
+	snps <- rownames(snpProbes)
+	snps <- snps[snps %in% featureNames(object)]
+	featureNames(object)[match(snps, featureNames(object))]
+  })
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects
@@ -25,7 +40,6 @@ setMethod("cnNames", "eSet", function(object) featureNames(object)[grep("CN_", f
 ##		  phenoData(x) <- pd
 ##		  x
 ##          })
-setMethod("snpIndex", "eSet", function(object) match(snpNames(object), featureNames(object)))
-setMethod("snpNames", "eSet", function(object) featureNames(object)[grep("SNP_", featureNames(object))])
+
 
 

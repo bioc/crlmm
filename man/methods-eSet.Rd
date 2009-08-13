@@ -9,17 +9,17 @@
 
 \description{
 
-  \code{snpIndex} return the row indices of polymorphic loci.
+  \code{snpIndex, ...} return the row indices of polymorphic loci.
 
-  \code{cnIndex} return the row indices of copy number probes.
+  \code{cnIndex, ...} return the row indices of copy number probes.
 
 }
 
 \usage{
 
-  cnIndex(object)
+  cnIndex(object, cdfName)
 
-  snpIndex(object)
+  snpIndex(object, cdfName)
 
 }
 
@@ -27,6 +27,8 @@
   
   \item{object}{Any object extending eSet (ABset, CopyNumberSet,
     CrlmmSetList, SnpSet}
+
+  \item{cdfName}{Character string indicating annotation package.}
 
 }
 

@@ -35,13 +35,18 @@ setMethod("[", "CrlmmSetList", function(x, i, j, ..., drop = FALSE){
 ##})
 
 setMethod("A", "CrlmmSetList", function(object) A(object[[1]]))
+
+setMethod("annotation", "CrlmmSetList", function(object) annotation(object[[1]]))
+
 setMethod("B", "CrlmmSetList", function(object) B(object[[1]]))
 
 setMethod("CA", "CrlmmSetList", function(object, ...) CA(object[[3]], ...))
 setMethod("CB", "CrlmmSetList", function(object, ...) CB(object[[3]], ...))
 
 setMethod("calls", "CrlmmSetList", function(object) calls(object[[2]]))
-setMethod("cnIndex", "CrlmmSetList", function(object) match(cnNames(object[[1]]), featureNames(object)))
+setMethod("cnIndex", "CrlmmSetList", function(object, ...) {
+	match(cnNames(object[[1]], annotation(object)), featureNames(object))
+})
 
 setMethod("copyNumber", "CrlmmSetList", function(object) copyNumber(object[[3]]))
 
@@ -92,11 +97,23 @@ setMethod("points", signature(x="CrlmmSetList"),
 setMethod("sampleNames", "CrlmmSetList", function(object) sampleNames(object[[1]]))
 
 setMethod("show", "CrlmmSetList", function(object){
-	for(i in seq(along=object)) show(object[[i]])
+	##for(i in seq(along=object)) show(object[[i]])
+	cat("\n Elements in CrlmmSetList object: \n")
+	cat("\n")
+	for(i in 1:length(object)){
+		cat("class: ", class(object[[i]]), "\n")
+		cat("assayData elements: ", ls(assayData(object[[i]])), "\n")
+		cat("Dimensions: ", dim(object[[i]]))		
+		cat("\n \n")
+	}
+##	cat("\n")
+##	cat("Dimensions:\n")
+##	print(dims(object))
 })
 
 setMethod("chromosome", "CrlmmSetList", function(object) chromosome(object[[3]]))
 setMethod("position", "CrlmmSetList", function(object) position(object[[3]]))
+setMethod("confs", "CrlmmSetList", function(object) confs(object[[2]]))
 
 
 setMethod(".harmonizeDimnames", "CrlmmSetList", function(object){
@@ -126,7 +143,9 @@ setMethod("$", "CrlmmSetList", function(x, name) {
 })
 
 	
-setMethod("snpIndex", "CrlmmSetList", function(object) match(snpNames(object[[1]]), featureNames(object)))
+setMethod("snpIndex", "CrlmmSetList", function(object, ...){
+	match(snpNames(object[[1]], annotation(object)), featureNames(object))
+})
 setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir){
 	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))	
 	load(file.path(path, "snpProbes.rda"))
@@ -139,8 +158,9 @@ setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir)
 		cnps <- rownames(cnProbes)[cnProbes[, k] == CHR]
 		index <- c(match(snps, featureNames(object)),
 			   match(cnps, featureNames(object)))
-		crlmmResults <- object[index, ]
-		save(crlmmResults, file=file.path(outdir, paste("crlmmResults_", CHR, ".rda", sep="")))
+		index <- index[!is.na(index)]
+		crlmmSetList <- object[index, ]
+		save(crlmmSetList, file=file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
 	}
 })
 

@@ -6,7 +6,6 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
                   returnParams=FALSE, badSNP=.7){
   if ((load.it | save.it) & missing(intensityFile))
 	  stop("'intensityFile' is missing, and you chose either load.it or save.it")
-  
   if (missing(sns)) sns <- basename(filenames)
   if (!missing(intensityFile))
     if (load.it & !file.exists(intensityFile)){

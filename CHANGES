@@ -256,3 +256,11 @@ is decoded and scanned
 2009-08-04 R. Scharpf - committed version 1.3.17
 
 * changed readIdatFiles function to check whether arrayNames is NULL
+
+2009-08-13 R. Scharpf - committed version 1.3.18
+
+* move Biobase to Depends
+* removed GGdata from suggests (problem with loading illuminaHumanv1.db)
+* overhaul of vignette
+* added update() method for copy number
+* added documentation and error checks for crlmmWrapper

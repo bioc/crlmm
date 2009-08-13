@@ -1,8 +1,7 @@
 \name{crlmmWrapper}
 \Rdversion{1.1}
 \alias{crlmmWrapper}
-\title{ Function to quantile normalize the cell files and genotype the
-  polymorphic loci.
+\title{ Wrapper to quantile normalize and genotype Affymetrix 6.0 cel files.
 }
 \description{
   Quantile normalizes the cel files to a target reference distribution
@@ -10,24 +9,32 @@
   confidence scores are assigned using the crlmm algorithm.
 }
 \usage{
-crlmmWrapper(filenames, outdir = "./", cdfName = "genomewidesnp6", save.it=FALSE, splitByChr=TRUE, ...)
+crlmmWrapper(filenames, cdfName = "genomewidesnp6", load.it=FALSE,
+save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, ...)
 }
 \arguments{
   \item{filenames}{
     Complete path to cel files
   }
-  \item{outdir}{
-    Where to store results.
-  }
   \item{cdfName}{
-    Annotation package.
+    Annotation package (currently, only 'genomewidesnp6' is supported).
   }
-  \item{save.it}{
-    Whether to save intermediate results. Sometimes this can be helpful.
+  \item{load.it}{ Logical.  If TRUE, the wrapper function will try to
+    load the 'intensityFile' and 'crlmmFile'. When FALSE, the quantile
+    normalization and genotype calling steps are recomputed regardless
+    of whether these objects exist.}
+  \item{save.it}{ Logical. Whether to save intermediate files.  When
+    TRUE, the SnpSet object containing genotype calls is saved to the
+    file indicated by 'crlmmFile'. This can be useful if an error occurs
+    in the crlmmWrapper function after the genotyping has been completed.
   }
   \item{splitByChr}{
-    Logical. Whether to split results by chromosome (default is TRUE)
+    Logical. Whether to split results by chromosome (default is TRUE).
+    Helpful for datasets containing 50+ samples.  Files are saved as
+    \code{paste(dirname(crlmmFile), "crlmmSetList_", CHR, ".rda", sep="")}.
   }
+  \item{crlmmFile}{Character string.  Name of file (including the
+    complete path) containing the genotype calls.  
   \item{\dots}{
     additional arguments to function \code{crlmm}
   }
@@ -35,7 +42,6 @@ crlmmWrapper(filenames, outdir = "./", cdfName = "genomewidesnp6", save.it=FALSE
 \value{
   An object of class \code{CrlmmSetList}
 }
-
 \author{
   R. Scharpf
 }
@@ -48,7 +54,7 @@ crlmmWrapper(filenames, outdir = "./", cdfName = "genomewidesnp6", save.it=FALSE
 library(crlmm)
 library(genomewidesnp6Crlmm)
 celFiles <- list.files("PATH_TO_CELS", full.name=TRUE)
-crlmmList <- crlmmWrapper(celFiles, outdir="./", save.it=TRUE, intensityFile="intensities.rda")
+crlmmSetList <- crlmmWrapper(celFiles, intensityFile="intensities.rda")
 }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

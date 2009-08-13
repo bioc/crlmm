@@ -3,9 +3,15 @@
 # or to use the optional 'Path' column in sampleSheet
 # - there is a lot of header information that is currently discarded - could try and store this somewhere in the resulting NChannelSet
 
-readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
+readIdatFiles <- function(sampleSheet=NULL,
+			  arrayNames=NULL,
+			  ids=NULL,
+			  path=".",
 			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-			  highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), saveDate=FALSE) {
+			  highDensity=FALSE,
+			  sep="_",
+			  fileExt=list(green="Grn.idat", red="Red.idat"),
+			  saveDate=FALSE) {
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
 	       if(!is.null(arrayNames)){
 		       ##arrayNames=NULL
@@ -27,6 +33,7 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
+	       sampleNames(pd) <- arrayNames
        }
        if(is.null(arrayNames)) {
 	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -88,13 +95,18 @@ readIdatFiles <- function(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 			       colnames(tmpmat) = sampleSheet$Sample_ID
 		       }else  colnames(tmpmat) = arrayNames
 		       RG <- new("NChannelSet",
-				 R=tmpmat, G=tmpmat, Rnb=tmpmat, Gnb=tmpmat,
-				 Rse=tmpmat, Gse=tmpmat, annotation=headerInfo$Manifest[1],
-				 phenoData=pd, storage.mode="environment")
+				 R=tmpmat,
+				 G=tmpmat,
+				 Rnb=tmpmat,
+				 Gnb=tmpmat,
+				 Rse=tmpmat,
+				 Gse=tmpmat,
+				 annotation=headerInfo$Manifest[1],
+				 phenoData=pd,
+				 storage.mode="environment")
 		       rm(tmpmat)
 		       gc()
 	       }
-         
 	       if(length(ids)==length(idsG)) {
 		       if(sum(ids==idsG)==nprobes) {
 			       RG@assayData$G[,i] = G$Quants[, "Mean"]
@@ -394,6 +406,8 @@ readBPM <- function(bpmFile){
 }
 
 
+
+
 RGtoXY = function(RG, chipType, verbose=TRUE) {
   chipList = c("human1mv1c",             # 1M
                "human370v1c",            # 370CNV
@@ -402,11 +416,10 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
                "human660quadv1a",        # 660 quad
                "human370quadv3c",        # 370CNV quad
                "human550v3b",            # 550K
-               "human1mduov3b")          # 1M Duo   
-  if(missing(chipType))
-     chipType = match.arg(annotation(RG), chipList)
-  else
-     chipType = match.arg(chipType, chipList)
+               "human1mduov3b")          # 1M Duo
+  if(missing(chipType)){
+	  chipType = match.arg(annotation(RG), chipList)
+  } else chipType = match.arg(chipType, chipList)
   
   pkgname <- getCrlmmAnnotationName(chipType)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
@@ -558,8 +571,17 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
 }
 
 
-preprocessInfinium2 = function(XY, mixtureSampleSize=10^5, fitMixture=TRUE, eps=0.1, verbose=TRUE, seed=1,
-                               cdfName, sns, stripNorm=TRUE, useTarget=TRUE, save.it=FALSE, intensityFile) {
+preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
+				fitMixture=TRUE,
+				eps=0.1,
+				verbose=TRUE,
+				seed=1,
+				cdfName,
+				sns,
+				stripNorm=TRUE,
+				useTarget=TRUE,
+				save.it=FALSE,
+				intensityFile) {
   if(stripNorm)
     XY = stripNormalize(XY, useTarget=useTarget, verbose=verbose)
 

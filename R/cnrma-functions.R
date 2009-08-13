@@ -177,9 +177,9 @@ combineIntensities <- function(res, cnrmaResult, cdfName){
 	return(ABset)
 }
 
-harmonizeSnpSet <- function(crlmmResult, ABset){
-	blank <- matrix(NA, length(cnNames(ABset)), ncol(ABset))
-	rownames(blank) <- cnNames(ABset)
+harmonizeSnpSet <- function(crlmmResult, ABset, cdfName){
+	blank <- matrix(NA, length(cnNames(ABset, cdfName)), ncol(ABset))
+	rownames(blank) <- cnNames(ABset, cdfName)
 	colnames(blank) <- sampleNames(ABset)
 	crlmmCalls <- rbind(calls(crlmmResult), blank)
 	crlmmConf <- rbind(confs(crlmmResult), blank)
@@ -215,33 +215,56 @@ harmonizeDimnamesTo <- function(object1, object2){
 	return(object1)
 }
 
-crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
+crlmmIlluminaWrapper <- function(outdir="./",
+				 cdfName,
 				 save.intermediate=FALSE,
-				 splitByChr=TRUE,...){
-	if(file.exists(file.path(outdir, "RG.rda"))) load(file.path(outdir, "RG.rda"))
-	else {
-		RG <- readIdatFiles(sampleSheet=get("samplesheet5"),
-                                    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-                                    saveDate=TRUE, path=get("path"))
-		J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
-		RG <- RG[, -J]
+				 splitByChr=TRUE,
+				 intensityFile,
+				 ...){  ##additional arguments to readIdatFiles
+	stopifnot(basename(intensityFile) == "res.rda")
+	if(!file.exists(outdir)) stop(outdir, " does not exist.")
+	if(!isValidCdfName(cdfName, platform="illumina")) stop(cdfName, " not supported.")
+	if(file.exists(file.path(outdir, "RG.rda"))) {
+		message("Loading RG.rda...")
+		load(file.path(outdir, "RG.rda"))
+	} else {
+		message("Reading Idat files...")		
+		RG <- readIdatFiles(...)
+		##J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
+		##RG <- RG[, -J]
 		if(save.intermediate) save(RG, file=file.path(outdir, "RG.rda"))  ##935M for 91 samples...better not to save this
 	}	
-	if(!file.exists(file.path(outdir, "res.rda"))){
-		crlmmOut <- crlmmIllumina(RG=RG, cdfName=cdfName,
-                                          sns=pData(RG)$ID,
+	if(!file.exists(intensityFile)){
+		message("Quantile normalization / genotyping...")				
+		crlmmOut <- crlmmIllumina(RG=RG,
+					  cdfName=cdfName,
+                                          sns=sampleNames(RG),
                                           returnParams=TRUE,
                                           save.it=TRUE,
-                                          intensityFile=file.path(outdir, "res.rda"))
-		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))				
+                                          intensityFile=intensityFile)
+		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))
 	} else{
-		message("Loading...")		
-		load(file.path(outdir, "res.rda"))
-		load(file.path(outdir, "crlmmOut.rda"))		
+		load(file.path(outdir, "crlmmOut.rda"))
 	}
-	ABset <- combineIntensities(get("res"), NULL, cdfName=cdfName)
-	protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
-	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset)
+	message("Loading ", intensityFile, "...")		
+	load(intensityFile)
+	if(exists("cnAB")){
+		np.A <- as.integer(cnAB$A)
+		np.B <- as.integer(cnAB$B)
+		np <- ifelse(np.A > np.B, np.A, np.B)
+		np <- matrix(np, nrow(cnAB$A), ncol(cnAB$A))
+		rownames(np) <- cnAB$gns
+		colnames(np) <- cnAB$sns
+		cnAB$NP <- np
+	}
+	sampleNames(crlmmOut) <- res$sns	
+	if(exists("cnAB")){
+		ABset <- combineIntensities(get("res"), cnAB, cdfName=cdfName)
+	} else{
+		ABset <- combineIntensities(get("res"), NULL, cdfName=cdfName)
+	}
+	##protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
+	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset, cdfName)
 	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
 	crlmmList <- list(ABset,
 			  crlmmResult)
@@ -255,47 +278,174 @@ crlmmIlluminaWrapper <- function(sampleSheet, outdir="./", cdfName,
 	}
 	message("CrlmmSetList objects saved to ", outdir)
 }
+
+##quantileNormalize1m <- function(cel.files,
+##				outdir,
+##				pkgname,
+##				reference=TRUE,
+##				createCels=TRUE,
+##				verbose=TRUE,
+##				computeCopyNumberReference=FALSE,
+##				normalizeNonpolymorphic=FALSE){
+##	if(computeCopyNumberReference){
+##		stopifnot(file.exists("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"))
+##	} else{
+##		load(system.file("1m_reference_cn.rda", package="CN"))
+##	}
+##	conn <- db(get(pkgname))
+##	tmp <- dbGetQuery(conn, paste("SELECT fid, man_fsetid, allele, featureSet.chrom, featureSet.physical_pos",
+##				      "FROM pmfeature, featureSet",
+##				      "WHERE pmfeature.fsetid = featureSet.fsetid"))
+##	tmp[is.na(tmp$chrom), "chrom"] <- 0
+##	tmp[is.na(tmp$physical_pos), "physical_pos"] <- 0
+##	tmp <- tmp[order(tmp$chrom, tmp$physical_pos, tmp$man_fsetid, tmp$allele),]
+##
+##	if(reference){
+##		load(system.file("extdata", paste(pkgname, "Ref.rda", sep=""), package=pkgname))
+##	} else{
+##		reference <- normalize.quantiles.determine.target(readCelIntensities(celFiles,
+##										     indices=tmp$fid))
+##		if (verbose) message("normalization vector created")
+##	}
+##	reference <- sort(reference)
+##	message("creating empty cel files")
+##	out.celFiles <- file.path(outdir, paste("QN-", basename(cel.files), sep=""))
+##	if(createCels){
+##		hh <- readCelHeader(cel.files[1])
+##		message(paste("creating empty cel files in", outdir))
+##		out.celFiles <- sapply(out.celFiles, function(x) suppressWarnings(createCel(x, header=hh, overwrite=TRUE)))
+##	}
+##
+##	message("Quantile normalizing SNP probes to hapmap target distribution")
+##	for(i in 1:length(cel.files)){
+##		if(i%%10==0) cat(".")
+##		pms <- normalize.quantiles.use.target(readCelIntensities(cel.files[i],
+##									 indices=tmp$fid),
+##						      reference, copy=FALSE)
+##		updateCel(out.celFiles[i], indices=tmp$fid, intensities=as.integer(pms))	  
+##	}
+##
+####	---------------------------------------------------------------------------
+####	 copy number probes
+####	---------------------------------------------------------------------------
+##	if(normalizeNonpolymorphic){
+##		cntmp <- dbGetQuery(conn, paste("SELECT fid, man_fsetid, featureSetCNV.chrom, featureSetCNV.chrom_start",
+##						"FROM pmfeatureCNV, featureSetCNV",
+##						"WHERE pmfeatureCNV.fsetid = featureSetCNV.fsetid"))
+##		cntmp[is.na(cntmp$chrom), "chrom"] <- 0
+##		cntmp[is.na(cntmp$chrom_start), "chrom_start"] <- 0
+##		cntmp <- cntmp[order(cntmp$chrom, cntmp$chrom_start, cntmp$man_fsetid), ]
+##
+##		if(computeCopyNumberReference){
+##			message("computing reference distribution for copy number probes.  May take a while...")
+##			celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE)
+##			reference <- computeCopyNumberReference(cel.files=celFiles, fid=cntmp$fid)
+##			message("finished computing CN reference distribution.")
+##		} 
+##		message("Quantile normalizing copy number probes to hapmap target distribution")
+##		for(i in 1:length(cel.files)){
+##			if(i%%10==0) cat(".")
+##			pms <- normalize.quantiles.use.target(readCelIntensities(cel.files[i],
+##										 indices=cntmp$fid),
+##							      reference, copy=FALSE)
+##			updateCel(out.celFiles[i], indices=cntmp$fid, intensities=as.integer(pms))	  
+##		}
+##	} else {
+##		message("Not quantile normalizing the nonpolymorphic probes")
+##	}
+##}
+
+validCdfNames <- function(platform){
+	if(missing(platform)) stop("missing platform")
+	if(!platform %in% c("illumina", "affymetrix"))
+		stop("only illumina and affymetrix platforms are supported.")
+	if(platform=="illumina"){
+		chipList = c("human1mv1c",             # 1M
+		"human370v1c",            # 370CNV
+		"human650v3a",            # 650Y
+		"human610quadv1b",        # 610 quad
+		"human660quadv1a",        # 660 quad
+		"human370quadv3c",        # 370CNV quad
+		"human550v3b",            # 550K
+		"human1mduov3b")          # 1M Duo
+	}
+	if(platform=="affymetrix"){
+		chipList=c("genomewidesnp6")
+	}
+	return(chipList)
+}
+
+isValidCdfName <- function(cdfName, platform){
+	chipList <- validCdfNames(platform)
+	if(!(cdfName %in% chipList)){
+		warning("cdfName must be one of the following: ",
+			chipList)
+	}
+	result <- cdfName %in% chipList
+	return(result)
+}
 	
 	
 	
-crlmmWrapper <- function(filenames, outdir="./", cdfName="genomewidesnp6",
+crlmmWrapper <- function(filenames,
+			 cdfName="genomewidesnp6",
+			 load.it=FALSE,
 			 save.it=FALSE,
-			 splitByChr=TRUE, ...){
-	##no visible binding for res
-	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
-		crlmmResult <- crlmm(filenames=filenames, cdfName=cdfName, save.it=TRUE, ...)
-		if(save.it) save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
-	} else {
-		message("Loading crlmmResult...")
-		load(file.path(outdir, "crlmmResult.rda"))
+			 splitByChr=TRUE,
+			 crlmmFile,
+			 intensityFile, ...){
+	outfiles <- file.path(dirname(crlmmFile), paste("crlmmSetList_", 1:24, ".rda", sep=""))
+	if(load.it & all(file.exists(outfiles))){
+		load(outfiles[1])
+		crlmmSetList <- get("crlmmSetList")
+		if(!all(sampleNames(crlmmSetList) == basename(filenames))){
+			stop("load.it is TRUE, but sampleNames(crlmmSetList != basename(filenames))")
+		} else{
+			return("load.it is TRUE and 'crlmmSetList_<CHR>.rda' objects found. Nothing to do...")
+		}
 	}
-	if(!file.exists(file.path(outdir, "cnrmaResult.rda"))){
-		message("Quantile normalizing the copy number probes")		
+	if(missing(intensityFile)) stop("must specify 'intensityFile'.")
+	if(missing(crlmmFile)) stop("must specify 'crlmmFile'.")
+	if(load.it){
+		if(!file.exists(crlmmFile)){
+			message("load.it is TRUE, but 'crlmmFile' does not exist.  Rerunning the genotype calling algorithm") 
+			load.it <- FALSE
+		}
+	}
+	if(!file.exists(outdir)) stop(outdir, " does not exist.")
+	if(!isValidCdfName(cdfName, platform="affymetrix"))
+		stop(cdfName, " is not a valid entry.  See crlmm:::validCdfNames(platform='affymetrix')")
+	if(!file.exists(crlmmFile) | !load.it){
+		crlmmResult <- crlmm(filenames=filenames,
+				     cdfName=cdfName,
+				     save.it=TRUE,
+				     load.it=load.it,
+				     intensityFile=intensityFile, ...)
+		message("Quantile normalizing the copy number probes...")		
 		cnrmaResult <- cnrma(filenames=filenames, cdfName=cdfName)
-		if(save.it) save(cnrmaResult, file=file.path(outdir, "cnrmaResult.rda"))
-	} else{
-		message("Loading cnrmaResult...")		
-		load(file.path(outdir, "cnrmaResult.rda"))
+		if(save.it){
+			message("Saving crlmmResult and cnrmaResult to", crlmmFile)
+			save(crlmmResult, cnrmaResult, file=crlmmFile)
+		}
+	} else {
+		message("Loading ", crlmmFile, "...")
+		load(crlmmFile)
+		crlmmResult <- get("crlmmResult")
+		cnrmaResult <- get("cnrmaResult")
 	}
-	load(file.path(outdir, "intensities.rda"))
+	load(intensityFile)
 	ABset <- combineIntensities(get("res"), cnrmaResult, cdfName)
 	protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
-	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset)
+	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset, cdfName)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
-	crlmmResults <- list(ABset,
-			     crlmmResult)
-	crlmmResults <- as(crlmmResults, "CrlmmSetList")
-	
+	crlmmSetList <- as(list(ABset, crlmmResult), "CrlmmSetList")
 	if(splitByChr){
 		message("Saving by chromosome")
-		splitByChromosome(crlmmResults, cdfName=cdfName, outdir=outdir)
-	} else{
-		message("Saving crlmmList object to ", outdir)
-		save(crlmmResults, file=file.path(outdir, "crlmmResults.rda"))
-	}
+		splitByChromosome(crlmmSetList, cdfName=cdfName, outdir=dirname(crlmmFile))
+	} 
 	if(!save.it){
 		message("Cleaning up")
-		unlink(file.path(outdir, "intensities.rda"))
+		unlink(intensityFile)
 	}
 	return()
 }
@@ -461,24 +611,33 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 	envir[["normalNP"]] <- normalNP
 }
 
+setMethod("update", "CrlmmSetList", function(object, ...){
+	computeCopynumber(object, ...)
+})
+
 computeCopynumber <- function(object,
 			      CHR,
 			      bias.adj=FALSE,
 			      batch,
 			      SNRmin=5,
-			      cdfName="genomewidesnp6", ...){
+			      cdfName, ...){
+	if(missing(cdfName))
+		cdfName <- annotation(object)
+	if(!isValidCdfName(cdfName, platform="affymetrix")) stop(cdfName, " not supported.")	
 	if(ncol(object) < 10)
 		stop("Must have at least 10 samples in each batch to estimate model parameters....preferably closer to 90 samples per batch")
-
 	##require(oligoClasses)
 	if(missing(CHR)) stop("Must specify CHR")
 	if(CHR == 24) stop("Nothing available yet for chromosome Y")
-	if(missing(batch)) stop("Must specify batch")
+	if(missing(batch)) {
+		message("'batch' missing.  Assuming all samples were processed together in the same batch.")
+		batch <- rep("A", ncol(object))
+	}
 	if(length(batch) != ncol(object[[1]])) stop("Batch must be the same length as the number of samples")
 	##the AB intensities
 	Nset <- object[[1]]
 	##indices of polymorphic loci
-	index <- snpIndex(Nset)
+	index <- snpIndex(Nset, cdfName)
 	ABset <- Nset[index, ]
 	##indices of nonpolymorphic loci
 	NPset <- Nset[-index, ]
@@ -624,13 +783,14 @@ cnIllumina <- function(object,
 
 updateNuPhi <- function(crlmmSetList, cnSet){
 	##TODO: remove the use of environments.
+	cdfName <- annotation(crlmmSetList[[1]])
 	##repopulate the environment
 	crlmmSetList <- crlmmSetList[, match(sampleNames(cnSet), sampleNames(crlmmSetList))]
 	crlmmSetList <- crlmmSetList[match(featureNames(cnSet), featureNames(crlmmSetList)), ]
 	##envir <- getCopyNumberEnvironment(crlmmSetList, cnSet)
 	Nset <- crlmmSetList[[1]]
 	##indices of polymorphic loci
-	index <- snpIndex(Nset)
+	index <- snpIndex(Nset, cdfName)
 	ABset <- Nset[index, ]
 	##indices of nonpolymorphic loci
 	NPset <- Nset[-index, ]
@@ -1865,23 +2025,27 @@ getParams <- function(object, batch){
 	return(params)
 }
 
-computeEmission <- function(crlmmResults, copyNumberStates=0:5, MIN=2^3,
+computeEmission <- function(object,
+			    copyNumberStates=0:5,
+			    MIN=2^3,
 			    EMIT.THR,
 			    scaleSds=TRUE){
+	cdfName <- annotation(object)
 	##threshold small nu's and phis
-	cnset <- thresholdModelParams(crlmmResults[[3]], MIN=MIN)
+	cnset <- thresholdModelParams(object[[3]], MIN=MIN)
 	index <- order(chromosome(cnset), position(cnset))
 	
 	if(any(diff(index) > 1)) stop("must be ordered by chromosome and physical position")
 	emissionProbs <- array(NA, dim=c(nrow(cnset), ncol(cnset), length(copyNumberStates)))
-	dimnames(emissionProbs) <- list(featureNames(crlmmResults),
-					sampleNames(crlmmResults),
+	dimnames(emissionProbs) <- list(featureNames(object),
+					sampleNames(object),
 					paste("copy.number_", copyNumberStates, sep=""))	
 	b <- batch(cnset)
 	for(i in seq(along=unique(b))){
 		if(i == 1) cat("Computing emission probabilities \n")
 		message("batch ", unique(b)[i], "...")
-		emissionProbs[, b == unique(b)[i], ] <- .getEmission(crlmmResults, cnset, batch=unique(b)[i],
+		emissionProbs[, b == unique(b)[i], ] <- .getEmission(object, cnset,
+				batch=unique(b)[i],
 				copyNumberStates=copyNumberStates,
 				scaleSds=scaleSds)
 	}
@@ -1910,18 +2074,14 @@ thresholdModelParams <- function(object, MIN=2^3){
 	object
 }
 
-.getEmission <- function(crlmmResults, cnset, batch, copyNumberStates, scaleSds=TRUE){
+.getEmission <- function(object, cnset, batch, copyNumberStates, scaleSds=TRUE){
+	cdfName <- annotation(object)
 	if(length(batch) > 1) stop("batch variable not unique")
-	crlmmResults <- crlmmResults[, cnset$batch==batch]
+	object <- object[, cnset$batch==batch]
 	cnset <- cnset[, cnset$batch == batch]
-
-##	a <- A(crlmmResults)
-##	b <- B(crlmmResults)	
-##	sds.a <- apply(log2(a), 2, sd, na.rm=TRUE)
-##	sds.b <- apply(log2(b), 2, sd, na.rm=TRUE)
 	if(scaleSds){
-		a <- CA(crlmmResults)
-		b <- CB(crlmmResults)
+		a <- CA(object)
+		b <- CB(object)
 		sds.a <- apply(a, 2, sd, na.rm=TRUE)
 		sds.b <- apply(b, 2, sd, na.rm=TRUE)	
 	
@@ -1932,14 +2092,9 @@ thresholdModelParams <- function(object, MIN=2^3){
 		sds.b <- matrix(sds.b, nrow(cnset), ncol(cnset), byrow=TRUE)
 
 	} else sds.a <- sds.b <- matrix(0, nrow(cnset), ncol(cnset))
-##	ca <- CA(cnset)
-##	sds.ca <- apply(ca, 2, sd, na.rm=T)
-##	sds.ca <- sds.ca/median(sds.ca)
-##	sds.scale <- sds/median(sds)  #scale snp-specific variance by measure of the relative sample noise
-	
-	emissionProbs <- array(NA, dim=c(nrow(crlmmResults[[1]]),
-				   ncol(crlmmResults[[1]]), length(copyNumberStates)))
-	snpset <- cnset[snpIndex(cnset), ]
+	emissionProbs <- array(NA, dim=c(nrow(object[[1]]),
+				   ncol(object[[1]]), length(copyNumberStates)))
+	snpset <- cnset[snpIndex(cnset, annotation(cnset)), ]
 	params <- getParams(snpset, batch=batch)
 	##attach(params)
 	corr <- params[["corr"]]
@@ -1953,8 +2108,8 @@ thresholdModelParams <- function(object, MIN=2^3){
 	sig2B <- params[["sig2B"]]
 	tau2A <- params[["tau2A"]]
 	tau2B <- params[["tau2B"]]
-	a <- as.numeric(log2(A(crlmmResults[snpIndex(crlmmResults), ])))
-	b <- as.numeric(log2(B(crlmmResults[snpIndex(crlmmResults), ])))
+	a <- as.numeric(log2(A(object[snpIndex(object), ])))
+	b <- as.numeric(log2(B(object[snpIndex(object), ])))
 	for(k in seq(along=copyNumberStates)){
 		##cat(k, " ")
 		CN <- copyNumberStates[k]
@@ -1972,8 +2127,8 @@ thresholdModelParams <- function(object, MIN=2^3){
 
 			sigmaA <- matrix(sigmaA, nrow=length(sigmaA), ncol=ncol(cnset), byrow=FALSE)
 			sigmaB <- matrix(sigmaB, nrow=length(sigmaB), ncol=ncol(cnset), byrow=FALSE)
-			sigmaA <- sigmaA+sds.a[snpIndex(crlmmResults), ]
-			sigmaB <- sigmaB+sds.b[snpIndex(crlmmResults), ]			
+			sigmaA <- sigmaA+sds.a[snpIndex(object), ]
+			sigmaB <- sigmaB+sds.b[snpIndex(object), ]			
 
 			##might want to allow the variance to be sample-specific
 			##TODO:
@@ -1995,21 +2150,20 @@ thresholdModelParams <- function(object, MIN=2^3){
 			## TODO: copy-neutral LOH would put near-zero mass on CA > 0, CB > 0
 			f.x.y <- f.x.y + matrix(1/(2*pi*sd.A*sd.B*sqrt(1-rho^2))*exp(-0.5*Q.x.y), nrow(snpset), ncol(snpset))
 		}
-		emissionProbs[snpIndex(crlmmResults), , k] <- log(f.x.y)
+		emissionProbs[snpIndex(object), , k] <- log(f.x.y)
 	}
-
 
 	##**************************************************
 	##
 	##Emission probabilities for nonpolymorphic probes
 	##	
 	##**************************************************	
-	cnset <- cnset[cnIndex(cnset), ]
+	cnset <- cnset[cnIndex(cnset, annotation(cnset)), ]
 	params <- getParams(cnset, batch=batch)
 	nuA <- params[["nuA"]]
 	phiA <- params[["phiA"]]
 	sig2A <- params[["sig2A"]]
-	a <- as.numeric(log2(A(crlmmResults[cnIndex(crlmmResults), ])))
+	a <- as.numeric(log2(A(object[cnIndex(object), ])))
 	for(k in seq(along=copyNumberStates)){
 		CT <- copyNumberStates[k]
 		mus.matrix=matrix(log2(nuA + CT*phiA), nrow(cnset), ncol(cnset))
@@ -2017,10 +2171,10 @@ thresholdModelParams <- function(object, MIN=2^3){
 		##Again, should make sds sample-specific
 		sds.matrix <- matrix(sqrt(sig2A), nrow(cnset), ncol(cnset))
 
-		sds.matrix <- sds.matrix + sds.a[cnIndex(crlmmResults), ]
+		sds.matrix <- sds.matrix + sds.a[cnIndex(object), ]
 		sds <- as.numeric(sds.matrix)
 		suppressWarnings(tmp <- matrix(dnorm(a, mean=mus, sd=sds), nrow(cnset), ncol(cnset)))
-		emissionProbs[cnIndex(crlmmResults), , k] <- log(tmp)
+		emissionProbs[cnIndex(object), , k] <- log(tmp)
 	}
 	emissionProbs
 }

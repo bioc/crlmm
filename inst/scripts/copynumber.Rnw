@@ -25,74 +25,235 @@ options(continue=" ")
 options(prompt="R> ")
 @ 
 
-\section{Estimating copy number}
+%\section{Estimating copy number}
 
-At present, software for copy number estimation is provided only for the
-Affymetrix 6.0 platform.  This vignette estimates copy number for the
-HapMap samples.
+%At present, software for copy number estimation is provided only for the
+%Affymetrix 6.0 platform.  
 
-\subsection{Preprocess and genotype the samples}
+\begin{abstract}
+  This vignette estimates copy number for HapMap samples on the
+  Affymetrix 6.0 platform.
+\end{abstract}
 
-We preprocess and genotype the samples as described in the CRLMM
-vignette.
+\section{Simple usage}
+
+The following packages are required:
 
 <<requiredPackages>>=
 library(crlmm)
 library(genomewidesnp6Crlmm)
-library(Biobase) 
 @ 
+\paragraph{Preprocess and genotype.}
 
-Specify the complete path for the CEL files and a directory in which to
-store intermediate files:
-
+Specify the coordinates of Affymetrix cel files and where to put
+intermediate files generated during the course of preprocessing / copy
+number estimation.
 
 <<celfiles>>=
-celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", 
-			  full.names=TRUE, pattern=".CEL")
+myPath <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
+celFiles <- list.celfiles(myPath, full.names=TRUE, pattern=".CEL")
 outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
 @ 
 
-Preprocess and genotype (for more info see the crlmm vignette):
+\noindent Preprocess and genotype (for more info see the crlmm vignette):
 
 <<preprocessAndGenotype>>=
-crlmmFilenames <- file.path(outdir, paste("crlmmResults_", 1:24, ".rda", sep=""))
-if(!all(file.exists(crlmmFilenames))){
-	message("Preprocessing and crlmm genotyping.  Results are written to", outdir, "...")
-	intensityFile <- file.path(outdir, "intensities.rda")		
-	crlmmWrapper(celFiles, outdir, save.it=TRUE, intensityFile=intensityFile)
-}
+crlmmWrapper(celFiles[1:15], 
+	     save.it=TRUE, 
+	     load.it=TRUE,
+	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
+	     crlmmFile=file.path(outdir, "snpsetObject.rda"))
 @ 
 
-Load results for chromosome 22.
+As a result of the above wrapper, the following R objects are now created:
+
+<<>>=
+list.files(outdir)[grep("crlmmSetList", list.files(outdir))]
+@ 
+
+\paragraph{Locus- and allele-specific estimates of copy number.}
+
+Load the object for chromosome 22 and compute copy number:
 
 <<crlmmList-show>>=
 CHR <- 22
-if(!exists("crlmmResults")) load(file.path(outdir, paste("crlmmResults_", CHR, ".rda", sep="")))
-class(crlmmResults)
-show(crlmmResults)
+if(!exists("crlmmSetList")) load(file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
+show(crlmmSetList)
+if(length(crlmmSetList)==2){
+	crlmmSetList <- update(crlmmSetList, CHR=CHR)
+}
+show(crlmmSetList)
 @ 
 
-\subsection{Copy number}
+See the help file for \Robject{computeCopynumber} for arguments to
+\Robject{update}.  Provided that the assumption of integer copy number
+is reasonable, one can fit a hidden Markov model to the locus-level
+estimates of copy number and uncertainty.
 
-We require 6 items for copy number estimation:
+\paragraph{A hidden Markov model.}
 
-\begin{itemize}
-  \item quantile-normalized A intensities (I1 x J)
-  \item quantile-normalized B intensities (I1 x J)
-  \item quantile-normalized intensities from nonpolymorphic (NP) probes (I2 x J)
-  \item genotype calls (I1 x J)
-  \item confidence scores of the genotype calls  (I1 x J)
-  \item signal to noise ratio (SNR) of the samples (J)
-  \end{itemize}
-  
-  The above items are contained in the \Robject{crlmmResults} object. A
-  histogram of the signal to noise ratio for the HapMap samples:
+Emission probabilities for the hidden markov model can be computed from
+the copy number prediction regions based on bivariate normal scatter
+plots of the log A versus log B intensities.  (By contrast, a
+nonparamemtric segmentation would be applied to intensities on the scale
+of copy number.)
 
-<<plotSnr, fig=TRUE>>=
-hist(crlmmResults[[2]]$SNR, xlab="SNR", main="")
+<<emissionProbabilities>>=
+library(VanillaICE)
+copyNumberStates <- 0:5
+if(!exists("emission.cn")){
+	emission.cn <- suppressWarnings(crlmm:::computeEmission(crlmmSetList, copyNumberStates))
+	dim(emission.cn)
+}
 @ 
 
-<<setSNRmin, echo=FALSE>>=
+*Warning: more can be done than currently implemented to protect against
+outliers.  In addition, improved estimates of uncertainty for the copy
+number prediction regions will also help.*
+
+Initial state probabilities and transition probabilities for the HMM:
+
+<<probs>>=
+initialP <- rep(1/length(copyNumberStates), length(copyNumberStates))
+tau <- transitionProbability(chromosome=chromosome(crlmmSetList),
+			     position=position(crlmmSetList),
+			     TAUP=1e8)
+@ 
+
+The viterbi algorithm is used to identify the sequence of states that
+maximizes the likelihood:
+
+<<hmm>>=
+if(!exists("hmmPredictions")){
+hmmPredictions <- viterbi(emission=emission.cn,
+			  initialStateProbs=log(initialP), 
+			  tau=tau[, "transitionPr"],
+			  arm=tau[, "arm"], 
+			  normalIndex=3,
+			  normal2altered=0.01,
+			  altered2normal=1,
+			  altered2altered=0.001)	    
+}
+table(as.integer(hmmPredictions)-1)
+brks <- breaks(x=hmmPredictions, states=copyNumberStates, 
+	       position=tau[, "position"],
+	       chromosome=tau[, "chromosome"])
+str(brks)
+@ 
+
+\paragraph{Circular binary segmentation}
+TO DO.
+
+\section{Accessors}
+
+\subsection{Assay data accessors}
+
+\paragraph{\Robject{ABset}:  quantile normalized intensities}
+
+An object of class \Robject{ABset} is stored in the first element of the
+\Robject{crlmmSetList} object. The following accessors may be of use:
+
+Accessors for the quantile normalized intensities for the A allele:
+
+<<accessors>>=
+a <- A(crlmmSetList)
+dim(a)
+@ 
+
+The quantile normalized intensities for the nonpolymorphic probes are
+also stored in the 'A' assay data element.  To retrieve the quantile
+normalized intensities for the A allele only at polymorphic loci:
+
+<<A.polymorphic>>=
+a.snps <- A(crlmmSetList[snpIndex(crlmmSetList), ])
+dim(a.snps)
+@ 
+
+\noindent For the nonpolymorphic loci:
+<<A.nonpolymorphic>>=
+a.nps <- A(crlmmSetList[cnIndex(crlmmSetList), ])
+dim(a.nps)
+@ 
+
+Quantile normalized intensities for the B allele at polymorphic loci:
+
+<<B.polymorphic>>=
+b.snps <- B(crlmmSetList[snpIndex(crlmmSetList), ])
+@ 
+
+Note that NAs are recorded in the 'B' assay data element for
+nonpolymorphic loci:
+
+<<B.NAs>>=
+all(is.na(B(crlmmSetList[cnIndex(crlmmSetList), ])))
+@ 
+
+\paragraph{\Robject{SnpSet}: Genotype calls and confidence scores}
+
+Genotype calls:
+<<genotypes>>=
+genotypes <- calls(crlmmSetList)
+@ 
+Confidence scores of the genotype calls:
+<<confidenceScores>>=
+genotypeConf <- confs(crlmmSetList)
+@ 
+
+\paragraph{\Robject{CopyNumberSet}: allele-specific copy number}
+
+Allele-specific copy number at polymorphic loci:
+<<ca>>=
+ca <- CA(crlmmSetList[snpIndex(crlmmSetList), ])
+@ 
+
+Total copy number at nonpolymorphic loci:
+<<ca>>=
+cn.nonpolymorphic <- CA(crlmmSetList[cnIndex(crlmmSetList), ])
+range(cn.nonpolymorphic, na.rm=TRUE)
+median(cn.nonpolymorphic, na.rm=TRUE)
+@ 
+
+Total copy number at both polymorphic and nonpolymorphic loci:
+<<totalCopynumber>>=
+cn <- copyNumber(crlmmSetList)
+@ 
+
+\subsection{Other accessors}
+
+After running \Robject{update} on the \Robject{crlmmSetList} object,
+information on physical position and chromosome can be accessed by the
+following accessors:
+
+<<positionChromosome, eval=FALSE>>=
+xx <- position(crlmmSetList)
+yy <- chromosome(crlmmSetList)
+@ 
+
+There are many parameters computed during copy number estimation that
+are at present stored in the \Robject{featureData} slot of the
+\Robject{CopyNumberSet} element.  TO DO: Accessors for these parameters,
+as well as better containers for storing these parameters. See
+
+<<copynumberParameters>>=
+fvarLabels(crlmmSetList[[3]])
+@ 
+
+
+\section{Suggested visualizations}
+
+A histogram of the signal to noise ratio for the HapMap samples:
+
+<<plotSnr, fig=TRUE, include=FALSE>>=
+hist(crlmmSetList[[2]]$SNR, xlab="SNR", main="")
+@ 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{copynumber-plotSnr}
+  \caption{Signal to noise ratios for the HapMap samples.}
+\end{figure}
+
+<<snrmin, eval=TRUE, echo=FALSE>>=
 SNRmin <- 5
 @ 
 
@@ -102,7 +263,7 @@ quantile-normalized intensities, we suggest adjusting for date or
 chemistry plate.  Ideally, one would have 70+ files in a given
 batch. Here we make a table of date versus ancestry:
 
-<<specifyBatch>>=
+<<specifyBatch, eval=FALSE, echo=FALSE>>=
 sns <- sampleNames(crlmmResults)
 sns[1]
 plate <- substr(basename(sns), 13, 13)
@@ -118,14 +279,6 @@ not the case, we illustrate how one may adjust for batch using the
 chemistry plate as an argument for \Robject{batch} in the
 \Robject{computeCopynumber} function.
 
-<<computeCopynumber>>=
-if(!exists("crlmmResults2")){
-	crlmmResults2 <- crlmmResults
-	crlmmResults <- computeCopynumber(crlmmResults, SNRmin=5, batch=plate, CHR=CHR, cdfName="genomewidesnp6")
-	protocolData(crlmmResults[[3]])[["ScanDate"]] <- protocolData(crlmmResults[[3]])[["ScanDate"]]
-}
-@ 
-
 **Note: the number of samples in the \Robject{CrlmmSetList} object after
 copy number estimation may be fewer than the number of samples in the
 \Robject{CrlmmSetList} object after preprocessing/genotyping.  This
@@ -137,20 +290,6 @@ The object returned by \Robject{computeCopynumber} is ordered by
 chromosome and physical position (useful for downstream methods that
 smooth the copy number as a function of the physical position).  **
 
-<<dimnamesMayDiffer>>=
-identical(featureNames(crlmmResults), featureNames(crlmmResults2)) ##not identical
-identical(sampleNames(crlmmResults), sampleNames(crlmmResults2))
-gc()
-@ 
-
-
-<<example.cnset, eval=FALSE, echo=FALSE>>=
-example.crlmmResults <- crlmmResults[1:1000, 1:100]
-##example.cnset <- cnset[1:1000, 1:100]
-##save(example.cnset, file="~/madman/Rpacks/crlmm/inst/scripts/example.cnset.rda")
-save(example.crlmmResults, file="~/madman/Rpacks/crlmm/inst/scripts/example.crlmmResults.rda")
-@ 
-
 The above algorithm for estimating copy number is predicated on the
 assumption that most samples within a batch have copy number 2 at any
 given locus.  For common copy number variants, this assumption may not
@@ -159,13 +298,63 @@ additional robustness to this assumption.  Set the \Robject{bias.adj}
 argument to \Robject{TRUE}:
 
 <<biasAdjustment, eval=FALSE>>=
-crlmmResults[[3]] <- computeCopynumber(crlmmResults, SNRmin=5, batch=plate, CHR=CHR, 
-				       cdfName="genomewidesnp6", bias.adj=TRUE)
+update(crlmmSetList, CHR=22, bias.adj=TRUE)
 @ 
 
-\section{Suggested plots}
+Calculate the frequency of amplifications and deletions at each locus.
+<<hmm_hapmap, fig=TRUE, include=FALSE, width=8, height=7>>=
+require(SNPchip)
+library(RColorBrewer)
+numberUp <- rowSums(hmmPredictions > 3, na.rm=TRUE)
+numberDown <- -rowSums(hmmPredictions < 3, na.rm=TRUE)
+poly.cols <- brewer.pal(7, "Accent")
+alt.brks <- brks[brks[, "state"] != "copy.number_2", ]
+op <- par(ask=FALSE)
+ylim <- c(min(numberDown)-5, max(numberUp)+5)
+xlim <- c(10*1e6, max(position(crlmmSetList)))
+plot(position(crlmmSetList), rep(0, nrow(crlmmSetList[[1]])),
+     type="n", xlab="Physical position (Mb)",
+     ylim=ylim,
+     xlim=xlim,
+     ylab="frequency", main="Chr 22",
+     xaxt="n",
+     xaxs="r")
+axis(1, at=pretty(xlim), labels=pretty(xlim)/1e6)
+polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
+	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberUp)),
+	col=poly.cols[3], border=poly.cols[3])
+polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
+	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberDown)),
+	col=poly.cols[5], border=poly.cols[5])
+##plotCytoband(22, xlim=xlim, new=FALSE,
+##	     label.cytoband=FALSE,
+##	     cytoband.ycoords=c(-10, -8), xaxs="r")
 
-\paragraph{One sample at a time}
+medLength <- round(median(alt.brks[, "nbases"]), 2)
+medMarkers <- median(alt.brks[, "nprobes"])
+sdMarkers <- round(mad(alt.brks[, "nprobes"]), 2)
+sdsLength <- round(mad(alt.brks[, "nbases"]), 2)
+legend("topright",
+       bty="n",
+       legend=c(paste("median length:", medLength, "(bp)"),
+       paste("MAD length:", sdsLength, "(bp)"),
+       paste("median # markers:", medMarkers),
+       paste("MAD # markers:", sdMarkers)),
+       cex=0.8, ncol=2)
+legend("topleft",
+       fill=poly.cols[c(3, 5)],
+       legend=c("amplifications", "deletions"), bty="n")
+par(op)
+gc()
+@ 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{copynumber-hmm_hapmap}
+  \caption{}
+\end{figure}
+
+\paragraph{One sample at a time: locus-level estimates}
 
 Plot physical position versus copy number for the first sample.  Recall
 that the copy number estimates were multiplied by 100 and stored as an
@@ -173,12 +362,12 @@ integer.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1)
-plot(position(crlmmResults), copyNumber(crlmmResults)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
+plot(position(crlmmSetList), copyNumber(crlmmSetList)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
      ylab="copy number", xlab="physical position (Mb)",
-     main=paste(sampleNames(crlmmResults)[1], ", CHR:", unique(chromosome(crlmmResults))))
-points(position(crlmmResults)[cnIndex(crlmmResults)], copyNumber(crlmmResults)[cnIndex(crlmmResults), 1],
+     main=paste(sampleNames(crlmmSetList)[1], ", CHR:", unique(chromosome(crlmmSetList))))
+points(position(crlmmSetList)[cnIndex(crlmmSetList)], copyNumber(crlmmSetList)[cnIndex(crlmmSetList), 1],
        pch=".", cex=2, col="lightblue")
-axis(1, at=pretty(range(position(crlmmResults))), labels=pretty(range(position(crlmmResults)))/1e6)
+axis(1, at=pretty(range(position(crlmmSetList))), labels=pretty(range(position(crlmmSetList)))/1e6)
 @ 
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
@@ -189,7 +378,8 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(5.8, 6.0), label.cytoband=FALSE)
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-oneSample}
   \caption{Total copy number (y-axis) for chromosome 22 plotted
-    against physical position (x-axis) for one sample.  }
+    against physical position (x-axis) for one sample.  Estimates at
+    nonpolymorphic loci are plotted in light blue.}
 \end{figure}
 
 \paragraph{One SNP at a time}
@@ -206,12 +396,12 @@ colors <- c("red", "blue", "green3")
 cex <- 0.6
 par(mfrow=c(3,3), las=1, pty="s", ask=FALSE, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
 ##plot 9 at a time
-indices <- split(snpIndex(crlmmResults), rep(1:length(snpIndex(crlmmResults)), each=9, length.out=length(snpIndex(crlmmResults))))
-par(ask=TRUE)
+indices <- split(snpIndex(crlmmSetList), rep(1:length(snpIndex(crlmmSetList)), each=9, length.out=length(snpIndex(crlmmSetList))))
+par(ask=FALSE)
 j <- 1
 for(i in indices[[j]]){
-	gt <- calls(crlmmResults)[i, ]
-	plot(crlmmResults[i, ], 
+	gt <- calls(crlmmSetList)[i, ]
+	plot(crlmmSetList[i, ], 
 	     pch=pch, 
 	     col=colors[gt], 
 	     bg=colors[gt], cex=cex,
@@ -221,10 +411,11 @@ for(i in indices[[j]]){
 }
 @ 
 
-<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE>>=
+<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
 require(RColorBrewer)
+library(ellipse)
 greens <- brewer.pal(9, "Greens")
-J <- split(1:ncol(crlmmResults), batch(crlmmResults))
+J <- split(1:ncol(crlmmSetList), batch(crlmmSetList))
 colors <- c("red", "blue", "green3")
 cex <- 0.6
 colors <- c("blue", greens[8], "red")
@@ -232,35 +423,36 @@ pch.col <- c("grey40", "black", "grey40")
 xlim <- ylim <- c(6.5,13)
 plotpoints <- FALSE
 lwd <- 2
-pdf("figures/snp22plots%02d.pdf", width=600, height=600)
+##pdf("figures/snp22plots%02d.pdf", width=600, height=600)
 ask <- FALSE
 par(mfrow=c(3,3), las=1, pty="s", ask=ask, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
-indices <- split(snpIndex(crlmmResults), rep(1:length(snpIndex(crlmmResults)), each=9, length.out=length(snpIndex(crlmmResults))))
-for(j in seq(along=indices)[1:10]){
+indices <- split(snpIndex(crlmmSetList), rep(1:length(snpIndex(crlmmSetList)), each=9, length.out=length(snpIndex(crlmmSetList))))
+##for(j in seq(along=indices)[1:10]){
+j <- 1
 	cat(j, "\n")
 	k <- 1
 	for(i in indices[[j]]){
-		gt <- calls(crlmmResults)[i, ]
+		gt <- calls(crlmmSetList)[i, ]
 		pch <- as.character(gt)
 		cex <- 0.9
-		plot(crlmmResults[i, ], 
+		plot(crlmmSetList[i, ], 
 		     pch=pch, 
 		     col=pch.col[gt],
 		     cex=cex,
 		     xlim=xlim, ylim=ylim,
 		     type="n")
 		if(plotpoints){
-			for(b in seq(along=unique(batch(crlmmResults)))){
-				points(crlmmResults[i, J[[b]]], 
+			for(b in seq(along=unique(batch(crlmmSetList)))){
+				points(crlmmSetList[i, J[[b]]], 
 				       pch=pch, 
 				       col=colors[b], bg=colors[b], cex=cex,
 				       xlim=xlim, ylim=ylim)
 			}
 		}
-		for(b in seq(along=unique(batch(crlmmResults)))){
-			ellipse(crlmmResults[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
+		for(b in seq(along=unique(batch(crlmmSetList)))){
+			ellipse(crlmmSetList[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
 		}
-		##legend("bottomright", bty="n", legend=featureNames(crlmmResults)[i])
+		##legend("bottomright", bty="n", legend=featureNames(crlmmSetList)[i])
 		if(k == 1) {
 			legend("bottomleft", bty="n", fill=colors, legend=c("CEPH", "Yoruba", "Asian"))	
 			mtext("A", 1, outer=TRUE, line=1)
@@ -268,76 +460,17 @@ for(j in seq(along=indices)[1:10]){
 		}
 		k <- k+1
 	}
-}
-dev.off()
 @
 
+%\begin{figure}
+%  \includegraphics[width=0.9\textwidth]{copynumber-predictionRegion}
+%  \caption{Prediction regions for copy number 2 for one SNP.  The
+%    plate effects are negligible for this SNP and we only plot the
+%    prediction region for the first plate.}
+%\end{figure}
 
-
-\begin{figure}
-  \includegraphics[width=0.9\textwidth]{copynumber-predictionRegion}
-  \caption{Prediction regions for copy number 2 for one SNP.  The
-    plate effects are negligible for this SNP and we only plot the
-    prediction region for the first plate.}
-\end{figure}
-
-
-\section{Smoothing via a hidden Markov model}
-
-Here we smooth via a hidden Markov model.  To facilitate comparisons
-with the Birdseye HMM, the same transition probabilities are specified.
-
-<<segment>>=
-library(VanillaICE)
-copyNumberStates <- 0:5
-##crlmmResults <- crlmm:::thresholdModelParams(crlmmResults)
-if(!exists("fit")){
-	if(file.exists(file.path(outdir, paste("fit_", CHR, ".rda", sep="")))) load(file.path(outdir, paste("fit_", CHR, ".rda", sep="")))
-	else {
-		emission.cn <- crlmm:::computeEmission(crlmmResults, copyNumberStates)
-		tau <- transitionProbability(chromosome=chromosome(crlmmResults),
-					     position=position(crlmmResults),
-					     TAUP=1e8)
-		initialP <- rep(1/length(copyNumberStates), length(copyNumberStates))
-		fit <- viterbi(initialStateProbs=log(initialP),
-			       emission=emission.cn,
-			       tau=tau[, "transitionPr"],
-			       arm=tau[, "arm"], 
-			       normalIndex=3,
-			       normal2altered=0.005,
-			       altered2normal=0.5,
-			       altered2altered=0.0025)
-		brks <- breaks(x=fit, states=copyNumberStates, position=tau[, "position"],
-			       chromosome=tau[, "chromosome"])
-	}
-}
-@ 
-
-<<visualizations, eval=FALSE>>=
-dir.create("figures")
-par(las=1, mfrow=c(1,1), ask=FALSE)
-bmp("figures/chr22plots%02d.png", width=800, height=500)
-for(j in 1:ncol(crlmmResults)){
-	cat(j, " ")
-	##A region that we would miss if we only looked at the polymorphic probes...is it real?
-	##index <- which(position(crlmmResults) > 21.2*1e6 & position(crlmmResults) < 21.6*1e6 & mns < 1)
-	##fit <- fit[index,]
-	index <- 1:nrow(fit)
-	plot(0:1, type="n", xlim=range(position(crlmmResults)[index]),
-	     xaxt="n", ylim=c(-0.5, 6), 
-	     ylab="copy number", xlab="physical position (Mb)",
-	     main=paste(sampleNames(crlmmResults)[j], ", CHR:", unique(chromosome(crlmmResults))), 
-	     lwd=2,
-	     col="blue")
-	points(position(crlmmResults)[index], copyNumber(crlmmResults)[index, j], pch=".", cex=2, col="grey60")
-	lines(position(crlmmResults)[index], fit[index, j]-1, type="s", lwd=2, col="blue")
-	abline(h=0:4, col="grey60")
-	axis(1, at=pretty(range(position(crlmmResults)[index])), labels=pretty(range(position(crlmmResults)[index]))/1e6)
-}
-dev.off()
-@ 
-
-
+\section{Details for the copy number estimation procedure}
+TO DO.
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
