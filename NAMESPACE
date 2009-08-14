@@ -28,7 +28,7 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
            assayDataElementReplace, assayDataNew, classVersion, validMsg)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
-           polygon, rect, segments, text, points)
+           polygon, rect, segments, text, points, boxplot)
 
 importFrom(stats, update)
 
@@ -76,7 +76,7 @@ export(batch,
        copyNumber,
        crlmm,
        crlmmIllumina,
-       crlmmIlluminaWrapper,
+##       crlmmIlluminaWrapper,
        crlmmWrapper,
 ##       ellipse,
 ##       computeEmission,

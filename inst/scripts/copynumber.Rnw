@@ -4,6 +4,7 @@
 %\VignettePackage{crlmm}
 \documentclass{article}
 \usepackage{graphicx}
+\usepackage[authoryear,round,numbers]{natbib}
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
 \newcommand{\Rmethod}[1]{{\texttt{#1}}}
 \newcommand{\Rcode}[1]{{\texttt{#1}}}
@@ -32,7 +33,9 @@ options(prompt="R> ")
 
 \begin{abstract}
   This vignette estimates copy number for HapMap samples on the
-  Affymetrix 6.0 platform.
+  Affymetrix 6.0 platform.  See \citep{Scharpf2009} for the working
+  paper.
+  
 \end{abstract}
 
 \section{Simple usage}
@@ -142,7 +145,32 @@ str(brks)
 @ 
 
 \paragraph{Circular binary segmentation}
-TO DO.
+
+<<setup>>=
+library(DNAcopy)
+library(genefilter)
+ratioset <- crlmmSetList[[3]]
+meds <- rowMedians(copyNumber(ratioset), na.rm=TRUE)
+ratios <- log2(copyNumber(ratioset)) - log2(meds)
+ratioset <- new("SnpCopyNumberSet",
+		copyNumber=ratios,
+		phenoData=phenoData(ratioset),
+		featureData=featureData(ratioset),
+		annotation=annotation(ratioset))
+@ 
+
+The following code chunk (not evaluated) takes a while to run:
+
+<<cbs, eval=FALSE>>=
+CNA.object <- CNA(copyNumber(ratioset), 
+		  chromosome(ratioset),
+		  position(ratioset),
+		  data.type="logratio",
+		  sampleid=sampleNames(ratioset))
+smoothed.CNA.object <- smooth.CNA(CNA.object)
+segment.cna <- segment(smoothed.CNA.object, verbose=1)
+save(segment.cna, file=file.path(outdir, paste("segment.cna_", CHR, ".rda", sep="")))
+@ 
 
 \section{Accessors}
 
@@ -301,7 +329,12 @@ argument to \Robject{TRUE}:
 update(crlmmSetList, CHR=22, bias.adj=TRUE)
 @ 
 
-Calculate the frequency of amplifications and deletions at each locus.
+The following code chunk calculates the frequency of amplifications and
+deletions at each locus. Shaded regions above the zero line in Figure
+\ref{fig:hmm_hapmap} display the frequency of amplifications, whereas
+shaded regions below the zero line graphically display the frequency of
+hemizygous or homozygous deletions.
+
 <<hmm_hapmap, fig=TRUE, include=FALSE, width=8, height=7>>=
 require(SNPchip)
 library(RColorBrewer)
@@ -351,14 +384,17 @@ gc()
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{copynumber-hmm_hapmap}
-  \caption{}
+  \caption{\label{fig:hmm_hapmap} The frequency of amplifications in the
+    hapmap samples is displayed above the zero line.  The frequency of
+    hemizygous or homozygous deletions are displayed below the zero
+    line.}
 \end{figure}
 
+\clearpage
 \paragraph{One sample at a time: locus-level estimates}
 
-Plot physical position versus copy number for the first sample.  Recall
-that the copy number estimates were multiplied by 100 and stored as an
-integer.
+Figure \ref{fig:oneSample} plots physical position (horizontal axis)
+versus copy number (vertical axis) for the first sample.  
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1)
@@ -377,17 +413,55 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(5.8, 6.0), label.cytoband=FALSE)
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-oneSample}
-  \caption{Total copy number (y-axis) for chromosome 22 plotted
-    against physical position (x-axis) for one sample.  Estimates at
-    nonpolymorphic loci are plotted in light blue.}
+  \caption{\label{fig:oneSample} Total copy number (y-axis) for
+    chromosome 22 plotted against physical position (x-axis) for one
+    sample.  Estimates at nonpolymorphic loci are plotted in light
+    blue.}
 \end{figure}
 
+\noindent The following code chunk plots the locus-level copy number
+estimates and overlays the predictions from the hidden markov model.
+
+<<overlayHmmPredictions, fig=TRUE, include=FALSE>>=
+ask <- FALSE
+op <- par(mfrow=c(3, 1), las=1, mar=c(1, 4, 1, 1), oma=c(3, 1, 1, 1), ask=ask)
+##Put fit on the copy number scale
+cns <- copyNumber(crlmmSetList)
+cnState <- hmmPredictions - as.integer(1)
+xlim <- c(10*1e6, max(position(crlmmSetList)))
+cols <- brewer.pal(8, "Dark2")[1:4]
+for(j in 1:3){
+	plot(position(crlmmSetList), cnState[, j], pch=".", col=cols[2], xaxt="n", 
+	     ylab="copy number", xlab="Physical position (Mb)", type="s", lwd=2,
+	     ylim=c(0,6), xlim=xlim)
+	points(position(crlmmSetList), cns[, j], pch=".", col=cols[3])
+	lines(position(crlmmSetList), cnState[,j], lwd=2, col=cols[2])
+	axis(1, at=pretty(position(crlmmSetList)), 
+	     labels=pretty(position(crlmmSetList))/1e6)
+	abline(h=c(1,3), lty=2, col=cols[1])	
+	legend("topright", bty="n", legend=sampleNames(crlmmSetList)[j])
+	legend("topleft", lty=1, col=cols[2], legend="copy number state",
+	       bty="n", lwd=2)
+	plotCytoband(CHR, cytoband.ycoords=c(5, 5.2), new=FALSE,
+		     label.cytoband=FALSE, xlim=xlim)
+}
+par(op)
+@ 
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{copynumber-overlayHmmPredictions}
+  \caption{\label{fig:overlayHmmPredictions} Total copy number (y-axis)
+    for chromosome 22 plotted against physical position (x-axis) for
+    three samples.  Estimates at nonpolymorphic loci are plotted in
+    light blue. }
+\end{figure}
+
+\clearpage
 \paragraph{One SNP at a time}
 
-Plot the prediction regions for total copy number 2 and 3 for the first
-plate. Plotting symbols are the genotype calls (1=AA, 2=AB, 3=BB); light
-grey points are from other plates. One could also add the prediction
-regions for 0-4 copies, but it gets crowded.
+Scatterplots of the A and B allele intensities (log-scale) can be useful
+for assessing the diallelic genotype calls.  The following code chunk is
+displayed in Figure \ref{fig:genotypeCalls}.
 
 <<genotypeCalls, fig=TRUE, width=8, height=8, include=FALSE>>=
 xlim <- ylim <- c(6.5,13)
@@ -397,7 +471,7 @@ cex <- 0.6
 par(mfrow=c(3,3), las=1, pty="s", ask=FALSE, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
 ##plot 9 at a time
 indices <- split(snpIndex(crlmmSetList), rep(1:length(snpIndex(crlmmSetList)), each=9, length.out=length(snpIndex(crlmmSetList))))
-par(ask=FALSE)
+##par(ask=FALSE)
 j <- 1
 for(i in indices[[j]]){
 	gt <- calls(crlmmSetList)[i, ]
@@ -409,9 +483,22 @@ for(i in indices[[j]]){
 	mtext("A", 1, outer=TRUE, line=1)
 	mtext("B", 2, outer=TRUE, line=1)	
 }
-@ 
+@
 
-<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{copynumber-genotypeCalls}
+  \caption{\label{fig:genotypeCalls}  Scatterplots of A versus B
+    intensities.  Each panel displays a single SNP.}
+\end{figure}
+
+TODO: Plot the prediction regions for total copy number 2 and 3 for the
+first plate. Plotting symbols are the genotype calls (1=AA, 2=AB, 3=BB);
+light grey points are from other plates. One could also add the
+prediction regions for 0-4 copies, but it gets crowded.
+
+
+<<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE, echo=FALSE>>=
 require(RColorBrewer)
 library(ellipse)
 greens <- brewer.pal(9, "Greens")
@@ -470,14 +557,45 @@ j <- 1
 %\end{figure}
 
 \section{Details for the copy number estimation procedure}
-TO DO.
+
+We assume a linear relationship between the normalized intensities and
+the allele-specific copy number.  SNP-specific parameters are estimated
+only from samples with a suitable confidence score for the diallelic
+genotype calls.  The default confidence threshold is 0.99, but can be
+adjusted by passing the argument \Robject{CONF.THR} to the
+\Robject{update} method.  TODO: illustrate this approach with boxplots
+of the A and B intensities stratified by genotype.
+
+<<linearModel, fig=TRUE,include=FALSE, eval=FALSE, echo=FALSE>>=
+cols <- brewer.pal(7, "Accent")[c(1, 4, 7)]
+i <- match("SNP_A-8608180", featureNames(crlmmSetList))
+B <- batch(crlmmSetList) == unique(batch(crlmmSetList))[1]
+gt.conf <- confs(crlmmSetList[i, B])
+op <- par(mfrow=c(2, 1), las=1, ask=FALSE, mar=c(3.5, 4, 0.5, 0.5), oma=c(0, 0, 2, 0))
+crlmm:::boxplot(crlmmSetList[i, B][[1]])
+par(op)
+@ 
+
+%\begin{figure}
+%  \centering
+%  \includegraphics[width=0.8\textwidth]{copynumber-linearModel}
+%
+%  \caption{\label{fig:linearModel} The SNP-specific intercept and slope
+%    for the first batch of samples.  These plots can sometimes be
+%    misleading as the genotypes estimated with low confidence do not
+%    influence the regression line.}
+%\end{figure}
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
 @ 
 
+\section*{References}
 
-
+%\begin{bibliography}
+  \bibliographystyle{plain}
+  \bibliography{refs}
+%\end{bibliography}
 
 \end{document}

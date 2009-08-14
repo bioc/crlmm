@@ -13,6 +13,7 @@
 \alias{chromosome,CrlmmSetList-method}
 \alias{cnIndex,CrlmmSetList-method}
 \alias{combine,CrlmmSetList,CrlmmSetList-method}
+\alias{confs,CrlmmSetList-method}
 \alias{copyNumber,CrlmmSetList-method}
 \alias{nrow,CrlmmSetList-method}
 \alias{ncol,CrlmmSetList-method}
@@ -22,6 +23,7 @@
 \alias{sampleNames,CrlmmSetList-method}
 \alias{show,CrlmmSetList-method}
 \alias{snpIndex,CrlmmSetList-method}
+\alias{update,CrlmmSetList-method}
 
 
 \title{Class "CrlmmSetList"}
@@ -68,15 +70,15 @@
 \section{Methods}{
   \describe{
     \item{"["}{\code{signature(x = "CrlmmSetList")}: subsets both the
-  features and samples of each element in th elist}
-
+      features and samples of each element in th elist}
+  
     \item{"$"}{\code{signature(x = "CrlmmSetList")}: used to access
     element from the \code{featureData} of the \code{CopyNumberSet}
     element.  In particular, useful for extract the SNP- and
     batch-specific parameters used to estimate copy number that are
     currently stored in the \code{featureData} of \code{CopyNumberSet}
     objects. }
-  
+
     \item{"A"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the A allele in the
       \code{ABset} element.}
@@ -84,7 +86,7 @@
     \item{"B"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the B allele in the
       \code{ABset} element.}
-
+    
     \item{"batch"}{\code{signature(object = "CrlmmSetList")}: extracts the
       batch information used to estimate copy number.}    
 
@@ -104,6 +106,9 @@
 
     \item{"combine"}{\code{signature(x = "CrlmmSetList", y = "CrlmmSetList")}: combines
       objects of the class.  }
+
+    \item{"confs"}{\code{signature(x = "CrlmmSetList")}: confidence
+    scores for crlmm genotype calls. }    
     
     \item{"nrow"}{\code{signature(x = "CrlmmSetList")}: Number of rows
     (features) of each element in the list.  }
@@ -125,18 +130,20 @@
 
     \item{"snpIndex"}{\code{signature(object = "CrlmmSetList")}: returns
       the row indices of the polymorphic probes.}
-    
-    
-  }
+
+    \item{"update"}{\code{signature(object = "CrlmmSetList")}: This
+    method calls \code{computeCopynumber} to compute copy number for the
+    \code{crlmmSetList} object.  The object returned by this method is
+    itself an instance of class \code{CrlmmSetList}.  The third element
+    of the list is an instance of \code{CopyNumberSet} containing the
+    locus-level, allele-specific estimates of copynumber.  }
+}
 }
 
-
 \section{Warnings}{
-
    \code{combine} will produce a warning as the \code{featureData} are
    not easily combined and therefore removed.  This method needs
    improvement.
-
 }
 \author{R. Scharpf}
 \seealso{

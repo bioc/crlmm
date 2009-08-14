@@ -8,7 +8,7 @@
   
 }
 \usage{
-computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomewidesnp6", ...)
+computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName, ...)
 }
 \arguments{
   \item{object}{object of class \code{CrlmmSetList}.}
@@ -24,6 +24,10 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
 }
 
 \details{
+
+  One may altenatively use the \code{update} method (a wrapper for
+  \code{computeCopynumber}) to add a \code{CopyNumberSet} object to the
+  \code{CrlmmSetList} object.
 
   This function requires 10 or more samples to estimate model
   parameters.  Preferably, 70+ samples would be processed together in a
@@ -42,12 +46,12 @@ computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName="genomew
 
 \value{
   
-  An object of class \code{CopyNumberSet}.
+  An object of class \code{CrlmmSetList}.
 
 }
 
 \seealso{
-  \code{\linkS4class{CopyNumberSet}},   \code{.computeCopynumber}
+  \code{\link{update}},  \code{\linkS4class{CrlmmSetList}}, \code{\linkS4class{CopyNumberSet}},   \code{.computeCopynumber}
 }
 \author{Rob Scharpf}
 \keyword{manip}

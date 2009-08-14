@@ -215,69 +215,76 @@ harmonizeDimnamesTo <- function(object1, object2){
 	return(object1)
 }
 
-crlmmIlluminaWrapper <- function(outdir="./",
-				 cdfName,
-				 save.intermediate=FALSE,
-				 splitByChr=TRUE,
-				 intensityFile,
-				 ...){  ##additional arguments to readIdatFiles
-	stopifnot(basename(intensityFile) == "res.rda")
-	if(!file.exists(outdir)) stop(outdir, " does not exist.")
-	if(!isValidCdfName(cdfName, platform="illumina")) stop(cdfName, " not supported.")
-	if(file.exists(file.path(outdir, "RG.rda"))) {
-		message("Loading RG.rda...")
-		load(file.path(outdir, "RG.rda"))
-	} else {
-		message("Reading Idat files...")		
-		RG <- readIdatFiles(...)
-		##J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
-		##RG <- RG[, -J]
-		if(save.intermediate) save(RG, file=file.path(outdir, "RG.rda"))  ##935M for 91 samples...better not to save this
-	}	
-	if(!file.exists(intensityFile)){
-		message("Quantile normalization / genotyping...")				
-		crlmmOut <- crlmmIllumina(RG=RG,
-					  cdfName=cdfName,
-                                          sns=sampleNames(RG),
-                                          returnParams=TRUE,
-                                          save.it=TRUE,
-                                          intensityFile=intensityFile)
-		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))
-	} else{
-		load(file.path(outdir, "crlmmOut.rda"))
-	}
-	message("Loading ", intensityFile, "...")		
-	load(intensityFile)
-	if(exists("cnAB")){
-		np.A <- as.integer(cnAB$A)
-		np.B <- as.integer(cnAB$B)
-		np <- ifelse(np.A > np.B, np.A, np.B)
-		np <- matrix(np, nrow(cnAB$A), ncol(cnAB$A))
-		rownames(np) <- cnAB$gns
-		colnames(np) <- cnAB$sns
-		cnAB$NP <- np
-	}
-	sampleNames(crlmmOut) <- res$sns	
-	if(exists("cnAB")){
-		ABset <- combineIntensities(get("res"), cnAB, cdfName=cdfName)
-	} else{
-		ABset <- combineIntensities(get("res"), NULL, cdfName=cdfName)
-	}
-	##protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
-	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset, cdfName)
-	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
-	crlmmList <- list(ABset,
-			  crlmmResult)
-	crlmmList <- as(crlmmList, "CrlmmSetList")
-	if(splitByChr){
-		message("Saving by chromosome")
-		splitByChromosome(crlmmList, cdfName=cdfName, outdir=outdir)
-	} else{
-		message("Saving crlmmList object to ", outdir)
-		save(crlmmList, file=file.path(outdir, "crlmmList.rda"))
-	}
-	message("CrlmmSetList objects saved to ", outdir)
-}
+##crlmmIlluminaWrapper <- function(filenames,
+##				 cdfName,
+##				 load.it=FALSE,
+##				 save.it=FALSE,
+##				 splitByChr=TRUE,
+##				 crlmmFile,
+##				 intensityFile, ...){
+####				 outdir="./",
+####				 cdfName,
+####				 save.intermediate=FALSE,
+####				 splitByChr=TRUE,
+####				 intensityFile,
+####				 ...){  ##additional arguments to readIdatFiles
+####	stopifnot(basename(intensityFile) == "res.rda")
+##	if(!file.exists(outdir)) stop(outdir, " does not exist.")
+##	if(!isValidCdfName(cdfName, platform="illumina")) stop(cdfName, " not supported.")
+##	if(file.exists(file.path(outdir, "RG.rda"))) {
+##		message("Loading RG.rda...")
+##		load(file.path(outdir, "RG.rda"))
+##	} else {
+##		message("Reading Idat files...")		
+##		RG <- readIdatFiles(...)
+##		##J <- match(c("1_A", "3_A", "5_A", "7_A"), sampleNames(RG))
+##		##RG <- RG[, -J]
+##		if(save.intermediate) save(RG, file=file.path(outdir, "RG.rda"))  ##935M for 91 samples...better not to save this
+##	}	
+##	if(!file.exists(intensityFile)){
+##		message("Quantile normalization / genotyping...")				
+##		crlmmOut <- crlmmIllumina(RG=RG,
+##					  cdfName=cdfName,
+##                                          sns=sampleNames(RG),
+##                                          returnParams=TRUE,
+##                                          save.it=TRUE,
+##                                          intensityFile=intensityFile)
+##		if(save.intermediate) save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))
+##	} else{
+##		load(file.path(outdir, "crlmmOut.rda"))
+##	}
+##	message("Loading ", intensityFile, "...")		
+##	load(intensityFile)
+##	if(exists("cnAB")){
+##		np.A <- as.integer(cnAB$A)
+##		np.B <- as.integer(cnAB$B)
+##		np <- ifelse(np.A > np.B, np.A, np.B)
+##		np <- matrix(np, nrow(cnAB$A), ncol(cnAB$A))
+##		rownames(np) <- cnAB$gns
+##		colnames(np) <- cnAB$sns
+##		cnAB$NP <- np
+##	}
+##	sampleNames(crlmmOut) <- res$sns	
+##	if(exists("cnAB")){
+##		ABset <- combineIntensities(get("res"), cnAB, cdfName=cdfName)
+##	} else{
+##		ABset <- combineIntensities(get("res"), NULL, cdfName=cdfName)
+##	}
+##	##protocolData(ABset)[["ScanDate"]] <- as.character(pData(RG)$ScanDate)
+##	crlmmResult <- harmonizeSnpSet(crlmmOut, ABset, cdfName)
+##	stopifnot(all.equal(dimnames(crlmmOut), dimnames(ABset)))
+##	crlmmList <- list(ABset,
+##			  crlmmResult)
+##	crlmmList <- as(crlmmList, "CrlmmSetList")
+##	if(splitByChr){
+##		message("Saving by chromosome")
+##		splitByChromosome(crlmmList, cdfName=cdfName, outdir=outdir)
+##	} else{
+##		message("Saving crlmmList object to ", outdir)
+##		save(crlmmList, file=file.path(outdir, "crlmmList.rda"))
+##	}
+##	message("CrlmmSetList objects saved to ", outdir)
+##}
 
 ##quantileNormalize1m <- function(cel.files,
 ##				outdir,
@@ -393,7 +400,29 @@ crlmmWrapper <- function(filenames,
 			 save.it=FALSE,
 			 splitByChr=TRUE,
 			 crlmmFile,
-			 intensityFile, ...){
+			 intensityFile,
+			 rgFile,
+			 platform=c("affymetrix", "illumina")[1],
+			 ...){
+	if(!(platform %in% c("affymetrix", "illumina")))
+		stop("Only 'affymetrix' and 'illumina' platforms are supported at this time.")
+	if(missing(intensityFile)) stop("must specify 'intensityFile'.")
+	if(missing(crlmmFile)) stop("must specify 'crlmmFile'.")
+	if(platform == "illumina"){
+		if(missing(rgFile)) stop("must specify 'rgFile'.")
+		if(load.it & !file.exists(rgFile)){
+			message("load.it is TRUE, bug rgFile not present.  Attempting to read the idatFiles.")
+			RG <- readIdatFiles(...)
+			if(save.it) save(RG, file=rgFile)
+		}
+		if(load.it & file.exists(rgFile)){
+			message("Loading RG file")
+			load(rgFile)
+			RG <- get("RG")
+		}
+	}
+	if(!(file.exists(dirname(crlmmFile)))) stop(dirname(crlmmFile), " does not exist.")
+	if(!(file.exists(dirname(intensityFile)))) stop(dirname(intensityFile), " does not exist.")
 	outfiles <- file.path(dirname(crlmmFile), paste("crlmmSetList_", 1:24, ".rda", sep=""))
 	if(load.it & all(file.exists(outfiles))){
 		load(outfiles[1])
@@ -404,38 +433,55 @@ crlmmWrapper <- function(filenames,
 			return("load.it is TRUE and 'crlmmSetList_<CHR>.rda' objects found. Nothing to do...")
 		}
 	}
-	if(missing(intensityFile)) stop("must specify 'intensityFile'.")
-	if(missing(crlmmFile)) stop("must specify 'crlmmFile'.")
 	if(load.it){
 		if(!file.exists(crlmmFile)){
 			message("load.it is TRUE, but 'crlmmFile' does not exist.  Rerunning the genotype calling algorithm") 
 			load.it <- FALSE
 		}
 	}
-	if(!file.exists(outdir)) stop(outdir, " does not exist.")
-	if(!isValidCdfName(cdfName, platform="affymetrix"))
-		stop(cdfName, " is not a valid entry.  See crlmm:::validCdfNames(platform='affymetrix')")
-	if(!file.exists(crlmmFile) | !load.it){
-		crlmmResult <- crlmm(filenames=filenames,
-				     cdfName=cdfName,
-				     save.it=TRUE,
-				     load.it=load.it,
-				     intensityFile=intensityFile, ...)
-		message("Quantile normalizing the copy number probes...")		
-		cnrmaResult <- cnrma(filenames=filenames, cdfName=cdfName)
-		if(save.it){
-			message("Saving crlmmResult and cnrmaResult to", crlmmFile)
-			save(crlmmResult, cnrmaResult, file=crlmmFile)
+	if(!isValidCdfName(cdfName, platform=platform))
+		stop(cdfName, " is not a valid entry.  See crlmm:::validCdfNames(platform)")
+	if(platform == "affymetrix"){
+		if(!file.exists(crlmmFile) | !load.it){
+			crlmmResult <- crlmm(filenames=filenames,
+					     cdfName=cdfName,
+					     save.it=TRUE,
+					     load.it=load.it,
+					     intensityFile=intensityFile)
+			message("Quantile normalizing the copy number probes...")		
+			cnrmaResult <- cnrma(filenames=filenames, cdfName=cdfName)
+			if(save.it){
+				message("Saving crlmmResult and cnrmaResult to", crlmmFile)
+				save(crlmmResult, cnrmaResult, file=crlmmFile)
+			}
+		} else {
+			message("Loading ", crlmmFile, "...")
+			load(crlmmFile)
+			crlmmResult <- get("crlmmResult")
+			cnrmaResult <- get("cnrmaResult")
 		}
-	} else {
-		message("Loading ", crlmmFile, "...")
-		load(crlmmFile)
-		crlmmResult <- get("crlmmResult")
-		cnrmaResult <- get("cnrmaResult")
+	}
+	if(platform == "illumina"){
+		if(!file.exists(crlmmFile) | !load.it){		
+			crlmmOut <- crlmmIllumina(RG=RG,
+						  cdfName=cdfName,
+						  sns=sampleNames(RG),
+						  returnParams=TRUE,
+						  save.it=TRUE,
+						  intensityFile=intensityFile)
+			if(save.it) save(crlmmOut, file=crlmmFile)
+		} else {
+			message("Loading ", crlmmFile, "...")
+			load(crlmmFile)
+			crlmmResult <- get("crlmmResult")
+			if(exists("cnAB")){
+				cnrmaResult <- get("cnAB")
+			} else cnrmaResult <- NULL
+		}
 	}
 	load(intensityFile)
 	ABset <- combineIntensities(get("res"), cnrmaResult, cdfName)
-	protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
+	if(platform=="affymetrix") protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset, cdfName)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
 	crlmmSetList <- as(list(ABset, crlmmResult), "CrlmmSetList")
@@ -611,9 +657,7 @@ instantiateObjects <- function(calls, conf, NP, plate, envir,
 	envir[["normalNP"]] <- normalNP
 }
 
-setMethod("update", "CrlmmSetList", function(object, ...){
-	computeCopynumber(object, ...)
-})
+
 
 computeCopynumber <- function(object,
 			      CHR,
@@ -621,6 +665,7 @@ computeCopynumber <- function(object,
 			      batch,
 			      SNRmin=5,
 			      cdfName, ...){
+	if(class(object) != "CrlmmSetList") stop("object must be of class ClrmmSetList")
 	if(missing(cdfName))
 		cdfName <- annotation(object)
 	if(!isValidCdfName(cdfName, platform="affymetrix")) stop(cdfName, " not supported.")	

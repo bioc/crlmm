@@ -10,7 +10,8 @@
 }
 \usage{
 crlmmWrapper(filenames, cdfName = "genomewidesnp6", load.it=FALSE,
-save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, ...)
+save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, rgFile,
+platform=c("affymetrix", "illumina")[1], ...)
 }
 \arguments{
   \item{filenames}{
@@ -34,9 +35,17 @@ save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, ...)
     \code{paste(dirname(crlmmFile), "crlmmSetList_", CHR, ".rda", sep="")}.
   }
   \item{crlmmFile}{Character string.  Name of file (including the
-    complete path) containing the genotype calls.  
+    complete path) containing the genotype calls.  }
+  \item{intensityFile}{Character string.  Name of file (with
+    complete path) containing the quantile-normalized intensities.  }  
+  \item{rgFile}{Character string.  Name of file (including the
+    complete path) containing the RG intensities (only applicable for
+    illumina platform).  }
+  \item{platform}{Character string.  Currently only \code{affymetrix}
+    and \code{illumina} are supported.}
   \item{\dots}{
-    additional arguments to function \code{crlmm}
+    additional arguments to function \code{readIdatFiles} (illumina
+    platform only)
   }
 }
 \value{

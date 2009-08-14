@@ -17,9 +17,9 @@
 
 \usage{
 
-  cnIndex(object, cdfName)
+  cnIndex(object, ...)
 
-  snpIndex(object, cdfName)
+  snpIndex(object, ...)
 
 }
 
@@ -28,7 +28,7 @@
   \item{object}{Any object extending eSet (ABset, CopyNumberSet,
     CrlmmSetList, SnpSet}
 
-  \item{cdfName}{Character string indicating annotation package.}
+  \item{\dots}{Usually the character string indicating annotation package.}
 
 }
 
