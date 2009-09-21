@@ -29,7 +29,8 @@
 \title{Class "CrlmmSetList"}
 \description{Container for quantile normalized intensities and genotype calls.}
 \section{Objects from the Class}{
-  Objects from the class are created by calls to the \code{crlmmWrapper} function.
+  Objects from the class are created by calls to the \code{crlmmWrapper}
+  function. 
 }
 \section{Slots}{
   \describe{
@@ -65,7 +66,8 @@
 \section{Extends}{
   Class \code{"\linkS4class{list}"}, from data part.
   Class \code{"\linkS4class{vector}"}, by class "list", distance 2.
-  Class \code{\link[Biobase:class.assayData]{assayData}}, by class "list", distance 2.
+  Class \code{\link[Biobase:assayData]{assayData}}, by class
+  "list", distance 2. 
 }
 \section{Methods}{
   \describe{
