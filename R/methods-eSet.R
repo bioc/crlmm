@@ -15,6 +15,8 @@ setMethod("snpNames", "eSet", function(object, cdfName){
 	snps <- snps[snps %in% featureNames(object)]
 	featureNames(object)[match(snps, featureNames(object))]
   })
+setMethod("chromosome", "eSet", function(object) fData(object)$chromosome)
+setMethod("position", "eSet", function(object) fData(object)$position)
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects

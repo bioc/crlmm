@@ -4,11 +4,19 @@
 \alias{CrlmmSetList-class}
 \alias{[,CrlmmSetList-method}
 \alias{$,CrlmmSetList-method}
+\alias{addFeatureAnnotation}
+\alias{addFeatureAnnotation,CrlmmSetList-method}
+\alias{A<-}
+\alias{B<-}
 \alias{A,CrlmmSetList-method}
+\alias{A<-,CrlmmSetList,matrix-method}
 \alias{B,CrlmmSetList-method}
+\alias{B<-,CrlmmSetList,matrix-method}
 \alias{batch,CrlmmSetList-method}
 \alias{CA,CrlmmSetList-method}
 \alias{CB,CrlmmSetList-method}
+\alias{CA<-,CrlmmSetList,matrix-method}
+\alias{CB<-,CrlmmSetList,matrix-method}
 \alias{calls,CrlmmSetList-method}
 \alias{chromosome,CrlmmSetList-method}
 \alias{cnIndex,CrlmmSetList-method}
@@ -24,6 +32,7 @@
 \alias{show,CrlmmSetList-method}
 \alias{snpIndex,CrlmmSetList-method}
 \alias{update,CrlmmSetList-method}
+\alias{update,character-method}
 
 
 \title{Class "CrlmmSetList"}
@@ -81,13 +90,25 @@
     currently stored in the \code{featureData} of \code{CopyNumberSet}
     objects. }
 
+  \item{"addFeatureAnnotation"}{\code{signature(object =
+  "CrlmmSetList")}: Creates an object of class AnnotatedDataFrame from
+  the CrlmmSetList object.  The new annotation object contains
+  information on chromosome and physical position and has the same
+  ordering of rows as the CrlmmSetList object. }
+
     \item{"A"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the A allele in the
       \code{ABset} element.}
+
+    \item{"A<-"}{\code{signature(object = "CrlmmSetList", value =
+    "matrix")}: Replacement method for the A intensities.}    
   
     \item{"B"}{\code{signature(object = "CrlmmSetList")}: extracts the
       quantile normalized intensities for the B allele in the
       \code{ABset} element.}
+    
+    \item{"B<-"}{\code{signature(object = "CrlmmSetList", value =
+    "matrix")}: Replacement method for the B intensities.}        
     
     \item{"batch"}{\code{signature(object = "CrlmmSetList")}: extracts the
       batch information used to estimate copy number.}    
@@ -98,7 +119,13 @@
   
     \item{"CB"}{\code{signature(object = "CrlmmSetList")}: extracts the
       copy number for allele B at polymorphic loci. For nonpolymorphic
-      probes, CB returns 'NA'.}    
+      probes, CB returns 'NA'.}
+
+    \item{"CA<-"}{\code{signature(object = "CrlmmSetList", value =
+	"matrix")}: Replacement method for the CA estimates.}
+
+    \item{"CB<-"}{\code{signature(object = "CrlmmSetList", value =
+    "matrix")}: Replacement method for the CB estimates.}                
 
     \item{"calls"}{\code{signature(object = "CrlmmSetList")}: extracts
       the genotype calls from the \code{SnpSet} element.}
@@ -139,6 +166,15 @@
     itself an instance of class \code{CrlmmSetList}.  The third element
     of the list is an instance of \code{CopyNumberSet} containing the
     locus-level, allele-specific estimates of copynumber.  }
+
+  \item{"update"}{\code{signature(object = "character")}: This method
+    loads the CrlmmSetList file given as the argument to object --
+    the object is a character string or a vector of character strings
+    that provides the complete path to the CrlmmSetList file.
+    The CrlmmSetList object is loaded and updated with copy number
+    estimates -- an object of class CopyNumberSet becomes the third
+    element in the CrlmmSetList object.  After updating the CrlmmSetList
+    object, the object is saved to the same path.}
 }
 }
 

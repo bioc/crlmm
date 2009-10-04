@@ -3,9 +3,11 @@
 \docType{class}
 \alias{ABset-class}
 \alias{A}
-\alias{A,ABset-method}
 \alias{B}
+\alias{A,ABset-method}
 \alias{B,ABset-method}
+\alias{A<-,ABset,matrix-method}
+\alias{B<-,ABset,matrix-method}
 \title{Class "ABset"}
 \description{Containter for quantile-normalized intensities}
 \section{Objects from the Class}{
@@ -31,7 +33,15 @@ Class \code{\link[Biobase:class.Versioned]{Versioned}}, by class "eSet", distanc
   \describe{
     \item{A}{\code{signature(object="ABset")}: accessor for the
       quantile-normalized intensities of allele A for polymorphic probes
-      and the quantile normalized intensities for the copy number probes.}
+      and the quantile normalized intensities for the copy number
+      probes.}
+
+    \item{"A<-"}{\code{signature(object="ABset", value="matrix")}:
+      replacement method for the A allele intensities.}
+
+    \item{"B<-"}{\code{signature(object="ABset", value="matrix")}:
+    replacement method for the B allele intensities.}    
+    
     \item{B}{\code{signature(object="ABset")}: accessor for the
       quantile-normalized intensities of allele B for polymorphic probes.}    
     \item{plot}{\code{signature(x = "ABset", y = "CopyNumberSet")}:

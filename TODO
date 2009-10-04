@@ -51,7 +51,7 @@ B Carvalho
     copy-neutral ROH:  (1-epsilon)/2 AA,  epsilon AB,  (1-epsilon)/2
     BB
 
-  o add caConfidence and cbConfidence slots (but what about the correlation)
+  o Define a class that contains settings for genotyping/copynumber estimation
 
 
 

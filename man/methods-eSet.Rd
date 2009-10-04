@@ -1,24 +1,32 @@
 \name{methods-eSet}
+\alias{chromosome}
+\alias{chromosome,eSet-method}
 \alias{cnIndex}
 \alias{cnIndex,eSet-method}
+\alias{position}
+\alias{position,eSet-method}
 \alias{snpIndex}
 \alias{snpIndex,eSet-method}
-
 
 \title{Methods for eSet derivatives}
 
 \description{
-
-  \code{snpIndex, ...} return the row indices of polymorphic loci.
-
+  \code{chromosome} return the chromosome number for SNP and NP probes.
+    
   \code{cnIndex, ...} return the row indices of copy number probes.
+
+  \code{position} return the physical position of the SNP or the
+  physical position for the first index of the NP probe.
+  
+  \code{snpIndex, ...} return the row indices of polymorphic loci.
 
 }
 
 \usage{
 
+  chromosome(object)
   cnIndex(object, ...)
-
+  position(object)
   snpIndex(object, ...)
 
 }

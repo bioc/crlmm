@@ -1,8 +1,32 @@
+%\VignetteIndexEntry{crlmm copy number Vignette for Illumina}
+%\VignetteDepends{crlmm}
+%\VignetteKeywords{crlmm, illumina}
+%\VignettePackage{crlmm}
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{natbib}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textsf{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\oligo}{\Rpackage{oligo }}
+\newcommand{\R}{\textsf{R}}
+
+\begin{document}
+\title{Copy number estimation and genotype calling with \Rpackage{crlmm}}
+\date{Oct, 2009}
+\author{Rob Scharpf}
+\maketitle
+
+<<setup, echo=FALSE, results=hide>>=
+options(width=60)
+options(continue=" ")
+options(prompt="R> ")
+@ 
+
 <<>>=
-# start R from /home/bst/other/mritchie/R/R-300309/bin/R
-# as this has current crlmm and region package installed
-# if you want to ue your own R, the current region package is at
-# /thumper/ctsa/snpmicroarray/illumina/crlmm/370k/human370v1cCrlmm/
 library(Biobase)
 library(crlmm)
 setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k")
@@ -11,71 +35,37 @@ setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k")
 <<readIdat>>=
 samplesheet5 = read.csv("HumanHap370Duo_Sample_Map.csv", header=TRUE, as.is=TRUE)[-c(28:46,61:75,78:79),]
 if(!exists("RG")){
-	## remove samples which I don't have .idats for
-	## subset further to allow for quicker testing
-	##samplesheet5 = samplesheet5[1:5,]
-	## read in the .idats
 	RG <- readIdatFiles(samplesheet5, arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), saveDate=TRUE)
 }
 @ 
 
-Get dates for each array - scan date is likely to be most meaningful
+Alternatively, arguments to the readIdatFiles can be passed through the
+{\tt ...} argument of the \R{} function \Robject{crlmmWrapper}.
 
-<<dates>>=
-pd <- pData(RG)
-scandatetime = strptime(as.character(pd$ScanDate), "%m/%d/%Y %H:%M:%S %p")
-decodedatetime = strptime(as.character(pd$DecodeDate), "%m/%d/%Y %H:%M:%S %p")
-table(format(scandatetime, "%d %b %Y"))
-table(format(scandatetime, "%b"))
+<<wrapper>>=
+crlmmWrapper(sampleSheet=samplesheet5,
+	     arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
+	     saveDate=TRUE,
+	     cdfName=cdfName,
+	     load.it=FALSE,
+	     save.it=TRUE,
+	     intensityFile=file.path(platedir, "normalizedIntensities.rda"),
+	     crlmmFile=file.path(platedir, "snpsetObject.rda"),
+	     rgFile=file.path(platedir, "rgFile.rda"),
+	     platform="illumina")
 @ 
 
 Note: the code below is run for testing purposes only. None of these
 functions are exported, so would not routinely be run directly by the
-user.  A typical analysis would involve runnning readIdatFiles()
-followed by crlmmIllumina()
+user.  A typical analysis would involve runnning crlmmWrapper() followed
+by update() to obtain copy number.
 
-<<crlmm>>=
-if(!exists("res.rda")){
-	outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/illumina/HumanCNV370-Duo"	
-	if(!file.exists(file.path(outdir, "res.rda"))){
-		crlmmOut <- crlmmIllumina(RG=RG, cdfName="human370v1c", sns=pData(RG)$ID, returnParams=TRUE, save.it=TRUE, intensityFile=file.path(outdir, "res.rda"))
-		save(crlmmOut, file=file.path(outdir, "crlmmOut.rda"))				
-	} else{
-		message("Loading...")		
-		load(file.path(outdir, "res.rda"))
-		load(file.path(outdir, "crlmmOut.rda"))		
-	}
-}
-@
-
-TODO: The code below needs to be udpated for the Illumina platform.
 
 <<SNR>>=
 hist(crlmmOut$SNR) ##approx. 5-fold higher than what we see in Affy!
 @ 
 
-<<>>=
-##cnAB was assigned to the global environment
-NP = (cnAB$A+cnAB$B)/2 # average normalized A and B intensities
-colnames(NP) <- colnames(crlmm:::calls(crlmmOut))
-chr22 <- computeCopynumber(chrom=22, A=res[["A"]], B=res[["B"]], 
-			   calls=crlmm:::calls(crlmmOut),
-			   conf=confs(crlmmOut), 
-			   plate=rep(1, ncol(NP)),
-			   NP=NP, 
-			   cdfName="human370v1c", 
-			   SNR=res[["SNR"]], 
-			   envir=cnenv)
-@ 
-
-<<>>=
-copyA=cnenv[["CA"]]
-copyB=cnenv[["CB"]]
-copyT=(copyA + copyB)/100
-copyT[copyT > 6] <- 6
-copyT[copyT < 0] <- 0
-plot(copyT[, 1], pch=".")
-@ 
+\end{document}
 
 
 

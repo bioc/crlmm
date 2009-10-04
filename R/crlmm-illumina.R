@@ -12,6 +12,14 @@ readIdatFiles <- function(sampleSheet=NULL,
 			  sep="_",
 			  fileExt=list(green="Grn.idat", red="Red.idat"),
 			  saveDate=FALSE) {
+       if(is.null(arrayNames)) {
+	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
+	       if(!is.null(sampleSheet)) {
+		       sampleSheet=NULL
+		       cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
+	       }
+	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
+       }	
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
 	       if(!is.null(arrayNames)){
 		       ##arrayNames=NULL
@@ -35,14 +43,6 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
 	       sampleNames(pd) <- arrayNames
        }
-       if(is.null(arrayNames)) {
-	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
-	       if(!is.null(sampleSheet)) {
-		       sampleSheet=NULL
-		       cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
-	       }
-	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
-       }
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
        redfiles = paste(arrayNames, fileExt$red, sep=sep)
@@ -50,9 +50,10 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
 	       stop("Cannot find matching .idat files")
-       if(!all(c(redfiles,grnfiles) %in% dir(path=path)))
+       if(!all(c(redfiles,grnfiles) %in% dir(path=path))){
 	       stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
 		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
+       }
        grnidats = file.path(path, grnfiles)
        redidats = file.path(path, redfiles)
        headerInfo = list(nProbes = rep(NA, narrays),

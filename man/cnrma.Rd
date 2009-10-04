@@ -6,7 +6,7 @@
   to a HapMap reference distribution.
 }
 \usage{
-cnrma(filenames, cdfName="genomewidesnp6", sns, seed = 1, verbose=FALSE)
+cnrma(filenames, cdfName, sns, seed = 1, verbose=FALSE)
 }
 \arguments{
   \item{filenames}{filenames with complete path}

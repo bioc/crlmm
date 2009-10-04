@@ -18,7 +18,7 @@ importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
 
 
 ##importMethodsFrom(oligoClasses, chromosome, copyNumber, position)
-importFrom(oligoClasses, chromosome, copyNumber, position, calls)
+importMethodsFrom(oligoClasses, chromosome, copyNumber, position, calls)
 
 ##importMethodsFrom(methods, initialize, show)
 
@@ -54,6 +54,8 @@ exportClasses(ABset, CopyNumberSet, CrlmmSetList)
 ##S3method(ellipse, CopyNumberSet)
 exportMethods("[", ##"[[",
 	      "$", A, B,
+	      "A<-", "B<-",
+	      addFeatureAnnotation,
 	      calls,
 	      CA,
 	      "CA<-",

@@ -4,7 +4,7 @@
 %\VignettePackage{crlmm}
 \documentclass{article}
 \usepackage{graphicx}
-\usepackage[authoryear,round,numbers]{natbib}
+\usepackage{natbib}
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
 \newcommand{\Rmethod}[1]{{\texttt{#1}}}
 \newcommand{\Rcode}[1]{{\texttt{#1}}}
@@ -15,7 +15,7 @@
 \newcommand{\R}{\textsf{R}}
 
 \begin{document}
-\title{Copy number estimation}
+\title{Copy number estimation and genotype calling with \Rpackage{crlmm}}
 \date{May, 2009}
 \author{Rob Scharpf}
 \maketitle
@@ -40,12 +40,13 @@ options(prompt="R> ")
 
 \section{Simple usage}
 
-The following packages are required:
+CRLMM supports the following platforms:
 
-<<requiredPackages>>=
+<<cdfname>>=
 library(crlmm)
-library(genomewidesnp6Crlmm)
+crlmm:::validCdfNames()
 @ 
+
 \paragraph{Preprocess and genotype.}
 
 Specify the coordinates of Affymetrix cel files and where to put
@@ -55,17 +56,26 @@ number estimation.
 <<celfiles>>=
 myPath <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 celFiles <- list.celfiles(myPath, full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
+#outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/tmp"
+dir.create(outdir)
 @ 
 
-\noindent Preprocess and genotype (for more info see the crlmm vignette):
 
-<<preprocessAndGenotype>>=
-crlmmWrapper(celFiles[1:15], 
+
+\noindent The next code chunk quantile normalizes the samples to a
+target reference distribution and uses the crlmm algorithm to genotype.
+See \cite{Carvalho2007a} for details regarding the crlmm genotyping
+algorithm.
+
+<<preprocessAndGenotype, eval=FALSE>>=
+crlmmWrapper(celFiles,##[1:15], 
+	     cdfName="genomewidesnp6",
 	     save.it=TRUE, 
-	     load.it=TRUE,
+	     load.it=FALSE,
 	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
-	     crlmmFile=file.path(outdir, "snpsetObject.rda"))
+	     crlmmFile=file.path(outdir, "snpsetObject.rda"),
+	     platform="affymetrix")
 @ 
 
 As a result of the above wrapper, the following R objects are now created:
@@ -110,9 +120,10 @@ if(!exists("emission.cn")){
 }
 @ 
 
-*Warning: more can be done than currently implemented to protect against
-outliers.  In addition, improved estimates of uncertainty for the copy
-number prediction regions will also help.*
+*Before smoothing the estimates as a function of physical position by
+segmentation hidden Markov models, one should consider how to handle
+outliers.  In particular, samples with low signal to noise ratios are
+likely to have many copy number outliers. See suggested visualizations.
 
 Initial state probabilities and transition probabilities for the HMM:
 
@@ -265,8 +276,6 @@ as well as better containers for storing these parameters. See
 <<copynumberParameters>>=
 fvarLabels(crlmmSetList[[3]])
 @ 
-
-
 \section{Suggested visualizations}
 
 A histogram of the signal to noise ratio for the HapMap samples:
@@ -285,11 +294,11 @@ hist(crlmmSetList[[2]]$SNR, xlab="SNR", main="")
 SNRmin <- 5
 @ 
 
-We suggest excluding samples with a signal to noise ratio less than
-\Sexpr{SNRmin}.  As batch effects can be very large in the
-quantile-normalized intensities, we suggest adjusting for date or
-chemistry plate.  Ideally, one would have 70+ files in a given
-batch. Here we make a table of date versus ancestry:
+For Affymetrix 6.0, we suggest excluding samples with a signal to noise
+ratio less than \Sexpr{SNRmin}.  Adjusting by date or chemistry plate
+can be helpful for limiting the influence of batch effects.  Ideally,
+one would have 70+ files in a given batch. Here we make a table of date
+versus ancestry:
 
 <<specifyBatch, eval=FALSE, echo=FALSE>>=
 sns <- sampleNames(crlmmResults)
@@ -307,7 +316,7 @@ not the case, we illustrate how one may adjust for batch using the
 chemistry plate as an argument for \Robject{batch} in the
 \Robject{computeCopynumber} function.
 
-**Note: the number of samples in the \Robject{CrlmmSetList} object after
+*Note: the number of samples in the \Robject{CrlmmSetList} object after
 copy number estimation may be fewer than the number of samples in the
 \Robject{CrlmmSetList} object after preprocessing/genotyping.  This
 occurs when 1 or more samples have a signal-to-noise ratio less than

@@ -1,5 +1,8 @@
 setGeneric("A", function(object) standardGeneric("A"))
 setGeneric("B", function(object) standardGeneric("B"))
+setGeneric("A<-", function(object, value) standardGeneric("A<-"))
+setGeneric("addFeatureAnnotation", function(object, ...) standardGeneric("addFeatureAnnotation"))
+setGeneric("B<-", function(object, value) standardGeneric("B<-"))
 setGeneric("batch", function(object) standardGeneric("batch"))
 ##setGeneric("calls", function(x) standardGeneric("calls"))
 setGeneric("confs", function(object) standardGeneric("confs"))

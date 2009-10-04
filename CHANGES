@@ -272,3 +272,13 @@ is decoded and scanned
 * labeled figures / displayed output of code chunks in the copy number vignette
 * added bibliography for copy number vignette.  Added file inst/doc/refs.bib
 * added boxplot method 
+
+2009-10-03 R. Scharpf - committed version 1.3.21
+
+* modified crlmmWrapper function
+* modified illumina copy number vignette (still needs debugging)
+* changed title of copy number vignette
+* added reference to the crlmm paper
+* changed copyNumber() method so that CA + NA = NA, CB + NA = NA (previously had CA+NA=CA, but this can result in a lot of zeros, depending on the genotype)
+* new method: addFeatureAnnotation
+* support for snp5.0

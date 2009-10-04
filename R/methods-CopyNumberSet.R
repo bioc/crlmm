@@ -6,12 +6,14 @@ setValidity("CopyNumberSet", function(object) {
 ##may want to allow thresholding here (... arg)
 setMethod("CA", "CopyNumberSet", function(object, ...) assayData(object)[["CA"]]/100)
 setMethod("CB", "CopyNumberSet", function(object, ...) assayData(object)[["CB"]]/100)
-setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
-		 function(object, value) assayDataElementReplace(object, "CB", value))
-setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
-		 function(object, value) assayDataElementReplace(object, "CA", value))
 
-setMethod("chromosome", "CopyNumberSet", function(object) fData(object)$chromosome)
+setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value) assayDataElementReplace(object, "CA", value*100))
+setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value) assayDataElementReplace(object, "CB", value*100))
+
+
+
 
 setMethod("batch", "CopyNumberSet", function(object){
 	if("batch" %in% varLabels(object)){
@@ -23,19 +25,23 @@ setMethod("batch", "CopyNumberSet", function(object){
 })
 
 setMethod("copyNumber", "CopyNumberSet", function(object){
+	require(paste(annotation(object), "Crlmm", sep=""), character.only=TRUE) || stop(paste("Annotation package ", annotation(object), "Crlmm not available", sep=""))
 	##ensure that 2 + NA = 2 by replacing NA's with zero
+	##the above results in copy number 0, 1, or 2 depending on the genotype....safer just to drop
 	CA <- CA(object)
 	CB <- CB(object)
-	nas <- is.na(CA) & is.na(CB)
-	CA[is.na(CA)] <- 0
-	CB[is.na(CB)] <- 0
+	##nas <- is.na(CA) & is.na(CB)
+	##CA[is.na(CA)] <- 0
+	##CB[is.na(CB)] <- 0
 	CN <- CA + CB
+	##For nonpolymorphic probes, CA is the total copy number
+	CN[cnIndex(object, annotation(object)), ] <- CA(object)[cnIndex(object, annotation(object)), ]
 	##if both CA and CB are NA, report NA
-	CN[nas] <- NA
+	##CN[nas] <- NA
 	CN
 })
 
-setMethod("position", "CopyNumberSet", function(object) fData(object)$position)
+
 
 ##setMethod("ellipse", "CopyNumberSet", function(x, copynumber, ...){
 ellipse.CopyNumberSet <- function(x, copynumber, ...){
@@ -43,7 +49,15 @@ ellipse.CopyNumberSet <- function(x, copynumber, ...){
 	##fittedOrder <- unique(sapply(basename(celFiles), function(x) strsplit(x, "_")[[1]][2]))
 	##index <- match(plates, fittedOrder)
 	if(nrow(x) > 1) stop("only 1 snp at a time")
-	batch <- unique(x$batch)
+	##batch <- unique(x$batch)
+	args <- list(...)
+	if(!"batch" %in% names(args)){
+		jj <- match("batch", varLabels(x))
+		if(length(jj) < 1) stop("batch not in varLabels")
+		batch <- unique(pData(x)[, jj])
+	} else{
+		batch <- unique(args$batch)
+	}
 	if(length(batch) > 1) stop("batch variable not unique")
 	nuA <- as.numeric(fData(x)[, match(paste("nuA", batch, sep="_"), fvarLabels(x))])
 	nuB <- as.numeric(fData(x)[, match(paste("nuB", batch, sep="_"), fvarLabels(x))])	
@@ -65,6 +79,7 @@ ellipse.CopyNumberSet <- function(x, copynumber, ...){
 			if(CA == 0 & CB > 0) rho <- corrA.BB
 			if(CA > 0 & CB == 0) rho <- corrB.AA
 			if(CA > 0 & CB > 0) rho <- corr
+			if(CA == 0 & CB == 0) rho <- 0
 			lines(ellipse(x=rho, centre=c(log2(nuA+CA*phiA),
 					     log2(nuB+CB*phiB)),
 				      scale=scale), ...)

@@ -48,13 +48,78 @@ setMethod(".harmonizeDimnames", "CrlmmSetList", function(object){
 })
 
 setMethod("A", "CrlmmSetList", function(object) A(object[[1]]))
+
+setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, CHR){
+	if(missing(CHR)) stop("Must specificy chromosome")
+	cdfName <- annotation(object)
+	pkgname <- paste(cdfName, "Crlmm", sep="")	
+	path <- system.file("extdata", package=pkgname)
+	loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
+	cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
+	loader("snpProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
+	snpProbes <- get("snpProbes", envir=.crlmmPkgEnv)	
+
+	##Feature Data
+	snps <- featureNames(object)[snpIndex(object)]
+	nps <- featureNames(object)[cnIndex(object)]
+	position.snp <- snpProbes[match(snps, rownames(snpProbes)), "position"]
+	names(position.snp) <- snps
+	position.np <- cnProbes[match(nps, rownames(cnProbes)), "position"]
+	names(position.np) <- nps
+	
+	position <- c(position.snp, position.np)
+	position <- position[match(featureNames(object), names(position))]
+	stopifnot(identical(names(position), featureNames(object)))
+	if(sum(duplicated(names(position))) > 0){
+		warning("Removing rows with NA identifiers...")
+		##RS: fix this
+		I <- which(!is.na(names(position)))
+	}  else I <- seq(along=names(position))
+	fd <- data.frame(cbind(CHR,
+			       position[I]))
+	colnames(fd) <- c("chromosome", "position")
+	rownames(fd) <- featureNames(object)
+	fD <- new("AnnotatedDataFrame",
+		  data=fd,
+		  varMetadata=data.frame(labelDescription=colnames(fd)))
+	return(fD)
+})
+
 setMethod("annotation", "CrlmmSetList", function(object) annotation(object[[1]]))
 setMethod("B", "CrlmmSetList", function(object) B(object[[1]]))
 setMethod("batch", "CrlmmSetList", function(object) batch(object[[3]]))
 setMethod("CA", "CrlmmSetList", function(object, ...) CA(object[[3]], ...))
 setMethod("CB", "CrlmmSetList", function(object, ...) CB(object[[3]], ...))
 setMethod("calls", "CrlmmSetList", function(object) calls(object[[2]]))
-setMethod("chromosome", "CrlmmSetList", function(object) chromosome(object[[3]]))
+setMethod("chromosome", "CrlmmSetList", function(object){
+	chr <- NULL
+	for(i  in 1:length(object)){
+		if(length(fvarLabels(object[[i]])) > 0){
+			if("chromosome" %in% fvarLabels(object[[i]])){
+				chr <- chromosome(object[[i]])
+				break()
+			}
+		}
+	}
+	if(is.null(chr)) warning("fvarLabel 'chromosome' not in any element of the CrlmmSetList object")	
+	return(chr)
+	##chromosome(object[[3]])
+	})
+
+setMethod("position", "CrlmmSetList", function(object){
+	pos <- NULL
+	for(i  in 1:length(object)){
+		if(length(fvarLabels(object[[i]])) > 0){
+			if("position" %in% fvarLabels(object[[i]])){
+				pos <- position(object[[i]])
+				break()
+			}
+		} else next()
+	}
+	if(is.null(pos)) warning("fvarLabel 'position' not in any element of the CrlmmSetList object")
+	return(pos)
+	})
+
 setMethod("cnIndex", "CrlmmSetList", function(object, ...) {
 	match(cnNames(object[[1]], annotation(object)), featureNames(object))
 })
@@ -94,7 +159,6 @@ setMethod("points", signature(x="CrlmmSetList"),
 		  B <- log2(B(x))
 		  points(A, B, ...)
 	  })
-setMethod("position", "CrlmmSetList", function(object) position(object[[3]]))
 setMethod("sampleNames", "CrlmmSetList", function(object) sampleNames(object[[1]]))
 setMethod("show", "CrlmmSetList", function(object){
 	cat("\n Elements in CrlmmSetList object: \n")
@@ -130,6 +194,29 @@ setMethod("update", "CrlmmSetList", function(object, ...){
 	computeCopynumber(object, ...)
 })
 
+setReplaceMethod("CA", signature(object="CrlmmSetList", value="matrix"),
+		 function(object, value){
+			 CA(object[[3]]) <- value
+			 object
+		 })
+setReplaceMethod("CB", signature(object="CrlmmSetList", value="matrix"),
+		 function(object, value){
+			 CB(object[[3]]) <- value
+			 object
+			 })
+
+setReplaceMethod("A", signature(object="CrlmmSetList", value="matrix"),
+		 function(object, value){
+			 A(object[[1]]) <- value
+			 object
+		 })
+setReplaceMethod("B", signature(object="CrlmmSetList", value="matrix"),
+		 function(object, value){
+			 B(object[[1]]) <- value
+			 object
+		 })
+
+
 
 setMethod("boxplot", "CrlmmSetList", function(x, ...){
 ##boxplot.CrlmmSetList <- function(x, ...){
@@ -138,7 +225,7 @@ setMethod("boxplot", "CrlmmSetList", function(x, ...){
 	A1 <- A(x)
 	B1 <- B(x)
 	Alist <- split(A1, genotypes)
-	Alist <- rev(Alist)
+	Alist <- as(rev(Alist), "data.frame")
 	Blist <- split(B1, genotypes)
 	ylim <- range(unlist(Alist))
 	boxplot(Alist, xaxt="n", ylab=expression(I[A]), 
