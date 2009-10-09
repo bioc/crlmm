@@ -6,7 +6,7 @@
 readIdatFiles <- function(sampleSheet=NULL,
 			  arrayNames=NULL,
 			  ids=NULL,
-			  path=".",
+			  path="",
 			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
 			  highDensity=FALSE,
 			  sep="_",
@@ -50,12 +50,19 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
 	       stop("Cannot find matching .idat files")
-       if(!all(c(redfiles,grnfiles) %in% dir(path=path))){
-	       stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
-		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
+       if(path != ""){
+	       grnidats = file.path(path, grnfiles)
+	       redidats = file.path(path, redfiles)
+       }  else {
+	       grnidats <- grnfiles
+	       redidats <- redfiles
        }
-       grnidats = file.path(path, grnfiles)
-       redidats = file.path(path, redfiles)
+       if(!all(file.exists(grnfiles))) stop("Missing some of the *Grn.idat files")
+       if(!all(file.exists(redfiles))) stop("Missing some of the *Red.idat files")       
+##       if(!all(c(redfiles,grnfiles) %in% dir(path=path))){
+##	       stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
+##		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))
+##       }
        headerInfo = list(nProbes = rep(NA, narrays),
                          Barcode = rep(NA, narrays),
                          ChipType = rep(NA, narrays),

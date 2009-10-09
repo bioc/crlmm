@@ -141,7 +141,8 @@ predictGender <- function(res, cdfName="genomewidesnp6", SNRMin=5){
 		A <- res@assayData[["A"]]
 		B <- res@assayData[["B"]]
 	}
-	XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+	tmp <- which(rowSums(is.na(A)) > 0)
+	XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median, na.rm=TRUE)/2
 	SNR <- res$SNR
 	if(sum(SNR>SNRMin)==1){
 		gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
@@ -267,7 +268,7 @@ crlmmWrapper <- function(filenames,
 			load.it <- FALSE
 		}
 	}
-	if(!isValidCdfName(cdfName, platform=platform))
+	if(!isValidCdfName(cdfName))
 		stop(cdfName, " is not a valid entry.  See crlmm:::validCdfNames(platform)")
 	if(platform == "affymetrix"){
 		if(!file.exists(crlmmFile) | !load.it){
@@ -329,6 +330,8 @@ crlmmWrapper <- function(filenames,
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset, cdfName)
 	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
 	crlmmSetList <- as(list(ABset, crlmmResult), "CrlmmSetList")
+	fd <- addFeatureAnnotation(crlmmSetList)
+	featureData(crlmmSetList[[1]]) <- fd
 	if(splitByChr){
 		message("Saving by chromosome")
 		splitByChromosome(crlmmSetList, cdfName=cdfName, outdir=dirname(crlmmFile))
@@ -340,46 +343,79 @@ crlmmWrapper <- function(filenames,
 	return()
 }
 
-validCdfNames <- function(platform){
-	if(!missing(platform)){
-		if(!platform %in% c("illumina", "affymetrix"))
-			stop("only illumina and affymetrix platforms are supported.")
-		if(platform=="illumina"){
-			chipList = c("human1mv1c",             # 1M
-			"human370v1c",            # 370CNV
-			"human650v3a",            # 650Y
-			"human610quadv1b",        # 610 quad
-			"human660quadv1a",        # 660 quad
-			"human370quadv3c",        # 370CNV quad
-			"human550v3b",            # 550K
-			"human1mduov3b")          # 1M Duo
-		}
-		if(platform=="affymetrix"){
-			chipList=c("genomewidesnp6", "genomewidesnp5")
-		}
-	} else{
-		chipList <- list()
-		chipList$affymetrix <- c("genomewidesnp6","genomewidesnp5")
-		chipList$illumina <- c("human370v1c",
-				       "human370quadv3c",
-				       "human550v3b",
-				       "human650v3a",
-				       "human610quadv1b",
-				       "human660quadv1a",
-				       "human1mduov3b")
-	}
-	return(chipList)
+validCdfNames <- function(){
+	c("genomewidesnp6",
+	  "genomewidesnp5",
+	  "human370v1c",
+	  "human370quadv3c",
+	  "human550v3b",
+	  "human650v3a",
+	  "human610quadv1b",
+	  "human660quadv1a",
+	  "human1mduov3b")
 }
 
-isValidCdfName <- function(cdfName, platform){
-	chipList <- validCdfNames(platform)
-	if(!(cdfName %in% chipList)){
+##validCdfNames <- function(platform){
+##	if(!missing(platform)){
+##		if(!platform %in% c("illumina", "affymetrix"))
+##			stop("only illumina and affymetrix platforms are supported.")
+##		if(platform=="illumina"){
+##			chipList = c("human1mv1c",             # 1M
+##			"human370v1c",            # 370CNV
+##			"human650v3a",            # 650Y
+##			"human610quadv1b",        # 610 quad
+##			"human660quadv1a",        # 660 quad
+##			"human370quadv3c",        # 370CNV quad
+##			"human550v3b",            # 550K
+##			"human1mduov3b")          # 1M Duo
+##		}
+##		if(platform=="affymetrix"){
+##			chipList=c("genomewidesnp6", "genomewidesnp5")
+##		}
+##	} else{
+##		chipList <- list()
+##		chipList$affymetrix <- c("genomewidesnp6","genomewidesnp5")
+##		chipList$illumina <- c("human370v1c",
+##				       "human370quadv3c",
+##				       "human550v3b",
+##				       "human650v3a",
+##				       "human610quadv1b",
+##				       "human660quadv1a",
+##				       "human1mduov3b")
+##	}
+##	return(chipList)
+##}
+isValidCdfName <- function(cdfName){
+	chipList <- validCdfNames()
+	result <- cdfName %in% chipList	
+	if(!(result)){
 		warning("cdfName must be one of the following: ",
 			chipList)
 	}
-	result <- cdfName %in% chipList
 	return(result)
 }
+
+whichPlatform <- function(cdfName){
+	index <- grep("genomewidesnp", cdfName)
+	if(length(index) > 0){
+		platform <- "affymetrix"
+	} else{
+		index <- grep("human", cdfName)
+		platform <- "illumina"
+	}
+	return(platform)
+}
+
+
+##isValidCdfName <- function(cdfName, platform){
+##	chipList <- validCdfNames(platform)
+##	if(!(cdfName %in% chipList)){
+##		warning("cdfName must be one of the following: ",
+##			chipList)
+##	}
+##	result <- cdfName %in% chipList
+##	return(result)
+##}
 	
 	
 	
@@ -558,19 +594,19 @@ computeCopynumber <- function(object,
 			      bias.adj=FALSE,
 			      batch,
 			      SNRmin=5,
-			      cdfName,
-			      platform=c("affymetrix", "illumina")[1], ...){
+			      cdfName, ...){
 	if(class(object) != "CrlmmSetList") stop("object must be of class ClrmmSetList")
 	if(missing(cdfName))
 		cdfName <- annotation(object)
-	if(!isValidCdfName(cdfName, platform=platform)) stop(cdfName, " not supported.")	
+	if(!isValidCdfName(cdfName)) stop(cdfName, " not supported.")
+	platform <- whichPlatform(cdfName)
 	if(ncol(object) < 10)
 		stop("Must have at least 10 samples in each batch to estimate model parameters....preferably closer to 90 samples per batch")
 	##require(oligoClasses)
 	if(missing(CHR)) stop("Must specify CHR")
 	if(CHR == 24) stop("Nothing available yet for chromosome Y")
 	if(missing(batch)) {
-		message("'batch' missing.  Assuming all samples were processed together in the same batch.")
+		message("'batch' missing.  Assuming all samples in the CrlmmSetList object were processed together in the same batch.")
 		batch <- rep("A", ncol(object))
 	}
 	if(length(batch) != ncol(object[[1]])) stop("Batch must be the same length as the number of samples")
@@ -751,7 +787,7 @@ updateNuPhi <- function(crlmmSetList, cnSet){
 ##			   ...)	
 }
 
-list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
+list2locusSet <- function(envir, ABset, NPset, CHR, cdfName){
 	if(missing(CHR)) stop("Must specify chromosome")
 	pkgname <- paste(cdfName, "Crlmm", sep="")	
 	path <- system.file("extdata", package=pkgname)
@@ -879,7 +915,7 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName="genomewidesnp6"){
 		      assayData=assayData,
 		      featureData=fD,
 		      phenoData=phenodata,
-		      annotation="genomewidesnp6")
+		      annotation=cdfName)
 	cnset <- thresholdCopyNumberSet(cnset)
 	return(cnset)
 }
@@ -1087,6 +1123,8 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		##chrX:1-2,709,520 and chrX:154584237-154913754, respectively
 		##par:pseudo-autosomal regions
 		pseudoAR <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
+		##in case some of the cnProbes are not annotated
+		pseudoAR[is.na(pseudoAR)] <- FALSE
 		gender <- envir[["gender"]]
 		mu1 <- rowMedians(NP[, gender=="male"], na.rm=TRUE)
 		mu2 <- rowMedians(NP[, gender=="female"], na.rm=TRUE)
@@ -1099,8 +1137,10 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		phi1 <- 2^(Yhat1)
 		phi2 <- 2^(Yhat2)
 		nu1 <- 2^(mus[, 1]) - phi1
-		nu2 <- 2^(mus[, 2]) - 2*phi2		
-		nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
+		nu2 <- 2^(mus[, 2]) - 2*phi2
+		if(any(pseudoAR)){
+			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
+		}
 		CT1 <- 1/phi1*(NP[, gender=="male"]-nu1)
 		CT2 <- 1/phi2*(NP[, gender=="female"]-nu2)
 		CT1 <- matrix(as.integer(100*CT1), nrow(CT1), ncol(CT1))
@@ -1932,10 +1972,22 @@ thresholdModelParams <- function(object, MIN=2^3){
 setMethod("update", "character", function(object, ...){
 	crlmmFile <- object
 	for(i in seq(along=crlmmFile)){
-		cat("Processing ", clrmmFile[i], "...\n")
+		cat("Processing ", crlmmFile[i], "...\n")
 		load(crlmmFile[i])
 		crlmmSetList <- get("crlmmSetList")
-		crlmmSetList <- update(crlmmSetList, ...)
+		if(length(crlmmSetList) == 3) next()  ##copy number object already present. 
+		if(!"chromosome" %in% fvarLabels(crlmmSetList[[1]])){
+			featureData(crlmmSetList[[1]]) <- addFeatureAnnotation(crlmmSetList)
+		} 
+		CHR <- unique(chromosome(crlmmSetList[[1]]))		
+		if(CHR==24){
+			message("skipping chromosome 24")
+			next()
+		}
+		cat("----------------------------------------------------------------------------\n")
+		cat("-        Estimating copy number for chromosome", CHR, "\n")
+		cat("----------------------------------------------------------------------------\n")		
+		crlmmSetList <- update(crlmmSetList, CHR=CHR, ...)
 		save(crlmmSetList, file=crlmmFile[i])
 		rm(crlmmSetList); gc();
 	}

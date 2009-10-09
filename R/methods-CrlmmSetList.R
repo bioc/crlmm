@@ -49,8 +49,8 @@ setMethod(".harmonizeDimnames", "CrlmmSetList", function(object){
 
 setMethod("A", "CrlmmSetList", function(object) A(object[[1]]))
 
-setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, CHR){
-	if(missing(CHR)) stop("Must specificy chromosome")
+setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, ...){
+	##if(missing(CHR)) stop("Must specificy chromosome")
 	cdfName <- annotation(object)
 	pkgname <- paste(cdfName, "Crlmm", sep="")	
 	path <- system.file("extdata", package=pkgname)
@@ -66,16 +66,26 @@ setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, CHR){
 	names(position.snp) <- snps
 	position.np <- cnProbes[match(nps, rownames(cnProbes)), "position"]
 	names(position.np) <- nps
+
+	J <- grep("chr", colnames(snpProbes))
+	chr.snp <- snpProbes[match(snps, rownames(snpProbes)), J]
+	chr.np <- cnProbes[match(nps, rownames(cnProbes)), J]	
 	
 	position <- c(position.snp, position.np)
-	position <- position[match(featureNames(object), names(position))]
+	chrom <- c(chr.snp, chr.np)
+	ix <- match(featureNames(object), names(position))
+	position <- position[ix]
+	chrom <- chrom[ix]
+	##require(SNPchip)
+	chrom <- chromosome2integer(chrom)
+
 	stopifnot(identical(names(position), featureNames(object)))
 	if(sum(duplicated(names(position))) > 0){
 		warning("Removing rows with NA identifiers...")
 		##RS: fix this
 		I <- which(!is.na(names(position)))
 	}  else I <- seq(along=names(position))
-	fd <- data.frame(cbind(CHR,
+	fd <- data.frame(cbind(chrom[I],
 			       position[I]))
 	colnames(fd) <- c("chromosome", "position")
 	rownames(fd) <- featureNames(object)

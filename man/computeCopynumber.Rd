@@ -9,7 +9,7 @@
 }
 \usage{
 computeCopynumber(object, CHR, bias.adj=FALSE, batch, SNRmin=5, cdfName,
-platform=c("affymetrix", "illumina")[1], ...)
+...)
 }
 \arguments{
   \item{object}{object of class \code{CrlmmSetList}.}
@@ -21,7 +21,6 @@ platform=c("affymetrix", "illumina")[1], ...)
   \item{SNRmin}{The minimum value for the SNR -- we suggest 5. Samples
     with SNR below SNRmin are dropped.}
   \item{cdfName}{Annotation package }
-  \item{platform}{Character string--must be eitheraffymetrix or illumina.}  
   \item{\dots}{arguments to \code{.computeCopynumber}.}
 }
 

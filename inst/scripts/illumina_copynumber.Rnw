@@ -27,8 +27,10 @@ options(prompt="R> ")
 @ 
 
 <<>>=
-library(Biobase)
 library(crlmm)
+@ 
+
+<<echo=FALSE, eval=TRUE>>=
 setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k")
 @ 
 
@@ -55,14 +57,21 @@ crlmmWrapper(sampleSheet=samplesheet5,
 	     platform="illumina")
 @ 
 
-Note: the code below is run for testing purposes only. None of these
-functions are exported, so would not routinely be run directly by the
-user.  A typical analysis would involve runnning crlmmWrapper() followed
-by update() to obtain copy number.
+Samples with low signal to noise ratios tend to have a lot of variation
+in the point estimates of copy number.  One may want to exclude these
+samples.
 
 
 <<SNR>>=
-hist(crlmmOut$SNR) ##approx. 5-fold higher than what we see in Affy!
+hist(crlmmOut$SNR)
+@ 
+
+Run update on the CrlmmSetList object to obtain copy number. Estimate
+copy number for chromosome 1.
+
+<<>>=
+CHR <- 1
+filename <- paste(platedir, "/CrlmmSetList_", CHR, ".rda", sep="")
 @ 
 
 \end{document}

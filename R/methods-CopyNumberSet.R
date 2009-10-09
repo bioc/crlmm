@@ -1,5 +1,4 @@
 setValidity("CopyNumberSet", function(object) {
-	##msg <- validMsg(NULL, Biobase:::isValidVersion(object, "CopyNumberSet"))
 	msg <- validMsg(NULL, assayDataValidMembers(assayData(object), c("CA", "CB")))
 	if (is.null(msg)) TRUE else msg
 })

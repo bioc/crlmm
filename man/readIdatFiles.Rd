@@ -8,7 +8,7 @@
   .idat files of Infinium II genotyping BeadChips}
 
 \usage{
-readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
+readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path="",
               arrayInfoColNames=list(barcode="SentrixBarcode_A",
                                      position="SentrixPosition_A"),
               highDensity=FALSE, sep="_",
