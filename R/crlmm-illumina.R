@@ -21,7 +21,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }	
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
-	       if(!is.null(arrayNames)){
+	       if(is.null(arrayNames)){
 		       ##arrayNames=NULL
 		       if(!is.null(arrayInfoColNames$barcode) && (arrayInfoColNames$barcode %in% colnames(sampleSheet))) {
 			       barcode = sampleSheet[,arrayInfoColNames$barcode]
@@ -41,7 +41,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) <- arrayNames
+	       sampleNames(pd) <- basename(arrayNames)
        }
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)

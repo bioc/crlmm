@@ -73,6 +73,12 @@ setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, ...){
 	
 	position <- c(position.snp, position.np)
 	chrom <- c(chr.snp, chr.np)
+
+	##We may not have annotation for all of the snps
+	if(!all(featureNames(object) %in% names(position))){
+		message("Dropping loci for which physical position  is not available.")
+		object <- object[featureNames(object) %in% names(position), ]
+	}
 	ix <- match(featureNames(object), names(position))
 	position <- position[ix]
 	chrom <- chrom[ix]
@@ -200,8 +206,19 @@ setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir)
 		save(crlmmSetList, file=file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
 	}
 })
+
 setMethod("update", "CrlmmSetList", function(object, ...){
-	computeCopynumber(object, ...)
+	if(length(crlmmSetList) == 3){
+		message("copy number object already present. Nothing to do.")
+		return()
+	}
+	CHR <- unique(chromosome(crlmmSetList[[1]]))
+	if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")
+	if(CHR == 24){
+		message("A solution for chromosome 24 is not yet available.")
+		return()
+	}	
+	computeCopynumber(object, CHR=CHR, ...)
 })
 
 setReplaceMethod("CA", signature(object="CrlmmSetList", value="matrix"),

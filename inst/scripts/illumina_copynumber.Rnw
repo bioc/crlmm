@@ -28,50 +28,70 @@ options(prompt="R> ")
 
 <<>>=
 library(crlmm)
+crlmm:::validCdfNames()
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/illumina/HumanCNV370-Duo"
+datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+cdfName <- "human370v1c"
 @ 
 
-<<echo=FALSE, eval=TRUE>>=
-setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k")
-@ 
-
-<<readIdat>>=
-samplesheet5 = read.csv("HumanHap370Duo_Sample_Map.csv", header=TRUE, as.is=TRUE)[-c(28:46,61:75,78:79),]
-if(!exists("RG")){
-	RG <- readIdatFiles(samplesheet5, arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), saveDate=TRUE)
-}
+<<samplesToProcess>>=
+samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
+## Excluding a few of the problem samples
+samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
+arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
+##Check that files exist
+grnfiles = all(file.exists(paste(arrayNames, ".Grn.dat", sep="")))
+redfiles = all(file.exists(paste(arrayNames, ".Red.dat", sep="")))
 @ 
 
 Alternatively, arguments to the readIdatFiles can be passed through the
 {\tt ...} argument of the \R{} function \Robject{crlmmWrapper}.
 
 <<wrapper>>=
-crlmmWrapper(sampleSheet=samplesheet5,
+crlmmWrapper(sampleSheet=samplesheet,
+	     arrayNames=arrayNames,
 	     arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
 	     saveDate=TRUE,
 	     cdfName=cdfName,
 	     load.it=FALSE,
-	     save.it=TRUE,
-	     intensityFile=file.path(platedir, "normalizedIntensities.rda"),
-	     crlmmFile=file.path(platedir, "snpsetObject.rda"),
-	     rgFile=file.path(platedir, "rgFile.rda"),
-	     platform="illumina")
+	     save.it=FALSE,
+	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
+	     crlmmFile=file.path(outdir, "snpsetObject.rda"),
+	     rgFile=file.path(outdir, "rgFile.rda"))
+@ 
+
+This creates a \Robject{crlmmSetList} object in the \Robject{outdir}
+directory.  The first element of this object contains the
+quantile-normalized A and B intensities.  The second element in the list
+contains the crlmm genotype calls.  
+
+
+<<SNR>>=
+CHR <- 1
+filename <- paste(outdir, "/crlmmSetList_", CHR, ".rda", sep="")
+load(filename)
+hist(crlmmSetList[[1]]$SNR)
+@ 
+
+Run update on the CrlmmSetList object to obtain copy number estimates. Estimate
+copy number for chromosome 1.
+
+<<estimateCn>>=
+update(filename)
+##Or equivalently,
+##crlmmSetList <- computeCopynumber(crlmmSetList)
+##save(crlmmSetList, file=file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
 @ 
 
 Samples with low signal to noise ratios tend to have a lot of variation
 in the point estimates of copy number.  One may want to exclude these
-samples.
+samples, or smooth after filtering outliers.  Here we load the
+crlmmSetList object.  See the copynumber.Rnw vignette for example plots.
 
-
-<<SNR>>=
-hist(crlmmOut$SNR)
-@ 
-
-Run update on the CrlmmSetList object to obtain copy number. Estimate
-copy number for chromosome 1.
-
-<<>>=
-CHR <- 1
-filename <- paste(platedir, "/CrlmmSetList_", CHR, ".rda", sep="")
+<<crlmmSetList>>=
+##reload the updated object
+load(filename)
+cn <- copyNumber(crlmmSetList)
 @ 
 
 \end{document}

@@ -6,10 +6,19 @@ setValidity("CopyNumberSet", function(object) {
 setMethod("CA", "CopyNumberSet", function(object, ...) assayData(object)[["CA"]]/100)
 setMethod("CB", "CopyNumberSet", function(object, ...) assayData(object)[["CB"]]/100)
 
-setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
-		 function(object, value) assayDataElementReplace(object, "CA", value*100))
-setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
-		 function(object, value) assayDataElementReplace(object, "CB", value*100))
+setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"), function(object, value){
+	dns <- dimnames(value)
+	value <- matrix(as.integer(value*100), nrow(value), ncol(value))
+	dimnames(value) <- dns
+	assayDataElementReplace(object, "CA", value)
+})
+
+setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"), function(object, value){
+	dns <- dimnames(value)	
+	value <- matrix(as.integer(value*100), nrow(value), ncol(value))
+	dimnames(value) <- dns	
+	assayDataElementReplace(object, "CB", value)
+})
 
 
 

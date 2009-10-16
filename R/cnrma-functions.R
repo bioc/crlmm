@@ -217,15 +217,16 @@ harmonizeDimnamesTo <- function(object1, object2){
 }
 
 crlmmWrapper <- function(filenames,
-			 cdfName="genomewidesnp6",
+			 cdfName,
 			 load.it=FALSE,
 			 save.it=FALSE,
 			 splitByChr=TRUE,
 			 crlmmFile,
 			 intensityFile,
 			 rgFile,
-			 platform=c("affymetrix", "illumina")[1],
 			 ...){
+	if(missing(cdfName)) stop("cdfName is missing -- a valid cdfName is required.  See crlmm:::validCdfNames()")  
+	platform <- whichPlatform(cdfName)
 	if(!(platform %in% c("affymetrix", "illumina"))){
 		stop("Only 'affymetrix' and 'illumina' platforms are supported at this time.")
 	} else {
@@ -234,7 +235,11 @@ crlmmWrapper <- function(filenames,
 	if(missing(intensityFile)) stop("must specify 'intensityFile'.")
 	if(missing(crlmmFile)) stop("must specify 'crlmmFile'.")
 	if(platform == "illumina"){
-		if(missing(rgFile)) stop("must specify 'rgFile'.")
+		if(missing(rgFile)){
+			##stop("must specify 'rgFile'.")
+			rgFile <- file.path(dirname(crlmmFile), "rgFile.rda")
+			message("rgFile not specified.  Using ", rgFile)
+		}
 		if(!load.it){
 			RG <- readIdatFiles(...)
 			if(save.it) save(RG, file=rgFile)
@@ -264,7 +269,7 @@ crlmmWrapper <- function(filenames,
 	}
 	if(load.it){
 		if(!file.exists(crlmmFile)){
-			message("load.it is TRUE, but 'crlmmFile' does not exist.  Rerunning the genotype calling algorithm") 
+			message("load.it is TRUE, but ", crlmmFile, " does not exist.  Rerunning the genotype calling algorithm") 
 			load.it <- FALSE
 		}
 	}
@@ -603,7 +608,11 @@ computeCopynumber <- function(object,
 	if(ncol(object) < 10)
 		stop("Must have at least 10 samples in each batch to estimate model parameters....preferably closer to 90 samples per batch")
 	##require(oligoClasses)
-	if(missing(CHR)) stop("Must specify CHR")
+	if(missing(CHR)){
+		if(length(unique(chromosome(object)))==1){
+			CHR <- unique(chromosome(object))
+		} else  stop("Must specify CHR")
+	}
 	if(CHR == 24) stop("Nothing available yet for chromosome Y")
 	if(missing(batch)) {
 		message("'batch' missing.  Assuming all samples in the CrlmmSetList object were processed together in the same batch.")
@@ -803,7 +812,6 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName){
 	dimnames(CA) <- list(envir[["snps"]], envir[["sns"]])	
 	CB <- envir[["CB"]]
 	dimnames(CB) <- dimnames(CA)
-
 	##NP copy number
 	if(!is.null(NPset)){
 		CT <- envir[["CT"]]
@@ -907,15 +915,19 @@ list2locusSet <- function(envir, ABset, NPset, CHR, cdfName){
 	rownames(fd) <- rownames(CA)[I]
 	fD <- new("AnnotatedDataFrame",
 		  data=fd,
-		  varMetadata=data.frame(labelDescription=colnames(fd)))	
+		  varMetadata=data.frame(labelDescription=colnames(fd)))
+	placeholder <- matrix(NA, nrow(CA), ncol(CA))
+	dimnames(placeholder) <- dimnames(CA)
 	assayData <- assayDataNew("lockedEnvironment",
-				  CA=CA[I, ],
-				  CB=CB[I, ])
+				  CA=placeholder[I, ],
+				  CB=placeholder[I, ])
 	cnset <- new("CopyNumberSet",
 		      assayData=assayData,
 		      featureData=fD,
 		      phenoData=phenodata,
 		      annotation=cdfName)
+	CA(cnset) <- CA  ##replacement method converts to integer
+	CB(cnset) <- CB  ##replacement method converts to integer
 	cnset <- thresholdCopyNumberSet(cnset)
 	return(cnset)
 }
@@ -929,10 +941,11 @@ thresholdCopyNumberSet <- function(object){
 	ca[ca > 5] <- 5
 	cb[cb < 0.05] <- 0.05
 	cb[cb > 5] <- 5
-	ca <- matrix(as.integer(ca*100), nrow(ca), ncol(ca))
-	cb <- matrix(as.integer(cb*100), nrow(cb), ncol(cb))
-	rownames(ca) <- rownames(cb) <- featureNames(object)
-	colnames(ca) <- colnames(cb) <- sampleNames(object)
+##	ca <- matrix(as.integer(ca*100), nrow(ca), ncol(ca))
+##	cb <- matrix(as.integer(cb*100), nrow(cb), ncol(cb))
+##	rownames(ca) <- rownames(cb) <- featureNames(object)
+##	colnames(ca) <- colnames(cb) <- sampleNames(object)
+	##replacement method multiplies by 100 and converts to integer
 	CA(object) <- ca
 	CB(object) <- cb
 	return(object)
@@ -1143,8 +1156,8 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		}
 		CT1 <- 1/phi1*(NP[, gender=="male"]-nu1)
 		CT2 <- 1/phi2*(NP[, gender=="female"]-nu2)
-		CT1 <- matrix(as.integer(100*CT1), nrow(CT1), ncol(CT1))
-		CT2 <- matrix(as.integer(100*CT2), nrow(CT2), ncol(CT2))
+		##CT1 <- matrix(as.integer(100*CT1), nrow(CT1), ncol(CT1))
+		##CT2 <- matrix(as.integer(100*CT2), nrow(CT2), ncol(CT2))
 		CT <- envir[["CT"]]
 		CT[, plate==uplate[p] & gender=="male"] <- CT1
 		CT[, plate==uplate[p] & gender=="female"] <- CT2
@@ -1163,7 +1176,7 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		normalNP <- envir[["normalNP"]]
 		normalNP <- normalNP[, plate==uplate[p]]
 		mus <- rowMedians(NP * normalNP, na.rm=TRUE)
-		crosshyb <- median(muA) - median(mus)
+		crosshyb <- max(median(muA) - median(mus), 0)
 		X <- cbind(1, log2(mus+crosshyb))
 		##X <- cbind(1, log2(mus))
 		logPhiT <- X %*% betahat
@@ -1171,7 +1184,8 @@ nonpolymorphic <- function(plateIndex, NP, envir, CONF.THR=0.99, DF.PRIOR=50, pk
 		nuT[, p] <- mus - 2*phiT[, p]
 		T <- 1/phiT[, p]*(NP - nuT[, p])
 		CT <- envir[["CT"]]
-		CT[, plate==uplate[p]] <- matrix(as.integer(100*T), nrow(T), ncol(T))
+##		CT[, plate==uplate[p]] <- matrix(as.integer(100*T), nrow(T), ncol(T))
+		CT[, plate==uplate[p]] <- matrix(T, nrow(T), ncol(T))
 
 		##Variance for prediction region
 		##sig2T[, plate==uplate[[p]]] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2
@@ -1615,11 +1629,11 @@ polymorphic <- function(plateIndex, A, B, envir){
 		tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
 		copyB <- tmp/(1-phistar*phiAx/phiB)
 		copyA <- (A-nuA-phiAx*copyB)/phiA
-		CB[, plate==uplate[p]] <- matrix(as.integer(100*copyB), nrow(copyB), ncol(copyB))
-		CA[, plate==uplate[p]] <- matrix(as.integer(100*copyA), nrow(copyA), ncol(copyA))
+		CB[, plate==uplate[p]] <- copyB
+		CA[, plate==uplate[p]] <- copyA
 	} else{
-		CA[, plate==uplate[p]] <- matrix(as.integer(100*1/phiA*(A-nuA)), nrow(A), ncol(A))
-		CB[, plate==uplate[p]] <- matrix(as.integer(100*1/phiB*(B-nuB)), nrow(A), ncol(A))
+		CA[, plate==uplate[p]] <- matrix((1/phiA*(A-nuA)), nrow(A), ncol(A))
+		CB[, plate==uplate[p]] <- matrix((1/phiB*(B-nuB)), nrow(B), ncol(B))
 	}
 	assign("CA", CA, envir)
 	assign("CB", CB, envir)
@@ -1979,7 +1993,8 @@ setMethod("update", "character", function(object, ...){
 		if(!"chromosome" %in% fvarLabels(crlmmSetList[[1]])){
 			featureData(crlmmSetList[[1]]) <- addFeatureAnnotation(crlmmSetList)
 		} 
-		CHR <- unique(chromosome(crlmmSetList[[1]]))		
+		CHR <- unique(chromosome(crlmmSetList[[1]]))
+		if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
 		if(CHR==24){
 			message("skipping chromosome 24")
 			next()

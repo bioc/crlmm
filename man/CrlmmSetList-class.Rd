@@ -115,7 +115,7 @@
 
     \item{"CA"}{\code{signature(object = "CrlmmSetList")}: extracts the
       copy number for allele A at polymorphic loci. For nonpolymorphic
-      probes, CA returns the total copy number.}
+      probes, CA returns the total copy number. }
   
     \item{"CB"}{\code{signature(object = "CrlmmSetList")}: extracts the
       copy number for allele B at polymorphic loci. For nonpolymorphic

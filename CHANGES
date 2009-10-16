@@ -290,3 +290,18 @@ is decoded and scanned
 * updated addFeatureAnnotation so that CHR arg not required
 * fixed bug in nonpolymorphic function -- function checks whether any regions are pseudoautosomal 
 * fixed bug in list2locusset function (no longer assigns genomewidesnp6 as the default annotation)
+
+2009-10-16 R. Scharpf - committed version 1.3.23
+
+ * 100*CA, 100*CB are stored in the CA, CB assayDataElements.  The
+   replacement method automatically converts a matrix on the copy
+   number scale to an integer representation by scaling by a factor of
+   100. The accessor methods for CA, CB automatically divide by 100 to
+   return estimates back on the original copy number scale.
+
+ * more debugging of readIdatFiles and illumina copy number vignette.
+
+ * updated illumina_copynumber vignette
+
+
+

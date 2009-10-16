@@ -47,6 +47,11 @@ library(crlmm)
 crlmm:::validCdfNames()
 @ 
 
+<<Rsge, eval=TRUE, echo=FALSE>>=
+##If multiple cluster nodes are available
+library(Rsge)
+@ 
+
 \paragraph{Preprocess and genotype.}
 
 Specify the coordinates of Affymetrix cel files and where to put
@@ -56,11 +61,19 @@ number estimation.
 <<celfiles>>=
 myPath <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 celFiles <- list.celfiles(myPath, full.names=TRUE, pattern=".CEL")
-#outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/tmp"
-dir.create(outdir)
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
+#outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/tmp"
+if(!file.exists(outdir)) dir.create(outdir)
 @ 
 
+Split the list of files by plate.  For this HapMap data, the different
+ancestries were run on separate plates.
+
+<<plate>>=
+plate <- substr(basename(celFiles), 13, 13)
+table(plate)
+celFiles <- split(celFiles, plate)
+@ 
 
 
 \noindent The next code chunk quantile normalizes the samples to a
@@ -68,21 +81,76 @@ target reference distribution and uses the crlmm algorithm to genotype.
 See \cite{Carvalho2007a} for details regarding the crlmm genotyping
 algorithm.
 
-<<preprocessAndGenotype, eval=FALSE>>=
-crlmmWrapper(celFiles,##[1:15], 
-	     cdfName="genomewidesnp6",
-	     save.it=TRUE, 
-	     load.it=FALSE,
-	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
-	     crlmmFile=file.path(outdir, "snpsetObject.rda"),
-	     platform="affymetrix")
+<<preprocessAndGenotype, eval=TRUE, echo=TRUE>>=
+for(i in seq(along=celFiles)){
+	platedir <- file.path(outdir, names(celFiles)[i])
+	if(!file.exists(platedir)) dir.create(platedir)
+	crlmmWrapper(celFiles[[i]],##[1:15], 
+		     cdfName="genomewidesnp6",
+		     save.it=FALSE, 
+		     load.it=TRUE,
+		     intensityFile=file.path(platedir, "normalizedIntensities.rda"),
+		     crlmmFile=file.path(platedir, "snpsetObject.rda"))
+}
+q("no")
 @ 
 
-As a result of the above wrapper, the following R objects are now created:
-
-<<>>=
-list.files(outdir)[grep("crlmmSetList", list.files(outdir))]
+<<preprocessAndGenotype, eval=FALSE, echo=FALSE>>=
+for(i in seq(along=celFiles)){
+	platedir <- file.path(outdir, names(celFiles)[i])
+	if(!file.exists(platedir)) dir.create(platedir)
+	sge.submit(crlmmWrapper,
+		   filenames=celFiles[[i]],##[1:15], 
+		   cdfName="genomewidesnp6",
+		   save.it=FALSE, 
+		   load.it=TRUE,
+		   intensityFile=file.path(platedir, "normalizedIntensities.rda"),
+		   crlmmFile=file.path(platedir, "snpsetObject.rda"),
+		   global.savelist=c("platedir"),
+		   packages="crlmm")
+}
+##platedirs <- sapply(names(celFiles), function(x) file.path(outdir, x))
+##intensityFiles <- file.path(platedirs, "normalizedIntensities.rda")
+####crlmmFiles <- file.path(platedirs, "snpsetObject.rda")
+####myF <- function(celFiles, intensityFile, crlmmFile, ...){
+####	crlmmWrapper(celFiles, intensityFile=intensityFile,
+####		     crlmmFile=crlmmFile,
+##sge.apply(celFiles, 
+##	  crlmmWrapper,
+##	  cdfName="genomewidesnp6",
+##	  save.it=FALSE, 
+##	  load.it=TRUE,
+##	  intensityFile=,
+##	  crlmmFile=file.path(platedir, "snpsetObject.rda"))
+q("no")
 @ 
+
+As a result of the above wrapper, the following R objects are now
+created for each plate:
+
+<<crlmmSetListObjects>>=
+fns <- list.files(platedir, pattern="crlmmSetList", full.name=TRUE)
+@ 
+
+To estimate copy number, simply run the update function on this vector
+of filenames.  If multiple nodes are available for computation, one
+could easily split this job.
+
+<<copynumber, echo=FALSE, eval=TRUE>>=
+for(i in seq(along=celFiles)){
+	fns <- list.files(file.path(outdir, names(celFiles[i])), 
+			  pattern="crlmmSetList", full.names=TRUE)
+	update(fns)
+}
+@
+
+<<copynumber.sge, echo=FALSE, eval=TRUE>>=
+for(i in seq(along=celFiles)){
+	fns <- list.files(file.path(outdir, names(celFiles[i])), 
+			  pattern="crlmmSetList", full.names=TRUE)
+	sge.parLapply(X=fns, FUN=update, packages="crlmm", cluster=FALSE)
+}
+@
 
 \paragraph{Locus- and allele-specific estimates of copy number.}
 
@@ -92,9 +160,7 @@ Load the object for chromosome 22 and compute copy number:
 CHR <- 22
 if(!exists("crlmmSetList")) load(file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
 show(crlmmSetList)
-if(length(crlmmSetList)==2){
-	crlmmSetList <- update(crlmmSetList, CHR=CHR)
-}
+crlmmSetList <- update(crlmmSetList)
 show(crlmmSetList)
 @ 
 
@@ -501,10 +567,10 @@ for(i in indices[[j]]){
     intensities.  Each panel displays a single SNP.}
 \end{figure}
 
-TODO: Plot the prediction regions for total copy number 2 and 3 for the
-first plate. Plotting symbols are the genotype calls (1=AA, 2=AB, 3=BB);
-light grey points are from other plates. One could also add the
-prediction regions for 0-4 copies, but it gets crowded.
+% TODO: Plot the prediction regions for total copy number 2 and 3 for
+% the first plate. Plotting symbols are the genotype calls (1=AA, 2=AB,
+% 3=BB); light grey points are from other plates. One could also add the
+% prediction regions for 0-4 copies, but it gets crowded.
 
 
 <<predictionRegion, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE, echo=FALSE>>=
@@ -572,8 +638,10 @@ the allele-specific copy number.  SNP-specific parameters are estimated
 only from samples with a suitable confidence score for the diallelic
 genotype calls.  The default confidence threshold is 0.99, but can be
 adjusted by passing the argument \Robject{CONF.THR} to the
-\Robject{update} method.  TODO: illustrate this approach with boxplots
-of the A and B intensities stratified by genotype.
+\Robject{update} method.  
+
+% TODO: illustrate this approach with boxplots of the A and B
+% intensities stratified by genotype.
 
 <<linearModel, fig=TRUE,include=FALSE, eval=FALSE, echo=FALSE>>=
 cols <- brewer.pal(7, "Accent")[c(1, 4, 7)]

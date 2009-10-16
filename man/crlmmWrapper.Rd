@@ -9,9 +9,8 @@
   confidence scores are assigned using the crlmm algorithm.
 }
 \usage{
-crlmmWrapper(filenames, cdfName = "genomewidesnp6", load.it=FALSE,
-save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, rgFile,
-platform=c("affymetrix", "illumina")[1], ...)
+crlmmWrapper(filenames, cdfName, load.it=FALSE,
+save.it=FALSE, splitByChr=TRUE, crlmmFile, intensityFile, rgFile, ...)
 }
 \arguments{
   \item{filenames}{
@@ -19,6 +18,7 @@ platform=c("affymetrix", "illumina")[1], ...)
   }
   \item{cdfName}{
     Annotation package (currently, only 'genomewidesnp6' is supported).
+    See \code{crlmm:::validCdfNames()}.
   }
   \item{load.it}{ Logical.  If TRUE, the wrapper function will try to
     load the 'intensityFile' and 'crlmmFile'. When FALSE, the quantile
@@ -41,8 +41,6 @@ platform=c("affymetrix", "illumina")[1], ...)
   \item{rgFile}{Character string.  Name of file (including the
     complete path) containing the RG intensities (only applicable for
     illumina platform).  }
-  \item{platform}{Character string.  Currently only \code{affymetrix}
-    and \code{illumina} are supported.}
   \item{\dots}{
     additional arguments to function \code{readIdatFiles} (illumina
     platform only)
