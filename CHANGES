@@ -303,5 +303,8 @@ is decoded and scanned
 
  * updated illumina_copynumber vignette
 
+2009-10-25 M Ritchie - committed version 1.3.24
 
+ * fixed bug in readIdatFiles()
 
+ * updated crlmmIllumina.Rnw and crlmmIllumina.pdf

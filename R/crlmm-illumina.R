@@ -12,14 +12,18 @@ readIdatFiles <- function(sampleSheet=NULL,
 			  sep="_",
 			  fileExt=list(green="Grn.idat", red="Red.idat"),
 			  saveDate=FALSE) {
-       if(is.null(arrayNames)) {
-	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
-	       if(!is.null(sampleSheet)) {
-		       sampleSheet=NULL
-		       cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
-	       }
-	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
-       }	
+#       if(!is.null(arrayNames)) {
+#	       arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
+#	       if(!is.null(sampleSheet)) {
+#		       sampleSheet=NULL
+#		       cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
+#	       }
+#	       pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
+#       }
+       if(!is.null(arrayNames)) {
+               pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
+       }
+      
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
 	       if(is.null(arrayNames)){
 		       ##arrayNames=NULL
@@ -41,8 +45,17 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) <- basename(arrayNames)
+	       sampleNames(pd) <- basename(arrayNames)               
        }
+       if(is.null(arrayNames)) {
+               arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
+               if(!is.null(sampleSheet)) {
+                      sampleSheet=NULL
+                      cat("Could not find required info in \'sampleSheet\' - ignoring.  Check \'sampleSheet\' and/or \'arrayInfoColNames\'\n")
+               }
+               pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
+       }
+       
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
        redfiles = paste(arrayNames, fileExt$red, sep=sep)
@@ -57,8 +70,8 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       grnidats <- grnfiles
 	       redidats <- redfiles
        }
-       if(!all(file.exists(grnfiles))) stop("Missing some of the *Grn.idat files")
-       if(!all(file.exists(redfiles))) stop("Missing some of the *Red.idat files")       
+       if(!all(file.exists(grnidats))) stop("Missing some of the *Grn.idat files")
+       if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")       
 ##       if(!all(c(redfiles,grnfiles) %in% dir(path=path))){
 ##	       stop("Missing .idat files: red\n", paste(redfiles[!(redfiles %in% dir(path=path))], sep=" "), "\n green\n",
 ##		    paste(grnfiles[!(grnfiles %in% dir(path=path))], sep=" "))

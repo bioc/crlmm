@@ -80,7 +80,7 @@ was 1.2 GB of RAM on our linux system.
 The \Robject{RG} object is an \Rclass{NChannelSet} which stores the 
 Red and Green intensities, the number of beads and standard errors for 
 each bead-type.  
-The scanning date of each array is stored in the \Robject{protocolData} slot.
+The scanning date of each array is stored in \Robject{protocolData}.
 
 <<explore>>=
 class(RG)
@@ -104,8 +104,8 @@ with poor signal.
 
 <<boxplots, fig=TRUE, width=8, height=8>>=
 par(mfrow=c(2,1), mai=c(0.4,0.4,0.4,0.1), oma=c(1,1,0,0))
-boxplot(log2(exprs(channel(RG, "R"))), xlab="Array", ylab="", main="Red channel", outline=FALSE, las=2)
-boxplot(log2(exprs(channel(RG, "G"))), xlab="Array", ylab="", main="Green channel", outline=FALSE, las=2)
+boxplot(log2(exprs(channel(RG, "R"))), xlab="Array", ylab="", names=1:40, main="Red channel", outline=FALSE, las=2)
+boxplot(log2(exprs(channel(RG, "G"))), xlab="Array", ylab="", names=1:40, main="Green channel", outline=FALSE, las=2)
 mtext(expression(log[2](intensity)), side=2, outer=TRUE)
 mtext("Array", side=1, outer=TRUE)
 @
