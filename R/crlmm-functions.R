@@ -203,17 +203,18 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   if(!is.null(col.names)){ colnames(A) <- colnames(B) <- col.names}
 
   if(length(Index) >= recallRegMin){
-##     tmp4batchQC <- DD[autosomeIndex,]/(params[["N"]][autosomeIndex,]+1)
-##     tmpSnpQc <- dev[autosomeIndex]
-##     SS <- cov(tmp4batchQC[tmpSnpQc < badSNP,])
-    tmp4batchQC <- DD[snps2keep,]/(params[["N"]][snps2keep,]+1)
-    tmpSnpQc <- dev[snps2keep]
-    SS <- cov(DD[snps2keep,])
+   tmp4batchQC <- DD[autosomeIndex,]/(params[["N"]][autosomeIndex,]+1)
+   tmpSnpQc <- dev[autosomeIndex]
+   SS <- cov(tmp4batchQC[tmpSnpQc < badSNP,])
+####     tmp4batchQC <- DD[snps2keep,]/(params[["N"]][snps2keep,]+1)
+####     tmpSnpQc <- dev[snps2keep]
+####     SS <- cov(DD[snps2keep,])
+
 ##     DD <- sweep(GG[snps2keep, ], 2, colMeans(DD[snps2keep, ]))
 ##     tmpSnpQc <- dev[snps2keep]
 ##     SS <- cov(DD[tmpSnpQc < badSNP, ])
-    batchQC <- sqrt(sum(diag(cov(tmp4batchQC[tmpSnpQc < badSNP,]))))*sum(params[["N"]][snps2keep[1],])
-##    batchQC <- mean(diag(SS))
+####    batchQC <- sqrt(sum(diag(cov(tmp4batchQC[tmpSnpQc < badSNP,]))))*sum(params[["N"]][snps2keep[1],])
+    batchQC <- mean(diag(SS))
   }else{
     SS <- matrix(0, 3, 3)
     batchQC <- Inf

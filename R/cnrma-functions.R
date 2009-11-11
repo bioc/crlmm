@@ -62,7 +62,7 @@ nuphiAllele <- function(p, allele, Ystar, W, envir){
 	}
 	if(any(!is.finite(W))){## | any(!is.finite(V))){
 		i <- which(rowSums(!is.finite(W)) > 0)
-		browser()
+		## browser()
 		stop("Inf values in W or V")
 	}
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
