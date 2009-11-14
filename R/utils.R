@@ -11,22 +11,18 @@ changeToCrlmmAnnotationName <- function(x){
 }
 
 getCrlmmAnnotationName <- function(x){
-	paste(tolower(gsub("_", "", x)), "Crlmm", sep="")
+  paste(tolower(gsub("_", "", x)), "Crlmm", sep="")
 }
 
 medianSummaries <- function(mat, grps)
   .Call("R_subColSummarize_median", mat, grps, PACKAGE = "preprocessCore")
 
 intMedianSummaries <- function(mat, grps)
-	as.integer(medianSummaries(mat, grps))
-
-testProb <- function(p)
-  .Call("test", p)
-
+  as.integer(medianSummaries(mat, grps))
 
 list.celfiles <-   function(...){
-	files <- list.files(...)
-	return(files[grep("\\.[cC][eE][lL]$", files)])
+  files <- list.files(...)
+  return(files[grep("\\.[cC][eE][lL]$", files)])
 }
 
 ## .crlmmPkgEnv is an enviroment that will
@@ -36,11 +32,11 @@ list.celfiles <-   function(...){
 ## R CMD check
 
 isLoaded <- function(dataset, environ=.crlmmPkgEnv)
-	exists(dataset, envir=environ)
+  exists(dataset, envir=environ)
 getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
-	if (!isLoaded(dataset))
-		stop("Variable ", dataset, " not found in .crlmmPkgEnv")
-	environ[[dataset]]
+  if (!isLoaded(dataset))
+    stop("Variable ", dataset, " not found in .crlmmPkgEnv")
+  environ[[dataset]]
 }
 
 list2SnpSet <- function(x, returnParams=FALSE){
@@ -139,11 +135,11 @@ list2SnpSet <- function(x, returnParams=FALSE){
 }
 
 loader <- function(theFile, envir, pkgname){
-	theFile <- file.path(system.file(package=pkgname),
-			     "extdata", theFile)
-	if (!file.exists(theFile))
-		stop("File ", theFile, " does not exist in ", pkgname)
-	load(theFile, envir=envir)
+  theFile <- file.path(system.file(package=pkgname),
+                       "extdata", theFile)
+  if (!file.exists(theFile))
+    stop("File ", theFile, " does not exist in ", pkgname)
+  load(theFile, envir=envir)
 }
 
 
