@@ -1,22 +1,39 @@
-setMethod("cnIndex", "eSet", function(object, cdfName) match(cnNames(object, cdfName), featureNames(object)))
-setMethod("cnNames", "eSet", function(object, cdfName) {
-	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+setMethod("cnIndex", "eSet", function(object){
+	index <- match(cnNames(object), featureNames(object), nomatch=0)
+	index[index != 0]
+  })
+
+setMethod("cnNames", "eSet", function(object) {
+	path <- system.file("extdata", package=paste(annotation(object), "Crlmm", sep=""))
 	load(file.path(path, "cnProbes.rda"))
+	cnProbes <- get("cnProbes")
 	cnps <- rownames(cnProbes)
 	cnps <- cnps[cnps %in% featureNames(object)]
-	featureNames(object)[match(cnps, featureNames(object))]	
-	##featureNames(object)[grep("CN_", featureNames(object))])
+	index <- match(cnps, featureNames(object), nomatch=0)
+	index <- index[index != 0]	
+	featureNames(object)[index]	
   })
-setMethod("snpIndex", "eSet", function(object, cdfName) match(snpNames(object, cdfName), featureNames(object)))
-setMethod("snpNames", "eSet", function(object, cdfName){
-	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+
+
+setMethod("snpIndex", "eSet", function(object){
+	index <- match(snpNames(object), featureNames(object), nomatch=0)
+	index[index != 0]
+})
+
+setMethod("snpNames", "eSet", function(object){
+	path <- system.file("extdata", package=paste(annotation(object), "Crlmm", sep=""))
 	load(file.path(path, "snpProbes.rda"))
+	snpProbes <- get("snpProbes")
 	snps <- rownames(snpProbes)
 	snps <- snps[snps %in% featureNames(object)]
-	featureNames(object)[match(snps, featureNames(object))]
-  })
+	index <- match(snps, featureNames(object), nomatch=0)
+	index <- index[index != 0]
+	featureNames(object)[index]
+})
+
 setMethod("chromosome", "eSet", function(object) fData(object)$chromosome)
 setMethod("position", "eSet", function(object) fData(object)$position)
+
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects

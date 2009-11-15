@@ -1,11 +1,7 @@
-## Class definition
-setClass("ABset", contains="eSet",
-	 prototype = prototype(
-	 new("VersionedBiobase",
-	     versions=c(classVersion("eSet"), SnpSet="1.0.0"))))
-setClass("crlmmSet", contains="eSet")
-setClass("CrlmmSetList", contains="list")
-setClass("CopyNumberSet", contains="eSet",
-	 prototype = prototype(
-	 new("VersionedBiobase",
-	     versions=c(classVersion("eSet"), SnpSet="1.0.0"))))
+setClass("CopyNumberSet", contains="SnpLevelSet")
+setClass("CrlmmSet", contains=c("SnpCallSetPlus", "CopyNumberSet"))
+setClass("SnpCallSetPlusFF", contains="SnpCallSetPlus")
+setClass("CrlmmSetFF", contains="CrlmmSet")
+setClass("SegmentSet", contains="CrlmmSet",
+	 representation(emissionPr="array",
+			segmentData="data.frame"))

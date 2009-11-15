@@ -3,49 +3,26 @@ setValidity("CopyNumberSet", function(object) {
 	if (is.null(msg)) TRUE else msg
 })
 ##may want to allow thresholding here (... arg)
-setMethod("CA", "CopyNumberSet", function(object, ...) assayData(object)[["CA"]]/100)
-setMethod("CB", "CopyNumberSet", function(object, ...) assayData(object)[["CB"]]/100)
+setMethod("CA", "CopyNumberSet", function(object) assayData(object)[["CA"]]/100)
+setMethod("CB", "CopyNumberSet", function(object) assayData(object)[["CB"]]/100)
 
-setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"), function(object, value){
-	dns <- dimnames(value)
-	value <- matrix(as.integer(value*100), nrow(value), ncol(value))
-	dimnames(value) <- dns
-	assayDataElementReplace(object, "CA", value)
-})
+setReplaceMethod("CA", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value){
+			 assayDataElementReplace(object, "CA", value)		
+		 })
 
-setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"), function(object, value){
-	dns <- dimnames(value)	
-	value <- matrix(as.integer(value*100), nrow(value), ncol(value))
-	dimnames(value) <- dns	
-	assayDataElementReplace(object, "CB", value)
-})
-
-
-
-
-setMethod("batch", "CopyNumberSet", function(object){
-	if("batch" %in% varLabels(object)){
-		result <- object$batch
-	} else {
-		stop("batch not in varLabels of CopyNumberSet")
-	}
-	return(result)
-})
+setReplaceMethod("CB", signature(object="CopyNumberSet", value="matrix"),
+		 function(object, value){
+			 assayDataElementReplace(object, "CB", value)
+		 })
 
 setMethod("copyNumber", "CopyNumberSet", function(object){
-	require(paste(annotation(object), "Crlmm", sep=""), character.only=TRUE) || stop(paste("Annotation package ", annotation(object), "Crlmm not available", sep=""))
-	##ensure that 2 + NA = 2 by replacing NA's with zero
-	##the above results in copy number 0, 1, or 2 depending on the genotype....safer just to drop
+	I <- isSnp(object)
 	CA <- CA(object)
 	CB <- CB(object)
-	##nas <- is.na(CA) & is.na(CB)
-	##CA[is.na(CA)] <- 0
-	##CB[is.na(CB)] <- 0
 	CN <- CA + CB
 	##For nonpolymorphic probes, CA is the total copy number
-	CN[cnIndex(object, annotation(object)), ] <- CA(object)[cnIndex(object, annotation(object)), ]
-	##if both CA and CB are NA, report NA
-	##CN[nas] <- NA
+	CN[!I, ] <- CA(object)[!I, ]
 	CN
 })
 
@@ -94,6 +71,8 @@ ellipse.CopyNumberSet <- function(x, copynumber, ...){
 		}
 	}
 }
+
+
 
 
 
