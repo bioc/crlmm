@@ -5,7 +5,7 @@ useDynLib("crlmm", .registration=TRUE)
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 		  SnpSet, NChannelSet, MIAME, Versioned, VersionedBiobase, Versions)
 
-importClassesFrom(oligoClasses, SnpLevelSet)
+importClassesFrom(oligoClasses, SnpLevelSet, SnpQSet, SnpCallSet, SnpCallSetPlus, QuantificationSet)
 
 importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
                   assayData, "assayData<-", combine, dims,
@@ -16,9 +16,7 @@ importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
                   pubMedIds, rowMedians, sampleNames,
                   storageMode, "storageMode<-", updateObject, varLabels)
 
-
-##importMethodsFrom(oligoClasses, chromosome, copyNumber, position)
-importMethodsFrom(oligoClasses, chromosome, copyNumber, position, calls)
+importMethodsFrom(oligoClasses, chromosome, copyNumber, position, calls, "calls<-")
 
 ##importMethodsFrom(methods, initialize, show)
 
