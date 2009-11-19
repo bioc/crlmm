@@ -1761,11 +1761,11 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 				   isSnp[I]))
 	colnames(tmp.fd) <- c("chromosome", "position", "isSnp")
 	if("chromosome" %in% fvarLabels(object))
-		tmp.fd <- tmp.fd[ -1]
+		tmp.fd <- tmp.fd[, -1]
 	if("position" %in% fvarLabels(object))
-		tmp.fd <- tmp.fd[ -2]
+		tmp.fd <- tmp.fd[, -grep("position", colnames(tmp.fd)), drop=FALSE]
 	if("isSnp" %in% fvarLabels(object))
-		tmp.fd <- tmp.fd[ -3]
+		tmp.fd <- tmp.fd[, -grep("isSnp", colnames(tmp.fd)), drop=FALSE]
 	rownames(tmp.fd) <- featureNames(object)
 	tmp <- new("AnnotatedDataFrame",
 		   data=tmp.fd,

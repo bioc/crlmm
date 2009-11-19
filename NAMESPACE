@@ -89,7 +89,7 @@ export(hmmOptions,
 
 export(ellipse) ##, ellipse.CopyNumberSet, getParam.SnpCallSetPlus)
 ##exportMethods(getParam)
-export(viterbi.CNSet, computeHmm.CNSet)
+export(viterbi.CNSet, computeHmm.CNSet, addFeatureAnnotation.SnpCallSetPlus)
 
 
 
