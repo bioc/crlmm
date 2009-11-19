@@ -34,6 +34,17 @@ setMethod("snpNames", "eSet", function(object){
 setMethod("chromosome", "eSet", function(object) fData(object)$chromosome)
 setMethod("position", "eSet", function(object) fData(object)$position)
 
+setMethod("getParam", signature(object="eSet",
+				name="character",
+				batch="ANY"),
+	  function(object, name, batch){
+		  if(length(batch) > 1){
+			  warning("batch argument to getParam should have length 1.  Only using the first")
+			  batch <- batch[1]
+		  }
+		  getParam.SnpCallSetPlus(object, name, batch)
+})
+
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects

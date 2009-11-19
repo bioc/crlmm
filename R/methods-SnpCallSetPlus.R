@@ -1,17 +1,18 @@
 ##How to make the initialization platform-specific?
 setMethod("initialize", "SnpCallSetPlus",
           function(.Object,
-                   phenoData, featureData,
-                   calls=new("matrix"),
-                   callsConfidence=new("matrix"),
+                   phenoData,
+		   featureData,
+                   call=new("matrix"),
+                   callProbability=new("matrix"),
                    senseThetaA=new("matrix"),
                    senseThetaB=new("matrix"),
 		   annotation,
 		   experimentData,
 		   protocolData, ... ){
 		  ad <- assayDataNew("lockedEnvironment",
-				     calls=calls,
-				     callsConfidence=callsConfidence,
+				     call=call,
+				     callProbability=callProbability,
 				     senseThetaA=senseThetaA,
 				     senseThetaB=senseThetaB)
 		  assayData(.Object) <- ad
@@ -28,8 +29,18 @@ setMethod("initialize", "SnpCallSetPlus",
 		  if(!missing(annotation)) annotation(.Object) <- annotation
 		  if(!missing(experimentData)) experimentData(.Object) <- experimentData
 		  if(!missing(protocolData)) protocolData(.Object) <- protocolData
+		  ## Do after annotation has been assigned
+		  if(!(all(c("chromosome", "position", "isSnp")  %in% colnames(.Object@featureData)))){
+			  ##update the featureData
+			  .Object@featureData <- addFeatureAnnotation.SnpCallSetPlus(object)
+		  }
 		  .Object
           })
+
+setMethod("addFeatureAnnotation", "SnpCallSetPlus", function(object, ...){
+	addFeatureAnnotation.SnpCallSetPlus(object, ...)
+})
+
 getParam.SnpCallSetPlus <- function(object, name, batch){
 		  label <- paste(name, batch, sep="_")
 		  colindex <- grep(label, fvarLabels(object))
@@ -48,16 +59,7 @@ getParam.SnpCallSetPlus <- function(object, name, batch){
 		  return(param)
 	  }
 
-setMethod("getParam", signature(object="SnpCallSetPlus",
-				name="character",
-				batch="ANY"),
-	  function(object, name, batch){
-		  if(length(batch) > 1){
-			  warning("batch argument to getParam should have length 1.  Only using the first")
-			  batch <- batch[1]
-		  }
-		  getParam.SnpCallSetPlus(object, name, batch)
-})
+
 
 setMethod("splitByChromosome", "SnpCallSetPlus", function(object, cnOptions){
 	tmpdir <- cnOptions[["tmpdir"]]
@@ -79,31 +81,29 @@ setMethod("splitByChromosome", "SnpCallSetPlus", function(object, cnOptions){
 		index <- index[!is.na(index)]
 		callSetPlus <- object[index, ]
 		if(CHR != 24){
-			crlmmSet <- computeCopynumber(callSetPlus, cnOptions)
+			cnSet <- computeCopynumber(callSetPlus, cnOptions)
 			
 		} else{
 			message("Copy number estimates not available for chromosome Y.  Saving only the 'callSetPlus' object for this chromosome")
 			save(callSetPlus, file=file.path(outdir, paste("callSetPlus_", CHR, ".rda", sep="")))
 		}
 		if(cnOptions[["hiddenMarkovModel"]] & CHR != 24){
-			segmentSet <- computeHmm(crlmmSet, cnOptions)
-			save(segmentSet, file=file.path(outdir, paste("segmentSet_", CHR, ".rda", sep="")))
-			saved.objects <- list.files(outdir, pattern="segmentSet", full.names=TRUE)
-		} else{ ## save crlmmSet to outdir
-			save(crlmmSet, file=file.path(outdir, paste("crlmmSet_", CHR, ".rda", sep="")))
-			saved.objects <- list.files(outdir, pattern="crlmmSet", full.names=TRUE)			
-		}		
+			cnSet <- computeHmm(cnSet, cnOptions)
+		}
+		save(cnSet, file=file.path(outdir, paste("cnSet_", CHR, ".rda", sep="")))
+		saved.objects <- list.files(outdir, pattern="cnSet", full.names=TRUE)
+##		} else{ ## save crlmmSet to outdir
+##			save(cnSet, file=file.path(outdir, paste("cnSet_", CHR, ".rda", sep="")))
+##			saved.objects <- list.files(outdir, pattern="cnSet", full.names=TRUE)			
+##		}		
 	}
 	saved.objects
 })
-setMethod("addFeatureAnnotation", "SnpCallSetPlus", function(object, ...){
-	addFeatureAnnotation.SnpCallSetPlus(object, ...)
-})
+
 setMethod("computeCopynumber", "SnpCallSetPlus",
 	  function(object, cnOptions){
 		  computeCopynumber.SnpCallSetPlus(object, cnOptions)
 	  })
-setMethod("chromosome", "SnpCallSetPlus", function(object) fData(object)$chromosome)
-setMethod("position", "SnpCallSetPlus", function(object) fData(object)$position)
+
 gtConfidence <- function(object) 1-exp(-callsConfidence(object)/1000)
 	

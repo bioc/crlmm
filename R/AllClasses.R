@@ -1,7 +1,9 @@
-setClass("CopyNumberSet", contains="SnpLevelSet")
-setClass("CrlmmSet", contains=c("SnpCallSetPlus", "CopyNumberSet"))
-setClass("SnpCallSetPlusFF", contains="SnpCallSetPlus")
-setClass("CrlmmSetFF", contains="CrlmmSet")
-setClass("SegmentSet", contains="CrlmmSet",
+##setClass("CNSet", contains="eSet")
+##setClass("CNSet", contains=c("SnpCallSetPlus", "CNSet"))
+setClass("CNSet", contains="SnpCallSetPlus",
 	 representation(emissionPr="array",
-			segmentData="data.frame"))
+			segmentData="RangedData"))
+
+##setClass("SegmentSet", contains="CNSet",
+##	 representation(emissionPr="array",
+##			segmentData="data.frame"))

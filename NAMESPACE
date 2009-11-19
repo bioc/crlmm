@@ -1,11 +1,8 @@
 useDynLib("crlmm", .registration=TRUE)
 
-##importClassesFrom(methods, ANY, character, data.frame, "function", integer, matrix, numeric)
-
+## Biobase
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 		  SnpSet, NChannelSet, MIAME, Versioned, VersionedBiobase, Versions)
-
-importClassesFrom(oligoClasses, SnpLevelSet, SnpQSet, SnpCallSet, SnpCallSetPlus, QuantificationSet)
 
 importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
                   assayData, "assayData<-", combine, dims,
@@ -16,20 +13,33 @@ importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
                   pubMedIds, rowMedians, sampleNames,
                   storageMode, "storageMode<-", updateObject, varLabels)
 
-importMethodsFrom(oligoClasses, chromosome, copyNumber, position, calls, "calls<-")
+importFrom(Biobase, assayDataElement, assayDataElementNames,
+           assayDataElementReplace, assayDataNew, classVersion, validMsg)
+
+## oligoClasses
+importClassesFrom(oligoClasses, SnpLevelSet, SnpQSet, SnpCallSet, SnpCallSetPlus, QuantificationSet)
+importMethodsFrom(oligoClasses, 
+                  calls, "calls<-",  
+                  callsConfidence, "callsConfidence<-", 
+                  chromosome, copyNumber, position,
+		  senseThetaA, senseThetaB)
+
+## IRanges
+importClassesFrom(IRanges, "RangedData", "IRanges")
+importMethodsFrom(IRanges, Rle, start, end, width)
+importFrom(IRanges, IRanges, RleList, RangedData)
 
 ##importMethodsFrom(methods, initialize, show)
 
 ##importFrom(methods, "@<-", callNextMethod, new, validObject)
 
-importFrom(Biobase, assayDataElement, assayDataElementNames,
-           assayDataElementReplace, assayDataNew, classVersion, validMsg)
-
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
 
-importFrom(stats, update)
 importFrom(SNPchip, chromosome2integer)
+importFrom(VanillaICE, viterbi, transitionProbability, breaks)
+
+importFrom(stats, update)
 
 importFrom(grDevices, grey)
 
@@ -49,47 +59,37 @@ importFrom(ellipse, ellipse)
 
 ##S3method(ellipse,CopyNumberSet)
 ##S3method(boxplot,CrlmmSetList)
-exportClasses(ABset, CopyNumberSet, CrlmmSetList)
+exportClasses(SnpCallSetPlus, CNSet)
 ##S3method(ellipse, CopyNumberSet)
-exportMethods("[", ##"[[",
-	      "$", A, B,
-	      "A<-", "B<-",
-	      addFeatureAnnotation,
-	      calls,
-	      CA,
-	      "CA<-",
-	      CB,
-	      "CB<-",
-	      cnIndex,
-	      confs,
-	      plot,
-	      points,
-	      show,
-	      snpIndex)
-
-export(batch,
-       celDates,
-       calls,
-       chromosome,
-       cnrma,
-       combine,
-       computeCopynumber,
-       copyNumber,
-       crlmm,
-       crlmmIllumina,
-##       crlmmIlluminaWrapper,
-       crlmmWrapper,
-##       ellipse,
-##       computeEmission,
-       list.celfiles,
-       ncol,
-       nrow,
+exportMethods(##"[", "$", 
+              A, B, "A<-", "B<-", 
+	      CA, "CA<-", CB, "CB<-",
+	      chromosome,
+	      confs, "confs<-", isSnp, 
+	      position)
+export(calls, 
+       "calls<-",
+       celDates, 
+       chromosome, 
+       copyNumber, 
+       crlmm, 
+       cnOptions, 
+       emissionPr,
+       "emissionPr<-",
+       list.celfiles, 
        position,
-       readIdatFiles,
-       sampleNames,
-       protocolData,
-       "protocolData<-",
-       snprma, update)
+       snprma)
+
+exportMethods(computeHmm, 
+              segmentData,
+             "segmentData<-")
+
+export(hmmOptions,
+       crlmmCopynumber)
+
+export(ellipse) ##, ellipse.CopyNumberSet, getParam.SnpCallSetPlus)
+##exportMethods(getParam)
+export(viterbi.CNSet, computeHmm.CNSet)
 
 
 

@@ -326,3 +326,9 @@ is decoded and scanned
  * fixed classes imported from oligoClasses in NAMESPACE
  * imported 'calls<-' from oligoClasses
 
+2009-11-19 R. Scharpf - committed version 1.5.5
+
+ * removed a few of the classes (CrlmmSet, CrlmmSetFF, SnpCallSetPlusFF,...)
+ * added CNSet class
+ * segmentData slot in CNSet class is an extension of RangedData (defined in IRanges package)
+

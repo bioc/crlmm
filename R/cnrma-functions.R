@@ -239,7 +239,7 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	crlmmFile <- cnOptions[["crlmmFile"]]
 	intensityFile=cnOptions[["intensityFile"]]
 	rgFile=cnOptions[["rgFile"]]
-	use.ff=cnOptions[["use.ff"]]
+	##use.ff=cnOptions[["use.ff"]]
 	outdir <- cnOptions[["outdir"]]
 	tmpdir <- cnOptions[["tmpdir"]]
 	
@@ -411,7 +411,7 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 		  varMetadata=data.frame(labelDescription=colnames(pd),
 		  row.names=colnames(pd)))
 	nr <- nrow(ABset); nc <- ncol(ABset)
-	if(!use.ff){
+##	if(!use.ff){
 		callSetPlus <- new("SnpCallSetPlus",
 				   senseThetaA=A(ABset),
 				   senseThetaB=B(ABset), 
@@ -423,19 +423,19 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 				   experimentData=experimentData(callSet),
 				   protocolData=protocolData(callSet))
 
-	} else {
-		callSetPlus <- new("SnpCallSetPlusFF",
-				   senseThetaA=ff(as.integer(A(ABset)), dim=c(nr,nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-				   senseThetaB=ff(as.integer(B(ABset)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-				   calls=ff(as.integer(calls(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-				   callsConfidence=ff(as.integer(confs(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-				   phenoData=pD,
-				   featureData=featureData(callSet),
-				   annotation=annotation(ABset),
-				   experimentData=experimentData(callSet),
-				   protocolData=protocolData(callSet))
-	}
-	featureData(callSetPlus) <- addFeatureAnnotation(callSetPlus)
+##	} else {
+##		callSetPlus <- new("SnpCallSetPlusFF",
+##				   senseThetaA=ff(as.integer(A(ABset)), dim=c(nr,nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
+##				   senseThetaB=ff(as.integer(B(ABset)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
+##				   calls=ff(as.integer(calls(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
+##				   callsConfidence=ff(as.integer(confs(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
+##				   phenoData=pD,
+##				   featureData=featureData(callSet),
+##				   annotation=annotation(ABset),
+##				   experimentData=experimentData(callSet),
+##				   protocolData=protocolData(callSet))
+##	}
+##	featureData(callSetPlus) <- addFeatureAnnotation(callSetPlus)
 	if(splitByChr){
 		saved.objects <- splitByChromosome(callSetPlus, cnOptions)
 		##callSetPlus <- list.files(outdir, pattern="", full.names=TRUE)
@@ -461,36 +461,6 @@ validCdfNames <- function(){
 	  "human1mduov3b")
 }
 
-##validCdfNames <- function(platform){
-##	if(!missing(platform)){
-##		if(!platform %in% c("illumina", "affymetrix"))
-##			stop("only illumina and affymetrix platforms are supported.")
-##		if(platform=="illumina"){
-##			chipList = c("human1mv1c",             # 1M
-##			"human370v1c",            # 370CNV
-##			"human650v3a",            # 650Y
-##			"human610quadv1b",        # 610 quad
-##			"human660quadv1a",        # 660 quad
-##			"human370quadv3c",        # 370CNV quad
-##			"human550v3b",            # 550K
-##			"human1mduov3b")          # 1M Duo
-##		}
-##		if(platform=="affymetrix"){
-##			chipList=c("genomewidesnp6", "genomewidesnp5")
-##		}
-##	} else{
-##		chipList <- list()
-##		chipList$affymetrix <- c("genomewidesnp6","genomewidesnp5")
-##		chipList$illumina <- c("human370v1c",
-##				       "human370quadv3c",
-##				       "human550v3b",
-##				       "human650v3a",
-##				       "human610quadv1b",
-##				       "human660quadv1a",
-##				       "human1mduov3b")
-##	}
-##	return(chipList)
-##}
 isValidCdfName <- function(cdfName){
 	chipList <- validCdfNames()
 	result <- cdfName %in% chipList	
@@ -606,176 +576,6 @@ instantiateObjects <- function(object, cnOptions){
         return(tmp.objects)
 }
 
-##updateNuPhi <- function(crlmmSetList, cnSet){
-##	##TODO: remove the use of environments.
-##	cdfName <- annotation(crlmmSetList[[1]])
-##	##repopulate the environment
-##	crlmmSetList <- crlmmSetList[, match(sampleNames(cnSet), sampleNames(crlmmSetList))]
-##	crlmmSetList <- crlmmSetList[match(featureNames(cnSet), featureNames(crlmmSetList)), ]
-##	##envir <- getCopyNumberEnvironment(crlmmSetList, cnSet)
-##	Nset <- crlmmSetList[[1]]
-##	##indices of polymorphic loci
-##	index <- snpIndex(Nset)
-##	ABset <- Nset[index, ]
-##	##indices of nonpolymorphic loci
-##	NPset <- Nset[-index, ]
-##	##genotypes/confidences
-##	snpset <- crlmmSetList[[2]][index,]
-##	##previous version of compute copy number
-##	envir <- new.env()	
-##	message("Running bias adjustment...")
-####	.computeCopynumber(chrom=CHR,
-####			   A=A(ABset),
-####			   B=B(ABset),
-####			   calls=calls(snpset),
-####			   conf=confs(snpset),
-####			   NP=A(NPset),
-####			   plate=batch,
-####			   envir=envir,
-####			   SNR=ABset$SNR,
-####			   bias.adj=TRUE,
-####			   SNRmin=SNRmin,
-####			   ...)	
-##}
-
-##ist2locusSet <- function(envir, ABset, NPset, CHR, cdfName){
-##	if(missing(CHR)) stop("Must specify chromosome")
-##	pkgname <- paste(cdfName, "Crlmm", sep="")	
-##	path <- system.file("extdata", package=pkgname)
-##	loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
-##	cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
-##	loader("snpProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
-##	snpProbes <- get("snpProbes", envir=.crlmmPkgEnv)	
-##	##require(oligoClasses) || stop("oligoClasses package not available")
-##	if(length(ls(envir)) == 0) stop("environment empty")
-##	batch <- envir[["plate"]]
-##	##SNP copy number	
-##	CA <- envir[["CA"]]
-##	dimnames(CA) <- list(envir[["snps"]], envir[["sns"]])	
-##	CB <- envir[["CB"]]
-##	dimnames(CB) <- dimnames(CA)
-##	##NP copy number
-##	if(!is.null(NPset)){
-##		CT <- envir[["CT"]]
-##		rownames(CT) <- envir[["cnvs"]]
-##		colnames(CT) <- envir[["sns"]]
-##		sig2T <- envir[["sig2T"]]
-##		rownames(sig2T) <- rownames(CT)
-##		nuT <- envir[["nuT"]]
-##		colnames(nuT) <- paste("nuT", unique(batch), sep="_")
-##		phiT <- envir[["phiT"]]
-##		colnames(phiT) <- paste("phiT", unique(batch), sep="_")
-##		naMatrix <- matrix(NA, nrow(CT), ncol(CT))
-##		dimnames(naMatrix) <- dimnames(CT)
-##	} else{
-##		sig2T <- nuT <- phiT <- naMatrix <- CT <- NULL
-##	}
-##	CA <- rbind(CA, CT)
-##	CB <- rbind(CB, naMatrix)	
-##
-##	##SNP parameters
-##	tau2A <- envir[["tau2A"]]
-##	colnames(tau2A) <- paste("tau2A", unique(batch), sep="_")
-##	tau2B <- envir[["tau2B"]]
-##	colnames(tau2B) <- paste("tau2B", unique(batch), sep="_")
-##	sig2A <- envir[["sig2A"]]
-##	colnames(sig2A) <- paste("sig2A", unique(batch), sep="_")
-##	sig2B <- envir[["sig2B"]]
-##	colnames(sig2B) <- paste("sig2B", unique(batch), sep="_")
-##	nuA <- envir[["nuA"]]
-##	colnames(nuA) <- paste("nuA", unique(batch), sep="_")
-##	nuB <- envir[["nuB"]]
-##	colnames(nuB) <- paste("nuB", unique(batch), sep="_")
-##	phiA <- envir[["phiA"]]
-##	colnames(phiA) <- paste("phiA", unique(batch), sep="_")
-##	phiB <- envir[["phiB"]]
-##	colnames(phiB) <- paste("phiB", unique(batch), sep="_")
-##	corr <- envir[["corr"]]
-##	colnames(corr) <- paste("corr", unique(batch), sep="_")
-##	corrA.BB <- envir[["corrA.BB"]]
-##	colnames(corrA.BB) <- paste("corrA.BB", unique(batch), sep="_")
-##	corrB.AA <- envir[["corrB.AA"]]
-##	colnames(corrB.AA) <- paste("corrB.AA", unique(batch), sep="_")
-##
-##
-##	##Combine SNP and NP parameters
-##	if(!is.null(NPset)){
-##		naMatrixParams <- matrix(NA, nrow(CT), length(unique(batch)))
-##		dimnames(naMatrixParams) <- list(rownames(CT), unique(batch))
-##	} else{
-##		naMatrixParams <- NULL
-##	}
-##	tau2A <- rbind(tau2A, naMatrixParams)
-##	tau2B <- rbind(tau2B, naMatrixParams)
-##	sig2A <- rbind(sig2A, sig2T)
-##	sig2B <- rbind(sig2B, naMatrixParams)
-##	corr <- rbind(corr, naMatrixParams)
-##	corrA.BB <- rbind(corrA.BB, naMatrixParams)
-##	corrB.AA <- rbind(corrB.AA, naMatrixParams)
-##	nuA <- rbind(nuA, nuT)
-##	phiA <- rbind(phiA, phiT)
-##	nuB <- rbind(nuB, naMatrixParams)
-##	phiB <- rbind(phiB, naMatrixParams)
-##	rownames(tau2A) <- rownames(tau2B) <- rownames(sig2A) <- rownames(sig2B) <- rownames(CA)
-##	rownames(corr) <- rownames(corrA.BB) <- rownames(corrB.AA) <- rownames(CA)
-##	rownames(nuA) <- rownames(phiA) <- rownames(nuB) <- rownames(phiB) <- rownames(CA)	
-##	##phenodata
-##	phenodata <- phenoData(ABset)
-##	phenodata <- phenodata[match(envir[["sns"]], sampleNames(phenodata)), ]
-##	if(!("batch" %in% varLabels(phenodata))) phenodata$batch <- envir[["plate"]]
-##
-##	##Feature Data
-##	position.snp <- snpProbes[match(envir[["snps"]], rownames(snpProbes)), "position"]
-##	names(position.snp) <- envir[["snps"]]
-##	if(!is.null(NPset)){
-##		position.np <- cnProbes[match(envir[["cnvs"]], rownames(cnProbes)), "position"]
-##		names(position.np) <- envir[["cnvs"]]
-##	} else position.np <- NULL
-##	position <- c(position.snp, position.np)
-##	if(!(identical(names(position), rownames(CA)))){
-##		position <- position[match(rownames(CA), names(position))]
-##	}
-##	if(sum(duplicated(names(position))) > 0){
-##		warning("Removing rows with NA identifiers...")
-##		##RS: fix this
-##		I <- which(!is.na(names(position)))
-##	}  else I <- seq(along=names(position))
-##	fd <- data.frame(cbind(CHR,
-##			       position[I],
-##			       tau2A[I,, drop=FALSE],
-##			       tau2B[I,, drop=FALSE],
-##			       sig2A[I,, drop=FALSE],
-##			       sig2B[I,, drop=FALSE],
-##			       nuA[I,, drop=FALSE],
-##			       nuB[I,, drop=FALSE],
-##			       phiA[I,, drop=FALSE],
-##			       phiB[I,, drop=FALSE],
-##			       corr[I,, drop=FALSE],
-##			       corrA.BB[I,, drop=FALSE],
-##			       corrB.AA[I,, drop=FALSE]))
-##	colnames(fd)[1:2] <- c("chromosome", "position")
-##	rownames(fd) <- rownames(CA)[I]
-##	fD <- new("AnnotatedDataFrame",
-##		  data=fd,
-##		  varMetadata=data.frame(labelDescription=colnames(fd)))
-##	placeholder <- matrix(NA, nrow(CA), ncol(CA))
-##	dimnames(placeholder) <- dimnames(CA)
-##	assayData <- assayDataNew("lockedEnvironment",
-##				  CA=placeholder[I, ],
-##				  CB=placeholder[I, ])
-##	cnset <- new("CopyNumberSet",
-##		      assayData=assayData,
-##		      featureData=fD,
-##		      phenoData=phenodata,
-##		      annotation=cdfName)
-##	CA(cnset) <- CA  ##replacement method converts to integer
-##	CB(cnset) <- CB  ##replacement method converts to integer
-##	cnset <- thresholdCopyNumberSet(cnset)
-##	return(cnset)
-##
-
-
-
 thresholdCopynumber <- function(object){
 	ca <- CA(object)
 	cb <- CB(object)
@@ -803,7 +603,6 @@ cnOptions <- function(tmpdir=tempdir(),
 		      save.it=TRUE,
 		      load.it=TRUE,
 		      splitByChr=TRUE,
-		      use.ff=FALSE,
 		      MIN.OBS=3,
 		      MIN.SAMPLES=10,
 		      batch=NULL,
@@ -846,7 +645,6 @@ cnOptions <- function(tmpdir=tempdir(),
 	     save.it=save.it,
 	     load.it=load.it,
 	     splitByChr=splitByChr,
-	     use.ff=use.ff,
 	     MIN.OBS=MIN.OBS,
 	     MIN.SAMPLES=MIN.SAMPLES,
 	     batch=batch,
@@ -1655,7 +1453,7 @@ hmmOptions <- function(copynumberStates=0:4,
 	     MIN.MARKERS=MIN.MARKERS)
 }
 
-computeHmm.CrlmmSet <- function(object, cnOptions){
+computeHmm.CNSet <- function(object, cnOptions){
 	hmmOptions <- cnOptions[["hmmOpts"]]
 	object <- object[order(chromosome(object), position(object)), ]
 	##emission <- hmmOptions[["emission"]]
@@ -1663,47 +1461,60 @@ computeHmm.CrlmmSet <- function(object, cnOptions){
 	tPr <- transitionProbability(chromosome=chromosome(object),
 				     position=position(object),
 				     TAUP=hmmOptions[["TAUP"]])
-
-	emission <- computeEmission(object, hmmOptions)
+	emissionPr(object) <- computeEmission(object, hmmOptions)
 ##	if(cnOptions[["save.it"]])
 ##		save(emission,
 ##		     file=file.path(cnOptions[["outdir"]], paste("emission_", chrom, ".rda", sep="")))
-	hmmPredictions <- viterbi.CrlmmSet(object,
-					   hmmOptions=hmmOptions,
-					   emissionPr=emission,
-					   transitionPr=tPr[, "transitionPr"],
-					   chromosomeArm=tPr[, "arm"])
-	segments <- breaks(x=hmmPredictions,
-			   states=hmmOptions[["copynumberStates"]],
-			   position=position(object),
-			   chromosome=chromosome(object))
+	segmentData(object) <- viterbi.CNSet(object,
+					     hmmOptions=hmmOptions,
+					     transitionPr=tPr[, "transitionPr"],
+					     chromosomeArm=tPr[, "arm"])
+##	segments <- breaks(x=hmmPredictions,
+##			   states=hmmOptions[["copynumberStates"]],
+##			   position=position(object),
+##			   chromosome=chromosome(object))
 	##
-	object <- new("SegmentSet",
-		      CA=object@assayData[["CA"]],  ## keep as an integer
-		      CB=object@assayData[["CB"]],  ## keep as an integer
-		      senseThetaA=A(object),
-		      senseThetaB=B(object),
-		      calls=calls(object),
-		      callsConfidence=callsConfidence(object),
-		      featureData=featureData(object),
-		      phenoData=phenoData(object),
-		      protocolData=protocolData(object),
-		      experimentData=experimentData(object),
-		      annotation=annotation(object),
-		      segmentData=segments,
-		      emissionPr=emission)
-
+##	segmentData(object) <- rangedData
+##	emissionPr(object) <- emission
+##	object <- new("SegmentSet",
+##		      CA=object@assayData[["CA"]],  ## keep as an integer
+##		      CB=object@assayData[["CB"]],  ## keep as an integer
+##		      senseThetaA=A(object),
+##		      senseThetaB=B(object),
+##		      calls=calls(object),
+##		      callsConfidence=callsConfidence(object),
+##		      featureData=featureData(object),
+##		      phenoData=phenoData(object),
+##		      protocolData=protocolData(object),
+##		      experimentData=experimentData(object),
+##		      annotation=annotation(object),
+##		      segmentData=rangedData,
+##		      emissionPr=emission)
+	return(object)
 }
 
-viterbi.CrlmmSet <- function(object, hmmOptions, emissionPr, transitionPr, chromosomeArm){
-	viterbi(emission=emissionPr,
-		tau=transitionPr,
-		initialStateProbs=hmmOptions[["log.initialP"]],
-		arm=chromosomeArm,
-		normalIndex=hmmOptions[["normalIndex"]],
-		normal2altered=hmmOptions[["normal2altered"]],
-		altered2normal=hmmOptions[["altered2normal"]],
-		altered2altered=hmmOptions[["altered2altered"]])
+viterbi.CNSet <- function(object, hmmOptions, transitionPr, chromosomeArm){
+	state.sequence <- viterbi(emission=emissionPr(object),
+				  tau=transitionPr,
+				  initialStateProbs=hmmOptions[["log.initialP"]],
+				  arm=chromosomeArm,
+				  normalIndex=hmmOptions[["normalIndex"]],
+				  normal2altered=hmmOptions[["normal2altered"]],
+				  altered2normal=hmmOptions[["altered2normal"]],
+				  altered2altered=hmmOptions[["altered2altered"]])
+	state.sequence <- data.frame(state.sequence)
+	rleList <- RleList(state.sequence)
+	rd <- RangedData(rleList)
+##	rdList <- vector("list", length(rle.object))
+##	for(i in seq(along=rdList)){
+##		rdList[[i]] <- RangedData(rle.object[[i]],
+##					  space=paste("chr", transitionPr[, "chromosome"], sep=""),
+##					  state=runValue(rle.object[[i]]),
+##					  sample=sampleNames(object)[i],
+##					  nprobes=runLength(rle.object[[i]]))
+##	}
+##	rangedData <- do.call("rbind", rdList)
+	return(rd)
 }
 
 
@@ -1737,7 +1548,7 @@ thresholdModelParams <- function(object, cnOptions){
 }
 
 
-computeEmission.CrlmmSet <- function(object, hmmOptions){
+computeEmission.CNSet <- function(object, hmmOptions){
 	EMIT.THR <- hmmOptions[["EMIT.THR"]]
 	cnStates <- hmmOptions[["copynumberStates"]]
 	object <- object[order(chromosome(object), position(object)), ]
@@ -1900,7 +1711,6 @@ setMethod("update", "character", function(object, ...){
 	}
 })
 
-
 addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 	##if(missing(CHR)) stop("Must specificy chromosome")
 	cdfName <- annotation(object)
@@ -1915,8 +1725,6 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 	isSnp <- rep(as.integer(0), nrow(object))
 	isSnp[snpIndex(object)] <- as.integer(1)
 	names(isSnp) <- featureNames(object)
-##	snps <- featureNames(object)[snpIndex(object)]
-##	nps <- featureNames(object)[cnIndex(object)]
 	snps <- featureNames(object)[isSnp == 1]
 	nps <- featureNames(object)[isSnp == 0]
 	position.snp <- snpProbes[match(snps, rownames(snpProbes)), "position"]
@@ -1949,8 +1757,15 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 		I <- which(!is.na(names(position)))
 	}  else I <- seq(along=names(position))
 	tmp.fd <- data.frame(cbind(chrom[I],
-			       position[I]), isSnp[I])
+				   position[I],
+				   isSnp[I]))
 	colnames(tmp.fd) <- c("chromosome", "position", "isSnp")
+	if("chromosome" %in% fvarLabels(object))
+		tmp.fd <- tmp.fd[ -1]
+	if("position" %in% fvarLabels(object))
+		tmp.fd <- tmp.fd[ -2]
+	if("isSnp" %in% fvarLabels(object))
+		tmp.fd <- tmp.fd[ -3]
 	rownames(tmp.fd) <- featureNames(object)
 	tmp <- new("AnnotatedDataFrame",
 		   data=tmp.fd,
@@ -1962,24 +1777,24 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 
 
 computeCopynumber.SnpCallSetPlus <- function(object, cnOptions){
-	use.ff <- cnOptions[["use.ff"]]
-	if(!use.ff){
-		object <- as(object, "CrlmmSet")
-	} else	object <- as(object, "CrlmmSetFF")
+##	use.ff <- cnOptions[["use.ff"]]
+##	if(!use.ff){
+##		object <- as(object, "CrlmmSet")
+##	} else	object <- as(object, "CrlmmSetFF")
 	bias.adj <- cnOptions[["bias.adj"]]
 	##must be FALSE to initialize parameters
 	cnOptions[["bias.adj"]] <- FALSE
 	## Add linear model parameters to the CrlmmSet object
 	featureData(object) <- lm.parameters(object, cnOptions)
 	if(!isValidCdfName(annotation(object))) stop(annotation(object), " not supported.")	
-	object <- computeCopynumber.CrlmmSet(object, cnOptions)
+	object <- computeCopynumber.CNSet(object, cnOptions)
 	if(bias.adj==TRUE){## run a second time
-		object <- computeCopynumber.CrlmmSet(object, cnOptions)
+		object <- computeCopynumber.CNSet(object, cnOptions)
 	}
 	return(object)
 }
 
-## computeCopynumber.CrlmmSet
+## computeCopynumber.CNSet
 ##    tmp.objects <- instantiateObjects() ##vA, vB, (background mean), muA, muB (within genotype means), Ns
 ##    tmp.objects <- withinGenotypeMoments() ##compute vA, vB, muA, muB, Ns
 ##    object.batch <- locationAndScale()  ##calcualte tau2A, tau2B, sig2A, sig2B, corr for polymorphic probes
@@ -1990,7 +1805,7 @@ computeCopynumber.SnpCallSetPlus <- function(object, cnOptions){
 ##    object.batch <- nonpolymorphic()     assigns CA
 
 
-computeCopynumber.CrlmmSet <- function(object, cnOptions){
+computeCopynumber.CNSet <- function(object, cnOptions){
 	CHR <- unique(chromosome(object))
 	batch <- object$batch
 	if(length(batch) != ncol(object)) stop("Batch must be the same length as the number of samples")
