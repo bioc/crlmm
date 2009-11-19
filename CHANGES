@@ -332,3 +332,7 @@ is decoded and scanned
  * added CNSet class
  * segmentData slot in CNSet class is an extension of RangedData (defined in IRanges package)
 
+2009-11-19 R. Scharpf - committed version 1.5.6
+
+ * fixed bug in initialization of SnpCallSetPlus
+

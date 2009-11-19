@@ -148,34 +148,33 @@ setMethod("computeHmm", "CNSet", function(object, hmmOptions){
 ## Genotype everything to get callSetPlus objects
 ## Go from callSets to Segments sets, writing only the segment set to file
 ## Safe, but very inefficient. Writes the quantile normalized data to file several times...
-setMethod("computeHmm", "character", function(object, hmmOptions){
-	outdir <- cnOptions[["outdir"]]
-	hmmOptions <- hmmOptions[["hmmOpts"]]
-	filenames <- object
-	for(i in seq(along=filenames)){
-		chrom <- gsub(".rda", "", strsplit(filenames[i], "_")[[1]][[2]])
-		if(hmmOptions[["verbose"]])
-			message("Fitting HMM to chromosome ", chrom)
-		if(file.exists(filenames[i])){
-			message("Loading ", filenames[i])
-			load(filenames[i])
-			cnSet <- get("cnSet")
-		} else {
-			stop("File ", filenames[i], " does not exist.")
-		}
-		hmmOptions$emission <- computeEmission(filenames[i], hmmOptions)
-		cnSet <- computeHmm(cnSet, hmmOptions)
-		##MIN.MARKERS <- hmmOptions[["MIN.MARKERS"]]
-		##segmentSet <- segments[segments$nprobes >= MIN.MARKERS, ]
-		message("Saving ", file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-		save(cnSet,
-		     file=file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-		unlink(file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-	}
-	fns <- list.files(outdir, pattern="cnSet", full.names=TRUE)
-	return(fns)	
-})
-
+##setMethod("computeHmm", "character", function(object, hmmOptions){
+##	outdir <- cnOptions[["outdir"]]
+##	hmmOptions <- hmmOptions[["hmmOpts"]]
+##	filenames <- object
+##	for(i in seq(along=filenames)){
+##		chrom <- gsub(".rda", "", strsplit(filenames[i], "_")[[1]][[2]])
+##		if(hmmOptions[["verbose"]])
+##			message("Fitting HMM to chromosome ", chrom)
+##		if(file.exists(filenames[i])){
+##			message("Loading ", filenames[i])
+##			load(filenames[i])
+##			cnSet <- get("cnSet")
+##		} else {
+##			stop("File ", filenames[i], " does not exist.")
+##		}
+##		hmmOptions$emission <- computeEmission(filenames[i], hmmOptions)
+##		cnSet <- computeHmm(cnSet, hmmOptions)
+##		##MIN.MARKERS <- hmmOptions[["MIN.MARKERS"]]
+##		##segmentSet <- segments[segments$nprobes >= MIN.MARKERS, ]
+##		message("Saving ", file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
+##		save(cnSet,
+##		     file=file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
+##		unlink(file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
+##	}
+##	fns <- list.files(outdir, pattern="cnSet", full.names=TRUE)
+##	return(fns)	
+##})
 
 
 setValidity("CNSet", function(object) {

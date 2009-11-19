@@ -32,7 +32,7 @@ setMethod("initialize", "SnpCallSetPlus",
 		  ## Do after annotation has been assigned
 		  if(!(all(c("chromosome", "position", "isSnp")  %in% colnames(.Object@featureData)))){
 			  ##update the featureData
-			  .Object@featureData <- addFeatureAnnotation.SnpCallSetPlus(object)
+			  .Object@featureData <- addFeatureAnnotation.SnpCallSetPlus(.Object)
 		  }
 		  .Object
           })
