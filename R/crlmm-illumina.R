@@ -569,8 +569,8 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
       tmp = normalize.quantiles.use.target(as.matrix(cbind(subX, subY)), targetdist[[s]])
     else
       tmp = normalize.quantiles(as.matrix(cbind(subX, subY)))
-    XY@assayData$X[sel,] = tmp[,1:(ncol(tmp)/2)]
-    XY@assayData$Y[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
+    XY@assayData$X[sel,] = tmp[,1:(ncol(tmp)/2)]+16
+    XY@assayData$Y[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]+16
 #    Xqws[sel,] = tmp[,1:(ncol(tmp)/2)]
 #    Yqws[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
     rm(subX, subY, tmp, sel)
