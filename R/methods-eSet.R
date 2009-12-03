@@ -42,7 +42,7 @@ setMethod("getParam", signature(object="eSet",
 			  warning("batch argument to getParam should have length 1.  Only using the first")
 			  batch <- batch[1]
 		  }
-		  getParam.SnpCallSetPlus(object, name, batch)
+		  getParam.SnpSuperSet(object, name, batch)
 })
 
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
@@ -73,3 +73,21 @@ setMethod("getParam", signature(object="eSet",
 
 
 
+setMethod("pr", signature(object="eSet",
+			  name="character",
+			  batch="ANY",
+			  value="numeric"), 
+	  function(object, name, batch, value){
+		  label <- paste(name, batch, sep="_")
+		  colindex <- match(label, fvarLabels(object))
+		  if(length(colindex) == 1){
+			  fData(object)[, colindex] <- value
+		  } 
+		  if(is.na(colindex)){
+			  stop(paste(label, " not found in object"))
+		  }
+		  if(length(colindex) > 1){
+			  stop(paste(label, " not unique"))
+		  }
+		  object
+	  })

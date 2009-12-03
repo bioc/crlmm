@@ -1,47 +1,50 @@
 ##How to make the initialization platform-specific?
-setMethod("initialize", "SnpCallSetPlus",
+
+setMethod("initialize", "SnpSuperSet",
           function(.Object,
-                   phenoData,
-		   featureData,
+		   assayData,
                    call=new("matrix"),
                    callProbability=new("matrix"),
-                   senseThetaA=new("matrix"),
-                   senseThetaB=new("matrix"),
+                   alleleA=new("matrix"),
+                   alleleB=new("matrix"),
+		   featureData,
 		   annotation,
-		   experimentData,
-		   protocolData, ... ){
-		  ad <- assayDataNew("lockedEnvironment",
-				     call=call,
-				     callProbability=callProbability,
-				     senseThetaA=senseThetaA,
-				     senseThetaB=senseThetaB)
-		  assayData(.Object) <- ad
-		  if (missing(phenoData)){
-			  phenoData(.Object) <- annotatedDataFrameFrom(calls, byrow=FALSE)
+		   ...){
+		  if(!missing(assayData)){
+			  .Object <- callNextMethod(.Object, assayData=assayData,...)
 		  } else{
-			  phenoData(.Object) <- phenoData
-		  }
+			  ad <- assayDataNew("lockedEnvironment",
+					     call=call,
+					     callProbability=callProbability,
+					     alleleA=alleleA,
+					     alleleB=alleleB)
+			  .Object <- callNextMethod(.Object,
+						    assayData=ad, ...)
+		  }		  
+		  if(missing(annotation)){
+			  stop("must specify annotation")
+		  } else{
+			  stopifnot(isValidCdfName(annotation))
+			  .Object@annotation <- annotation
+		  }		  
 		  if (missing(featureData)){
-			  featureData(.Object) <- annotatedDataFrameFrom(calls, byrow=TRUE)
+			  featureData(.Object) <- annotatedDataFrameFrom(call, byrow=TRUE)
 		  } else{
 			  featureData(.Object) <- featureData
 		  }
-		  if(!missing(annotation)) annotation(.Object) <- annotation
-		  if(!missing(experimentData)) experimentData(.Object) <- experimentData
-		  if(!missing(protocolData)) protocolData(.Object) <- protocolData
 		  ## Do after annotation has been assigned
 		  if(!(all(c("chromosome", "position", "isSnp")  %in% colnames(.Object@featureData)))){
 			  ##update the featureData
-			  .Object@featureData <- addFeatureAnnotation.SnpCallSetPlus(.Object)
+			  .Object@featureData <- addFeatureAnnotation.SnpSuperSet(.Object)
 		  }
 		  .Object
           })
 
-setMethod("addFeatureAnnotation", "SnpCallSetPlus", function(object, ...){
-	addFeatureAnnotation.SnpCallSetPlus(object, ...)
+setMethod("addFeatureAnnotation", "SnpSuperSet", function(object, ...){
+	addFeatureAnnotation.SnpSuperSet(object, ...)
 })
 
-getParam.SnpCallSetPlus <- function(object, name, batch){
+getParam.SnpSuperSet <- function(object, name, batch){
 		  label <- paste(name, batch, sep="_")
 		  colindex <- grep(label, fvarLabels(object))
 		  if(length(colindex) == 1){
@@ -61,7 +64,7 @@ getParam.SnpCallSetPlus <- function(object, name, batch){
 
 
 
-setMethod("splitByChromosome", "SnpCallSetPlus", function(object, cnOptions){
+setMethod("splitByChromosome", "SnpSuperSet", function(object, cnOptions){
 	tmpdir <- cnOptions[["tmpdir"]]
 	outdir <- cnOptions[["outdir"]]	
 	save.it <- cnOptions[["save.it"]]
@@ -100,10 +103,10 @@ setMethod("splitByChromosome", "SnpCallSetPlus", function(object, cnOptions){
 	saved.objects
 })
 
-setMethod("computeCopynumber", "SnpCallSetPlus",
+setMethod("computeCopynumber", "SnpSuperSet",
 	  function(object, cnOptions){
-		  computeCopynumber.SnpCallSetPlus(object, cnOptions)
+		  computeCopynumber.SnpSuperSet(object, cnOptions)
 	  })
 
-gtConfidence <- function(object) 1-exp(-callsConfidence(object)/1000)
+##gtConfidence <- function(object) 1-exp(-confs(object)/1000)
 	

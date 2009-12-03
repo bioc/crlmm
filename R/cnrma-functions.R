@@ -182,9 +182,9 @@ combineIntensities <- function(res, cnrmaResult, cdfName){
 		A <- res$A
 		B <- res$B
 	}
-	ABset <- new("SnpQSet",
-		     senseThetaA=A,
-		     senseThetaB=B,
+	ABset <- new("AlleleSet",
+		     alleleA=A,
+		     alleleB=B,
 		     annotation=cdfName)
 	return(ABset)
 }
@@ -242,7 +242,6 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	##use.ff=cnOptions[["use.ff"]]
 	outdir <- cnOptions[["outdir"]]
 	tmpdir <- cnOptions[["tmpdir"]]
-	
 	if(missing(cdfName)) stop("cdfName is missing -- a valid cdfName is required.  See crlmm:::validCdfNames()")
 	platform <- whichPlatform(cdfName)
 	if(!(platform %in% c("affymetrix", "illumina"))){
@@ -267,7 +266,7 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 			if(save.it) save(RG, file=rgFile)
 		}
 		if(load.it & !file.exists(rgFile)){
-			message("load.it is TRUE, bug rgFile not present.  Attempting to read the idatFiles.")
+			message("load.it is TRUE, but rgFile not present.  Attempting to read the idatFiles.")
 			RG <- readIdatFiles(...)
 			if(save.it) save(RG, file=rgFile)
 		}
@@ -279,7 +278,6 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	}
 	if(!(file.exists(dirname(crlmmFile)))) stop(dirname(crlmmFile), " does not exist.")
 	if(!(file.exists(dirname(intensityFile)))) stop(dirname(intensityFile), " does not exist.")
-
 	##---------------------------------------------------------------------------
 	## FIX
 	outfiles <- file.path(dirname(crlmmFile), paste("crlmmSetList_", 1:24, ".rda", sep=""))
@@ -298,7 +296,6 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 			load.it <- FALSE
 		}
 	}
-
 	if(platform == "affymetrix"){
 		if(!file.exists(crlmmFile) | !load.it){
 			callSet <- crlmm(filenames=filenames,
@@ -399,7 +396,6 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	}
 	stopifnot(all.equal(featureNames(callSet), featureNames(ABset)))
 	stopifnot(all.equal(sampleNames(callSet), sampleNames(ABset)))
-
 	## create object with all of the assay data elements
 	## add an indicator to featureData for whether it is a snp or a np probe
 	## add annotation
@@ -411,31 +407,17 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 		  varMetadata=data.frame(labelDescription=colnames(pd),
 		  row.names=colnames(pd)))
 	nr <- nrow(ABset); nc <- ncol(ABset)
-##	if(!use.ff){
-		callSetPlus <- new("SnpCallSetPlus",
-				   senseThetaA=A(ABset),
-				   senseThetaB=B(ABset), 
-				   calls=calls(callSet), 
-				   callsConfidence=confs(callSet),
-				   phenoData=pD,
-				   featureData=featureData(callSet),
-				   annotation=annotation(ABset),
-				   experimentData=experimentData(callSet),
-				   protocolData=protocolData(callSet))
-
-##	} else {
-##		callSetPlus <- new("SnpCallSetPlusFF",
-##				   senseThetaA=ff(as.integer(A(ABset)), dim=c(nr,nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-##				   senseThetaB=ff(as.integer(B(ABset)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-##				   calls=ff(as.integer(calls(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-##				   callsConfidence=ff(as.integer(confs(callSet)), dim=c(nr, nc), vmode="integer", dimnames=list(featureNames(ABset), sampleNames(ABset))),
-##				   phenoData=pD,
-##				   featureData=featureData(callSet),
-##				   annotation=annotation(ABset),
-##				   experimentData=experimentData(callSet),
-##				   protocolData=protocolData(callSet))
-##	}
-##	featureData(callSetPlus) <- addFeatureAnnotation(callSetPlus)
+	callSetPlus <- new("SnpSuperSet",
+			   alleleA=A(ABset),
+			   alleleB=B(ABset), 
+			   call=calls(callSet), 
+			   callProbability=assayData(callSet)[["callProbability"]],
+			   phenoData=pD,
+			   featureData=featureData(callSet),
+			   annotation=annotation(ABset),
+			   experimentData=experimentData(callSet),
+			   protocolData=protocolData(callSet))
+	
 	if(splitByChr){
 		saved.objects <- splitByChromosome(callSetPlus, cnOptions)
 		##callSetPlus <- list.files(outdir, pattern="", full.names=TRUE)
@@ -661,11 +643,12 @@ cnOptions <- function(tmpdir=tempdir(),
 	     MIN.NU=MIN.NU,
 	     MIN.PHI=MIN.PHI,
 	     THR.NU.PHI=THR.NU.PHI,
+	     thresholdCopynumber=thresholdCopynumber,
 	     unlink=unlink,
 	     hiddenMarkovModel=hiddenMarkovModel,
 	     circularBinarySegmentation=circularBinarySegmentation,
 	     cbsOpts=cbsOpts,
-	     hmmOpts=hmmOpts) ##remove SnpCallSetPlus object
+	     hmmOpts=hmmOpts) ##remove SnpSuperSet object
 }
 
 ##linear model parameters
@@ -850,7 +833,6 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 ##sufficient statistics on the intensity scale
 withinGenotypeMoments <- function(object, cnOptions, tmp.objects){
 	normal <- tmp.objects[["normal"]]
-
 	## muA, muB: robust estimates of the within-genotype center (intensity scale)
 	muA <- tmp.objects[["muA"]]
 	muB <- tmp.objects[["muB"]]
@@ -864,7 +846,8 @@ withinGenotypeMoments <- function(object, cnOptions, tmp.objects){
 
 	A <- A(object)
 	B <- B(object)
-	highConf <- (1-exp(-callsConfidence(object)/1000)) > GT.CONF.THR
+##	highConf <- (1-exp(-confs(object)/1000)) > GT.CONF.THR
+	highConf <- confs(object) > GT.CONF.THR
 	##highConf <- highConf > GT.CONF.THR
 	if(CHR == 23){
 		gender <- object$gender
@@ -1462,34 +1445,10 @@ computeHmm.CNSet <- function(object, cnOptions){
 				     position=position(object),
 				     TAUP=hmmOptions[["TAUP"]])
 	emissionPr(object) <- computeEmission(object, hmmOptions)
-##	if(cnOptions[["save.it"]])
-##		save(emission,
-##		     file=file.path(cnOptions[["outdir"]], paste("emission_", chrom, ".rda", sep="")))
-	segmentData(object) <- viterbi.CNSet(object,
-					     hmmOptions=hmmOptions,
-					     transitionPr=tPr[, "transitionPr"],
-					     chromosomeArm=tPr[, "arm"])
-##	segments <- breaks(x=hmmPredictions,
-##			   states=hmmOptions[["copynumberStates"]],
-##			   position=position(object),
-##			   chromosome=chromosome(object))
-	##
-##	segmentData(object) <- rangedData
-##	emissionPr(object) <- emission
-##	object <- new("SegmentSet",
-##		      CA=object@assayData[["CA"]],  ## keep as an integer
-##		      CB=object@assayData[["CB"]],  ## keep as an integer
-##		      senseThetaA=A(object),
-##		      senseThetaB=B(object),
-##		      calls=calls(object),
-##		      callsConfidence=callsConfidence(object),
-##		      featureData=featureData(object),
-##		      phenoData=phenoData(object),
-##		      protocolData=protocolData(object),
-##		      experimentData=experimentData(object),
-##		      annotation=annotation(object),
-##		      segmentData=rangedData,
-##		      emissionPr=emission)
+	rangedData(object) <- viterbi.CNSet(object,
+					    hmmOptions=hmmOptions,
+					    transitionPr=tPr[, "transitionPr"],
+					    chromosomeArm=tPr[, "arm"])
 	return(object)
 }
 
@@ -1513,7 +1472,7 @@ viterbi.CNSet <- function(object, hmmOptions, transitionPr, chromosomeArm){
 ##					  sample=sampleNames(object)[i],
 ##					  nprobes=runLength(rle.object[[i]]))
 ##	}
-##	rangedData <- do.call("rbind", rdList)
+##	rangedData <- do.call("c", rdList)
 	return(rd)
 }
 
@@ -1686,32 +1645,32 @@ getEmission.snps <- function(object, hmmOptions){
 	emissionProbs
 }
 
-setMethod("update", "character", function(object, ...){
-	crlmmFile <- object
-	for(i in seq(along=crlmmFile)){
-		cat("Processing ", crlmmFile[i], "...\n")
-		load(crlmmFile[i])
-		crlmmSetList <- get("crlmmSetList")
-		if(length(crlmmSetList) == 3) next()  ##copy number object already present. 
-		if(!"chromosome" %in% fvarLabels(crlmmSetList[[1]])){
-			featureData(crlmmSetList[[1]]) <- addFeatureAnnotation(crlmmSetList)
-		} 
-		CHR <- unique(chromosome(crlmmSetList[[1]]))
-		if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
-		if(CHR==24){
-			message("skipping chromosome 24")
-			next()
-		}
-		cat("----------------------------------------------------------------------------\n")
-		cat("-        Estimating copy number for chromosome", CHR, "\n")
-		cat("----------------------------------------------------------------------------\n")		
-		crlmmSetList <- update(crlmmSetList, CHR=CHR, ...)
-		save(crlmmSetList, file=crlmmFile[i])
-		rm(crlmmSetList); gc();
-	}
-})
+##setMethod("update", "character", function(object, ...){
+##	crlmmFile <- object
+##	for(i in seq(along=crlmmFile)){
+##		cat("Processing ", crlmmFile[i], "...\n")
+##		load(crlmmFile[i])
+##		crlmmSetList <- get("crlmmSetList")
+##		if(length(crlmmSetList) == 3) next()  ##copy number object already present. 
+##		if(!"chromosome" %in% fvarLabels(crlmmSetList[[1]])){
+##			featureData(crlmmSetList[[1]]) <- addFeatureAnnotation(crlmmSetList)
+##		} 
+##		CHR <- unique(chromosome(crlmmSetList[[1]]))
+##		if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
+##		if(CHR==24){
+##			message("skipping chromosome 24")
+##			next()
+##		}
+##		cat("----------------------------------------------------------------------------\n")
+##		cat("-        Estimating copy number for chromosome", CHR, "\n")
+##		cat("----------------------------------------------------------------------------\n")		
+##		crlmmSetList <- update(crlmmSetList, CHR=CHR, ...)
+##		save(crlmmSetList, file=crlmmFile[i])
+##		rm(crlmmSetList); gc();
+##	}
+##})
 
-addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
+addFeatureAnnotation.SnpSuperSet <- function(object, ...){
 	##if(missing(CHR)) stop("Must specificy chromosome")
 	cdfName <- annotation(object)
 	pkgname <- paste(cdfName, "Crlmm", sep="")	
@@ -1725,17 +1684,26 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 	isSnp <- rep(as.integer(0), nrow(object))
 	isSnp[snpIndex(object)] <- as.integer(1)
 	names(isSnp) <- featureNames(object)
-	snps <- featureNames(object)[isSnp == 1]
-	nps <- featureNames(object)[isSnp == 0]
-	position.snp <- snpProbes[match(snps, rownames(snpProbes)), "position"]
-	names(position.snp) <- snps
-	position.np <- cnProbes[match(nps, rownames(cnProbes)), "position"]
-	names(position.np) <- nps
 
-	J <- grep("chr", colnames(snpProbes))
-	chr.snp <- snpProbes[match(snps, rownames(snpProbes)), J]
-	chr.np <- cnProbes[match(nps, rownames(cnProbes)), J]	
-	
+	if(any(isSnp)){
+		snps <- featureNames(object)[isSnp == 1]
+		position.snp <- snpProbes[match(snps, rownames(snpProbes)), "position"]
+		names(position.snp) <- snps
+
+		J <- grep("chr", colnames(snpProbes))
+		chr.snp <- snpProbes[match(snps, rownames(snpProbes)), J]		
+	} else{
+		chr.snp <- position.snp <- integer()
+	}
+	if(any(!isSnp)){
+		nps <- featureNames(object)[isSnp == 0]
+		position.np <- cnProbes[match(nps, rownames(cnProbes)), "position"]
+		names(position.np) <- nps
+		
+		chr.np <- cnProbes[match(nps, rownames(cnProbes)), J]	
+	} else {
+		chr.np <- position.np <- integer()
+	}
 	position <- c(position.snp, position.np)
 	chrom <- c(chr.snp, chr.np)
 
@@ -1776,7 +1744,7 @@ addFeatureAnnotation.SnpCallSetPlus <- function(object, ...){
 }
 
 
-computeCopynumber.SnpCallSetPlus <- function(object, cnOptions){
+computeCopynumber.SnpSuperSet <- function(object, cnOptions){
 ##	use.ff <- cnOptions[["use.ff"]]
 ##	if(!use.ff){
 ##		object <- as(object, "CrlmmSet")
@@ -1786,7 +1754,8 @@ computeCopynumber.SnpCallSetPlus <- function(object, cnOptions){
 	cnOptions[["bias.adj"]] <- FALSE
 	## Add linear model parameters to the CrlmmSet object
 	featureData(object) <- lm.parameters(object, cnOptions)
-	if(!isValidCdfName(annotation(object))) stop(annotation(object), " not supported.")	
+	if(!isValidCdfName(annotation(object))) stop(annotation(object), " not supported.")
+	object <- as(object, "CNSet")
 	object <- computeCopynumber.CNSet(object, cnOptions)
 	if(bias.adj==TRUE){## run a second time
 		object <- computeCopynumber.CNSet(object, cnOptions)
@@ -1875,7 +1844,7 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 }
 
 
-isSnp.SnpQSet <- function(object){
+isSnp.AlleleSet <- function(object){
 	labels <- fvarLabels(object)
 	if("isSnp" %in% labels){
 		res <- fData(object)[, "isSnp"]
@@ -1884,3 +1853,238 @@ isSnp.SnpQSet <- function(object){
 	}
 	return(res==1)
 }
+
+isBiparental.SnpSuperSet <- function(object, allowHetParent=TRUE){
+	##if(length(object$familyMember) < 3) stop("object$familyMember not the right length")
+	father <- 1
+	mother <- 2
+	offspring <- 3
+	F <- calls(object[, father])
+	M <- calls(object[, mother])
+	O <- calls(object[, offspring])
+	object <- cbind(F, M, O)
+	colnames(object) <- c("father", "mother", "offspring")
+	biparental <- isBiparental.matrix(object, allowHetParent=allowHetParent)
+	return(biparental)
+}
+
+isBiparental.matrix <- function(object, allowHetParent=TRUE){
+	F <- object[, 1]
+	M <- object[, 2]
+	O <- object[, 3]
+	##M/F AA, F/M BB, O AB 
+	##isHet <- offspringHeterozygous(object)  ##offspring is heterozygous
+	biparental <- rep(NA, nrow(object))
+	biparental[F==1 & M == 3 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	biparental[F==3 & M == 1 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	##M/F AA, F/M BB, O AA or BB
+	biparental[F==1 & M == 3 & (O == 1 | O == 3)] <- FALSE#Pr(O | biparental)=0.001, Pr(O | not biparental) = 1-0.01
+	biparental[F==3 & M == 1 & (O == 1 | O == 3)] <- FALSE#Pr(O | biparental)=0.001, Pr(O | not biparental) = 1-0.01
+	## M/F AA, F/M BB, O AB
+	if(allowHetParent) biparental[F == 1 & M == 2 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	if(allowHetParent) biparental[F == 2 & M == 1 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	## F AB, M AA, O BB is not biparental
+	## F AA, M AB, O BB is not biparental
+	biparental[F == 2 & M == 1 & O == 3] <- FALSE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	biparental[F == 1 & M == 2 & O == 3] <- FALSE#Pr(O | biparental)=0.001, Pr(O | not biparental) = 1-0.01
+	## M AA, F AB, O AB
+	if(allowHetParent) biparental[F == 2 & M == 3 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	if(allowHetParent) biparental[F == 3 & M == 2 & O == 2] <- TRUE#Pr(O | biparental)=1-0.001, Pr(O | not biparental) = 0.01
+	## F=AB, M=BB, O=AA is NOT biparental
+	biparental[F == 2 & M == 3 & O == 1] <- FALSE#Pr(O | biparental)=0.001, Pr(O | not biparental) = 1-0.01
+	biparental[F == 3 & M == 2 & O == 1] <- FALSE#Pr(O | biparental)=0.001, Pr(O | not biparental) = 1-0.01
+	return(biparental)
+}
+
+findFatherMother <- function(offspringId, object){
+	stopifnot(!missing(offspringId)) 
+	family.id <- pData(object)[sampleNames(object) == offspringId, "familyId"]
+	father.id <- pData(object)[sampleNames(object) == offspringId, "fatherId"]
+	mother.id <- pData(object)[sampleNames(object) == offspringId, "motherId"]
+	father.name <- sampleNames(object)[object$familyId == family.id & object$individualId == father.id]
+	mother.name <- sampleNames(object)[object$familyId == family.id & object$individualId == mother.id]
+	if(length(father.name) > 1 | length(mother.name) > 1){
+		stop("More than 1 father and/or more than 1 mother.  Check annotation in phenoData")
+	}
+	if(length(father.name) < 1 ){
+		father.name <- NA
+	}
+	if(length(mother.name) < 1){
+		mother.name <- NA
+	}
+	fmo.trio <- c(father.name, mother.name, offspringId)
+	names(fmo.trio) <- c("father", "mother", "offspring")
+	return(fmo.trio)
+}
+
+hmm.SnpSuperSet <- function(object, hmmOptions){
+	if(ncol(object) < 3){
+		return("No complete trios")
+	}
+	stopifnot(all(c("familyId", "fatherId", "motherId", "individualId") %in% varLabels(object)))
+	require(VanillaICE) || stop("VanillaICE not available")
+	TAUP <- hmmOptions[["TAUP"]]
+	states <- hmmOptions[["states"]]
+	initialP <- hmmOptions[["initialP"]]
+	verbose <- hmmOptions[["verbose"]]
+	normal2altered <- hmmOptions[["normal2altered"]]
+	altered2normal <- hmmOptions[["altered2normal"]]
+	normalIndex <- hmmOptions[["normalIndex"]]
+	offspringId <- sampleNames(object)[object$fatherId != 0 & object$motherId != 0]
+
+	##For each offspring, find the father and mother in the same family
+
+	trios <- as.matrix(t(sapply(offspringId, findFatherMother, object=object)))
+	trios <- trios[rowSums(is.na(trios)) == 0, , drop=FALSE]
+	colnames(trios) <- c("father", "mother", "offspring")
+	
+	rD <- vector("list", nrow(trios))
+	for(i in 1:nrow(trios)){
+		##if(verbose) cat("Family ", unique(familyId)[i], ", ")
+		if(verbose) cat("Offspring ID ", trios[i, "offspring"], "\n")
+		trioSet <- object[, match(trios[i, ], sampleNames(object))]
+		## Remove the noinformative snps here.
+		isBPI <- isBiparental.SnpSuperSet(trioSet)
+		isInformative <- !is.na(isBPI)
+		if(all(!isInformative)){
+			fit[, i] <- 1
+			next()
+		}
+		trioSet <- trioSet[isInformative, ]
+		##index <- match(featureNames(trioSet), rownames(fit))
+		tau <- transitionProbability(chromosome=chromosome(trioSet),
+					     position=position(trioSet),
+					     TAUP=TAUP)
+		isBPI <- isBPI[isInformative]
+		emission <- computeBpiEmission.SnpSuperSet(trioSet, hmmOptions, isBPI=isBPI)
+		.GlobalEnv[["emission"]] <- emission
+		if(is.null(emission)) stop("not a father, mother, offspring trio")
+		log.e <- array(log(emission), dim=c(nrow(trioSet), 1, 2), dimnames=list(featureNames(trioSet), trios[i, "offspring"], hmmOptions[["states"]]))
+		index <- match(featureNames(trioSet), featureNames(object))
+		vitResults <- viterbi(initialStateProbs=log(initialP),
+						 emission=log.e,
+						 tau=tau[, "transitionPr"],
+						 arm=tau[, "arm"],
+						 normalIndex=normalIndex,
+						 verbose=verbose,
+						 normal2altered=normal2altered,
+						 altered2normal=altered2normal,
+						 returnLikelihood=TRUE)
+		##vitSequence is a vector -- one trio at a time
+		vitSequence <- vitResults[["stateSequence"]]
+		if(length(table(tau[, "arm"])) > 1){
+			##insert an extra index to force a break between chromosome arms
+			tmp <- rep(NA, length(vitSequence)+1)
+			end.parm <- end(Rle(tau[, "arm"]))[1]
+			tmp[1:end.parm] <- vitSequence[1:end.parm]
+			tmp[end.parm+1] <- 999
+			tmp[(end.parm+2):length(tmp)] <- vitSequence[((end.parm)+1):length(vitSequence)]
+			vitSequence <- tmp
+		}
+		llr <- vitResults[["logLikelihoodRatio"]][[1]]
+		rl <- Rle(vitSequence)
+		start.index <- start(rl)[runValue(rl) != 999]
+		end.index <- end(rl)[runValue(rl) != 999]
+		##this is tricky since we've added an index to force a segment for each arm.
+		armBreak <- which(vitSequence==999)
+		if(length(armBreak) > 0){
+			start.index[start.index > armBreak] <- start.index[start.index > armBreak] - 1
+			end.index[end.index > armBreak] <- end.index[end.index > armBreak] - 1
+		}
+		start <- position(trioSet)[start.index]
+		end <- position(trioSet)[end.index]
+		##numMarkers <- unlist(numMarkers)
+		numMarkers <- width(rl)[runValue(rl) != 999]
+		states <- hmmOptions[["states"]][vitSequence[start.index]]
+		##states <- (hmmOptions[["states"]])[vitSequence[start.index]]
+		ir <- IRanges(start=start, end=end)
+		##For each segment, calculate number biparental, number not biparental
+		nBpi <- nNotBpi <- rep(NA, length(ir))
+		for(j in 1:length(start)){
+			region <- (start(rl)[j]):(end(rl)[j])
+			region <- (start.index[j]):(end.index[j])
+			nNonInformative <- sum(is.na(isBPI[region]))
+			nInformative <- sum(!is.na(isBPI[region]))
+			nNotBpi[j] <- sum(isBPI[region] == FALSE, na.rm=TRUE)
+			nBpi[j] <- sum(isBPI[region] == TRUE, na.rm=TRUE)
+		}
+		rD[[i]] <- RangedData(ir,
+				      space=rep(paste("chr", unique(chromosome(trioSet)), sep=""), length(ir)),
+				      offspringId=rep(trios[i, "offspring"], length(ir)),
+				      numMarkers=numMarkers,
+				      state=states,
+				      nNotBpi=nNotBpi,
+				      nBpi=nBpi,
+				      LLR=llr)
+	}
+	##to avoid a .Primivite error with do.call(c, rD)
+	tmp <- do.call(c, rD[sapply(rD, nrow) == 1])
+	tmp2 <- do.call(c, rD[sapply(rD, nrow) > 1])
+	rD <- c(tmp, tmp2)
+	return(rD)
+}
+
+trioOptions <- function(states=c("BPI", "notBPI"),
+			initialP=c(0.99, 0.01),
+			TAUP=1e7,
+			prGtError=c(0.001, 0.01),
+			verbose=FALSE,
+			allowHetParent=FALSE,
+			normalIndex=1,
+			normal2altered=1,
+			altered2normal=1,
+			useCrlmmConfidence=FALSE){
+	names(prGtError) <- states
+	names(initialP) <- states
+	list(states=states,
+	     initialP=initialP,
+	     TAUP=TAUP,
+	     prGtError=prGtError,
+	     verbose=verbose,
+	     allowHetParent=allowHetParent,
+	     normalIndex=normalIndex,
+	     normal2altered=normal2altered,
+	     altered2normal=altered2normal,
+	     useCrlmmConfidence=useCrlmmConfidence)
+}
+
+
+
+computeBpiEmission.SnpSuperSet <- function(object, hmmOptions, isBPI){
+	states <- hmmOptions[["states"]]
+	prGtError <- hmmOptions[["prGtError"]]
+	useCrlmmConfidence <- hmmOptions[["useCrlmmConfidence"]]
+	emission <- matrix(NA, nrow(object), ncol=2)
+	colnames(emission) <- states
+	if(useCrlmmConfidence){
+		pCrlmm <- confs(object)  ## crlmm confidence score
+		## take the minimum confidence score in the trio
+		pCrlmm <- apply(pCrlmm, 1, min, na.rm=TRUE)
+		## set emission probability to min(crlmmConfidence, 0.999)
+		I <- as.integer(pCrlmm < (1 - prGtError[["BPI"]]))
+		pCrlmm <- pCrlmm*I + (1 - prGtError[["BPI"]])*(1-I)
+		emission[,  "BPI"] <- pCrlmm
+		##Pr(mendelian inconsistency | BPI) = 0.001 
+		emission[, "BPI"] <- 1 - pCrlmm
+	} else { ##ignore confidence scores
+		##Pr(call is consistent with biparental inheritance | BPI) = 0.999
+		emission[isBPI==TRUE,  "BPI"] <-  1-prGtError["BPI"]
+		##Pr(mendelian inconsistency | BPI) = 0.001 
+		emission[isBPI==FALSE, "BPI"] <- prGtError["BPI"] ##Mendelian inconsistancy
+	}
+	##Pr(call is consistent with biparental inheritance | not BPI) = 0.01 		
+	emission[isBPI==TRUE,  "notBPI"] <- prGtError["notBPI"]   ## biparental inheritance, but true state is not Biparental
+	##Pr(mendelian inconsistency | not BPI) = 0.99 				
+	emission[isBPI==FALSE, "notBPI"] <- 1-prGtError["notBPI"] ## Mendelian inconsistancy
+	return(emission)
+}
+
+## ---------------------------------------------------------------------------
+## not to be exported
+hapmapPedFile <- function(){
+	pedFile <- read.csv("~/projects/Beaty/inst/extdata/HapMap_samples.csv", as.is=TRUE)
+	pedFile <- pedFile[, 1:5]
+	colnames(pedFile) <- c("coriellId", "familyId", "individualId", "fatherId", "motherId")
+	return(pedFile)
+}
+

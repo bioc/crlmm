@@ -135,11 +135,11 @@ list2SnpSet <- function(x, returnParams=FALSE){
 }
 
 loader <- function(theFile, envir, pkgname){
-  theFile <- file.path(system.file(package=pkgname),
-                       "extdata", theFile)
-  if (!file.exists(theFile))
-    stop("File ", theFile, " does not exist in ", pkgname)
-  load(theFile, envir=envir)
+	theFile <- file.path(system.file(package=pkgname),
+			     "extdata", theFile)
+	if (!file.exists(theFile))
+		stop("File ", theFile, " does not exist in ", pkgname)
+	load(theFile, envir=envir)
 }
 
 celfileDate <- function(filename) {

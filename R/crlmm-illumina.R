@@ -6,7 +6,7 @@
 readIdatFiles <- function(sampleSheet=NULL,
 			  arrayNames=NULL,
 			  ids=NULL,
-			  path="",
+			  path=".",
 			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
 			  highDensity=FALSE,
 			  sep="_",
@@ -23,7 +23,6 @@ readIdatFiles <- function(sampleSheet=NULL,
        if(!is.null(arrayNames)) {
                pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
-      
        if(!is.null(sampleSheet)) { # get array info from Illumina's sample sheet
 	       if(is.null(arrayNames)){
 		       ##arrayNames=NULL
@@ -63,10 +62,11 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
 	       stop("Cannot find matching .idat files")
-       if(path != ""){
+       if(path[1] != "."){
 	       grnidats = file.path(path, grnfiles)
 	       redidats = file.path(path, redfiles)
        }  else {
+	       message("path arg not set.  Assuming files are in local directory")
 	       grnidats <- grnfiles
 	       redidats <- redfiles
        }

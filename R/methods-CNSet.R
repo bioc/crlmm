@@ -6,20 +6,21 @@ setMethod("initialize", "CNSet",
 		   annotation,
 		   experimentData,
 		   protocolData,
-                   calls=new("matrix"),
-                   callsConfidence=new("matrix"),
-                   senseThetaA=new("matrix"),
-                   senseThetaB=new("matrix"),
-		   CA=new("matrix"),
-		   CB=new("matrix"),
+                   call=new("matrix"),
+		   callProbability=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
+		   alleleA=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
+		   alleleB=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
+		   CA=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
+		   CB=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
 		   segmentData=new("RangedData"),
 		   emissionPr=new("array"), ... ){
+		  ## callProbability, CA, CB, are stored as integers
 		  if(missing(assayData)){
 			  assayData <- assayDataNew("lockedEnvironment",
-						    calls=calls,
-						    callsConfidence=callsConfidence,
-						    senseThetaA=senseThetaA,
-						    senseThetaB=senseThetaB,
+						    call=call,
+						    callProbability=callProbability,
+						    alleleA=alleleA,
+						    alleleB=alleleB,
 						    CA=CA,
 						    CB=CB)
 		  } 
@@ -38,15 +39,15 @@ setMethod("initialize", "CNSet",
 		  .Object	    
           })
 
-setAs("SnpCallSetPlus", "CNSet",
+setAs("SnpSuperSet", "CNSet",
       function(from, to){
 	      CA <- CB <- matrix(NA, nrow(from), ncol(from))
 	      dimnames(CA) <- dimnames(CB) <- list(featureNames(from), sampleNames(from))		  
 	      new("CNSet",
-		  calls=calls(from),
-		  callsConfidence=callsConfidence(from),
-		  senseThetaA=A(from),
-		  senseThetaB=B(from),
+		  call=calls(from),
+		  callProbability=assayData(from)[["callProbability"]],  ##confs(from) returns 1-exp(-x/1000)
+		  alleleA=A(from),
+		  alleleB=B(from),
 		  CA=CA,
 		  CB=CB,
 		  phenoData=phenoData(from),
@@ -57,7 +58,7 @@ setAs("SnpCallSetPlus", "CNSet",
       })
 
 setValidity("CNSet", function(object) {
-	assayDataValidMembers(assayData(object), c("CA", "CB", "call", "callProbability", "senseThetaA", "senseThetaB"))
+	assayDataValidMembers(assayData(object), c("CA", "CB", "call", "callProbability", "alleleA", "alleleB"))
 })
 
 
@@ -93,24 +94,7 @@ setMethod("computeCopynumber", "character", function(object, cnOptions){
 	}	
 })
 
-setMethod("pr", signature(object="CNSet",
-			  name="character",
-			  batch="ANY",
-			  value="numeric"), 
-	  function(object, name, batch, value){
-		  label <- paste(name, batch, sep="_")
-		  colindex <- match(label, fvarLabels(object))
-		  if(length(colindex) == 1){
-			  fData(object)[, colindex] <- value
-		  } 
-		  if(is.na(colindex)){
-			  stop(paste(label, " not found in object"))
-		  }
-		  if(length(colindex) > 1){
-			  stop(paste(label, " not unique"))
-		  }
-		  object
-	  })
+
 
 setMethod("computeEmission", "CNSet", function(object, hmmOptions){
 	computeEmission.CNSet(object, hmmOptions)
@@ -140,7 +124,7 @@ setMethod("computeHmm", "CNSet", function(object, hmmOptions){
 	computeHmm.CNSet(object, hmmOptions)
 })
 
-##setMethod("computeHmm", "SnpCallSetPlus", function(object, hmmOptions){
+##setMethod("computeHmm", "SnpSuperSet", function(object, hmmOptions){
 ##	cnSet <- computeCopynumber(object, hmmOptions)
 ##	computeHmm(cnSet, hmmOptions)
 ##})
@@ -184,17 +168,17 @@ setValidity("CNSet", function(object) {
 ##may want to allow thresholding here (... arg)
 setMethod("CA", "CNSet", function(object) assayData(object)[["CA"]]/100)
 setMethod("CB", "CNSet", function(object) assayData(object)[["CB"]]/100)
-
 setReplaceMethod("CA", signature(object="CNSet", value="matrix"),
 		 function(object, value){
+			 value <- matrix(as.integer(value*100), nrow(value), ncol(value), dimnames=dimnames(value))
 			 assayDataElementReplace(object, "CA", value)		
 		 })
 
 setReplaceMethod("CB", signature(object="CNSet", value="matrix"),
 		 function(object, value){
+			 value <- matrix(as.integer(value*100), nrow(value), ncol(value), dimnames=dimnames(value))			 
 			 assayDataElementReplace(object, "CB", value)
 		 })
-
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
 	CA <- CA(object)
@@ -257,6 +241,11 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 	}
 }
 
+setMethod("rangedData", "CNSet", function(object) segmentData(object))
+setReplaceMethod("rangedData", c("CNSet", "RangedData"), function(object, value){
+	segmentData(object) <- value
+})
+
 setMethod("segmentData", "CNSet", function(object) object@segmentData)
 setReplaceMethod("segmentData", c("CNSet", "RangedData"), function(object, value){
 	object@segmentData <- value
@@ -279,15 +268,16 @@ setMethod("show", "CNSet", function(object){
 	if(!all(is.na(emissionPr(object)))){
 		cat("   minimum value:", min(emissionPr(object), na.rm=TRUE), "\n")
 	} else  cat("   minimum value: NA (all missing)\n")
-	cat("segmentData:  ")
-	cat("    ", show(segmentData(object)), "\n")
+	cat("rangedData:  ")
+	cat("    ", show(rangedData(object)), "\n")
 ##	cat("   ", nrow(segmentData(object)), "segments\n")
 ##	cat("    column names:", paste(colnames(segmentData(object)), collapse=", "), "\n")
 #	cat("    mean # markers per segment:", mean(segmentData(object)$nprobes))
 })
 
-
-
+setMethod("start", "CNSet", function(x, ...) start(segmentData(x), ...))
+setMethod("end", "CNSet", function(x, ...) end(segmentData(x), ...))
+setMethod("width", "CNSet", function(x) width(segmentData(x)))
 
 
 
