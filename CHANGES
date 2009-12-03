@@ -344,3 +344,5 @@ is decoded and scanned
 
  * bug fixed in stripNormalize() [X+16,Y+16 which avoids log(0) = -Inf values, 
       removed inadvertantly in version 1.3.7, put back]
+ * removed header checking from readIdatFiles() (seems to fail often).  
+      Instead check that the number of SNPs agrees (to within +/- 10K SNPs)

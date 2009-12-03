@@ -95,7 +95,8 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       headerInfo$ChipType[i] = G$ChipType
 	       headerInfo$Manifest[i] = G$Unknown$MostlyNull
 	       headerInfo$Position[i] = G$Unknowns$MostlyA
-	       if(headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
+               if(headerInfo$nProbes[i]>(headerInfo$nProbes[1]+10000) || headerInfo$nProbes[i]<(headerInfo$nProbes[1]-10000)) {
+                       ## headerInfo$ChipType[i]!=headerInfo$ChipType[1] || headerInfo$Manifest[i]!=headerInfo$Manifest[1]) {
 		       ## || headerInfo$nProbes[i]!=headerInfo$nProbes[1] ## removed this condition as some arrays used the same manifest
 		       ## but differed by a few SNPs for some reason - most of the chip was the same though
 		       ##           stop("Chips are not of all of the same type - please check your data")
