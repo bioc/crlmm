@@ -5,33 +5,30 @@ useDynLib("crlmm", .registration=TRUE)
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 		  SnpSet, NChannelSet, MIAME, Versioned, VersionedBiobase, Versions)
 
-importMethodsFrom(Biobase, annotation, "annotation<-", annotatedDataFrameFrom,
-                  assayData, "assayData<-", combine, dims,
-                  experimentData, "experimentData<-",
+importMethodsFrom(Biobase, annotation, "annotation<-",
+                  annotatedDataFrameFrom, assayData, "assayData<-",
+                  combine, dims, experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
-                  fvarMetadata, fvarLabels,
-                  pData, phenoData, "phenoData<-", protocolData, "protocolData<-",
-                  pubMedIds, rowMedians, sampleNames,
-                  storageMode, "storageMode<-", updateObject, varLabels)
+                  fvarMetadata, fvarLabels, pData, phenoData,
+                  "phenoData<-", protocolData, "protocolData<-",
+                  pubMedIds, rowMedians, sampleNames, storageMode,
+                  "storageMode<-", updateObject, varLabels)
 
 importFrom(Biobase, assayDataElement, assayDataElementNames,
            assayDataElementReplace, assayDataNew, classVersion, validMsg)
 
 ## oligoClasses
+importFrom(oligoClasses, position, chromosome)
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
-importMethodsFrom(oligoClasses, 
-				 allele,
-                                 calls, "calls<-",  
-          			 confs, "confs<-",
-				 cnConfidence, "cnConfidence<-", 
-				 copyNumber)
-importFrom("oligoClasses", "position")
-importFrom("oligoClasses", "chromosome")
+
+importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
+                  "confs<-", cnConfidence, "cnConfidence<-", copyNumber)
+
  
 ## IRanges
-importClassesFrom(IRanges, "RangedData", "IRanges")
-importMethodsFrom(IRanges, Rle, start, end, width, runValue)
-importFrom(IRanges, IRanges, RleList, RangedData)
+importClassesFrom(IRanges, RangedData, IRanges)
+importFrom(IRanges, IRanges, RleList, RangedData, width)
+importMethodsFrom(IRanges, Rle, start, end, runValue)
 
 ##importMethodsFrom(methods, initialize, show)
 
@@ -72,7 +69,9 @@ exportMethods(chromosome, position)
 export(
        celDates, 
       crlmm, 
-       cnOptions, 
+       cnOptions,
+       calls,
+       "calls<-",
        confs,
        "confs<-",
        copyNumber, 

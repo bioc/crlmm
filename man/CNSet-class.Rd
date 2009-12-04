@@ -63,10 +63,6 @@ Class \code{"\linkS4class{Versioned}"}, by class "SnpCallSetPlus", distance 6.
 	 }
 }
 \author{R. Scharpf}
-\seealso{
-%	~~objects to See Also as \code{\link{~~fun~~}}, ~~~
-%	or \code{\linkS4class{CLASSNAME}} for links to other classes
-}
 \examples{
 showClass("CNSet")
 }

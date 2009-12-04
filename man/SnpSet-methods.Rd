@@ -3,9 +3,9 @@
 %\alias{calls}
 \alias{calls,SnpSet-method}
 \alias{calls<-,SnpSet,matrix-method}
-\alias{confs}
+%\alias{confs}
 \alias{confs,SnpSet-method}
-\alias{confs<-}
+%\alias{confs<-}
 \alias{confs<-,SnpSet,matrix-method}
 \title{Accessors for Calls and Confidences on a SnpSet object}
 

@@ -346,3 +346,7 @@ is decoded and scanned
       removed inadvertantly in version 1.3.7, put back]
  * removed header checking from readIdatFiles() (seems to fail often).  
       Instead check that the number of SNPs agrees (to within +/- 10K SNPs)
+
+2009-12-04 B. Carvalho - committed version 1.5.11
+
+ * moved IRanges and oligoClasses to Depends (DESCRIPTION)

@@ -1,7 +1,7 @@
 \name{methods-eSet}
-\alias{chromosome}
+%%\alias{chromosome}
 \alias{chromosome,eSet-method}
-\alias{position}
+%%\alias{position}
 \alias{position,eSet-method}
 \title{Methods for eSet derivatives}
 

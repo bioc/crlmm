@@ -1,3 +1,7 @@
+## IMPORTANT 
+- move IRanges and oligoClasses back to Suggests? BC moved them to
+Depends just to get rid of annoying warnings while transitioning.
+
 #####################################
 ### FOR CRLMM
 #####################################
