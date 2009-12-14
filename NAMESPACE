@@ -16,7 +16,6 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
            assayDataElementReplace, assayDataNew, classVersion, validMsg)
 
 ## oligoClasses
-importFrom(oligoClasses, position, chromosome)
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 importMethodsFrom(oligoClasses, 
 		  allele,
