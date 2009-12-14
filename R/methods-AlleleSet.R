@@ -8,8 +8,6 @@ setMethod("B", "AlleleSet", function(object) allele(object, "B"))
 ##		 function(object, value){
 ##			 assayDataElementReplace(object, "senseThetaB", value)			
 ##		 })
-setMethod("isSnp", "AlleleSet", function(object) {
-	isSnp.AlleleSet(object)
-})
+
 
 

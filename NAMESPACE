@@ -1,6 +1,5 @@
 useDynLib("crlmm", .registration=TRUE)
 
-
 ## Biobase
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
 		  SnpSet, NChannelSet, MIAME, Versioned, VersionedBiobase, Versions)
@@ -13,33 +12,23 @@ importMethodsFrom(Biobase, annotation, "annotation<-",
                   "phenoData<-", protocolData, "protocolData<-",
                   pubMedIds, rowMedians, sampleNames, storageMode,
                   "storageMode<-", updateObject, varLabels)
-
 importFrom(Biobase, assayDataElement, assayDataElementNames,
            assayDataElementReplace, assayDataNew, classVersion, validMsg)
 
 ## oligoClasses
 importFrom(oligoClasses, position, chromosome)
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
-
-importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-                  "confs<-", cnConfidence, "cnConfidence<-", copyNumber)
-
- 
-## IRanges
-importClassesFrom(IRanges, RangedData, IRanges)
-importFrom(IRanges, IRanges, RleList, RangedData, width)
-importMethodsFrom(IRanges, Rle, start, end, runValue)
-
-##importMethodsFrom(methods, initialize, show)
-
-##importFrom(methods, "@<-", callNextMethod, new, validObject)
+importMethodsFrom(oligoClasses, 
+		  allele,
+                  calls, "calls<-",  
+          	  confs, "confs<-",
+	          cnConfidence, "cnConfidence<-", 
+		  copyNumber, isSnp, chromosome, position, CA, "CA<-", CB, "CB<-",
+		  rangedData, segmentData, "rangedData<-", "segmentData<-")
+importFrom(oligoClasses, chromosome2integer, celfileDate)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
-
-importFrom(SNPchip, chromosome2integer)
-
-importFrom(VanillaICE, viterbi, transitionProbability)
 
 importFrom(stats, update)
 
@@ -59,48 +48,33 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-exportMethods(A, B,
-		 CA, "CA<-", CB, "CB<-",
-		 isSnp) 
-
-
-exportMethods(chromosome, position)
-
-export(
-       celDates, 
-      crlmm, 
+export(celDates,  ##move to oligoClasses
+       crlmm, 
        cnOptions,
        calls,
        "calls<-",
-       confs,
-       "confs<-",
-       copyNumber, 
-       emissionPr,
-       "emissionPr<-",
-       list.celfiles, 
-      snprma)
+     snprma)
 
-exportMethods(computeHmm, 
-              rangedData,
-             "rangedData<-",
-	     segmentData,
-	     "segmentData<-")
-
-export(hmmOptions,
-       crlmmCopynumber)
-
-export(ellipse) ##, ellipse.CopyNumberSet, getParam.SnpSuperSet)
-export(viterbi.CNSet, 
-		      combineIntensities,
-		      whichPlatform,
-		      isValidCdfName,
-		      splitByChromosome,
+##exportMethods(computeHmm) ##move to VanillaICE
+exportMethods(A, B, copyNumber)
+export(crlmmCopynumber) 
+export(ellipse) 
+export(##viterbi.CNSet, ##move to VanillaICE
+	combineIntensities,
+	whichPlatform,
+	isValidCdfName,
 	crlmmWrapper,
-       computeHmm.CNSet, addFeatureAnnotation.SnpSuperSet,
-       readIdatFiles,
-       withinGenotypeMoments,  trioOptions, hmm.SnpSuperSet, trioOptions, computeBpiEmission.SnpSuperSet,
-       isBiparental.matrix, isBiparental.SnpSuperSet, hapmapPedFile, isSnp.AlleleSet,
-       findFatherMother)
-exportMethods(start, end, width)
+##	computeHmm.CNSet, ##move to VanillaICE
+        readIdatFiles,
+        withinGenotypeMoments,  
+##	trioOptions, ##move to VanillaICE
+##	hmm.SnpSuperSet, ##move to VanillaICE
+##	computeBpiEmission.SnpSuperSet,##move to VanillaICE
+##  	isBiparental.matrix, ##move to VanillaICE
+##	isBiparental.SnpSuperSet, ##move to VanillaICE
+##	hapmapPedFile, ##move to VanillaICE
+##       findFatherMother, 
+	 locationAndScale, getParam.SnpSuperSet)
+
 
 

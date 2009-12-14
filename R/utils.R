@@ -20,10 +20,7 @@ medianSummaries <- function(mat, grps)
 intMedianSummaries <- function(mat, grps)
   as.integer(medianSummaries(mat, grps))
 
-list.celfiles <-   function(...){
-  files <- list.files(...)
-  return(files[grep("\\.[cC][eE][lL]$", files)])
-}
+
 
 ## .crlmmPkgEnv is an enviroment that will
 ## store all the variables used by the pkg.
@@ -142,19 +139,22 @@ loader <- function(theFile, envir, pkgname){
 	load(theFile, envir=envir)
 }
 
-celfileDate <- function(filename) {
-	h <- affyio::read.celfile.header(filename, info="full")
-	date <- grep("/", strsplit(h$DatHeader, " ")[[1]], value=TRUE)
-	if(length(date) < 1){
-		##try something else
-		results <- h$ScanDate
-	} else{
-		date <- strsplit(date, split="/")[[1]]
-		CC <- ifelse(substr(date[3],1,1)=="9", "19", "20")
-		results <- as.character(as.Date(paste(paste(CC, date[3], sep=""), date[1],
-						      date[2], sep="-")))
+celDates <- function(celfiles){
+	if(!all(file.exists(celfiles))) stop("1 or more cel file does not exist")
+	celdates <- vector("character", length(celfiles))
+	celtimes <- vector("character", length(celfiles))
+	for(i in seq(along=celfiles)){
+		if(i %% 100 == 0) cat(".")
+		tmp <- read.celfile.header(celfiles[i], info="full")$DatHeader
+		tmp <- strsplit(tmp, "\ +")
+		celdates[i] <- tmp[[1]][6]
+		celtimes[i] <- tmp[[1]][7]
 	}
-	results
+	tmp <- paste(celdates, celtimes)
+	celdts <- strptime(tmp, "%m/%d/%y %H:%M:%S")
+	return(celdts)
 }
+
+
 
 

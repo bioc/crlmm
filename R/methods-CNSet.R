@@ -1,44 +1,3 @@
-setMethod("initialize", "CNSet",
-          function(.Object,
-		   assayData,
-                   phenoData,
-		   featureData,
-		   annotation,
-		   experimentData,
-		   protocolData,
-                   call=new("matrix"),
-		   callProbability=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
-		   alleleA=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
-		   alleleB=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
-		   CA=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
-		   CB=matrix(integer(), nrow=nrow(call), ncol=ncol(call), dimnames=dimnames(call)),
-		   segmentData=new("RangedData"),
-		   emissionPr=new("array"), ... ){
-		  ## callProbability, CA, CB, are stored as integers
-		  if(missing(assayData)){
-			  assayData <- assayDataNew("lockedEnvironment",
-						    call=call,
-						    callProbability=callProbability,
-						    alleleA=alleleA,
-						    alleleB=alleleB,
-						    CA=CA,
-						    CB=CB)
-		  } 
-		  assayData(.Object) <- assayData
-		  if (missing(phenoData)){
-			  phenoData(.Object) <- annotatedDataFrameFrom(calls, byrow=FALSE)
-		  } else phenoData(.Object) <- phenoData
-		  if (missing(featureData)){
-			  featureData(.Object) <- annotatedDataFrameFrom(calls, byrow=TRUE)
-		  } else featureData(.Object) <- featureData
-		  if(!missing(annotation)) annotation(.Object) <- annotation
-		  if(!missing(experimentData)) experimentData(.Object) <- experimentData
-		  if(!missing(protocolData)) protocolData(.Object) <- protocolData
-		  if(!missing(emissionPr)) .Object@emissionPr <- emissionPr
-		  segmentData(.Object) <- segmentData
-		  .Object	    
-          })
-
 setAs("SnpSuperSet", "CNSet",
       function(from, to){
 	      CA <- CB <- matrix(NA, nrow(from), ncol(from))
@@ -57,14 +16,20 @@ setAs("SnpSuperSet", "CNSet",
 		  featureData=featureData(from))
       })
 
-setValidity("CNSet", function(object) {
-	assayDataValidMembers(assayData(object), c("CA", "CB", "call", "callProbability", "alleleA", "alleleB"))
-})
-
-
-
 setMethod("computeCopynumber", "CNSet", function(object, cnOptions){
-	computeCopynumber.CNSet(object, cnOptions)
+	## to do the bias adjustment, initial estimates of the parameters are needed
+	##  The initial estimates are gotten by running computeCopynumber with cnOptions[["bias.adj"]]=FALSE
+	bias.adj <- cnOptions[["bias.adj"]]
+	if(bias.adj & all(is.na(CA(object)))){
+		cnOptions[["bias.adj"]] <- FALSE
+	}
+	object <- computeCopynumber.CNSet(object, cnOptions)				
+	if(bias.adj & !cnOptions[["bias.adj"]]){
+		## Do a second iteration with bias adjustment
+		cnOptions[["bias.adj"]] <- TRUE
+		object <- computeCopynumber.CNSet(object, cnOptions)
+	}
+	object
 })
 
 setMethod("computeCopynumber", "character", function(object, cnOptions){
@@ -96,33 +61,7 @@ setMethod("computeCopynumber", "character", function(object, cnOptions){
 
 
 
-setMethod("computeEmission", "CNSet", function(object, hmmOptions){
-	computeEmission.CNSet(object, hmmOptions)
-})
 
-setMethod("computeEmission", "character", function(object, hmmOptions){
-	filename <- object
-	chrom <- gsub(".rda", "", strsplit(filename, "_")[[1]][[2]])
-	if(hmmOptions[["verbose"]])
-		message("Compute emission probabilities for chromosome ", chrom)
-	if(file.exists(filename)){
-		load(filename)
-		cnSet <- get("cnSet")
-	} else {
-		stop("File ", filename, " does not exist.")
-	}
-	emission <- computeEmission(cnSet, hmmOptions)
-	message("Saving ", file.path(dirname(filename), paste("emission_", chrom, ".rda", sep="")))
-	if(hmmOptions[["save.it"]]){
-		save(emission,
-		     file=file.path(dirname(filename), paste("emission_", chrom, ".rda", sep="")))
-	}
-	return(emission)
-})
-
-setMethod("computeHmm", "CNSet", function(object, hmmOptions){
-	computeHmm.CNSet(object, hmmOptions)
-})
 
 ##setMethod("computeHmm", "SnpSuperSet", function(object, hmmOptions){
 ##	cnSet <- computeCopynumber(object, hmmOptions)
@@ -160,25 +99,6 @@ setMethod("computeHmm", "CNSet", function(object, hmmOptions){
 ##	return(fns)	
 ##})
 
-
-setValidity("CNSet", function(object) {
-	msg <- validMsg(NULL, assayDataValidMembers(assayData(object), c("CA", "CB")))
-	if (is.null(msg)) TRUE else msg
-})
-##may want to allow thresholding here (... arg)
-setMethod("CA", "CNSet", function(object) assayData(object)[["CA"]]/100)
-setMethod("CB", "CNSet", function(object) assayData(object)[["CB"]]/100)
-setReplaceMethod("CA", signature(object="CNSet", value="matrix"),
-		 function(object, value){
-			 value <- matrix(as.integer(value*100), nrow(value), ncol(value), dimnames=dimnames(value))
-			 assayDataElementReplace(object, "CA", value)		
-		 })
-
-setReplaceMethod("CB", signature(object="CNSet", value="matrix"),
-		 function(object, value){
-			 value <- matrix(as.integer(value*100), nrow(value), ncol(value), dimnames=dimnames(value))			 
-			 assayDataElementReplace(object, "CB", value)
-		 })
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
 	CA <- CA(object)
@@ -241,43 +161,7 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 	}
 }
 
-setMethod("rangedData", "CNSet", function(object) segmentData(object))
-setReplaceMethod("rangedData", c("CNSet", "RangedData"), function(object, value){
-	segmentData(object) <- value
-})
 
-setMethod("segmentData", "CNSet", function(object) object@segmentData)
-setReplaceMethod("segmentData", c("CNSet", "RangedData"), function(object, value){
-	object@segmentData <- value
-	object
-})
-
-setMethod("emissionPr", "CNSet", function(object) object@emissionPr)
-setReplaceMethod("emissionPr", c("CNSet", "array"), function(object, value){
-	object@emissionPr <- value
-	object
-})
-
-setMethod("show", "CNSet", function(object){
-	callNextMethod(object)
-	cat("emissionPr\n")
-	cat("   array:", nrow(object), "features,", ncol(object), "samples,", dim(emissionPr(object))[3], "states\n")
-	cat("   hidden states:\n")
-	cat("      ", dimnames(emissionPr(object))[[3]], "\n")
-	cat("   Missing values:", sum(is.na(emissionPr(object))), "\n")
-	if(!all(is.na(emissionPr(object)))){
-		cat("   minimum value:", min(emissionPr(object), na.rm=TRUE), "\n")
-	} else  cat("   minimum value: NA (all missing)\n")
-	cat("rangedData:  ")
-	cat("    ", show(rangedData(object)), "\n")
-##	cat("   ", nrow(segmentData(object)), "segments\n")
-##	cat("    column names:", paste(colnames(segmentData(object)), collapse=", "), "\n")
-#	cat("    mean # markers per segment:", mean(segmentData(object)$nprobes))
-})
-
-setMethod("start", "CNSet", function(x, ...) start(segmentData(x), ...))
-setMethod("end", "CNSet", function(x, ...) end(segmentData(x), ...))
-setMethod("width", "CNSet", function(x) width(segmentData(x)))
 
 
 
