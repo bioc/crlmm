@@ -64,17 +64,9 @@ export(##viterbi.CNSet, ##move to VanillaICE
 	whichPlatform,
 	isValidCdfName,
 	crlmmWrapper,
-##	computeHmm.CNSet, ##move to VanillaICE
-        readIdatFiles,
+	readIdatFiles,
         withinGenotypeMoments,  
-##	trioOptions, ##move to VanillaICE
-##	hmm.SnpSuperSet, ##move to VanillaICE
-##	computeBpiEmission.SnpSuperSet,##move to VanillaICE
-##  	isBiparental.matrix, ##move to VanillaICE
-##	isBiparental.SnpSuperSet, ##move to VanillaICE
-##	hapmapPedFile, ##move to VanillaICE
-##       findFatherMother, 
-	 locationAndScale, getParam.SnpSuperSet)
+	locationAndScale, getParam.SnpSuperSet)
 
 
 
