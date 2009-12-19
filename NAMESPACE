@@ -1,8 +1,9 @@
 useDynLib("crlmm", .registration=TRUE)
 
 ## Biobase
-importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet,
-		  SnpSet, NChannelSet, MIAME, Versioned, VersionedBiobase, Versions)
+importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
+		  NChannelSet, MIAME, Versioned, VersionedBiobase,
+		  Versions)
 
 importMethodsFrom(Biobase, annotation, "annotation<-",
                   annotatedDataFrameFrom, assayData, "assayData<-",
@@ -12,24 +13,24 @@ importMethodsFrom(Biobase, annotation, "annotation<-",
                   "phenoData<-", protocolData, "protocolData<-",
                   pubMedIds, rowMedians, sampleNames, storageMode,
                   "storageMode<-", updateObject, varLabels)
+
 importFrom(Biobase, assayDataElement, assayDataElementNames,
-           assayDataElementReplace, assayDataNew, classVersion, validMsg)
+           assayDataElementReplace, assayDataNew, classVersion,
+           validMsg)
 
 ## oligoClasses
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
-importMethodsFrom(oligoClasses, 
-		  allele,
-                  calls, "calls<-",  
-          	  confs, "confs<-",
-	          cnConfidence, "cnConfidence<-", 
-		  copyNumber, isSnp, chromosome, position, CA, "CA<-", CB, "CB<-",
-		  rangedData, segmentData, "rangedData<-", "segmentData<-")
-importFrom(oligoClasses, chromosome2integer, celfileDate)
+
+importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
+		  "confs<-", cnConfidence, "cnConfidence<-", copyNumber,
+		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-",
+		  rangedData, segmentData, "rangedData<-",
+		  "segmentData<-")
+
+importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
-
-importFrom(stats, update)
 
 importFrom(grDevices, grey)
 
@@ -39,7 +40,7 @@ importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
 
 importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
 
-importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd)
+importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, update)
 
 importFrom(genefilter, rowSds)
 
@@ -47,12 +48,8 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-export(celDates,  ##move to oligoClasses
-       crlmm, 
-       cnOptions,
-       calls,
-       "calls<-",
-     snprma)
+## move to oligoClasses
+export(celDates, crlmm, cnOptions, calls, "calls<-", snprma)
 
 ##exportMethods(computeHmm) ##move to VanillaICE
 exportMethods(A, B, copyNumber)
@@ -66,6 +63,3 @@ export(##viterbi.CNSet, ##move to VanillaICE
 	readIdatFiles,
         withinGenotypeMoments,  
 	locationAndScale, getParam.SnpSuperSet)
-
-
-
