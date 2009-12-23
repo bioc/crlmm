@@ -354,3 +354,8 @@ is decoded and scanned
 2009-12-23 R. Scharpf - commited version 1.5.17
 
 ** updated first half of inst/scripts/copynumber.Rnw, as well as a few of the help files
+
+2009-12-23 R. Scharpf - commited version 1.5.18
+
+** removed generics for addFeatureAnnotation and GT<-
+
