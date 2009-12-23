@@ -8,8 +8,6 @@
 \alias{B,AlleleSet-method}
 \alias{B<-}
 \alias{B<-,AlleleSet,matrix-method}
-\alias{isSnp}
-\alias{isSnp,AlleleSet-method}
 \title{Indicator for polymorphic probes}
 \description{
   
@@ -23,12 +21,11 @@
 \usage{
 A(object)
 B(object)
-isSnp(object)
 }
 \arguments{
   \item{object}{AlleleSet object}
 }
 \value{
-  an indicator: 0=nonpolymorphic, 1=polymorphic
+	matrix of normalized intensities
 }
 \keyword{manip}

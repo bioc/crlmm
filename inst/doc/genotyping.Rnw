@@ -49,6 +49,7 @@ samples on SNP 5.0 made available via the \Rpackage{hapmapsnp5}
 package.
 
 <<crlmm>>=
+require(oligoClasses)
 library(crlmm)
 library(hapmapsnp5)
 path <- system.file("celFiles", package="hapmapsnp5")

@@ -45,6 +45,7 @@ are assumed to be in the current directory. First, we identify the
 files and run \Rmethod{crlmm}. The results will be saved to the
 variable \Robject{crlmmResult}.
 <<lkd>>=
+library(oligoClasses}
 library(crlmm)
 celFiles <- list.celfiles()
 celFiles[1:4]

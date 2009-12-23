@@ -43,211 +43,60 @@ options(prompt="R> ")
 CRLMM supports the following platforms:
 
 <<cdfname>>=
+library(oligoClasses)
 library(crlmm)
 crlmm:::validCdfNames()
 @ 
 
-<<Rsge, eval=TRUE, echo=FALSE>>=
-##If multiple cluster nodes are available
-library(Rsge)
-@ 
-
 \paragraph{Preprocess and genotype.}
 
-Specify the coordinates of Affymetrix cel files and where to put
-intermediate files generated during the course of preprocessing / copy
-number estimation.
+Provide the complete path for the filenames:
 
 <<celfiles>>=
-myPath <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
-celFiles <- list.celfiles(myPath, full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
-#outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/tmp"
-if(!file.exists(outdir)) dir.create(outdir)
+celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
 @ 
 
-Split the list of files by plate.  For this HapMap data, the different
-ancestries were run on separate plates.
+While genotyping with crlmm can be performed using a small number of
+samples, copy number estimation requires at least 10 samples --
+preferably all of the samples that were processed together on the same
+plate.  Crlmm does not use a reference dataset when estimating model
+parameters because of large batch effects \citep{Scharpf2009}. The
+quantile normalization performed as part of the preprocessing of the raw
+data is insufficient for removing batch effects.  Processing a reference
+dataset, such as HapMap samples, along with the experimental data will
+not improve copy number estimation for the experimental dataset, and
+should not be used as a means to increase the sample size. Furthermore,
+processing a reference dataset without acknowledging that these samples
+were derived from a different batch can result in incorrect copy number
+estimates in both the experimental and reference datasets.  The
+appropriate way to acknowledge batch is to supply the batch name for
+each sample to be processed in the argument to \Robject{cnOptions}:
 
-<<plate>>=
-plate <- substr(basename(celFiles), 13, 13)
-table(plate)
-celFiles <- split(celFiles, plate)
+<<celfiles>>=
+cnOpts <- cnOptions(cdfName="genomewidesnp6",
+		    outdir="/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m",
+		    batch=substr(basename(celFiles), 13, 13))
+str(cnOpts)
+stopifnot(length(cnOpts$batch) == length(celFiles))
+names(cnOpts$batch) <- basename(celFiles)
 @ 
-
 
 \noindent The next code chunk quantile normalizes the samples to a
-target reference distribution and uses the crlmm algorithm to genotype.
-See \cite{Carvalho2007a} for details regarding the crlmm genotyping
-algorithm.
+target reference distribution, uses the crlmm algorithm to genotype, and
+then estimates the copy number for each batch. Currently processing the
+270 HapMap cel files will require approximately 20G of RAM. We are
+working on methods to reduce the memory footprint.
 
 <<preprocessAndGenotype, eval=TRUE, echo=TRUE>>=
-for(i in seq(along=celFiles)){
-	platedir <- file.path(outdir, names(celFiles)[i])
-	if(!file.exists(platedir)) dir.create(platedir)
-	crlmmWrapper(celFiles[[i]],##[1:15], 
-		     cdfName="genomewidesnp6",
-		     save.it=FALSE, 
-		     load.it=TRUE,
-		     intensityFile=file.path(platedir, "normalizedIntensities.rda"),
-		     crlmmFile=file.path(platedir, "snpsetObject.rda"))
-}
-q("no")
+crlmmCopynumber(celFiles, cnOpts)
 @ 
 
-<<preprocessAndGenotype, eval=FALSE, echo=FALSE>>=
-for(i in seq(along=celFiles)){
-	platedir <- file.path(outdir, names(celFiles)[i])
-	if(!file.exists(platedir)) dir.create(platedir)
-	sge.submit(crlmmWrapper,
-		   filenames=celFiles[[i]],##[1:15], 
-		   cdfName="genomewidesnp6",
-		   save.it=FALSE, 
-		   load.it=TRUE,
-		   intensityFile=file.path(platedir, "normalizedIntensities.rda"),
-		   crlmmFile=file.path(platedir, "snpsetObject.rda"),
-		   global.savelist=c("platedir"),
-		   packages="crlmm")
-}
-##platedirs <- sapply(names(celFiles), function(x) file.path(outdir, x))
-##intensityFiles <- file.path(platedirs, "normalizedIntensities.rda")
-####crlmmFiles <- file.path(platedirs, "snpsetObject.rda")
-####myF <- function(celFiles, intensityFile, crlmmFile, ...){
-####	crlmmWrapper(celFiles, intensityFile=intensityFile,
-####		     crlmmFile=crlmmFile,
-##sge.apply(celFiles, 
-##	  crlmmWrapper,
-##	  cdfName="genomewidesnp6",
-##	  save.it=FALSE, 
-##	  load.it=TRUE,
-##	  intensityFile=,
-##	  crlmmFile=file.path(platedir, "snpsetObject.rda"))
-q("no")
-@ 
-
-As a result of the above wrapper, the following R objects are now
-created for each plate:
+The following R objects are created from crlmmCopynumber:
 
 <<crlmmSetListObjects>>=
-fns <- list.files(platedir, pattern="crlmmSetList", full.name=TRUE)
+fns <- list.files(cnOpts[["outdir"]], pattern="cnSet", full.name=TRUE)
 @ 
 
-To estimate copy number, simply run the update function on this vector
-of filenames.  If multiple nodes are available for computation, one
-could easily split this job.
-
-<<copynumber, echo=FALSE, eval=TRUE>>=
-for(i in seq(along=celFiles)){
-	fns <- list.files(file.path(outdir, names(celFiles[i])), 
-			  pattern="crlmmSetList", full.names=TRUE)
-	update(fns)
-}
-@
-
-<<copynumber.sge, echo=FALSE, eval=TRUE>>=
-for(i in seq(along=celFiles)){
-	fns <- list.files(file.path(outdir, names(celFiles[i])), 
-			  pattern="crlmmSetList", full.names=TRUE)
-	sge.parLapply(X=fns, FUN=update, packages="crlmm", cluster=FALSE)
-}
-@
-
-\paragraph{Locus- and allele-specific estimates of copy number.}
-
-Load the object for chromosome 22 and compute copy number:
-
-<<crlmmList-show>>=
-CHR <- 22
-if(!exists("crlmmSetList")) load(file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
-show(crlmmSetList)
-crlmmSetList <- update(crlmmSetList)
-show(crlmmSetList)
-@ 
-
-See the help file for \Robject{computeCopynumber} for arguments to
-\Robject{update}.  Provided that the assumption of integer copy number
-is reasonable, one can fit a hidden Markov model to the locus-level
-estimates of copy number and uncertainty.
-
-\paragraph{A hidden Markov model.}
-
-Emission probabilities for the hidden markov model can be computed from
-the copy number prediction regions based on bivariate normal scatter
-plots of the log A versus log B intensities.  (By contrast, a
-nonparamemtric segmentation would be applied to intensities on the scale
-of copy number.)
-
-<<emissionProbabilities>>=
-library(VanillaICE)
-copyNumberStates <- 0:5
-if(!exists("emission.cn")){
-	emission.cn <- suppressWarnings(crlmm:::computeEmission(crlmmSetList, copyNumberStates))
-	dim(emission.cn)
-}
-@ 
-
-*Before smoothing the estimates as a function of physical position by
-segmentation hidden Markov models, one should consider how to handle
-outliers.  In particular, samples with low signal to noise ratios are
-likely to have many copy number outliers. See suggested visualizations.
-
-Initial state probabilities and transition probabilities for the HMM:
-
-<<probs>>=
-initialP <- rep(1/length(copyNumberStates), length(copyNumberStates))
-tau <- transitionProbability(chromosome=chromosome(crlmmSetList),
-			     position=position(crlmmSetList),
-			     TAUP=1e8)
-@ 
-
-The viterbi algorithm is used to identify the sequence of states that
-maximizes the likelihood:
-
-<<hmm>>=
-if(!exists("hmmPredictions")){
-hmmPredictions <- viterbi(emission=emission.cn,
-			  initialStateProbs=log(initialP), 
-			  tau=tau[, "transitionPr"],
-			  arm=tau[, "arm"], 
-			  normalIndex=3,
-			  normal2altered=0.01,
-			  altered2normal=1,
-			  altered2altered=0.001)	    
-}
-table(as.integer(hmmPredictions)-1)
-brks <- breaks(x=hmmPredictions, states=copyNumberStates, 
-	       position=tau[, "position"],
-	       chromosome=tau[, "chromosome"])
-str(brks)
-@ 
-
-\paragraph{Circular binary segmentation}
-
-<<setup>>=
-library(DNAcopy)
-library(genefilter)
-ratioset <- crlmmSetList[[3]]
-meds <- rowMedians(copyNumber(ratioset), na.rm=TRUE)
-ratios <- log2(copyNumber(ratioset)) - log2(meds)
-ratioset <- new("SnpCopyNumberSet",
-		copyNumber=ratios,
-		phenoData=phenoData(ratioset),
-		featureData=featureData(ratioset),
-		annotation=annotation(ratioset))
-@ 
-
-The following code chunk (not evaluated) takes a while to run:
-
-<<cbs, eval=FALSE>>=
-CNA.object <- CNA(copyNumber(ratioset), 
-		  chromosome(ratioset),
-		  position(ratioset),
-		  data.type="logratio",
-		  sampleid=sampleNames(ratioset))
-smoothed.CNA.object <- smooth.CNA(CNA.object)
-segment.cna <- segment(smoothed.CNA.object, verbose=1)
-save(segment.cna, file=file.path(outdir, paste("segment.cna_", CHR, ".rda", sep="")))
-@ 
 
 \section{Accessors}
 
@@ -258,69 +107,59 @@ save(segment.cna, file=file.path(outdir, paste("segment.cna_", CHR, ".rda", sep=
 An object of class \Robject{ABset} is stored in the first element of the
 \Robject{crlmmSetList} object. The following accessors may be of use:
 
-Accessors for the quantile normalized intensities for the A allele:
+Accessors for the quantile normalized intensities for the A allele at
+polymorphic loci:
 
 <<accessors>>=
-a <- A(crlmmSetList)
+a <- A(cnSet)[isSnp(cnSet), ]
 dim(a)
 @ 
 
-The quantile normalized intensities for the nonpolymorphic probes are
-also stored in the 'A' assay data element.  To retrieve the quantile
-normalized intensities for the A allele only at polymorphic loci:
+The quantile-normalized intensities for nonpolymorphic loci are obtained by:
 
-<<A.polymorphic>>=
-a.snps <- A(crlmmSetList[snpIndex(crlmmSetList), ])
-dim(a.snps)
-@ 
-
-\noindent For the nonpolymorphic loci:
-<<A.nonpolymorphic>>=
-a.nps <- A(crlmmSetList[cnIndex(crlmmSetList), ])
-dim(a.nps)
+<<>>=
+npIntensities <- A(cnSet)[!isSnp(cnSet), ]
 @ 
 
 Quantile normalized intensities for the B allele at polymorphic loci:
 
 <<B.polymorphic>>=
-b.snps <- B(crlmmSetList[snpIndex(crlmmSetList), ])
+b.snps <- B(cnSet[isSnp(cnSet), ])
 @ 
 
 Note that NAs are recorded in the 'B' assay data element for
 nonpolymorphic loci:
 
 <<B.NAs>>=
-all(is.na(B(crlmmSetList[cnIndex(crlmmSetList), ])))
+all(is.na(B(cnSet[!isSnp(cnSet), ])))
 @ 
 
 \paragraph{\Robject{SnpSet}: Genotype calls and confidence scores}
 
 Genotype calls:
 <<genotypes>>=
-genotypes <- calls(crlmmSetList)
+genotypes <- snpCall(cnSet)
 @ 
 Confidence scores of the genotype calls:
 <<confidenceScores>>=
-genotypeConf <- confs(crlmmSetList)
+genotypeConf <- confs(cnSet)
 @ 
 
 \paragraph{\Robject{CopyNumberSet}: allele-specific copy number}
 
 Allele-specific copy number at polymorphic loci:
 <<ca>>=
-ca <- CA(crlmmSetList[snpIndex(crlmmSetList), ])
+ca <- CA(cnSet[isSnp(cnSet), ])
 @ 
 
 Total copy number at nonpolymorphic loci:
 <<ca>>=
-cn.nonpolymorphic <- CA(crlmmSetList[cnIndex(crlmmSetList), ])
-range(cn.nonpolymorphic, na.rm=TRUE)
-median(cn.nonpolymorphic, na.rm=TRUE)
+cn.nonpolymorphic <- CA(cnSet[!isSnp(cnSet), ])
 @ 
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
-cn <- copyNumber(crlmmSetList)
+cn <- copyNumber(cnSet)
 @ 
 
 \subsection{Other accessors}
@@ -347,7 +186,7 @@ fvarLabels(crlmmSetList[[3]])
 A histogram of the signal to noise ratio for the HapMap samples:
 
 <<plotSnr, fig=TRUE, include=FALSE>>=
-hist(crlmmSetList[[2]]$SNR, xlab="SNR", main="")
+hist(cnSet$SNR, xlab="SNR", main="")
 @ 
 
 \begin{figure}
@@ -367,12 +206,12 @@ one would have 70+ files in a given batch. Here we make a table of date
 versus ancestry:
 
 <<specifyBatch, eval=FALSE, echo=FALSE>>=
-sns <- sampleNames(crlmmResults)
+sns <- sampleNames(cnSet)
 sns[1]
 plate <- substr(basename(sns), 13, 13)
 table(plate)
-table(format(as.POSIXlt(protocolData(crlmmResults)[["ScanDate"]]), "%d %b %Y"), plate)
-dts <- protocolData(crlmmResults)[["ScanDate"]]
+table(format(as.POSIXlt(protocolData(cnSet)[["ScanDate"]]), "%d %b %Y"), plate)
+dts <- protocolData(cnSet)[["ScanDate"]]
 @ 
 
 As all of these samples were run on the first week of March, we would
@@ -401,69 +240,70 @@ additional robustness to this assumption.  Set the \Robject{bias.adj}
 argument to \Robject{TRUE}:
 
 <<biasAdjustment, eval=FALSE>>=
-update(crlmmSetList, CHR=22, bias.adj=TRUE)
+cnOpts[["bias.adj"]] <- TRUE
+crlmmCopynumber(celFiles, cnOpts)
 @ 
-
-The following code chunk calculates the frequency of amplifications and
-deletions at each locus. Shaded regions above the zero line in Figure
-\ref{fig:hmm_hapmap} display the frequency of amplifications, whereas
-shaded regions below the zero line graphically display the frequency of
-hemizygous or homozygous deletions.
-
-<<hmm_hapmap, fig=TRUE, include=FALSE, width=8, height=7>>=
-require(SNPchip)
-library(RColorBrewer)
-numberUp <- rowSums(hmmPredictions > 3, na.rm=TRUE)
-numberDown <- -rowSums(hmmPredictions < 3, na.rm=TRUE)
-poly.cols <- brewer.pal(7, "Accent")
-alt.brks <- brks[brks[, "state"] != "copy.number_2", ]
-op <- par(ask=FALSE)
-ylim <- c(min(numberDown)-5, max(numberUp)+5)
-xlim <- c(10*1e6, max(position(crlmmSetList)))
-plot(position(crlmmSetList), rep(0, nrow(crlmmSetList[[1]])),
-     type="n", xlab="Physical position (Mb)",
-     ylim=ylim,
-     xlim=xlim,
-     ylab="frequency", main="Chr 22",
-     xaxt="n",
-     xaxs="r")
-axis(1, at=pretty(xlim), labels=pretty(xlim)/1e6)
-polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
-	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberUp)),
-	col=poly.cols[3], border=poly.cols[3])
-polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
-	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberDown)),
-	col=poly.cols[5], border=poly.cols[5])
-##plotCytoband(22, xlim=xlim, new=FALSE,
-##	     label.cytoband=FALSE,
-##	     cytoband.ycoords=c(-10, -8), xaxs="r")
-
-medLength <- round(median(alt.brks[, "nbases"]), 2)
-medMarkers <- median(alt.brks[, "nprobes"])
-sdMarkers <- round(mad(alt.brks[, "nprobes"]), 2)
-sdsLength <- round(mad(alt.brks[, "nbases"]), 2)
-legend("topright",
-       bty="n",
-       legend=c(paste("median length:", medLength, "(bp)"),
-       paste("MAD length:", sdsLength, "(bp)"),
-       paste("median # markers:", medMarkers),
-       paste("MAD # markers:", sdMarkers)),
-       cex=0.8, ncol=2)
-legend("topleft",
-       fill=poly.cols[c(3, 5)],
-       legend=c("amplifications", "deletions"), bty="n")
-par(op)
-gc()
-@ 
-
-\begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{copynumber-hmm_hapmap}
-  \caption{\label{fig:hmm_hapmap} The frequency of amplifications in the
-    hapmap samples is displayed above the zero line.  The frequency of
-    hemizygous or homozygous deletions are displayed below the zero
-    line.}
-\end{figure}
+%
+%The following code chunk calculates the frequency of amplifications and
+%deletions at each locus. Shaded regions above the zero line in Figure
+%\ref{fig:hmm_hapmap} display the frequency of amplifications, whereas
+%shaded regions below the zero line graphically display the frequency of
+%hemizygous or homozygous deletions.
+%
+%<<hmm_hapmap, fig=TRUE, include=FALSE, width=8, height=7>>=
+%require(SNPchip)
+%library(RColorBrewer)
+%numberUp <- rowSums(hmmPredictions > 3, na.rm=TRUE)
+%numberDown <- -rowSums(hmmPredictions < 3, na.rm=TRUE)
+%poly.cols <- brewer.pal(7, "Accent")
+%alt.brks <- brks[brks[, "state"] != "copy.number_2", ]
+%op <- par(ask=FALSE)
+%ylim <- c(min(numberDown)-5, max(numberUp)+5)
+%xlim <- c(10*1e6, max(position(crlmmSetList)))
+%plot(position(crlmmSetList), rep(0, nrow(crlmmSetList[[1]])),
+%     type="n", xlab="Physical position (Mb)",
+%     ylim=ylim,
+%     xlim=xlim,
+%     ylab="frequency", main="Chr 22",
+%     xaxt="n",
+%     xaxs="r")
+%axis(1, at=pretty(xlim), labels=pretty(xlim)/1e6)
+%polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
+%	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberUp)),
+%	col=poly.cols[3], border=poly.cols[3])
+%polygon(x=c(position(crlmmSetList), rev(position(crlmmSetList))),
+%	y=c(rep(0, nrow(crlmmSetList[[1]])), rev(numberDown)),
+%	col=poly.cols[5], border=poly.cols[5])
+%##plotCytoband(22, xlim=xlim, new=FALSE,
+%##	     label.cytoband=FALSE,
+%##	     cytoband.ycoords=c(-10, -8), xaxs="r")
+%
+%medLength <- round(median(alt.brks[, "nbases"]), 2)
+%medMarkers <- median(alt.brks[, "nprobes"])
+%sdMarkers <- round(mad(alt.brks[, "nprobes"]), 2)
+%sdsLength <- round(mad(alt.brks[, "nbases"]), 2)
+%legend("topright",
+%       bty="n",
+%       legend=c(paste("median length:", medLength, "(bp)"),
+%       paste("MAD length:", sdsLength, "(bp)"),
+%       paste("median # markers:", medMarkers),
+%       paste("MAD # markers:", sdMarkers)),
+%       cex=0.8, ncol=2)
+%legend("topleft",
+%       fill=poly.cols[c(3, 5)],
+%       legend=c("amplifications", "deletions"), bty="n")
+%par(op)
+%gc()
+%@ 
+%
+%\begin{figure}
+%  \centering
+%  \includegraphics[width=\textwidth]{copynumber-hmm_hapmap}
+%  \caption{\label{fig:hmm_hapmap} The frequency of amplifications in the
+%    hapmap samples is displayed above the zero line.  The frequency of
+%    hemizygous or homozygous deletions are displayed below the zero
+%    line.}
+%\end{figure}
 
 \clearpage
 \paragraph{One sample at a time: locus-level estimates}
@@ -473,12 +313,12 @@ versus copy number (vertical axis) for the first sample.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1)
-plot(position(crlmmSetList), copyNumber(crlmmSetList)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
+plot(position(cnSet), copyNumber(cnSet)[, 1], pch=".", cex=2, xaxt="n", col="grey20", ylim=c(0,6), 
      ylab="copy number", xlab="physical position (Mb)",
-     main=paste(sampleNames(crlmmSetList)[1], ", CHR:", unique(chromosome(crlmmSetList))))
-points(position(crlmmSetList)[cnIndex(crlmmSetList)], copyNumber(crlmmSetList)[cnIndex(crlmmSetList), 1],
+     main=paste(sampleNames(cnSet)[1], ", CHR:", unique(chromosome(cnSet))))
+points(position(cnSet)[cnIndex(cnSet)], copyNumber(cnSet)[cnIndex(cnSet), 1],
        pch=".", cex=2, col="lightblue")
-axis(1, at=pretty(range(position(crlmmSetList))), labels=pretty(range(position(crlmmSetList)))/1e6)
+axis(1, at=pretty(range(position(cnSet))), labels=pretty(range(position(cnSet)))/1e6)
 @ 
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
@@ -501,20 +341,20 @@ estimates and overlays the predictions from the hidden markov model.
 ask <- FALSE
 op <- par(mfrow=c(3, 1), las=1, mar=c(1, 4, 1, 1), oma=c(3, 1, 1, 1), ask=ask)
 ##Put fit on the copy number scale
-cns <- copyNumber(crlmmSetList)
+cns <- copyNumber(cnSet)
 cnState <- hmmPredictions - as.integer(1)
-xlim <- c(10*1e6, max(position(crlmmSetList)))
+xlim <- c(10*1e6, max(position(cnSet)))
 cols <- brewer.pal(8, "Dark2")[1:4]
 for(j in 1:3){
-	plot(position(crlmmSetList), cnState[, j], pch=".", col=cols[2], xaxt="n", 
+	plot(position(cnSet), cnState[, j], pch=".", col=cols[2], xaxt="n", 
 	     ylab="copy number", xlab="Physical position (Mb)", type="s", lwd=2,
 	     ylim=c(0,6), xlim=xlim)
-	points(position(crlmmSetList), cns[, j], pch=".", col=cols[3])
-	lines(position(crlmmSetList), cnState[,j], lwd=2, col=cols[2])
-	axis(1, at=pretty(position(crlmmSetList)), 
-	     labels=pretty(position(crlmmSetList))/1e6)
+	points(position(cnSet), cns[, j], pch=".", col=cols[3])
+	lines(position(cnSet), cnState[,j], lwd=2, col=cols[2])
+	axis(1, at=pretty(position(cnSet)), 
+	     labels=pretty(position(cnSet))/1e6)
 	abline(h=c(1,3), lty=2, col=cols[1])	
-	legend("topright", bty="n", legend=sampleNames(crlmmSetList)[j])
+	legend("topright", bty="n", legend=sampleNames(cnSet)[j])
 	legend("topleft", lty=1, col=cols[2], legend="copy number state",
 	       bty="n", lwd=2)
 	plotCytoband(CHR, cytoband.ycoords=c(5, 5.2), new=FALSE,
@@ -545,12 +385,12 @@ colors <- c("red", "blue", "green3")
 cex <- 0.6
 par(mfrow=c(3,3), las=1, pty="s", ask=FALSE, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
 ##plot 9 at a time
-indices <- split(snpIndex(crlmmSetList), rep(1:length(snpIndex(crlmmSetList)), each=9, length.out=length(snpIndex(crlmmSetList))))
+indices <- split(snpIndex(cnSet), rep(1:length(snpIndex(cnSet)), each=9, length.out=length(snpIndex(cnSet))))
 ##par(ask=FALSE)
 j <- 1
 for(i in indices[[j]]){
-	gt <- calls(crlmmSetList)[i, ]
-	plot(crlmmSetList[i, ], 
+	gt <- calls(cnSet)[i, ]
+	plot(cnSet[i, ], 
 	     pch=pch, 
 	     col=colors[gt], 
 	     bg=colors[gt], cex=cex,
@@ -577,7 +417,7 @@ for(i in indices[[j]]){
 require(RColorBrewer)
 library(ellipse)
 greens <- brewer.pal(9, "Greens")
-J <- split(1:ncol(crlmmSetList), batch(crlmmSetList))
+J <- split(1:ncol(cnSet), batch(cnSet))
 colors <- c("red", "blue", "green3")
 cex <- 0.6
 colors <- c("blue", greens[8], "red")
@@ -588,33 +428,33 @@ lwd <- 2
 ##pdf("figures/snp22plots%02d.pdf", width=600, height=600)
 ask <- FALSE
 par(mfrow=c(3,3), las=1, pty="s", ask=ask, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
-indices <- split(snpIndex(crlmmSetList), rep(1:length(snpIndex(crlmmSetList)), each=9, length.out=length(snpIndex(crlmmSetList))))
+indices <- split(snpIndex(cnSet), rep(1:length(snpIndex(cnSet)), each=9, length.out=length(snpIndex(cnSet))))
 ##for(j in seq(along=indices)[1:10]){
 j <- 1
 	cat(j, "\n")
 	k <- 1
 	for(i in indices[[j]]){
-		gt <- calls(crlmmSetList)[i, ]
+		gt <- calls(cnSet)[i, ]
 		pch <- as.character(gt)
 		cex <- 0.9
-		plot(crlmmSetList[i, ], 
+		plot(cnSet[i, ], 
 		     pch=pch, 
 		     col=pch.col[gt],
 		     cex=cex,
 		     xlim=xlim, ylim=ylim,
 		     type="n")
 		if(plotpoints){
-			for(b in seq(along=unique(batch(crlmmSetList)))){
-				points(crlmmSetList[i, J[[b]]], 
+			for(b in seq(along=unique(batch(cnSet)))){
+				points(cnSet[i, J[[b]]], 
 				       pch=pch, 
 				       col=colors[b], bg=colors[b], cex=cex,
 				       xlim=xlim, ylim=ylim)
 			}
 		}
-		for(b in seq(along=unique(batch(crlmmSetList)))){
-			ellipse(crlmmSetList[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
+		for(b in seq(along=unique(batch(cnSet)))){
+			ellipse(cnSet[i, J[[b]]], copynumber=2, col=colors[b], lwd=lwd)
 		}
-		##legend("bottomright", bty="n", legend=featureNames(crlmmSetList)[i])
+		##legend("bottomright", bty="n", legend=featureNames(cnSet)[i])
 		if(k == 1) {
 			legend("bottomleft", bty="n", fill=colors, legend=c("CEPH", "Yoruba", "Asian"))	
 			mtext("A", 1, outer=TRUE, line=1)
@@ -645,11 +485,11 @@ adjusted by passing the argument \Robject{CONF.THR} to the
 
 <<linearModel, fig=TRUE,include=FALSE, eval=FALSE, echo=FALSE>>=
 cols <- brewer.pal(7, "Accent")[c(1, 4, 7)]
-i <- match("SNP_A-8608180", featureNames(crlmmSetList))
-B <- batch(crlmmSetList) == unique(batch(crlmmSetList))[1]
-gt.conf <- confs(crlmmSetList[i, B])
+i <- match("SNP_A-8608180", featureNames(cnSet))
+B <- batch(cnSet) == unique(batch(cnSet))[1]
+gt.conf <- confs(cnSet[i, B])
 op <- par(mfrow=c(2, 1), las=1, ask=FALSE, mar=c(3.5, 4, 0.5, 0.5), oma=c(0, 0, 2, 0))
-crlmm:::boxplot(crlmmSetList[i, B][[1]])
+crlmm:::boxplot(cnSet[i, B][[1]])
 par(op)
 @ 
 

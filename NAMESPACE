@@ -22,12 +22,13 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-		  "confs<-", cnConfidence, "cnConfidence<-", copyNumber,
-		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-",
-		  rangedData, segmentData, "rangedData<-",
-		  "segmentData<-")
+		  "confs<-", cnConfidence, "cnConfidence<-", 
+		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-")
+
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
+
+importFrom(oligoClasses, copyNumber)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
@@ -48,18 +49,13 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-## move to oligoClasses
-export(celDates, crlmm, cnOptions, calls, "calls<-", snprma)
-
-##exportMethods(computeHmm) ##move to VanillaICE
 exportMethods(A, B, copyNumber)
-export(crlmmCopynumber) 
-export(ellipse) 
-export(##viterbi.CNSet, ##move to VanillaICE
-	combineIntensities,
-	whichPlatform,
-	isValidCdfName,
-	crlmmWrapper,
-	readIdatFiles,
-        withinGenotypeMoments,  
-	locationAndScale, getParam.SnpSuperSet)
+export(cnOptions, crlmm, crlmmCopynumber, ellipse, readIdatFiles, snprma) 
+
+##export(##viterbi.CNSet, ##move to VanillaICE
+##	combineIntensities,
+##	whichPlatform,
+##	isValidCdfName,
+##	crlmmWrapper,
+##        withinGenotypeMoments,  
+##	locationAndScale, getParam.SnpSuperSet)

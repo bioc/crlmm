@@ -50,7 +50,7 @@ snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbo
   \item{cdfName}{Name of the CDF}
 }
 \examples{
-if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
+if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
   path <- system.file("celFiles", package="hapmapsnp5")
 
   ## the filenames with full path...

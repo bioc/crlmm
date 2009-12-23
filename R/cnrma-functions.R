@@ -225,7 +225,9 @@ crlmmCopynumber <- function(filenames, cnOptions, object, ...){
 		k <- grep("chr", colnames(snpProbes))
 		if(length(k) < 1) stop("chr or chromosome not in colnames(snpProbes)")
 	}
+	set.seed(cnOptions[["seed"]])  ##for reproducibility
 	chromosome <- cnOptions[["chromosome"]]
+	SNRmin <- cnOptions[["SNRmin"]]
 	for(CHR in chromosome){
 		cat("Chromosome ", CHR, "\n")
 		if(createIntermediateObjects){
@@ -247,6 +249,10 @@ crlmmCopynumber <- function(filenames, cnOptions, object, ...){
 			cnSet <- combineIntensities(res=snpI,
 						    NP=npI,
 						    callSet=callSet[index.snps, ])
+			if(any(cnSet$SNR > SNRmin)){
+				warning(paste("Excluding samples with SNR < ", SNRmin))
+				cnSet <- cnSet[, cnSet$SNR >= SNRmin]
+			}
 			rm(snpI, npI, snps, cnps, index.snps, index.nps); gc()
 			pData(cnSet)$batch <- cnOptions[["batch"]]
 			featureData(cnSet) <- lm.parameters(cnSet, cnOptions)
@@ -262,10 +268,13 @@ crlmmCopynumber <- function(filenames, cnOptions, object, ...){
 			rm(cnSet, alleleSet); gc()
 			next()
 		}
-		if(cnOptions[["save.cnset"]]){
-			save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
+		if(length(chromosome) == 1){
+			if(cnOptions[["save.cnset"]]){
+				save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
+			}
 		}
 		if(length(chromosome) > 1){
+			save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
 			rm(cnSet); gc()
 		} else {
 			return(cnSet)
@@ -287,7 +296,6 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	rgFile=cnOptions[["rgFile"]]
 	##use.ff=cnOptions[["use.ff"]]
 	outdir <- cnOptions[["outdir"]]
-	tmpdir <- cnOptions[["tmpdir"]]
 	if(missing(cdfName)) stop("cdfName is missing -- a valid cdfName is required.  See crlmm:::validCdfNames()")
 	platform <- whichPlatform(cdfName)
 	if(!(platform %in% c("affymetrix", "illumina"))){
@@ -454,18 +462,6 @@ whichPlatform <- function(cdfName){
 }
 
 
-##isValidCdfName <- function(cdfName, platform){
-##	chipList <- validCdfNames(platform)
-##	if(!(cdfName %in% chipList)){
-##		warning("cdfName must be one of the following: ",
-##			chipList)
-##	}
-##	result <- cdfName %in% chipList
-##	return(result)
-##}
-	
-	
-	
 # steps: quantile normalize hapmap: create 1m_reference_cn.rda object
 cnrma <- function(filenames, cdfName, sns, seed=1, verbose=FALSE, outdir){
 	if(missing(cdfName)) stop("must specify cdfName")
@@ -565,8 +561,7 @@ thresholdCopynumber <- function(object){
 ##
 ##}
 
-cnOptions <- function(tmpdir=tempdir(),
-		      outdir="./",
+cnOptions <- function(outdir="./",
 		      cdfName,
 		      crlmmFile="snpsetObject.rda",
 		      intensityFile="normalizedIntensities.rda",
@@ -581,14 +576,13 @@ cnOptions <- function(tmpdir=tempdir(),
 		      DF.PRIOR=50,
 		      bias.adj=FALSE,
 		      prior.prob=rep(1/4, 4),
-		      SNRmin=5,
+		      SNRmin=4,
 		      chromosome=1:24,
 		      seed=123,
 		      verbose=TRUE,
 		      GT.CONF.THR=0.99,
 		      PHI.THR=2^6,##used in nonpolymorphic fxn for training
-		      nAA.THR=5, ##used in nonpolymorphic fxn for training
-		      nBB.THR=5, ##used in nonpolymorphic fxn for training
+		      nHOM.THR=5, ##used in nonpolymorphic fxn for training
 		      MIN.NU=2^3,
 		      MIN.PHI=2^3,
 		      THR.NU.PHI=TRUE,
@@ -609,9 +603,8 @@ cnOptions <- function(tmpdir=tempdir(),
 ##		hmmOpts <- hmmOptions(...)
 ##	}
 	if(is.null(batch))
-		stop("batch must have the same length as the number of samples")
-	list(tmpdir=tmpdir,
-	     outdir=outdir,
+		stop("must specify batch -- should be the same length as the number of files")
+	list(outdir=outdir,
 	     cdfName=cdfName,
 	     crlmmFile=file.path(outdir, crlmmFile),
 	     intensityFile=file.path(outdir, intensityFile),
@@ -632,8 +625,7 @@ cnOptions <- function(tmpdir=tempdir(),
 	     seed=seed,
 	     verbose=verbose,
 	     PHI.THR=PHI.THR,
-	     nAA.THR=nAA.THR,
-	     nBB.THR=nBB.THR,
+	     nHOM.THR=nHOM.THR,
 	     MIN.NU=MIN.NU,
 	     MIN.PHI=MIN.PHI,
 	     THR.NU.PHI=THR.NU.PHI,
@@ -692,8 +684,8 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		flags <- list(A=flagsA, B=flagsB)
 		return(flags)
 	}
-	nAA.THR <- cnOptions$nAA.THR
-	nBB.THR <- cnOptions$nBB.THR
+	nAA.THR <- cnOptions$nHOM.THR
+	nBB.THR <- cnOptions$nHOM.THR
 	PHI.THR <- cnOptions$PHI.THR
 	snpflags <- goodSnps(object, PHI.THR, tmp.objects, nAA.THR, nBB.THR)
 	flagsA <- snpflags$A
@@ -1115,21 +1107,14 @@ locationAndScale <- function(object, cnOptions, tmp.objects){
 	return(object)
 }
 
-##coefs <- function(plateIndex, conf, MIN.OBS=3, envir, CONF.THR=0.99){
 coefs <- function(object, cnOptions, tmp.objects){
-##	p <- plateIndex
 	batch <- unique(object$batch)
-##	plates.completed <- envir[["plates.completed"]]
-##	if(!plates.completed[p]) return()
-##	CHR <- envir[["chrom"]]
 	CHR <- unique(chromosome(object))
-##	plate <- envir[["plate"]]
 	muA <- tmp.objects[["muA"]]
 	muB <- tmp.objects[["muB"]]
 	vA <- tmp.objects[["vA"]]
 	vB <- tmp.objects[["vB"]]
 	Ns <- tmp.objects[["Ns"]]
-##	uplate <- tmp.objects[["uplate"]]
 	if(CHR != 23){
 		IA <- muA[, 3:5]
 		IB <- muB[, 3:5]
@@ -1222,7 +1207,7 @@ polymorphic <- function(object, cnOptions, tmp.objects){
 	return(object)
 }
 
-biasAdj <- function(object, cnOptions, tmp.objects){
+posteriorProbability.snps <- function(object, cnOptions, tmp.objects=list()){
 	I <- isSnp(object)
 	gender <- object$gender
 	CHR <- unique(chromosome(object))
@@ -1300,6 +1285,18 @@ biasAdj <- function(object, cnOptions, tmp.objects){
 	posteriorProb[, , 2] <- hemDel
 	posteriorProb[, , 3] <- norm
 	posteriorProb[, , 4] <- amp
+	return(list(tmp.objects, posteriorProb))
+}
+
+biasAdj <- function(object, cnOptions, tmp.objects){
+	gender <- object$gender
+	CHR <- unique(chromosome(object))
+	I <- isSnp(object)
+	A <- A(object)[I, ]
+	normal <- tmp.objects[["normal"]][I, ]
+	results <- posteriorProbability.snps(object=object, cnOptions=cnOptions, tmp.objects=tmp.objects)
+	posteriorProb <- results[[2]]
+	tmp.objects <- results[[1]]
 	mostLikelyState <- apply(posteriorProb, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
 	if(CHR == 23){
 		##so state index 3 is the most likely state for men and women
@@ -1430,35 +1427,6 @@ thresholdModelParams <- function(object, cnOptions){
 	return(object)
 }
 
-
-
-##setMethod("update", "character", function(object, ...){
-##	crlmmFile <- object
-##	for(i in seq(along=crlmmFile)){
-##		cat("Processing ", crlmmFile[i], "...\n")
-##		load(crlmmFile[i])
-##		crlmmSetList <- get("crlmmSetList")
-##		if(length(crlmmSetList) == 3) next()  ##copy number object already present. 
-##		if(!"chromosome" %in% fvarLabels(crlmmSetList[[1]])){
-##			featureData(crlmmSetList[[1]]) <- addFeatureAnnotation(crlmmSetList)
-##		} 
-##		CHR <- unique(chromosome(crlmmSetList[[1]]))
-##		if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
-##		if(CHR==24){
-##			message("skipping chromosome 24")
-##			next()
-##		}
-##		cat("----------------------------------------------------------------------------\n")
-##		cat("-        Estimating copy number for chromosome", CHR, "\n")
-##		cat("----------------------------------------------------------------------------\n")		
-##		crlmmSetList <- update(crlmmSetList, CHR=CHR, ...)
-##		save(crlmmSetList, file=crlmmFile[i])
-##		rm(crlmmSetList); gc();
-##	}
-##})
-
-
-
 computeCopynumber.SnpSuperSet <- function(object, cnOptions){
 ##	use.ff <- cnOptions[["use.ff"]]
 ##	if(!use.ff){
@@ -1477,16 +1445,6 @@ computeCopynumber.SnpSuperSet <- function(object, cnOptions){
 	}
 	return(object)
 }
-
-## computeCopynumber.CNSet
-##    tmp.objects <- instantiateObjects() ##vA, vB, (background mean), muA, muB (within genotype means), Ns
-##    tmp.objects <- withinGenotypeMoments() ##compute vA, vB, muA, muB, Ns
-##    object.batch <- locationAndScale()  ##calcualte tau2A, tau2B, sig2A, sig2B, corr for polymorphic probes
-##    tmp.objects <- oneBatch()  ##impute muA, muB where necessary
-##    object.batch <- coefs()    ##calls nuphiAllele
-##            nuPhiAllele() ##updates nuA, nuA.se, phiA, phiA.se, nuB, ...
-##    object.batch <- polymorphic()        assigns CA, CB
-##    object.batch <- nonpolymorphic()     assigns CA
 
 
 computeCopynumber.CNSet <- function(object, cnOptions){
@@ -1557,6 +1515,7 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 	}
 	return(object)
 }
+
 
 
 
