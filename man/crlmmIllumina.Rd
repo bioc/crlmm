@@ -43,7 +43,8 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, method="quantile",
   \item{verbose}{'logical'.}
   \item{cdfName}{'character' defining the chip annotation (manifest) to use
     ('human370v1c', human550v3b', 'human650v3a', 'human1mv1c',
-    'human370quadv3c', 'human610quadv1b', 'human660quadv1a' 'human1mduov3b')}
+    'human370quadv3c', 'human610quadv1b', 'human660quadv1a',
+    'human1mduov3b', 'humanomni1quadv1b')}
   \item{sns}{'character' vector with sample names to be used.}
   \item{recallMin}{'integer'. Minimum number of samples for recalibration.}
   \item{recallRegMin}{'integer'. Minimum number of SNP's for regression.}
