@@ -181,7 +181,7 @@ is decoded and scanned
 
 2009-07-01 M Ritchie - committed version 1.3.7
 
-* made memory savings to reading and normalization if Illumina data
+* made memory savings to reading and normalization of Illumina data
 * Now use 'protocolData' slot to save scan dates instead of saving them in phenoData slot
 * added vignette for genoytping illumina data (crlmmIllumina.pdf in inst/doc and crlmmIllumina.Rnw in inst/scripts)
 * Changed stop() to warning() when idats are of different type in readIdatFiles()
@@ -351,11 +351,14 @@ is decoded and scanned
 
  * moved IRanges and oligoClasses to Depends (DESCRIPTION)
 
-2009-12-23 R. Scharpf - commited version 1.5.17
+2009-12-23 R. Scharpf - committed version 1.5.17
 
 ** updated first half of inst/scripts/copynumber.Rnw, as well as a few of the help files
 
-2009-12-23 R. Scharpf - commited version 1.5.18
+2009-12-23 R. Scharpf - committed version 1.5.18
 
 ** removed generics for addFeatureAnnotation and GT<-
 
+2009-12-24 M. Ritchie - committed version 1.5.19
+
+ * Added 'humanomni1quadv1b" to chip types allowed in RGtoXY()

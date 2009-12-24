@@ -2,13 +2,13 @@
 \alias{crlmmIllumina}
 \title{Genotype Illumina Infinium II BeadChip data with CRLMM}
 \description{
-  This implementation of the CRLMM is especially designed for
-  data from Illumina Infinium II BeadChips.
+  Implementation of the CRLMM algorithm for
+  data from Illumina's Infinium II BeadChips.
 }
 \usage{
 
-crlmmIllumina(RG, XY, stripNorm=TRUE, useTarget=TRUE,
-      row.names=TRUE, col.names=TRUE,
+crlmmIllumina(RG, XY, stripNorm=TRUE, method="quantile",
+      useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
       intensityFile, mixtureSampleSize=10^5,
@@ -20,7 +20,8 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   \item{RG}{\code{NChannelSet} containing R and G bead intensities}
   \item{XY}{\code{NChannelSet} containing X and Y bead intensities}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
-  \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
+  \item{method}{'chracter' specifying which normalization method to use.}
+  \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE} and \code{method="quantile"}).
     Should the reference HapMap intensities be used in strip-level normalization?}
   \item{row.names}{'logical'. Use rownames - SNP names?}
   \item{col.names}{'logical'. Use colnames - Sample names?}
