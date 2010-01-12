@@ -32,8 +32,8 @@ generateIXTX <- function(x, nrow=3) {
 
 nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	I <- isSnp(object)
-	object.snp <- object[I, ]
 	Ystar <- Ystar[I, ]
+	rownames(Ystar) <- featureNames(object)[isSnp(object)]
 	complete <- rowSums(is.na(W)) == 0 & I
 	W <- W[I, ]
 	if(any(!is.finite(W))){## | any(!is.finite(V))){
@@ -73,7 +73,6 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 		if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
 		if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
 	}
-
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
 	Xstar <- apply(W, 1, generateX, X)
 	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
@@ -118,12 +117,12 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 			object <- pr(object, "phiBX", batch, phiBX)
 		}
 	}
-	THR.NU.PHI <- cnOptions$THR.NU.PHI
-	if(THR.NU.PHI){
-		verbose <- cnOptions$verbose
-		if(verbose) message("Thresholding nu and phi")
-		object <- thresholdModelParams(object, cnOptions)
-	}
+##	THR.NU.PHI <- cnOptions$THR.NU.PHI
+##	if(THR.NU.PHI){
+##		verbose <- cnOptions$verbose
+##		if(verbose) message("Thresholding nu and phi")
+##		object <- thresholdModelParams(object, cnOptions)
+##	}
 	return(object)
 }
 
@@ -246,11 +245,12 @@ crlmmCopynumber <- function(filenames, cnOptions, object, ...){
 				     SKW=snprmaResult$SKW,
 				     mixtureParams=snprmaResult$mixtureParams,
 				     cdfName=snprmaResult$cdfName)
+			cnOptions[["batch"]] <- cnOptions[["batch"]][snpI[["SNR"]]  >= SNRmin]
 			cnSet <- combineIntensities(res=snpI,
 						    NP=npI,
 						    callSet=callSet[index.snps, ])
 			if(any(cnSet$SNR > SNRmin)){
-				warning(paste("Excluding samples with SNR < ", SNRmin))
+				message(paste("Excluding samples with SNR < ", SNRmin))
 				cnSet <- cnSet[, cnSet$SNR >= SNRmin]
 			}
 			rm(snpI, npI, snps, cnps, index.snps, index.nps); gc()
@@ -765,6 +765,7 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		phi2 <- 2^(Yhat2)
 		nu1 <- 2^(mus[, 1]) - phi1
 		nu2 <- 2^(mus[, 2]) - 2*phi2
+
 		if(any(pseudoAR)){
 			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
 		}
@@ -788,15 +789,25 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		sig2A <- getParam(object, "sig2A", batch)
 		normal.f <- normal[, object$gender==2]
 		sig2A[!isSnp(object)] <- rowMAD(log2(A.female*normal.f), na.rm=TRUE)^2
+		sig2A[!isSnp(object) & is.na(sig2A)] <- median(sig2A[!isSnp(object)], na.rm=TRUE)
 		##sig2T[, p] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2
 		object <- pr(object, "sig2A", batch, sig2A)
 
 		nuA[!isSnp(object)] <- nu2
-		object <- pr(object, "nuA", batch, nuA)		
-		##nuT[, p] <- nu2
 		phiA[!isSnp(object)] <- phi2
-		object <- pr(object, "phiA", batch, phiA)
 		
+		THR.NU.PHI <- cnOptions$THR.NU.PHI
+		if(THR.NU.PHI){
+			verbose <- cnOptions$verbose
+			##Assign values to object
+			object <- pr(object, "nuA", batch, nuA)
+			object <- pr(object, "phiA", batch, phiA)			
+			if(verbose) message("Thresholding nu and phi")
+			object <- thresholdModelParams(object, cnOptions)
+		} else {
+			object <- pr(object, "nuA", batch, nuA)		
+			object <- pr(object, "phiA", batch, phiA)
+		}
 	} else {
 		A <- A(object)[!isSnp(object), ]
 		mus <- rowMedians(A * normal, na.rm=TRUE)
@@ -805,6 +816,19 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		logPhiT <- X %*% betahat
 		phiA[!isSnp(object)] <- 2^(logPhiT)
 		nuA[!isSnp(object)] <- mus-2*phiA[!isSnp(object)]
+
+		THR.NU.PHI <- cnOptions$THR.NU.PHI
+		if(THR.NU.PHI){
+			verbose <- cnOptions$verbose
+			##Assign values to object
+			object <- pr(object, "nuA", batch, nuA)
+			object <- pr(object, "phiA", batch, phiA)			
+			if(verbose) message("Thresholding nu and phi")
+			object <- thresholdModelParams(object, cnOptions)
+			##reassign values (now thresholded at MIN.NU and MIN.PHI
+			nuA <- getParam(object, "nuA", batch)
+			phiA <- getParam(object, "phiA", batch)
+		}
 		CA(object)[!isSnp(object), ] <- 1/phiA[!isSnp(object)]*(A - nuA[!isSnp(object)])
 		sig2A <- getParam(object, "sig2A", batch)
 		sig2A[!isSnp(object)] <- rowMAD(log2(A*normal), na.rm=TRUE)^2
@@ -1307,8 +1331,9 @@ biasAdj <- function(object, cnOptions, tmp.objects){
 	##  only exclude observations from one tail, depending on
 	##  whether more are up or down
 	moreup <- rowSums(mostLikelyState > 3) > rowSums(mostLikelyState < 3) ##3 is normal
+	## if equal, which points have a high posterior probability of altered copy number.  drop those.
 	NORM <- matrix(FALSE, nrow(A), ncol(A))
-	NORM[proportionSamplesAltered > 0.8, ] <- FALSE
+	##NORM[proportionSamplesAltered > 0.8, ] <- FALSE
 	ratioUp <- posteriorProb[, , 4]/posteriorProb[, , 3]
 	NORM[ii & moreup, ] <- ratioUp[moreup & ii] < 1  ##normal more likely
 	ratioDown <- posteriorProb[, , 2]/posteriorProb[, , 3]
@@ -1338,7 +1363,16 @@ biasAdjNP <- function(object, cnOptions, tmp.objects){
 	lT <- log2(A)
 	I <- isSnp(object)
 	counter <- 1 ##state counter
-	for(CT in 0:3){
+##	for(CT in 0:3){
+##		sds <- sqrt(tau2A[I]*(CT==0) + sig2A[I]*(CT > 0))
+##		means <- suppressWarnings(log2(nuA[I]+CT*phiA[I]))
+##		tmp <- dnorm(lT, mean=means, sd=sds)
+##		emit[, , counter] <- tmp
+##		counter <- counter+1
+##	}
+##	mostLikelyState <- apply(emit, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	counter <- 1
+	for(CT in c(0,1,2,2.5)){
 		sds <- sqrt(tau2A[I]*(CT==0) + sig2A[I]*(CT > 0))
 		means <- suppressWarnings(log2(nuA[I]+CT*phiA[I]))
 		tmp <- dnorm(lT, mean=means, sd=sds)
@@ -1346,6 +1380,7 @@ biasAdjNP <- function(object, cnOptions, tmp.objects){
 		counter <- counter+1
 	}
 	mostLikelyState <- apply(emit, c(1, 2), function(x) order(x, decreasing=TRUE)[1])
+	
 	if(CHR == 23){
 		## the state index for male on chromosome 23  is 2
 		## add 1 so that the state index is 3 for 'normal' state
@@ -1401,29 +1436,37 @@ getParams <- function(object, batch){
 }
 
 
+## Constrain nu and phi to positive values
 thresholdModelParams <- function(object, cnOptions){
 	MIN.NU <- cnOptions$MIN.NU
 	MIN.PHI <- cnOptions$MIN.PHI
 	batch <- unique(object$batch)
 	nuA <- getParam(object, "nuA", batch)
 	nuA[nuA < MIN.NU] <- MIN.NU
+	object <- pr(object, "nuA", batch, nuA)
 	nuB <- getParam(object, "nuB", batch)
-	nuB[nuB < MIN.NU] <- MIN.NU
+	if(!all(is.na(nuB))){
+		nuB[nuB < MIN.NU] <- MIN.NU
+		object <- pr(object, "nuB", batch, nuB)
+	}
 	phiA <- getParam(object, "phiA", batch)
 	phiA[phiA < MIN.PHI] <- MIN.PHI
-	phiB <- getParam(object, "phiB", batch)
-	phiB[phiB < MIN.PHI] <- MIN.PHI
-	phiAX <- as.numeric(getParam(object, "phiAX", batch))
-	phiAX[phiAX < MIN.PHI] <- MIN.PHI	
-	phiBX <- as.numeric(getParam(object, "phiBX", batch))
-	phiBX[phiBX < MIN.PHI] <- MIN.PHI	
-
-	object <- pr(object, "nuA", batch, nuA)
-	object <- pr(object, "nuB", batch, nuB)
 	object <- pr(object, "phiA", batch, phiA)
-	object <- pr(object, "phiB", batch, phiB)
-	object <- pr(object, "phiAX", batch, phiAX)
-	object <- pr(object, "phiBX", batch, phiBX)	
+	phiB <- getParam(object, "phiB", batch)
+	if(!all(is.na(phiB))){
+		phiB[phiB < MIN.PHI] <- MIN.PHI
+		object <- pr(object, "phiB", batch, phiB)		
+	}
+	phiAX <- as.numeric(getParam(object, "phiAX", batch))	
+	if(!all(is.na(phiAX))){
+		phiAX[phiAX < MIN.PHI] <- MIN.PHI
+		object <- pr(object, "phiAX", batch, phiAX)		
+	}
+	phiBX <- as.numeric(getParam(object, "phiBX", batch))
+	if(!all(is.na(phiBX))){
+		phiBX[phiBX < MIN.PHI] <- MIN.PHI
+		object <- pr(object, "phiBX", batch, phiBX)			
+	}
 	return(object)
 }
 
@@ -1463,6 +1506,10 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 		tmp.objects <- instantiateObjects(object.batch,
 						  cnOptions)
 		bias.adj <- cnOptions$bias.adj
+		if(bias.adj & ncol(object) <= 15){
+			warning(paste("bias.adj is TRUE, but too few samples to perform this step"))
+			cnOptions$bias.adj <- bias.adj <- FALSE
+		}
 		if(bias.adj){
 			if(verbose) message("Dropping samples with low posterior prob. of normal copy number (samples dropped is locus-specific)")
 			tmp.objects <- biasAdjNP(object.batch, cnOptions, tmp.objects)
@@ -1477,7 +1524,15 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 		tmp.objects <- oneBatch(object.batch,
 					cnOptions=cnOptions,
 					tmp.objects=tmp.objects)
+		##coefs calls nuphiAllele.
 		object.batch <- coefs(object.batch, cnOptions, tmp.objects)
+		##nuA=getParam(object.batch, "nuA", PLATE)
+		THR.NU.PHI <- cnOptions$THR.NU.PHI
+		if(THR.NU.PHI){
+			verbose <- cnOptions$verbose
+			if(verbose) message("Thresholding nu and phi")
+			object.batch <- thresholdModelParams(object.batch, cnOptions)
+		}		
 		if(verbose) message("\nAllele specific copy number")	
 		object.batch <- polymorphic(object.batch, cnOptions, tmp.objects)
 		if(any(!isSnp(object))){ ## there are nonpolymorphic probes

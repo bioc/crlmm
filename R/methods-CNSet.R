@@ -133,17 +133,6 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 	corrA.BB <- getParam(x, "corrA.BB", batch)
 	corrB.AA <- getParam(x, "corrB.AA", batch)
 	corr <- getParam(x, "corr", batch)
-##	nuA <- as.numeric(fData(x)[, match(paste("nuA", batch, sep="_"), fvarLabels(x))])
-##	nuB <- as.numeric(fData(x)[, match(paste("nuB", batch, sep="_"), fvarLabels(x))])	
-##	phiA <- as.numeric(fData(x)[, match(paste("phiA", batch, sep="_"), fvarLabels(x))])
-##	phiB <- as.numeric(fData(x)[, match(paste("phiB", batch, sep="_"), fvarLabels(x))])	
-##	tau2A <- as.numeric(fData(x)[, match(paste("tau2A", batch, sep="_"), fvarLabels(x))])
-##	tau2B <- as.numeric(fData(x)[, match(paste("tau2B", batch, sep="_"), fvarLabels(x))])
-##	sig2A <- as.numeric(fData(x)[, match(paste("sig2A", batch, sep="_"), fvarLabels(x))])
-##	sig2B <- as.numeric(fData(x)[, match(paste("sig2B", batch, sep="_"), fvarLabels(x))])
-##	corrA.BB <- as.numeric(fData(x)[, match(paste("corrA.BB", batch, sep="_"), fvarLabels(x))])
-##	corrB.AA <- as.numeric(fData(x)[, match(paste("corrB.AA", batch, sep="_"), fvarLabels(x))])
-##	corr <- as.numeric(fData(x)[, match(paste("corr", batch, sep="_"), fvarLabels(x))])
 	for(CN in copynumber){
 		for(CA in 0:CN){
 			CB <- CN-CA
