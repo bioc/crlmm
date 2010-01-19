@@ -202,7 +202,8 @@ harmonizeSnpSet <- function(crlmmResult, ABset, cdfName){
 			   phenoData=phenoData(crlmmResult),
 			   protocolData=protocolData(ABset),
 			   annotation=annotation(ABset))
-	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
+	crlmmResult <- crlmmResult[match(featureNames(ABset), featureNames(crlmmResult)), ]
+	stopifnot(all.equal(featureNames(crlmmResult), featureNames(ABset)))
 	crlmmResult
 }
 
@@ -333,9 +334,9 @@ crlmmWrapper <- function(filenames,
 	ABset <- combineIntensities(get("res"), cnrmaResult, cdfName)
 	if(platform=="affymetrix") protocolData(ABset)[["ScanDate"]] <- as.character(celDates(filenames))	
 	crlmmResult <- harmonizeSnpSet(crlmmResult, ABset, cdfName)
-	stopifnot(all.equal(dimnames(crlmmResult), dimnames(ABset)))
 	crlmmSetList <- as(list(ABset, crlmmResult), "CrlmmSetList")
 	fd <- addFeatureAnnotation(crlmmSetList)
+	crlmmSetList <- crlmmSetList[match(featureNames(fd), featureNames(crlmmSetList)), ]
 	featureData(crlmmSetList[[1]]) <- fd
 	if(splitByChr){
 		message("Saving by chromosome")

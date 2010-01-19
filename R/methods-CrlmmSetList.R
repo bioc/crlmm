@@ -79,9 +79,11 @@ setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, ...){
 		message("Dropping loci for which physical position  is not available.")
 		object <- object[featureNames(object) %in% names(position), ]
 	}
-	ix <- match(featureNames(object), names(position))
-	position <- position[ix]
-	chrom <- chrom[ix]
+	##ix <- match(featureNames(object), names(position))
+	position <- position[match(featureNames(object), names(position))]
+	chrom <- chrom[match(featureNames(object), names(chrom))]
+	##position <- position[ix]
+	##chrom <- chrom[ix]
 	##require(SNPchip)
 	chrom <- chromosome2integer(chrom)
 
@@ -208,6 +210,7 @@ setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir)
 })
 
 setMethod("update", "CrlmmSetList", function(object, ...){
+	crlmmSetList <- object
 	if(length(crlmmSetList) == 3){
 		message("copy number object already present. Nothing to do.")
 		return()
@@ -218,7 +221,8 @@ setMethod("update", "CrlmmSetList", function(object, ...){
 		message("A solution for chromosome 24 is not yet available.")
 		return()
 	}	
-	computeCopynumber(object, CHR=CHR, ...)
+	computeCopynumber(object, ...)
+	##computeCopynumber(object, CHR=CHR, ...)
 })
 
 setReplaceMethod("CA", signature(object="CrlmmSetList", value="matrix"),

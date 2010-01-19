@@ -47,11 +47,6 @@ library(crlmm)
 crlmm:::validCdfNames()
 @ 
 
-<<Rsge, eval=TRUE, echo=FALSE>>=
-##If multiple cluster nodes are available
-library(Rsge)
-@ 
-
 \paragraph{Preprocess and genotype.}
 
 Specify the coordinates of Affymetrix cel files and where to put
@@ -61,8 +56,7 @@ number estimation.
 <<celfiles>>=
 myPath <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 celFiles <- list.celfiles(myPath, full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/affy"
-#outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/tmp"
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/crlmm"
 if(!file.exists(outdir)) dir.create(outdir)
 @ 
 
@@ -81,60 +75,28 @@ target reference distribution and uses the crlmm algorithm to genotype.
 See \cite{Carvalho2007a} for details regarding the crlmm genotyping
 algorithm.
 
-<<preprocessAndGenotype, eval=TRUE, echo=TRUE>>=
+<<preprocessAndGenotype, eval=FALSE, echo=TRUE>>=
 for(i in seq(along=celFiles)){
 	platedir <- file.path(outdir, names(celFiles)[i])
 	if(!file.exists(platedir)) dir.create(platedir)
-	crlmmWrapper(celFiles[[i]],##[1:15], 
+	crlmmWrapper(celFiles[[i]],
 		     cdfName="genomewidesnp6",
-		     save.it=FALSE, 
+		     save.it=TRUE, 
 		     load.it=TRUE,
 		     intensityFile=file.path(platedir, "normalizedIntensities.rda"),
 		     crlmmFile=file.path(platedir, "snpsetObject.rda"))
 }
-q("no")
-@ 
-
-<<preprocessAndGenotype, eval=FALSE, echo=FALSE>>=
-for(i in seq(along=celFiles)){
-	platedir <- file.path(outdir, names(celFiles)[i])
-	if(!file.exists(platedir)) dir.create(platedir)
-	sge.submit(crlmmWrapper,
-		   filenames=celFiles[[i]],##[1:15], 
-		   cdfName="genomewidesnp6",
-		   save.it=FALSE, 
-		   load.it=TRUE,
-		   intensityFile=file.path(platedir, "normalizedIntensities.rda"),
-		   crlmmFile=file.path(platedir, "snpsetObject.rda"),
-		   global.savelist=c("platedir"),
-		   packages="crlmm")
-}
-##platedirs <- sapply(names(celFiles), function(x) file.path(outdir, x))
-##intensityFiles <- file.path(platedirs, "normalizedIntensities.rda")
-####crlmmFiles <- file.path(platedirs, "snpsetObject.rda")
-####myF <- function(celFiles, intensityFile, crlmmFile, ...){
-####	crlmmWrapper(celFiles, intensityFile=intensityFile,
-####		     crlmmFile=crlmmFile,
-##sge.apply(celFiles, 
-##	  crlmmWrapper,
-##	  cdfName="genomewidesnp6",
-##	  save.it=FALSE, 
-##	  load.it=TRUE,
-##	  intensityFile=,
-##	  crlmmFile=file.path(platedir, "snpsetObject.rda"))
-q("no")
 @ 
 
 As a result of the above wrapper, the following R objects are now
 created for each plate:
 
 <<crlmmSetListObjects>>=
-fns <- list.files(platedir, pattern="crlmmSetList", full.name=TRUE)
+fns <- list.files(file.path(outdir, names(celFiles[1])), pattern="crlmmSetList", full.name=TRUE)
 @ 
 
 To estimate copy number, simply run the update function on this vector
-of filenames.  If multiple nodes are available for computation, one
-could easily split this job.
+of filenames.  
 
 <<copynumber, echo=FALSE, eval=TRUE>>=
 for(i in seq(along=celFiles)){
@@ -144,17 +106,16 @@ for(i in seq(along=celFiles)){
 }
 @
 
-<<copynumber.sge, echo=FALSE, eval=TRUE>>=
-for(i in seq(along=celFiles)){
-	fns <- list.files(file.path(outdir, names(celFiles[i])), 
-			  pattern="crlmmSetList", full.names=TRUE)
-	sge.parLapply(X=fns, FUN=update, packages="crlmm", cluster=FALSE)
-}
-@
-
-\paragraph{Locus- and allele-specific estimates of copy number.}
-
-Load the object for chromosome 22 and compute copy number:
+Alternatively, load the crlmmSetList object for a particular chromosome
+and compute copy number.
+%
+%<<copynumber.sge, echo=FALSE, eval=TRUE>>=
+%for(i in seq(along=celFiles)){
+%	fns <- list.files(file.path(outdir, names(celFiles[i])), 
+%			  pattern="crlmmSetList", full.names=TRUE)
+%	sge.parLapply(X=fns, FUN=update, packages="crlmm", cluster=FALSE)
+%}
+%@
 
 <<crlmmList-show>>=
 CHR <- 22
@@ -210,9 +171,9 @@ hmmPredictions <- viterbi(emission=emission.cn,
 			  tau=tau[, "transitionPr"],
 			  arm=tau[, "arm"], 
 			  normalIndex=3,
-			  normal2altered=0.01,
+			  normal2altered=0.1,
 			  altered2normal=1,
-			  altered2altered=0.001)	    
+			  altered2altered=0.01)	    
 }
 table(as.integer(hmmPredictions)-1)
 brks <- breaks(x=hmmPredictions, states=copyNumberStates, 
