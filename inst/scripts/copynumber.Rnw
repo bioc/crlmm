@@ -95,15 +95,12 @@ created for each plate:
 fns <- list.files(file.path(outdir, names(celFiles[1])), pattern="crlmmSetList", full.name=TRUE)
 @ 
 
-To estimate copy number, simply run the update function on this vector
-of filenames.  
+To estimate copy number, run the update function on the vector of
+filenames. Here we run update on the chromosomes 1-5 in batch 'C'.
 
-<<copynumber, echo=FALSE, eval=TRUE>>=
-for(i in seq(along=celFiles)){
-	fns <- list.files(file.path(outdir, names(celFiles[i])), 
-			  pattern="crlmmSetList", full.names=TRUE)
-	update(fns)
-}
+<<copynumber, echo=FALSE, eval=FALSE>>=
+fns <- file.path(outdir, paste("C/crlmmSetList_", 1:5, ".rda", sep=""))
+update(fns)
 @
 
 Alternatively, load the crlmmSetList object for a particular chromosome
@@ -119,7 +116,7 @@ and compute copy number.
 
 <<crlmmList-show>>=
 CHR <- 22
-if(!exists("crlmmSetList")) load(file.path(outdir, paste("crlmmSetList_", CHR, ".rda", sep="")))
+if(!exists("crlmmSetList")) load(file.path(outdir, paste("C/crlmmSetList_", CHR, ".rda", sep="")))
 show(crlmmSetList)
 crlmmSetList <- update(crlmmSetList)
 show(crlmmSetList)
@@ -132,17 +129,19 @@ estimates of copy number and uncertainty.
 
 \paragraph{A hidden Markov model.}
 
-Emission probabilities for the hidden markov model can be computed from
-the copy number prediction regions based on bivariate normal scatter
-plots of the log A versus log B intensities.  (By contrast, a
-nonparamemtric segmentation would be applied to intensities on the scale
-of copy number.)
+As discussed in citeauthor{Korn2008}, emission probabilities for the
+hidden markov model can be computed directly from the bivariate normal
+scatter plots of the log A versus log B intensities \citep{Korn2008}.
+(By contrast, a nonparamemtric segmentation would be applied to
+intensities on the scale of copy number.)
 
 <<emissionProbabilities>>=
 library(VanillaICE)
-copyNumberStates <- 0:5
+copyNumberStates <- 0:3
 if(!exists("emission.cn")){
 	emission.cn <- suppressWarnings(crlmm:::computeEmission(crlmmSetList, copyNumberStates))
+	##reduce influence of outliers downstream
+	emission.cn[emission.cn < -10] <- -10
 	dim(emission.cn)
 }
 @ 

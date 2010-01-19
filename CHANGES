@@ -310,4 +310,7 @@ is decoded and scanned
  * updated crlmmIllumina.Rnw and crlmmIllumina.pdf
 
 2010-01-17 R. Scharpf committed version 1.4.2
- * fixed bug in harmonizeSnpSet
+ * fixed bug in harmonizeSnpSet and update function
+
+2010-01-17 R. Scharpf committed version 1.4.3
+ * updated the inst/scripts/copynumber.Rnw vignette and the corresponding pdf
