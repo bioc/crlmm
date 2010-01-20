@@ -563,8 +563,8 @@ thresholdCopynumber <- function(object){
 
 cnOptions <- function(outdir="./",
 		      cdfName,
-		      crlmmFile="snpsetObject.rda",
-		      intensityFile="normalizedIntensities.rda",
+		      crlmmFile,
+		      intensityFile,
 		      rgFile="rgFile.rda",
 		      save.it=TRUE,
 		      save.cnset=TRUE,
@@ -602,12 +602,18 @@ cnOptions <- function(outdir="./",
 ##	if(hiddenMarkovModel){
 ##		hmmOpts <- hmmOptions(...)
 ##	}
+	if(missing(crlmmFile)){
+		crlmmFile <- file.path(outdir, "snpsetObject.rda")
+	}
+	if(missing(intensityFile)){
+		intensityFile <- file.path(outdir, "normalizedIntensities.rda")
+	}
 	if(is.null(batch))
 		stop("must specify batch -- should be the same length as the number of files")
 	list(outdir=outdir,
 	     cdfName=cdfName,
-	     crlmmFile=file.path(outdir, crlmmFile),
-	     intensityFile=file.path(outdir, intensityFile),
+	     crlmmFile=crlmmFile,
+	     intensityFile=intensityFile,
 	     rgFile=file.path(outdir, rgFile),
 	     save.it=save.it,
 	     save.cnset=save.cnset,
