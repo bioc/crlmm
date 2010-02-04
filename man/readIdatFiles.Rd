@@ -46,8 +46,7 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path="",
 }
 
 \details{
-The summarised Cy3 (G) and Cy5 (R) intensity, number of beads that
-were used in each channel and standard errors (all on the orginal scale)
+The summarised Cy3 (G) and Cy5 (R) intensities (on the orginal scale)
 are read in from the .idat files.
 
 Where available, a \code{sampleSheet} data.frame, in the same format
@@ -59,9 +58,8 @@ Thanks to Keith Baggerly who provided the code to read in the binary .idat files
 }
 
 \value{
-  NChannelSet with intensity data (\code{R}, \code{G}), number of beads
-  (\code{Rnb}, \code{Gnb}) and standard errors (\code{Rse}, \code{Gse})
-  for each bead type.
+  NChannelSet with intensity data (\code{R}, \code{G}), and indicator 
+  for SNPs with 0 beads (\code{zero}) for each bead type.
 }
 
 \author{Matt Ritchie}

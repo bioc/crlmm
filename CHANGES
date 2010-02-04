@@ -363,9 +363,17 @@ is decoded and scanned
 
  * Added 'humanomni1quadv1b" to chip types allowed in RGtoXY()
 
-
 2010-01-20 R. Scharpf - committed version 1.5.21
  * Added CopyNumberVariants to DESCRIPTION
 
 2010-01-20 R. Scharpf - committed version 1.5.22
  * restored inst/doc/crlmmDownstream.Rnw
+
+2010-02-04 M. Ritchie - committed version 1.5.23
+ * crlmmIllumina now exported in NAMESPACE (removed at some point)
+ * new function crlmmIlluminaV2() which reads in .idats and genotypes 
+in the one function to reduce memory usage (not exported as yet)
+ * readIdatFiles() modified to no longer store number of beads and beads SE
+to save memory.  Instead, 'zero', which indicates which SNPs have zero beads 
+is stored in the assayData slot.
+ * now store 'zero' with copy number AB intensities in preprocessInfinium2()

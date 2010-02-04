@@ -50,7 +50,7 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 
 exportMethods(A, B, copyNumber)
-export(cnOptions, crlmm, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
+export(cnOptions, crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
 
 ##export(##viterbi.CNSet, ##move to VanillaICE
 ##	combineIntensities,

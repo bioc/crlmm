@@ -119,10 +119,11 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       RG <- new("NChannelSet",
 				 R=tmpmat,
 				 G=tmpmat,
-				 Rnb=tmpmat,
-				 Gnb=tmpmat,
-				 Rse=tmpmat,
-				 Gse=tmpmat,
+				 zero=tmpmat,
+#				 Rnb=tmpmat,
+#				 Gnb=tmpmat,
+#				 Rse=tmpmat,
+#				 Gse=tmpmat,
 				 annotation=headerInfo$Manifest[1],
 				 phenoData=pd,
 				 storage.mode="environment")
@@ -132,14 +133,16 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       if(length(ids)==length(idsG)) {
 		       if(sum(ids==idsG)==nprobes) {
 			       RG@assayData$G[,i] = G$Quants[, "Mean"]
-			       RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
-			       RG@assayData$Gse[,i] = G$Quants[, "SD"]
+				   zeroG = G$Quants[, "NBeads"]==0
+#			       RG@assayData$Gnb[,i] = G$Quants[, "NBeads"]
+#			       RG@assayData$Gse[,i] = G$Quants[, "SD"]
 		       }
 	       } else {
 		       indG = match(ids, idsG)
 		       RG@assayData$G[,i] = G$Quants[indG, "Mean"]
-		       RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
-		       RG@assayData$Gse[,i] = G$Quants[indG, "SD"]
+			   zeroG = G$Quants[indG, "NBeads"]==0
+#		       RG@assayData$Gnb[,i] = G$Quants[indG, "NBeads"]
+#		       RG@assayData$Gse[,i] = G$Quants[indG, "SD"]
 	       }
 	       rm(G)
 	       gc()
@@ -151,16 +154,19 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       if(length(ids)==length(idsG)) {   
 		       if(sum(ids==idsR)==nprobes) {
 			       RG@assayData$R[,i] = R$Quants[ ,"Mean"]
-			       RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
-			       RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
+				   zeroR = R$Quants[ ,"NBeads"]==0
+#			       RG@assayData$Rnb[,i] = R$Quants[ ,"NBeads"]
+#			       RG@assayData$Rse[,i] = R$Quants[ ,"SD"]
 		       }
 	       } else {
 		       indR = match(ids, idsR)
 		       RG@assayData$R[,i] = R$Quants[indR, "Mean"]
-		       RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]
-		       RG@assayData$Rse[,i] = R$Quants[indR, "SD"]
+			   zeroR = R$Quants[indR, "NBeads"]==0
+#		       RG@assayData$Rnb[,i] = R$Quants[indR, "NBeads"]
+#		       RG@assayData$Rse[,i] = R$Quants[indR, "SD"]
 	       }
-	       rm(R)
+		   RG@assayData$zero[,i] = zeroG | zeroR
+	       rm(R, zeroG, zeroR)
 	       gc()
        }
        if(saveDate) {
@@ -482,7 +488,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   tmpmat = matrix(0, nsnps, narrays)
   rownames(tmpmat) = ids
   colnames(tmpmat) = sampleNames(RG)
-  XY = new("NChannelSet", X=tmpmat, Y=tmpmat, Xnb=tmpmat, Ynb=tmpmat, Xse=tmpmat, Yse=tmpmat, zero=tmpmat,
+  XY = new("NChannelSet", X=tmpmat, Y=tmpmat, zero=tmpmat, # Xnb=tmpmat, Ynb=tmpmat, Xse=tmpmat, Yse=tmpmat, zero=tmpmat,
                  annotation=chipType, phenoData=RG@phenoData, protocolData=RG@protocolData, storage.mode="environment")
   rm(tmpmat)
   gc()
@@ -490,10 +496,11 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
   XY@assayData$X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
   XY@assayData$Y[!is.na(aord),] = exprs(channel(RG, "G"))[aord[!is.na(aord)],] # mostly green
-  XY@assayData$Xnb[!is.na(aord),] = exprs(channel(RG, "Rnb"))[aord[!is.na(aord)],]
-  XY@assayData$Ynb[!is.na(aord),] = exprs(channel(RG, "Gnb"))[aord[!is.na(aord)],]
-  XY@assayData$Xse[!is.na(aord),] = exprs(channel(RG, "Rse"))[aord[!is.na(aord)],]
-  XY@assayData$Yse[!is.na(aord),] = exprs(channel(RG, "Gse"))[aord[!is.na(aord)],]
+  XY@assayData$zero[!is.na(aord),] = exprs(channel(RG, "zero"))[aord[!is.na(aord)],] # mostly green
+#  XY@assayData$Xnb[!is.na(aord),] = exprs(channel(RG, "Rnb"))[aord[!is.na(aord)],]
+#  XY@assayData$Ynb[!is.na(aord),] = exprs(channel(RG, "Gnb"))[aord[!is.na(aord)],]
+#  XY@assayData$Xse[!is.na(aord),] = exprs(channel(RG, "Rse"))[aord[!is.na(aord)],]
+#  XY@assayData$Yse[!is.na(aord),] = exprs(channel(RG, "Gse"))[aord[!is.na(aord)],]
   gc()
   
   ## Warning - not 100% sure that the code below is correct - could be more complicated than this
@@ -521,12 +528,13 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   #  For now zero out Infinium I probes
   XY@assayData$X[infI,] = 0
   XY@assayData$Y[infI,] = 0
-  XY@assayData$Xnb[infI,] = 0
-  XY@assayData$Ynb[infI,] = 0
-  XY@assayData$Xse[infI,] = 0
-  XY@assayData$Yse[infI,] = 0
+  XY@assayData$zero[infI,] = 0  
+#  XY@assayData$Xnb[infI,] = 0
+#  XY@assayData$Ynb[infI,] = 0
+#  XY@assayData$Xse[infI,] = 0
+#  XY@assayData$Yse[infI,] = 0
 
-  XY@assayData$zero[XY@assayData$X==0 | XY@assayData$Y==0] = 1
+#  XY@assayData$zero[XY@assayData$X==0 | XY@assayData$Y==0] = 1
   gc()
 
 #  storageMode(XY) = "lockedEnvironment"
@@ -644,7 +652,15 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   narrays = ncol(XY)
   A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
   B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
-  cnAB = list(A=A, B=B, sns=sns, gns=names(npIndex), cdfName=cdfName)
+
+  # new lines below - useful to keep track of zeroed out probes
+  zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
+
+  colnames(A) <- colnames(B) <- colnames(zero) <- sns
+  rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
+  
+  cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
+  rm(A, B, zero)
   
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
@@ -767,4 +783,65 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
   return(list2SnpSet(res2, returnParams=returnParams)) # return(res2)
+}
+
+## MR: Below is a more memory efficient version of crlmmIllumina() which 
+## reads in the .idats and genotypes in the one function and removes objects 
+## after they have been used
+crlmmIlluminaV2 = function(sampleSheet=NULL,
+			  arrayNames=NULL,
+			  ids=NULL,
+			  path=".",
+			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+			  highDensity=FALSE,
+			  sep="_",
+			  fileExt=list(green="Grn.idat", red="Red.idat"),
+			  saveDate=FALSE,
+              save.rg=FALSE,
+              rgFile,
+			  stripNorm=TRUE,
+			  useTarget=TRUE,
+          	  row.names=TRUE, 
+			  col.names=TRUE,
+			  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
+              seed=1, save.ab=FALSE, abFile,
+              mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
+              cdfName, sns, recallMin=10, recallRegMin=1000,
+              returnParams=FALSE, badSNP=.7) {
+			  
+  if (save.rg & missing(rgFile))
+    stop("'rgFile' is missing, and you chose save.rg")
+  if (save.ab & missing(abFile))
+    stop("'abFile' is missing, and you chose save.ab")
+				  
+  RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
+                       ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
+                       highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate)
+  if(save.rg)
+	save(RG, file=rgFile)
+
+  XY = RGtoXY(RG, chipType=cdfName)
+  rm(RG)
+  gc()
+  if (missing(sns)) sns = sampleNames(XY)
+    
+  res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
+                        seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
+                        save.it=save.ab, intensityFile=abFile)
+  rm(XY)
+  gc()
+  if(row.names) row.names=res$gns else row.names=NULL
+  if(col.names) col.names=res$sns else col.names=NULL
+
+  res2 = crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
+                  res[["mixtureParams"]], res[["cdfName"]],
+                  gender=gender, row.names=row.names,
+                  col.names=col.names, recallMin=recallMin,
+                  recallRegMin=1000, SNRMin=SNRMin,
+                  returnParams=returnParams, badSNP=badSNP,
+                  verbose=verbose)
+  
+  res2[["SNR"]] = res[["SNR"]]
+  res2[["SKW"]] = res[["SKW"]]
+  return(list2SnpSet(res2, returnParams=returnParams))
 }
