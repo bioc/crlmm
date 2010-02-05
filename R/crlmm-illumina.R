@@ -791,6 +791,8 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
+  rm(res)
+  gc()
   return(list2SnpSet(res2, returnParams=returnParams)) # return(res2)
 }
 
@@ -852,5 +854,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
   
   res2[["SNR"]] = res[["SNR"]]
   res2[["SKW"]] = res[["SKW"]]
+  rm(res)
+  gc()
   return(list2SnpSet(res2, returnParams=returnParams))
 }
