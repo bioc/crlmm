@@ -612,7 +612,8 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 				stripNorm=TRUE,
 				useTarget=TRUE,
 				save.it=FALSE,
-				intensityFile) {
+				snpFile,
+				cnFile) {
   if(stripNorm)
     XY = stripNormalize(XY, useTarget=useTarget, verbose=verbose)
 
@@ -660,7 +661,13 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
   
   cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
-  rm(A, B, zero)
+  if(save.it & !missing(cnFile)) {
+    t0 <- proc.time() 
+    save(cnAB, file=cnFile) 
+    t0 <- proc.time()-t0
+    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+  }
+  rm(cnAB, B, zero)
   
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
@@ -723,11 +730,11 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   ## gns comes from preprocStuff.rda
   res = list(A=A, B=B, zero=zero, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
 
-  if(save.it & !missing(intensityFile)) {
+  if(save.it & !missing(snpFile)) {
     t0 <- proc.time() 
-    save(cnAB, res, file=intensityFile)
+    save(res, file=snpFile) 
     t0 <- proc.time()-t0
-    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", intensityFile, ".")
+    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
   }
   return(res)
 }
@@ -738,17 +745,19 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   row.names=TRUE, col.names=TRUE,
                   probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  seed=1, save.it=FALSE, load.it=FALSE, intensityFile,
+                  seed=1, save.it=FALSE, load.it=FALSE, snpFile, cnFile,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7) {
-  if ((load.it | save.it) & missing(intensityFile))
-    stop("'intensityFile' is missing, and you chose either load.it or save.it")
-  if (!missing(intensityFile))
-    if (load.it & !file.exists(intensityFile)){
+  if (save.it & (missing(snpFile) | missing(cnFile)))
+    stop("'snpFile' and/or 'cnFile' is missing and you chose to save.it")
+  if (load.it & missing(snpFile))
+    stop("'snpFile' is missing and you chose to load.it")
+  if (!missing(snpFile))
+    if (load.it & !file.exists(snpFile)){
       load.it <- FALSE
-      message("File ", intensityFile, " does not exist.")
-      message("Not loading it, but running SNPRMA from scratch.")
+      message("File ", snpFile, " does not exist.")
+      stop("Cannot load SNP data.")
   }
   if (!load.it){
     if(!missing(RG)) {
@@ -761,13 +770,13 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
     
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
-                        save.it=save.it, intensityFile=intensityFile)
+                        save.it=save.it, snpFile=snpFile, cnFile=cnFile)
   }else{
-      if(verbose) message("Loading ", intensityFile, ".")
-        obj <- load(intensityFile)
+      if(verbose) message("Loading ", snpFile, ".")
+        obj <- load(snpFile)
         if(verbose) message("Done.")
         if(!any(obj == "res"))
-          stop("Object in ", intensityFile, " seems to be invalid.")
+          stop("Object in ", snpFile, " seems to be invalid.")
   }
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
@@ -804,15 +813,15 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
           	  row.names=TRUE, 
 			  col.names=TRUE,
 			  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-              seed=1, save.ab=FALSE, abFile,
+              seed=1, save.ab=FALSE, snpFile, cnFile,
               mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
               cdfName, sns, recallMin=10, recallRegMin=1000,
               returnParams=FALSE, badSNP=.7) {
 			  
   if (save.rg & missing(rgFile))
     stop("'rgFile' is missing, and you chose save.rg")
-  if (save.ab & missing(abFile))
-    stop("'abFile' is missing, and you chose save.ab")
+  if (save.ab & (missing(snpFile) | missing(cnFile)))
+    stop("'snpFile' or 'cnFile' is missing and you chose save.ab")
 				  
   RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
@@ -827,7 +836,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     
   res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
-                        save.it=save.ab, intensityFile=abFile)
+                        save.it=save.ab, snpFile=snpFile, cnFile=cnFile)
   rm(XY)
   gc()
   if(row.names) row.names=res$gns else row.names=NULL
