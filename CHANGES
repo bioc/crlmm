@@ -377,7 +377,8 @@ in the one function to reduce memory usage (not exported as yet)
 to save memory.  Instead, 'zero', which indicates which SNPs have zero beads 
 is stored in the assayData slot.
  * now store 'zero' with copy number AB intensities in preprocessInfinium2()
+ * deleted man pages crlmm.Rd and readIdatFiles.Rd added back
 
 2010-02-05 M. Ritchie - committed version 1.5.24
  * preprocessed allele A and B intensities from copy number and regular SNPs are now saved separately by crlmmIllumina().  The 'intensityFile' argument has been replaced by 'snpFile' and 'cnFile'.
- * updated man page for crlmmIllumina()
+ * updated the following man pages to reflect the above changes and added in current references:  crlmmIllumina.Rd, crlmm.Rd and readIdatFiles.Rd

@@ -62,6 +62,12 @@ Thanks to Keith Baggerly who provided the code to read in the binary .idat files
   for SNPs with 0 beads (\code{zero}) for each bead type.
 }
 
+\references{
+  Ritchie ME, Carvalho BS, Hetrick KN, Tavar\'{e} S, Irizarry RA.
+  R/Bioconductor software for Illumina's Infinium whole-genome 
+  genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
+}
+
 \author{Matt Ritchie}
 
 \examples{

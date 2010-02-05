@@ -7,7 +7,7 @@
 }
 \usage{
 
-crlmmIllumina(RG, XY, stripNorm=TRUE, method="quantile",
+crlmmIllumina(RG, XY, stripNorm=TRUE, 
       useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
@@ -20,8 +20,7 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, method="quantile",
   \item{RG}{\code{NChannelSet} containing R and G bead intensities}
   \item{XY}{\code{NChannelSet} containing X and Y bead intensities}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
-  \item{method}{'chracter' specifying which normalization method to use.}
-  \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE} and \code{method="quantile"}).
+  \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
     Should the reference HapMap intensities be used in strip-level normalization?}
   \item{row.names}{'logical'. Use rownames - SNP names?}
   \item{col.names}{'logical'. Use colnames - Sample names?}
@@ -73,13 +72,18 @@ crlmmIllumina(RG, XY, stripNorm=TRUE, method="quantile",
 }
 
 \references{
+  Ritchie ME, Carvalho BS, Hetrick KN, Tavar\'{e} S, Irizarry RA.
+  R/Bioconductor software for Illumina's Infinium whole-genome 
+  genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
+
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
   normalization, and genotype calls of high-density oligonucleotide SNP
   array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
   22. PMID: 17189563.
 
-  Carvalho B, Louis TA, Irizarry RA. Describing Uncertainty in
-  Genome-wide Genotype Calling. (in prep)
+  Carvalho BS, Louis TA, Irizarry RA. 
+  Quantifying uncertainty in genotype calls.
+  Bioinformatics. 2010 Jan 15;26(2):242-9.
 }
 
 \author{Matt Ritchie}

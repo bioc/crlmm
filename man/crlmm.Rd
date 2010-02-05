@@ -55,8 +55,9 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
   22. PMID: 17189563.
 
-  Carvalho B, Louis TA, Irizarry RA. Describing Uncertainty in
-  Genome-wide Genotype Calling. (in prep)
+  Carvalho BS, Louis TA, Irizarry RA. 
+  Quantifying uncertainty in genotype calls.
+  Bioinformatics. 2010 Jan 15;26(2):242-9.
 }
 \examples{
 ## this can be slow
