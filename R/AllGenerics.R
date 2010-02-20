@@ -1,9 +1,7 @@
-setGeneric("A", function(object) standardGeneric("A"))
-setGeneric("B", function(object) standardGeneric("B"))
 ##setGeneric("A<-", function(object, value) standardGeneric("A<-"))
 ##setGeneric("B<-", function(object, value) standardGeneric("B<-"))
 
-setGeneric("getParam", function(object, name, batch) standardGeneric("getParam"))
+setGeneric("getParam", function(object, name, ...) standardGeneric("getParam"))
 setGeneric("cnIndex", function(object) standardGeneric("cnIndex"))
 setGeneric("cnNames", function(object) standardGeneric("cnNames"))
 setGeneric("computeCopynumber", function(object, cnOptions) standardGeneric("computeCopynumber"))

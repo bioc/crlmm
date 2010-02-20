@@ -1,48 +1,103 @@
 crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
                   probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  save.it=FALSE, load.it=FALSE, intensityFile,
+                  save.it=FALSE, load.it=FALSE, intensityFile, callsFile, confsFile,
+		  AFile, BFile,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
-                  returnParams=FALSE, badSNP=.7){
-  if ((load.it | save.it) & missing(intensityFile))
-	  stop("'intensityFile' is missing, and you chose either load.it or save.it")
-  if (missing(sns)) sns <- basename(filenames)
-  if (!missing(intensityFile))
-    if (load.it & !file.exists(intensityFile)){
-      load.it <- FALSE
-      message("File ", intensityFile, " does not exist.")
-      message("Not loading it, but running SNPRMA from scratch.")
-    }
-  if (!load.it){
-    res <- snprma(filenames, fitMixture=TRUE,
-                  mixtureSampleSize=mixtureSampleSize, verbose=verbose,
-                  eps=eps, cdfName=cdfName, sns=sns)
-    if(save.it){
-      t0 <- proc.time()
-      save(res, file=intensityFile)
-      t0 <- proc.time()-t0
-      if (verbose) message("Used ", t0[3], " seconds to save ", intensityFile, ".")
-    }
-  }else{
-    if (verbose) message("Loading ", intensityFile, ".")
-    obj <- load(intensityFile)
-    if (verbose) message("Done.")
-    if (obj != "res")
-      stop("Object in ", intensityFile, " seems to be invalid.")
-  }
-  if(row.names) row.names=res$gns else row.names=NULL
-  if(col.names) col.names=res$sns else col.names=NULL
-  res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
-                  res[["mixtureParams"]], res[["cdfName"]],
-                  gender=gender, row.names=row.names,
-                  col.names=col.names, recallMin=recallMin,
-                  recallRegMin=1000, SNRMin=SNRMin,
-                  returnParams=returnParams, badSNP=badSNP,
-                  verbose=verbose)
-
-  res2[["SNR"]] <- res[["SNR"]]
-  res2[["SKW"]] <- res[["SKW"]]
-  return(list2SnpSet(res2, returnParams=returnParams))
+                  returnParams=FALSE, badSNP=0.7){
+	if ((load.it | save.it) & missing(intensityFile))
+		stop("'intensityFile' is missing, and you chose either load.it or save.it")
+	if (missing(sns)) sns <- basename(filenames)
+	if (!missing(intensityFile))
+		if (load.it & !file.exists(intensityFile)){
+			load.it <- FALSE
+			message("File ", intensityFile, " does not exist.")
+			message("Not loading it, but running SNPRMA from scratch.")
+		}
+	if (!load.it){
+		res <- snprma(filenames,
+			      fitMixture=TRUE,
+			      mixtureSampleSize=mixtureSampleSize,
+			      verbose=verbose,
+			      eps=eps,
+			      cdfName=cdfName,
+			      sns=sns,
+			      AFile=AFile,
+			      BFile=BFile)
+		save(res, file=intensityFile)##file.path(dirname(intensityFile), "res.rda"))
+	} else {
+		message("Loading quantile normalized intensities...")
+		load(intensityFile)
+		res <- get("res")
+	}
+	load(AFile)
+	load(BFile)
+	if(isPackageLoaded("ff")) {open(A); open(B)}
+	if(row.names) row.names <- res$gns
+	if(col.names) col.names <- res$sns	
+##	}else{
+##		if (verbose) message("Loading ", intensityFile, ".")
+##		obj <- load(intensityFile)
+##		if (verbose) message("Done.")
+##		if (obj != "res")
+##			stop("Object in ", intensityFile, " seems to be invalid.")
+##	}
+	##path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+	##load(file.path(path, "snpProbes.rda"))
+	gns <- res[["gns"]]
+	sns <- colnames(A)
+	##
+	##Ensures that if ff package is loaded, ordinary matrices are still passed to crlmmGT
+	aMatrix <- A[1:length(gns), ]
+	bMatrix <- B[1:length(gns), ]
+	if(isPackageLoaded("ff")) close(B)
+	rm(B); gc()
+	##	res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
+	res2 <- crlmmGT(aMatrix, bMatrix, res[["SNR"]],
+			res[["mixtureParams"]], res[["cdfName"]],
+			gender=gender, row.names=row.names,
+			col.names=col.names, recallMin=recallMin,
+			recallRegMin=1000, SNRMin=SNRMin,
+			returnParams=returnParams, badSNP=badSNP,
+			verbose=verbose)
+	rm(aMatrix, bMatrix); gc()
+	res2[["SNR"]] <- res[["SNR"]]
+	res2[["SKW"]] <- res[["SKW"]]
+	if(isPackageLoaded("ff")){
+		if(file.exists(callsFile)) unlink(callsFile)
+		calls <- ff(dim=c(nrow(A), ncol(A)),
+			    vmode="integer",
+			    finalizer="close",
+			    dimnames=dimnames(A),
+			    overwrite=TRUE)
+	} else{
+		calls <- matrix(NA, nrow(A), ncol(A), dimnames=dimnames(A))
+	}
+	calls[1:length(gns), ] <- res2[["calls"]]
+	if(isPackageLoaded("ff")) close(calls)
+	save(calls, file=callsFile)
+	rm(calls); gc()
+	if(isPackageLoaded("ff")){
+		if(file.exists(confsFile)) unlink(confsFile)		
+		confs <- ff(dim=c(nrow(A), ncol(A)),
+			    vmode="integer",
+			    finalizer="close",
+			    dimnames=dimnames(A),
+			    overwrite=TRUE)
+	} else{
+		confs <- matrix(NA, nrow(A), ncol(A), dimnames=dimnames(A))
+	}
+	confs[1:length(gns), ] <- res2[["confs"]]
+	if(isPackageLoaded("ff")) close(confs)
+	save(confs, file=confsFile)
+	rm(confs); gc()
+	sampleStats <- data.frame(SNR=res2[["SNR"]],
+				  SKW=res2[["SKW"]],
+				  gender=res2[["gender"]])
+	save(sampleStats, file=file.path(dirname(confsFile), "sampleStats.rda"))
+	if(isPackageLoaded("ff")){ close(A)}
+	rm(list=ls()); gc()
+	return()
 }
 
 crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
@@ -50,13 +105,10 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                     SNRMin=5, recallMin=10, recallRegMin=1000,
                     gender=NULL, desctrucitve=FALSE, verbose=TRUE,
                     returnParams=FALSE, badSNP=.7){
-  
   keepIndex <- which(SNR>SNRMin)
   if(length(keepIndex)==0) stop("No arrays above quality threshold!")
-  
   NC <- ncol(A)
   NR <- nrow(A)
-  
   pkgname <- getCrlmmAnnotationName(cdfName)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
     suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -67,7 +119,6 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     stop("Package ", pkgname, " could not be found.")
     rm(suggCall, msg)
   }
-
   if(verbose) message("Loading annotations.")
   loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
   loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
@@ -92,7 +143,6 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRMin]), max(XMedian[SNR>SNRMin])))[["cluster"]]
     }
   }
-  
   Indexes <- list(autosomeIndex, XIndex, YIndex)
   cIndexes <- list(keepIndex, 
                    keepIndex[which(gender[keepIndex]==2)], 

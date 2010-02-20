@@ -10,8 +10,9 @@
 \usage{
 crlmm(filenames, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
-      gender=NULL, save.it=FALSE, load.it=FALSE,
-      intensityFile, mixtureSampleSize=10^5,
+      gender=NULL, save.it=FALSE, load.it=FALSE, intensityFile, callsFile,
+      confsFile, AFile, BFile,
+      mixtureSampleSize=10^5,
       eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
       recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
 }
@@ -29,7 +30,11 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   \item{save.it}{'logical'. Save preprocessed data?}
   \item{load.it}{'logical'. Load preprocessed data to speed up analysis?}
   \item{intensityFile}{'character' with filename to be saved/loaded -
-    preprocessed data.}
+    results from snprma function.}
+  \item{callsFile}{'character' string -- filename to be saved/loaded for biallelic genotype calls.}
+  \item{confsFile}{'character' string -- filename to be saved/loaded for confidence scores of the biallelic genotype calls.}
+  \item{AFile}{'character' string -- filename to be saved/loaded for quantile normalized intensities of the A allele}
+  \item{BFile}{'character' string -- filename to be saved/loaded for quantile normalized intensities of the B allele}
   \item{mixtureSampleSize}{Number of SNP's to be used with the mixture model.}
   \item{eps}{Minimum change for mixture model.}
   \item{verbose}{'logical'.}
@@ -42,13 +47,17 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
 \value{
-  A \code{SnpSet} object.
-  \item{calls}{Genotype calls (1 - AA, 2 - AB, 3 - BB)}
-  \item{confs}{Confidence scores 'round(-1000*log2(1-p))'}
-  \item{SNPQC}{SNP Quality Scores}
-  \item{batchQC}{Batch Quality Score}
-  \item{params}{Recalibrated parameters}
+	
+	Nothing is returned.  The following files are created as a result of this function:
+
+	- AFile
+	- BFile
+	- callsFile
+	- confsFile
+	- intensityFile
+	
 }
+
 \references{
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
   normalization, and genotype calls of high-density oligonucleotide SNP
@@ -67,8 +76,9 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  (crlmmOutput <- crlmm(cels))
+  (crlmmOutput <- crlmm(cels, cdfName="genomewidesnp5"))
 }
 }
+\seealso{\code{\link{cnOptions}}}
 \keyword{classif}
 

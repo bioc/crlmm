@@ -7,7 +7,25 @@
 	This function returns all the user-modifiable arguments to the crlmm copy number function.
 }
 \usage{
-    cnOptions(outdir = "./", cdfName, crlmmFile = "snpsetObject.rda", intensityFile = "normalizedIntensities.rda", rgFile = "rgFile.rda", save.it = TRUE, save.cnset = TRUE, load.it = TRUE, splitByChr = TRUE, MIN.OBS = 3, MIN.SAMPLES = 10, batch = NULL, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4, 4), SNRmin = 4, chromosome = 1:24, seed = 123, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, unlink = TRUE, ...)
+    cnOptions(outdir = "./", cdfName, 
+              AFile="A",
+	      BFile="B",
+	      callsFile="genotypes",
+	      rgFile="rgFile.rda",
+	      cnFile="cnSet",
+	      cnrmaFile="cn_rmaResult.rda",
+	      snprmaFile="snp_rmaResult.rda",
+	      confsFile="confsFile",
+	      save.it = TRUE, 
+	      save.cnset = TRUE, 
+	      load.it = TRUE, 
+	      MIN.OBS = 3, MIN.SAMPLES = 10, batch = NULL, DF.PRIOR = 50, 
+	      bias.adj = FALSE, prior.prob = rep(1/4, 4), 
+	      SNRmin = 4, chromosome = 1:24, seed = 123, verbose = TRUE, 
+	      GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, 
+	      MIN.NU = 2^3, MIN.PHI = 2^3, 
+	      THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, unlink = TRUE, 
+xo	      use.poe=FALSE, crlmmBatchSize=1100, ...)
 }
 \arguments{
   \item{outdir}{
@@ -16,53 +34,71 @@
   \item{cdfName}{
         Character string indicating array-type.  See crlmm:::validCdfNames().
 }
-  \item{crlmmFile}{
 
-        When \code{save.it} is \code{TRUE}, the output from the crlmm
-        genotyping will be saved to \code{<outdir>/<crlmmFile>}.  This
-        object should not be directly loaded by the user.  When
-        \code{load.it} is \code{TRUE}, the function
-        \code{crlmmCopynumber} will load this object from
-        \code{outdir} without rerunning the quantile normalization and
-        genotyping steps. 
+  \item{AFile}{
+
+  File name for quantile normalized intensities for the A allele is <outdir>/AFile<.rda>
 
 }
 
-  \item{intensityFile}{
+  \item{BFile}{
 
-        When \code{save.it} is \code{TRUE}, the allele summaries of
-        the quantile normalized intensities at polymorphic loci will
-        be saved to \code{<outdir>/<intensityFile>}.  This object is
-        not intended to be loaded directly by the user.  When
-        \code{load.it} is \code{TRUE}, the function
-        \code{crlmmCopynumber} will load this object from
-        \code{outdir} without rerunning the quantile normalization and
-        genotyping steps.
-       
+  File name for quantile normalized intensities for the B allele is <outdir>/BFile<.rda>
+
+}
+
+  \item{callsFile}{
+
+  File name for storing biallelic genotypes from the crlmm algorithm is <outdir>/genotypes<.rda>
+
 }
 
   \item{rgFile}{
-	
-	For Affymetrix platforms, \code{rgFile} is ignored.  When
-        \code{save.it} is \code{TRUE}, the R and G summaries of the
-        quantile normalized intensities for illumina platforms is
-        saved to \code{<outdir>/<rgFile>}.  This object is not
-        intended to be loaded directly by the user.  When
-        \code{load.it} is \code{TRUE}, the function
-        \code{crlmmCopynumber} will load this object from
-        \code{outdir} without rerunning the quantile normalization and
-        genotyping steps.
+
+  Applicable for the Illumina platform only.
+
+  File name for storing the normalized R and G summaries is <outdir>/rgFile<.rda>
 
 }
 
+  \item{cnFile}{
+
+  Filename for CNSet object is <outdir>/cnSet_<batch>_<CHR><.rda>
+       
+}
+
+\item{cnrmaFile}{
+
+  Filename for summary statistics from the quantile normalization of
+  the nonpolymorphic probes is <outdir>/cnrmaFile<.rda>.  Currently,
+  this file contains only the skew and is not used elswhere. This file
+  is not meant to be loaded by the user.
+
+}
+
+\item{snprmaFile}{
+
+  Filename for summary statistics from the quantile normalization of
+  the A and B alleles is <outdir>/snprmaFile<.rda>.  Currently, this
+  file contains skew, signal to noise ratio, mixture model parameter,
+  the platform ids for the SNPs, and the sample names.  This file is
+  not meant to be loaded by the user.
+
+}
+
+\item{confsFile}{
+
+	The crlmm confidence scores for the biallelic genotype calls
+	are stored in <outdir>/consFile<.rda>.  
+	
+	This file is not meant to be loaded by the user.
+
+}
+
+
   \item{save.it}{
   
-  When \code{TRUE}, intermediate files containing quantile-normalized
-  intensities and genotyping results are saved to \code{outdir}.
-  Saving these objects can save time if the copy number estimation is
-  repeated.  Intermediate files for the Affymetrix platform are
-  \code{intensityFile} and \code{crlmmFile}; for the Illumina
-  platform, \code{rgfile} is an intermediate file.
+  Whether to save intermediate files.  Not currently implemented.
   
 }
 
@@ -81,13 +117,6 @@
 
   If \code{TRUE}, intermediate files are loaded from \code{outdir}.
   See \code{rgFile}, \code{intensityFile}, \code{crlmmFile}.
-
-}
-
-  \item{splitByChr}{
-  
-  If \code{TRUE}, results are saved for each chromosome.  In general,
-  this should always be \code{TRUE}.
 
 }
 
@@ -245,6 +274,24 @@
   Whether to remove intermediate files storing the quantile normalized
   intensities.  Ignored if \code{save.it} is \code{FALSE}.
 
+}
+
+\item{use.poe}{
+	
+	Under development.  Whether to use the EM implementation of
+	POE (unsupervised) in the R package metaArray to estimate copy
+	number at nonpolymorphic loci.  A supervised POE could be used
+	in, for instance, a case-control study.  Otherwise, we assume
+	the marginal mode is copy number 2 (normal).
+
+}
+
+\item{crlmmBatchSize}{
+
+	'integer'.  The maximum number of samples that can be process
+	in a single batch.  When using the ff package, the maximum
+	number of elements in a matrix is 2^31.  For Affy 6.0, the
+	limit is therefore approximately 1100 samples (1.8e6 * 1100 < 2^31).
 }
 
   \item{\dots}{

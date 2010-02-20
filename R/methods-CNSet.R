@@ -109,6 +109,16 @@ setMethod("copyNumber", "CNSet", function(object){
 	CN
 })
 
+setMethod("plot", signature("CNSet"), function(x, y, add=FALSE, ...){
+	A <- log2(A(x))
+	B <- log2(B(x))
+	if(!add){
+		plot(A, B, ...)
+	} else{
+		points(A, B, ...)
+	}
+})
+
 
 setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){
 	ellipse.CNSet(x, copynumber, batch, ...)
