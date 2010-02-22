@@ -50,13 +50,13 @@ snprma <- function(filenames, mixtureSampleSize=10^5,
 	cnProbes <- get("cnProbes")
 	nr <- length(pnsa) + nrow(cnProbes)
 	nc <- length(filenames)
-	dns <- list(c(gns, rownames(cnProbes)), sns)  
+	dns <- list(c(gns, rownames(cnProbes)), sns)
 	if(isPackageLoaded("ff")){
 		message("ff package is loaded.  Creating ff objects for storing normalized and summarized intensities")
-		A <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dns,
-			overwrite=TRUE)
-		B <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dns,
-			overwrite=TRUE)
+		A <- initializeBigMatrix(nr, nc)
+		B <- initializeBigMatrix(nr, nc)
+		open(A)
+		open(B)
 	}  else {
 		A <- matrix(0L, nr, nc, dimnames=dns)
 		B <- matrix(0L, nr, nc, dimnames=dns)
@@ -98,7 +98,8 @@ snprma <- function(filenames, mixtureSampleSize=10^5,
 	if (!fitMixture) SNR <- mixtureParams <- NA
 	save(A, file=AFile)
 	save(B, file=BFile)
-	return(list(sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName))
+	return(list(sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName,
+		    cnnames=rownames(cnProbes)))
 }
 
 fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=10, verbose=FALSE){

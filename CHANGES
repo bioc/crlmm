@@ -400,4 +400,8 @@ is stored in the assayData slot.
       - B.rda
       - cn_rmaResult.rda (SKW)
 
+2010-02-21 R. Scharpf - committed version 1.5.26
+ 
+** additional support for ff in crlmm and computeCopynumber functions
+
 

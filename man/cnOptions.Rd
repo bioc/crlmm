@@ -8,14 +8,16 @@
 }
 \usage{
     cnOptions(outdir = "./", cdfName, 
-              AFile="A",
-	      BFile="B",
-	      callsFile="genotypes",
+              AFile="A.rda",
+	      BFile="B.rda",
+	      CAFile="CA.rda",
+	      CBFile="CB.rda",
+	      callsFile="genotypes.rda",
 	      rgFile="rgFile.rda",
 	      cnFile="cnSet",
 	      cnrmaFile="cn_rmaResult.rda",
 	      snprmaFile="snp_rmaResult.rda",
-	      confsFile="confsFile",
+	      confsFile="confsFile.rda",
 	      save.it = TRUE, 
 	      save.cnset = TRUE, 
 	      load.it = TRUE, 
@@ -25,7 +27,8 @@
 	      GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, 
 	      MIN.NU = 2^3, MIN.PHI = 2^3, 
 	      THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, unlink = TRUE, 
-xo	      use.poe=FALSE, crlmmBatchSize=1100, ...)
+	      use.poe=FALSE, 
+	      crlmmBatchSize=1000, ...)
 }
 \arguments{
   \item{outdir}{
@@ -44,6 +47,21 @@ xo	      use.poe=FALSE, crlmmBatchSize=1100, ...)
   \item{BFile}{
 
   File name for quantile normalized intensities for the B allele is <outdir>/BFile<.rda>
+
+}
+
+  \item{CAFile}{
+
+  File name for A allele copy number is <outdir>/AFile<.rda>.  Copy
+  number at nonpolymorphic loci is stored in this file.
+
+}
+
+  \item{CBFile}{
+
+  File name for B allele copy number is <outdir>/AFile<.rda>.  The 'B
+  allele' copy number at nonpolymorphic loci is zero (copy number for
+  nonpolymorphic loci is stored in the 'A allele').
 
 }
 
@@ -288,11 +306,11 @@ xo	      use.poe=FALSE, crlmmBatchSize=1100, ...)
 
 \item{crlmmBatchSize}{
 
-	'integer'.  The maximum number of samples that can be process
-	in a single batch.  When using the ff package, the maximum
-	number of elements in a matrix is 2^31.  For Affy 6.0, the
-	limit is therefore approximately 1100 samples (1.8e6 * 1100 < 2^31).
+	'integer'.  The maximum number of samples to be genotyped in a
+	batch.  This is used to keep the RAM at manageable levels.
+
 }
+
 
   \item{\dots}{
 

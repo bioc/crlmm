@@ -10,11 +10,11 @@
 \usage{
 crlmm(filenames, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
-      gender=NULL, save.it=FALSE, load.it=FALSE, intensityFile, callsFile,
+      gender=NULL, save.it=FALSE, load.it=FALSE, snprmaFile, callsFile,
       confsFile, AFile, BFile,
       mixtureSampleSize=10^5,
       eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
-      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
+      recallRegMin=1000, returnParams=FALSE, badSNP=0.7, crlmmBatchSize=1000)
 }
 
 \arguments{
@@ -29,8 +29,7 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
     defining sex. (1 - male; 2 - female)}
   \item{save.it}{'logical'. Save preprocessed data?}
   \item{load.it}{'logical'. Load preprocessed data to speed up analysis?}
-  \item{intensityFile}{'character' with filename to be saved/loaded -
-    results from snprma function.}
+  \item{snprmaFile}{'character' with filename to be saved/loaded.  Statistics saved in this file include the skew (SKW), signal to noise ratio (SNR), mixture model parameters (mixtureParams), and gender.  }
   \item{callsFile}{'character' string -- filename to be saved/loaded for biallelic genotype calls.}
   \item{confsFile}{'character' string -- filename to be saved/loaded for confidence scores of the biallelic genotype calls.}
   \item{AFile}{'character' string -- filename to be saved/loaded for quantile normalized intensities of the A allele}
@@ -45,6 +44,7 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   \item{recallRegMin}{Minimum number of SNP's for regression.}
   \item{returnParams}{'logical'. Return recalibrated parameters.}
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
+  \item{crlmmBatchSize}{'integer', indicating the number of samples to be genotyped in a batch by crlmm.  The purpose of this argument is to keep the RAM at manageable levels.}
 }
 \value{
 	
@@ -52,9 +52,13 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
 
 	- AFile
 	- BFile
+	- CAFile
+	- CBFile
 	- callsFile
 	- confsFile
-	- intensityFile
+	- snprmaFile
+
+	See the \code{cnOptions} function for the default filenames.
 	
 }
 
@@ -76,7 +80,13 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  (crlmmOutput <- crlmm(cels, cdfName="genomewidesnp5"))
+  crlmm(cels, cdfName="genomewidesnp5")
+  ## clean
+  unlink("A.rda")
+  unlink("B.rda")
+  unlink("snp_rmaResult.rda")
+  unlink("calls.rda")
+  unlink("confs.rda")
 }
 }
 \seealso{\code{\link{cnOptions}}}

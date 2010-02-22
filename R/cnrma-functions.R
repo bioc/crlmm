@@ -242,45 +242,47 @@ predictGender <- function(res, cdfName="genomewidesnp6", SNRMin=5){
 
 
 
+##crlmmCopynumber <- function(filenames, cnOptions, object, ...){
+##	cnOpts <- cnOptions
+##	batchSize <- cnOptions[["crlmmBatchSize"]]
+##	batch <- cnOptions[["batch"]]
+##	outdir <- cnOptions[["outdir"]]
+##	##if necessary, split plates in separate batches
+##	if(length(filenames) > batchSize){
+##		L <- length(table(batch))
+##		message("Processing the files in")
+##		batchList <- split(names(table(batch)), rep(1:L, each=10, length.out=L))
+##		for(i in seq(along=batchList)){
+##			index <- as.character(batch) %in% as.character(batchList[[i]])
+##			fns <- filenames[index]
+##			cnOpts[["batch"]] <- cnOptions[["batch"]][index]
+##			cnOpts[["AFile"]] <- paste(outdir, "/", paste(cnOptions[["AFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["BFile"]] <- paste(outdir, "/", paste(cnOptions[["BFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["CAFile"]] <- paste(outdir, "/", paste(cnOptions[["CAFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##g			cnOpts[["CBFile"]] <- paste(outdir, "/", paste(cnOptions[["CBFile"]], i, sep="_crlmmBatch"), ".rda", sep="")			
+##			cnOpts[["callsFile"]] <- paste(outdir, "/", paste(cnOptions[["callsFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["confsFile"]] <- paste(outdir, "/", paste(cnOptions[["confsFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["snprmaFile"]] <- paste(outdir, "/", paste(cnOptions[["snprmaFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["cnrmaFile"]] <- paste(outdir, "/", paste(cnOptions[["cnrmaFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
+##			cnOpts[["cnFile"]] <- file.path(outdir, paste(cnOptions[["cnFile"]], i, sep="_crlmmBatch"))
+##			cnOpts[["rgFile"]] <- file.path(outdir, paste(cnOptions[["rgFile"]], i, sep="_crlmmBatch"))
+##			crlmmCopynumber.crlmmBatch(fns, cnOpts, object, ...)
+##		}
+##	} else {
+##		cnOpts[["AFile"]] <- paste(outdir, "/", cnOptions[["AFile"]], ".rda", sep="")
+##		cnOpts[["BFile"]] <- paste(outdir, "/", cnOptions[["BFile"]], ".rda", sep="")
+##		cnOpts[["callsFile"]] <- paste(outdir, "/", cnOptions[["callsFile"]], ".rda", sep="")
+##		cnOpts[["confsFile"]] <- paste(outdir, "/", cnOptions[["confsFile"]], ".rda", sep="")
+##		cnOpts[["snprmaFile"]] <- paste(outdir, "/",cnOptions[["snprmaFile"]], ".rda", sep="")
+##		cnOpts[["cnrmaFile"]] <- paste(outdir, "/", cnOptions[["cnrmaFile"]], ".rda", sep="")
+##		cnOpts[["cnFile"]] <- file.path(outdir, cnOptions[["cnFile"]])
+##		cnOpts[["rgFile"]] <- file.path(outdir, cnOptions[["rgFile"]])
+##		crlmmCopynumber.crlmmBatch(filenames, cnOpts, object, ...)
+##	}
+##}
+
+
 crlmmCopynumber <- function(filenames, cnOptions, object, ...){
-	cnOpts <- cnOptions
-	batchSize <- cnOptions[["crlmmBatchSize"]]
-	batch <- cnOptions[["batch"]]
-	outdir <- cnOptions[["outdir"]]
-	##if necessary, split plates in separate batches
-	if(length(filenames) > batchSize){
-		L <- length(table(batch))
-		message("Processing the files in")
-		batchList <- split(names(table(batch)), rep(1:L, each=10, length.out=L))
-		for(i in seq(along=batchList)){
-			index <- as.character(batch) %in% as.character(batchList[[i]])
-			fns <- filenames[index]
-			cnOpts[["batch"]] <- cnOptions[["batch"]][index]
-			cnOpts[["AFile"]] <- paste(outdir, "/", paste(cnOptions[["AFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["BFile"]] <- paste(outdir, "/", paste(cnOptions[["BFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["callsFile"]] <- paste(outdir, "/", paste(cnOptions[["callsFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["confsFile"]] <- paste(outdir, "/", paste(cnOptions[["confsFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["snprmaFile"]] <- paste(outdir, "/", paste(cnOptions[["snprmaFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["cnrmaFile"]] <- paste(outdir, "/", paste(cnOptions[["cnrmaFile"]], i, sep="_crlmmBatch"), ".rda", sep="")
-			cnOpts[["cnFile"]] <- file.path(outdir, paste(cnOptions[["cnFile"]], i, sep="_crlmmBatch"))
-			cnOpts[["rgFile"]] <- file.path(outdir, paste(cnOptions[["rgFile"]], i, sep="_crlmmBatch"))
-			crlmmCopynumber.crlmmBatch(fns, cnOpts, object, ...)
-		}
-	} else {
-		cnOpts[["AFile"]] <- paste(outdir, "/", cnOptions[["AFile"]], ".rda", sep="")
-		cnOpts[["BFile"]] <- paste(outdir, "/", cnOptions[["BFile"]], ".rda", sep="")
-		cnOpts[["callsFile"]] <- paste(outdir, "/", cnOptions[["callsFile"]], ".rda", sep="")
-		cnOpts[["confsFile"]] <- paste(outdir, "/", cnOptions[["confsFile"]], ".rda", sep="")
-		cnOpts[["snprmaFile"]] <- paste(outdir, "/",cnOptions[["snprmaFile"]], ".rda", sep="")
-		cnOpts[["cnrmaFile"]] <- paste(outdir, "/", cnOptions[["cnrmaFile"]], ".rda", sep="")
-		cnOpts[["cnFile"]] <- file.path(outdir, cnOptions[["cnFile"]])
-		cnOpts[["rgFile"]] <- file.path(outdir, cnOptions[["rgFile"]])
-		crlmmCopynumber.crlmmBatch(filenames, cnOpts, object, ...)
-	}
-}
-
-
-crlmmCopynumber.crlmmBatch <- function(filenames, cnOptions, object, ...){
 	set.seed(cnOptions[["seed"]])  ##for reproducibility
 	if(!missing(object)){
 		stopifnot(class(object) == "CNSet")
@@ -292,24 +294,30 @@ crlmmCopynumber.crlmmBatch <- function(filenames, cnOptions, object, ...){
 		##crlmmResults <- crlmmWrapper(filenames, cnOptions, ...)
 		crlmmWrapper(filenames, cnOptions, ...)
 	}
+	verbose <- cnOptions[["verbose"]]
 	load.it <- cnOptions[["load.it"]]
 	outdir <- cnOptions[["outdir"]]
 	snprmaFile <- cnOptions[["snprmaFile"]]
 	cnFile <- cnOptions[["cnFile"]]
 	cnrmaFile <- cnOptions[["cnrmaFile"]]
+	snprmaFile <- cnOptions[["snprmaFile"]]
 	callsFile <- cnOptions[["callsFile"]]
 	confsFile <- cnOptions[["confsFile"]]
 	AFile <- cnOptions[["AFile"]]
 	BFile <- cnOptions[["BFile"]]
+	CAFile <- cnOptions[["CAFile"]]
+	CBFile <- cnOptions[["CBFile"]]
 	path <- system.file("extdata", package=paste(cnOptions[["cdfName"]], "Crlmm", sep=""))
 	load(file.path(path, "snpProbes.rda"))
 	snpProbes <- get("snpProbes")
 	load(file.path(path, "cnProbes.rda"))
 	cnProbes <- get("cnProbes")	
 	k <- grep("chr", colnames(snpProbes))
-	message("Attaching quantile-normalized intensities...")
+	if(verbose) message("Loading quantile-normalized intensities...")
 	##cwd <- getwd()
 	##setwd(dirname(snprmaFile[1]))
+	load(snprmaFile)
+	res <- get("res")
 	load(AFile)
 	if(isPackageLoaded("ff")) open(A)
 	load(BFile)
@@ -321,28 +329,27 @@ crlmmCopynumber.crlmmBatch <- function(filenames, cnOptions, object, ...){
 	load(confsFile)
 	confs <- get("confs")
 	if(isPackageLoaded("ff")) open(confs)	
-	fns <- rownames(A)
+	##fns <- rownames(A)
+	fns <- c(res[["gns"]], res[["cnnames"]])
+	if(length(fns) != nrow(A)) stop("check featurenames. fns should be the rownames of A")
 	nr <- nrow(A); nc <- ncol(A)
 	if(isPackageLoaded("ff")){
-		##initialize CA, CB
-		if(!file.exists(file.path(outdir, "CA.rda"))){
-			CA <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dimnames(A))
-
-		} else{
-			load(file.path(outdir, "CA.rda"))
-			if(!all(dim(CA) == dim(A)))
-				CA <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dimnames(A), overwrite=TRUE)				
-			open(CA)
-		}
-		if(!file.exists(file.path(outdir, "CB.rda"))){		
-			CB <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dimnames(A))
-		} else{
-			load(file.path(outdir, "CB.rda"))
-			if(!all(dim(CB) == dim(A)))
-				CB <- ff(dim=c(nr, nc), vmode="integer", finalizer="close", dimnames=dimnames(A), overwrite=TRUE)							
-			open(CB)
-		}
-	}
+		if(file.exists(CAFile)){
+			load(CAFile)
+			if(is.null(dim(CA)) | !all(dim(CA) == dim(A))) {
+				unlink(CAFile)
+				CA <- initializeBigMatrix(nr, nc)
+			}
+		} else CA <- initializeBigMatrix(nr, nc)
+		if(file.exists(CBFile)){
+			load(CBFile)
+			if(is.null(dim(CB)) | !all(dim(CB) == dim(A))) {			     
+				CB <- initializeBigMatrix(nr, nc)
+			}
+		} else CB <- initializeBigMatrix(nr, nc)
+		open(CA)
+		open(CB)
+	} 
 	##cnFile <- cnOptions[["cnFile"]]
 	chromosome <- cnOptions[["chromosome"]]
 	SNRmin <- cnOptions[["SNRmin"]]
@@ -353,29 +360,47 @@ crlmmCopynumber.crlmmBatch <- function(filenames, cnOptions, object, ...){
 			    data=scanDates,
 			    varMetadata=data.frame(labelDescription=colnames(scanDates),
 			    row.names=colnames(scanDates)))
-	load(file.path(cnOptions[["outdir"]], "sampleStats.rda"))
-	sampleStats <- data.frame(sampleStats, batch=cnOptions[["batch"]])
+	##load(file.path(cnOptions[["outdir"]], "sampleStats.rda"))
+	sampleStats <- data.frame(SKW=res$SKW,
+				  SNR=res$SNR,
+				  mixtureParams=res$mixtureParams,
+				  gender=res$gender,
+				  batch=cnOptions[["batch"]])
+	##sampleStats, batch=cnOptions[["batch"]])
 	pD <- new("AnnotatedDataFrame",
 		  data=sampleStats,
 		  varMetadata=data.frame(labelDescription=colnames(sampleStats)))
 	batch <- cnOptions[["batch"]]
+	if(isPackageLoaded("ff")){
+##		featureDataFF <- ffdf(position=ff(rep(0L, length(fns)), vmode="integer", finalizer="close"),
+##				      chromosome=ff(rep(0L, length(fns)), vmode="integer", finalizer="close"),
+##				      isSnp=ff(rep(0L, length(fns)), vmode="integer", finalizer="close"),
+##				      row.names=fns)
+##		fD <- vector("list", length(chromosome))
+		featureDataFF <- ff(dim=c(nrow(A), 17*length(unique(batch))+3), vmode="double", finalizer="close",
+				    overwrite=TRUE)
+	}
 	for(CHR in chromosome){
 		snps <- rownames(snpProbes)[snpProbes[, k] == CHR]
 		cns <- rownames(cnProbes)[cnProbes[, k] == CHR]		
-		index.snps <- match(snps, rownames(A))
-		index.cn <- match(cns, rownames(A))
+		index.snps <- match(snps, fns)
+		index.cn <- match(cns, fns)
 		row.index <- c(index.snps, index.cn)
 		cat("Chromosome ", CHR, "\n")
+		if(isPackageLoaded("ff")){		
+			fD.batch <- vector("list", length(unique(batch)))
+		}
 		for(i in seq(along=unique(batch))){
 			PLATE <- unique(batch)[i]
+			message("Plate: ", PLATE)
 			sample.index <- which(batch==PLATE)
 			##cnOptions[["batch"]] <- cnOptions[["batch"]][snpI[["SNR"]]  >= SNRmin]
 			if(isPackageLoaded("ff")){
 				ca <- CA[row.index, sample.index]
 				cb <- CB[row.index, sample.index]
 			} else{
-				dns <- dimnames(A[row.index, sample.index])
-				cb <- ca <- matrix(NA, nr=length(row.index), nc=length(sample.index), dimnames=dns)
+				##dns <- dimnames(A[row.index, sample.index])
+				cb <- ca <- matrix(NA, nr=length(row.index), nc=length(sample.index))##, dimnames=dns)
 			}
 			cnSet <- new("CNSet",
 				     alleleA=A[row.index, sample.index],
@@ -386,52 +411,64 @@ crlmmCopynumber.crlmmBatch <- function(filenames, cnOptions, object, ...){
 				     CB=cb,
 				     featureData=annotatedDataFrameFrom(A[row.index, sample.index], byrow=TRUE),
 				     phenoData=pD[sample.index, ],
-				     protocolData=protocoldata[sample.index, ],
-				     annotation=cnOptions[["cdfName"]])			
-			if(any(cnSet$SNR > SNRmin)){
-				message(paste("Excluding samples with SNR < ", SNRmin))
-				cnSet <- cnSet[, cnSet$SNR >= SNRmin]
-			}
-			##rm(snpI, NP, gtSet); gc()
+				     protocolData=protocoldata[sample.index, ])
+			##Verify this is correct
+			annotation(cnSet) <- cnOptions[["cdfName"]]
+			featureNames(cnSet) <- fns[row.index]
+			##add chromosome, position, isSnp
+			cnSet <- annotate(cnSet)
+##			if(any(cnSet$SNR > SNRmin)){
+##				if(CHR == chromosome[1]) message(paste("Excluding samples with SNR < ", SNRmin))
+##				cnSet <- cnSet[, cnSet$SNR >= SNRmin]
+##			}
 			featureData(cnSet) <- lm.parameters(cnSet, cnOptions)
-		} 
-		if(CHR != 24){
-			## 60G for 1239 files
-			cnSet <- computeCopynumber(cnSet, cnOptions)
-			if(isPackageLoaded("ff")){
-				CA[row.index, sample.index] <- cnSet@assayData[["CA"]]
-				CB[row.index, sample.index] <- cnSet@assayData[["CB"]]
-			}
-		} else{
-			message("Copy number estimates not available for chromosome Y.  Saving only the 'callSet' object for this chromosome")
-			alleleSet <- cnSet
-			rm(cnSet) ; gc()
-			save(alleleSet, file=file.path(cnOptions[["outdir"]], paste("alleleSet_", PLATE, "_", CHR, ".rda", sep="")))
-			rm(alleleSet); gc()
-			next()
-		}
-		if(length(chromosome) == 1){
-			if(cnOptions[["save.cnset"]]){
-				save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))				
-			}
-		}
-		if(length(chromosome) > 1){
-			save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))
-			##save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
-			rm(cnSet); gc()
-		} else {
-			if(isPackageLoaded("ff")) {
-				close(CA); close(CB)
-				save(CA, file=file.path(cnOptions[["outdir"]], "CA.rda"))
-				save(CB, file=file.path(cnOptions[["outdir"]], "CB.rda"))		
-			}			
-			return(cnSet)
-		}
-	}
+			if(CHR < 24){
+				cnSet <- computeCopynumber(cnSet, cnOptions)
+				if(isPackageLoaded("ff")){
+					if(i == 1) {  ## first batch
+						featureDataFF[row.index, 1:20] <- as.matrix(fData(cnSet))
+						fcol <- 20
+					} else {
+						featureDataFF[row.index, (fcol+1):(fcol+17)]
+						fcol <- fcol+17
+						##remove redundant columns
+					}
+					CA[row.index, sample.index] <- cnSet@assayData[["CA"]]
+					CB[row.index, sample.index] <- cnSet@assayData[["CB"]]
+					next() ## next batch
+				} else {
+					save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))
+				}
+			} else break()  ## break out of the batch loop.  Go to next chromosome
+			##		if(length(chromosome) == 1 & length(unique(batch)) == 1){
+			##			if(cnOptions[["save.cnset"]] & !isLoadedPackage("ff"))
+			##				save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))
+			##			return(cnSet)
+			##		} else {
+			##			##either multiple chromosome or multiple batches...save to file if ff is not loaded
+			##			if(!isPackageLoaded("ff")){
+			##				save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))
+			##			}
+			##			rm(cnSet); gc()
+			##	}
+		} ## end of batch loop
+	} ## end of chromosome loop
 	if(isPackageLoaded("ff")) {
+		close(A); close(B)
+		close(featureDataFF)
 		close(CA); close(CB)
-		save(CA, file=file.path(cnOptions[["outdir"]], "CA.rda"))
-		save(CB, file=file.path(cnOptions[["outdir"]], "CB.rda"))		
+		save(featureDataFF, file=file.path(outdir, "featureDataFF.rda"))
+		save(CA, file=CAFile)
+		save(CB, file=CBFile)
+		close(calls); close(confs)
+		ffSet <- new("FFSet",
+			     A=A,
+			     B=B,
+			     snpCall=calls,
+			     callProbability=confs,
+			     CA=CA,
+			     CB=CB)
+		return(ffSet)
 	}
 }
 
@@ -524,6 +561,7 @@ loadIlluminaCnrma <- function(){
 }
 
 crlmmWrapper <- function(filenames, cnOptions, ...){
+	crlmmBatchSize <- cnOptions[["crlmmBatchSize"]]
 	cdfName <- cnOptions[["cdfName"]]
 	load.it <- cnOptions[["load.it"]]
 	save.it <- cnOptions[["save.it"]]
@@ -548,25 +586,26 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	}
 	if(platform == "illumina") RG <- loadIlluminaRG(rgFile, callsFile, load.it, save.it)
 	if(!(file.exists(dirname(callsFile)))) stop(dirname(callsFile), " does not exist.")
-	if(!(file.exists(dirname(snprmaFile[1])))) stop(dirname(snprmaFile[1]), " does not exist.")
-	if(load.it){
-		if(!file.exists(callsFile)){
-			message("load.it is TRUE, but ", callsFile, " does not exist.  Rerunning the genotype calling algorithm") 
-			##load.it <- FALSE
-		}
-	}
+	if(!(file.exists(dirname(snprmaFile)))) stop(dirname(snprmaFile), " does not exist.")
+##	if(load.it){
+##		if(!file.exists(callsFile)){
+##			message("load.it is TRUE, but ", callsFile, " does not exist.  Rerunning the genotype calling algorithm") 
+##			##load.it <- FALSE
+##		}
+##	}
 	if(platform == "affymetrix"){
-		if(!file.exists(callsFile) | !load.it){
+##		if(!file.exists(callsFile) | !load.it){
 			crlmm(filenames=filenames,
 			      cdfName=cdfName,
 			      save.it=TRUE,
 			      load.it=load.it,
-			      intensityFile=snprmaFile,
+			      snprmaFile=snprmaFile,
 			      callsFile=callsFile,
 			      confsFile=confsFile,
 			      AFile=AFile,
-			      BFile=BFile)
-		}
+			      BFile=BFile,
+			      crlmmBatchSize=crlmmBatchSize)
+##		}
 	}
 	gc()
 	if(platform == "illumina") {
@@ -756,18 +795,20 @@ thresholdCopynumber <- function(object){
 
 cnOptions <- function(outdir="./",
 		      cdfName,
-		      AFile="A",
-		      BFile="B",
-		      callsFile="genotypes",
-		      rgFile="rgFile",
+		      AFile="A.rda",
+		      BFile="B.rda",
+		      CAFile="CA.rda",
+		      CBFile="CB.rda",
+		      callsFile="genotypes.rda",
+		      rgFile="rgFile.rda",
 		      cnFile="cnSet",
-		      cnrmaFile="cn_rmaResult",
+		      cnrmaFile="cn_rmaResult.rda",
 		      ##npBinary="NP.bin",  ##name of file.backed.big.matrix
 		      ##npDesc="NP.desc",
-		      snprmaFile="snp_rmaResult",
+		      snprmaFile="snp_rmaResult.rda",
 		      ##callsFile="calls.desc",
 		      ##confsFile="confsFile.desc",
-		      confsFile="confsFile",
+		      confsFile="confs.rda",
 		      save.it=TRUE,
 		      save.cnset=TRUE,
 		      load.it=TRUE,
@@ -790,15 +831,16 @@ cnOptions <- function(outdir="./",
 		      thresholdCopynumber=TRUE,
 		      unlink=TRUE,
 		      use.poe=FALSE,
-		      crlmmBatchSize=1100, ## this is about right for Affy 6.0 platform 1.8e6 * 1100 < 2^31
+		      crlmmBatchSize=1000,
 		      ...){
-	if(isPackageLoaded("ff")){
-		AFile=paste(AFile, "ff", sep="_")
-		BFile=paste(BFile, "ff", sep="_")
-		confsFile=paste(confsFile, "ff", sep="_")
-		callsFile=paste(callsFile, "ff", sep="_")
-		cnFile=paste(cnFile, "ff", sep="")
-	}
+##	if(isPackageLoaded("ff")){
+##		AFile=paste(AFile, "ff", sep="_")
+##		BFile=paste(BFile, "ff", sep="_")
+##		confsFile=paste(confsFile, "ff", sep="_")
+##		callsFile=paste(callsFile, "ff", sep="_")
+##		cnFile=paste(cnFile, "ff", sep="")
+##	}
+	if(length(batch) > 200) warning("This job may require a lot of RAM. Consider using the ff package in conjuction with crlmm, as described in the copynumber_ff vignette...")
 	if(use.poe) require(metaArray)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!file.exists(outdir)){
@@ -816,14 +858,16 @@ cnOptions <- function(outdir="./",
 		stop("must specify batch -- should be the same length as the number of files")
 	list(outdir=outdir,
 	     cdfName=cdfName,
-	     callsFile=callsFile,
-	     confsFile=confsFile,
-	     AFile=AFile,
-	     BFile=BFile,
-	     snprmaFile=snprmaFile,
-	     cnrmaFile=cnrmaFile,
-	     rgFile=rgFile,
-	     cnFile=cnFile,
+	     callsFile=file.path(outdir, callsFile),
+	     confsFile=file.path(outdir, confsFile),
+	     AFile=file.path(outdir, AFile),
+	     BFile=file.path(outdir, BFile),
+	     CAFile=file.path(outdir, CAFile),
+	     CBFile=file.path(outdir, CBFile),
+	     snprmaFile=file.path(outdir, snprmaFile),
+	     cnrmaFile=file.path(outdir, cnrmaFile),
+	     rgFile=file.path(outdir, rgFile),
+	     cnFile=file.path(outdir, cnFile),
 	     save.it=save.it,
 	     save.cnset=save.cnset,
 	     load.it=load.it,
@@ -888,8 +932,11 @@ lm.parameters <- function(object, cnOptions){
 }
 
 nonpolymorphic <- function(object, cnOptions, tmp.objects){
+	chromosome <- cnOptions[["chromosome"]]
 	batch <- unique(object$batch)
 	CHR <- unique(chromosome(object))
+	verbose <- cnOptions[["verbose"]]
+	if(CHR != chromosome[1]) verbose <- FALSE
 	goodSnps <- function(object, PHI.THR, tmp.objects, nAA.THR, nBB.THR){
 		Ns <- tmp.objects[["Ns"]]
 		##Ns <- get("Ns", envir)
@@ -1015,10 +1062,9 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		
 		THR.NU.PHI <- cnOptions$THR.NU.PHI
 		if(THR.NU.PHI){
-			verbose <- cnOptions$verbose
 			##Assign values to object
 			object <- pr(object, "nuA", batch, nuA)
-			object <- pr(object, "phiA", batch, phiA)			
+			object <- pr(object, "phiA", batch, phiA)
 			if(verbose) message("Thresholding nu and phi")
 			object <- thresholdModelParams(object, cnOptions)
 		} else {
@@ -1036,7 +1082,6 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 
 		THR.NU.PHI <- cnOptions$THR.NU.PHI
 		if(THR.NU.PHI){
-			verbose <- cnOptions$verbose
 			##Assign values to object
 			object <- pr(object, "nuA", batch, nuA)
 			object <- pr(object, "phiA", batch, phiA)			
@@ -1738,6 +1783,7 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 	if(length(batch) != ncol(object)) stop("Batch must be the same length as the number of samples")
 	MIN.SAMPLES <- cnOptions$MIN.SAMPLES
 	verbose <- cnOptions$verbose
+	if(CHR != cnOptions[["chromosome"]][1]) verbose <- FALSE
 	use.poe <- cnOptions[["use.poe"]]
 	for(i in seq(along=unique(batch))){
 		PLATE <- unique(batch)[i]
@@ -1754,11 +1800,11 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 			cnOptions$bias.adj <- bias.adj <- FALSE
 		}
 		if(bias.adj){
-			if(verbose) message("Dropping samples with low posterior prob. of normal copy number (samples dropped is locus-specific)")
+			if(verbose & i == 1) message("Dropping samples with low posterior prob. of normal copy number (samples dropped is locus-specific)")
 			if(!use.poe)
 				tmp.objects <- biasAdjNP(object.batch, cnOptions, tmp.objects)
 			tmp.objects <- biasAdj(object.batch, cnOptions, tmp.objects)
-			if(verbose) message("Recomputing location and scale parameters")
+			if(verbose & i == 1) message("Recomputing location and scale parameters")
 		}
 		##update tmp.objects
 		tmp.objects <- withinGenotypeMoments(object.batch,
@@ -1773,14 +1819,13 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 		##nuA=getParam(object.batch, "nuA", PLATE)
 		THR.NU.PHI <- cnOptions$THR.NU.PHI
 		if(THR.NU.PHI){
-			verbose <- cnOptions$verbose
-			if(verbose) message("Thresholding nu and phi")
+			if(verbose & i == 1) message("Thresholding nu and phi")
 			object.batch <- thresholdModelParams(object.batch, cnOptions)
 		}		
-		if(verbose) message("\nAllele specific copy number")	
+		if(verbose & i == 1) message("\nAllele specific copy number")	
 		object.batch <- polymorphic(object.batch, cnOptions, tmp.objects)
 		if(any(!isSnp(object))){ ## there are nonpolymorphic probes
-			if(verbose) message("\nCopy number for nonpolymorphic probes...")
+			if(verbose & i == 1) message("\nCopy number for nonpolymorphic probes...")
 			if(!use.poe){
 				object.batch <- nonpolymorphic(object.batch, cnOptions, tmp.objects)
 			} else {
@@ -1812,7 +1857,7 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 		object <- pr(object, "corrB.AA", PLATE, getParam(object.batch, "corrB.AA", PLATE))		
 		rm(object.batch, tmp.objects); gc();
 	}
-	object <- object[order(chromosome(object), position(object)), ]
+	##object <- object[order(chromosome(object), position(object)), ]
 	if(cnOptions[["thresholdCopynumber"]]){
 		object <- thresholdCopynumber(object)
 	}

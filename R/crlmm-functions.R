@@ -1,19 +1,23 @@
 crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
                   probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  save.it=FALSE, load.it=FALSE, intensityFile, callsFile, confsFile,
-		  AFile, BFile,
+                  save.it=FALSE, load.it=FALSE,
+		  snprmaFile="snp_rmaResult.rda",
+		  callsFile="genotypes.rda",
+		  confsFile="confs.rda",
+		  AFile="A.rda",
+		  BFile="B.rda",
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
-                  returnParams=FALSE, badSNP=0.7){
-	if ((load.it | save.it) & missing(intensityFile))
-		stop("'intensityFile' is missing, and you chose either load.it or save.it")
+                  returnParams=FALSE, badSNP=0.7,
+		  crlmmBatchSize=1000){
+	BS <- crlmmBatchSize
+	if(load.it & file.exists(snprmaFile) & file.exists(callsFile)) return() ##nothing to do
+	if (load.it & !file.exists(snprmaFile)){
+		##stop("'intensityFile' is missing, and you chose either load.it or save.it")
+		message("'snprmaFile' does not exist and you chose to load.it.  Rerunning snprma...")
+		load.it <- FALSE
+	} 
 	if (missing(sns)) sns <- basename(filenames)
-	if (!missing(intensityFile))
-		if (load.it & !file.exists(intensityFile)){
-			load.it <- FALSE
-			message("File ", intensityFile, " does not exist.")
-			message("Not loading it, but running SNPRMA from scratch.")
-		}
 	if (!load.it){
 		res <- snprma(filenames,
 			      fitMixture=TRUE,
@@ -24,78 +28,96 @@ crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
 			      sns=sns,
 			      AFile=AFile,
 			      BFile=BFile)
-		save(res, file=intensityFile)##file.path(dirname(intensityFile), "res.rda"))
+		save(res, file=snprmaFile)##file.path(dirname(snprmaFile), "res.rda"))
 	} else {
-		message("Loading quantile normalized intensities...")
-		load(intensityFile)
+		message("Loading snprmaFile...")
+		load(snprmaFile)
 		res <- get("res")
 	}
+	SKW <- res[["SKW"]]
+	SNR <- res[["SNR"]]	
 	load(AFile)
 	load(BFile)
 	if(isPackageLoaded("ff")) {open(A); open(B)}
 	if(row.names) row.names <- res$gns
 	if(col.names) col.names <- res$sns	
 ##	}else{
-##		if (verbose) message("Loading ", intensityFile, ".")
-##		obj <- load(intensityFile)
+##		if (verbose) message("Loading ", snprmaFile, ".")
+##		obj <- load(snprmaFile)
 ##		if (verbose) message("Done.")
 ##		if (obj != "res")
-##			stop("Object in ", intensityFile, " seems to be invalid.")
+##			stop("Object in ", snprmaFile, " seems to be invalid.")
 ##	}
 	##path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
 	##load(file.path(path, "snpProbes.rda"))
 	gns <- res[["gns"]]
 	sns <- colnames(A)
+	nc <- ncol(A)	
 	##
 	##Ensures that if ff package is loaded, ordinary matrices are still passed to crlmmGT
-	aMatrix <- A[1:length(gns), ]
-	bMatrix <- B[1:length(gns), ]
+	if(nc > BS){
+		## genotype the samples in batches
+
+		##number crlmm batches
+		N <- ceiling(nc/BS)
+		##samples per batch
+		S <- ceiling(nc/N)
+		colindex <- split(1:nc, rep(1:nc, each=S, length.out=nc))
+	} else {
+		colindex <- list(1:nc)
+	}
+	if(length(colindex) > 1)
+		message("Calling genotypes in batches of size ", length(colindex[[1]]), " to reduce required RAM")	
+	if(isPackageLoaded("ff")){
+		confs <- initializeBigMatrix(nrow(A), ncol(A))
+		calls <- initializeBigMatrix(nrow(A), ncol(A))
+	} else{
+		confs <- matrix(NA, nrow(A), ncol(A))
+		calls <- matrix(NA, nrow(A), ncol(A))
+	}	
+	sex <- vector("list", length(colindex))
+	for(i in seq(along=colindex)){
+		aMatrix <- A[1:length(gns), colindex[[i]]]
+		bMatrix <- B[1:length(gns), colindex[[i]]]
+		snr <- res[["SNR"]][colindex[[i]]]
+		mix <- res[["mixtureParameters"]][, colindex[[i]]]
+		##	res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
+		res2 <- tryCatch(crlmmGT(aMatrix,
+					 bMatrix,
+					 snr,
+					 mix,
+					 res[["cdfName"]],
+					 gender=gender,
+					 row.names=row.names,
+					 col.names=col.names[colindex[[i]]],
+					 recallMin=recallMin,
+					 recallRegMin=1000,
+					 SNRMin=SNRMin,
+					 returnParams=returnParams,
+					 badSNP=badSNP,
+					 verbose=verbose), error=function(e) NULL)
+		if(is.null(res2)) {
+			unlink(callsFile)
+			unlink(confsFile)
+			stop("error in call to crlmmGT")
+		}
+		rm(aMatrix, bMatrix, snr, mix); gc()
+		calls[1:length(gns), colindex[[i]]] <- res2[["calls"]]
+		confs[1:length(gns), colindex[[i]]] <- res2[["confs"]]
+		sex[[i]] <- res2[["gender"]]
+		rm(res2); gc()
+	}
 	if(isPackageLoaded("ff")) close(B)
 	rm(B); gc()
-	##	res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
-	res2 <- crlmmGT(aMatrix, bMatrix, res[["SNR"]],
-			res[["mixtureParams"]], res[["cdfName"]],
-			gender=gender, row.names=row.names,
-			col.names=col.names, recallMin=recallMin,
-			recallRegMin=1000, SNRMin=SNRMin,
-			returnParams=returnParams, badSNP=badSNP,
-			verbose=verbose)
-	rm(aMatrix, bMatrix); gc()
-	res2[["SNR"]] <- res[["SNR"]]
-	res2[["SKW"]] <- res[["SKW"]]
-	if(isPackageLoaded("ff")){
-		if(file.exists(callsFile)) unlink(callsFile)
-		calls <- ff(dim=c(nrow(A), ncol(A)),
-			    vmode="integer",
-			    finalizer="close",
-			    dimnames=dimnames(A),
-			    overwrite=TRUE)
-	} else{
-		calls <- matrix(NA, nrow(A), ncol(A), dimnames=dimnames(A))
-	}
-	calls[1:length(gns), ] <- res2[["calls"]]
 	if(isPackageLoaded("ff")) close(calls)
 	save(calls, file=callsFile)
 	rm(calls); gc()
-	if(isPackageLoaded("ff")){
-		if(file.exists(confsFile)) unlink(confsFile)		
-		confs <- ff(dim=c(nrow(A), ncol(A)),
-			    vmode="integer",
-			    finalizer="close",
-			    dimnames=dimnames(A),
-			    overwrite=TRUE)
-	} else{
-		confs <- matrix(NA, nrow(A), ncol(A), dimnames=dimnames(A))
-	}
-	confs[1:length(gns), ] <- res2[["confs"]]
 	if(isPackageLoaded("ff")) close(confs)
 	save(confs, file=confsFile)
 	rm(confs); gc()
-	sampleStats <- data.frame(SNR=res2[["SNR"]],
-				  SKW=res2[["SKW"]],
-				  gender=res2[["gender"]])
-	save(sampleStats, file=file.path(dirname(confsFile), "sampleStats.rda"))
-	if(isPackageLoaded("ff")){ close(A)}
+	res$gender <- unlist(sex)
+	save(res, file=snprmaFile)
+	if(isPackageLoaded("ff")) close(A)
 	rm(list=ls()); gc()
 	return()
 }

@@ -183,4 +183,39 @@ isValidCdfName <- function(cdfName){
 	return(result)
 }
 
+initializeBigMatrix <- function(nr, nc, batch, vmode="integer"){
+	if(prod(nr, nc) > 2^31){
+		##Need multiple matrices
+		## -- use ffdf
+			
+		## How many samples per ff object
+		S <- floor(2^31/nr - 1)
+
+		## How many ff objects
+		L <- ceiling(nc/S)
+
+		results <- vector("list", L)
+		##resultsB <- vector("list", L)			
+		for(i in 1:(L-1)){  ## the Lth object may have fewer than nc columns
+			results[[i]] <- ff(dim=c(nr, S),
+					   vmode=vmode,
+					   finalizer="close",
+					   overwrite=TRUE)
+		}
+		##the Lth element
+		leftOver <- nc - ((L-1)*S)
+		results[[L]] <- ff(dim=c(nr, leftOver),
+				   vmode=vmode,
+				   finalizer="close",
+				   overwrite=TRUE)
+		resultsff <- do.call(ffdf, results)
+	} else {
+		resultsff <- ff(dim=c(nr, nc),
+				vmode=vmode,
+				finalizer="close",
+				overwrite=TRUE)
+	}
+	return(resultsff)
+}
+
 
