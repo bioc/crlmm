@@ -23,35 +23,50 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-		  "confs<-", cnConfidence, "cnConfidence<-", 
-		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
+		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
+		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
 
+importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
+           copyNumber)
 
-importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
-
-importFrom(oligoClasses, copyNumber)
-
+## graphics
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
 
+## grDevices
 importFrom(grDevices, grey)
 
+## affyio
 importFrom(affyio, read.celfile.header, read.celfile)
 
-importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
+## preprocessCore
+importFrom(preprocessCore, normalize.quantiles.use.target,
+           normalize.quantiles)
 
-importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
+## utils
+importFrom(utils, data, packageDescription, setTxtProgressBar,
+           txtProgressBar)
 
-importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, update)
+## stats
+importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
+           sd, update)
 
+## genefilter
 importFrom(genefilter, rowSds)
 
+## mvtnorm
 importFrom(mvtnorm, dmvnorm)
 
+## ellipse
 importFrom(ellipse, ellipse)
 
 exportMethods(copyNumber)
 export(cnOptions, crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
+
+
+#############
+## TO REMOVE
+#############
 
 ##export everything that does not start with a .
 ##exportPattern("^[^\\.]")

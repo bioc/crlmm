@@ -21,7 +21,8 @@ R. Scharpf (after next release)
 
 B Carvalho
 
-- crlmm should return results in CHP files
+- crlmm should return results in CHP files (still can't write CHP files)
+- add parallel support (normalization and summarization)
 
   ***********************************************************
   *                                                         *       
