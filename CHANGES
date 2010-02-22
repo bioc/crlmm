@@ -314,3 +314,12 @@ is decoded and scanned
 
 2010-01-17 R. Scharpf committed version 1.4.3
  * updated the inst/scripts/copynumber.Rnw vignette and the corresponding pdf
+
+
+2010-02-22 R. Scharpf committed version 1.4.5
+
+ * the crlmm annotation packages for illumina uses 'X' and 'Y' instead
+   of 23 and 24.  This results in the creation of a crlmmSetList
+   object that has zero rows.  I modified the splitByChromosome
+   function so that it checks for X and Y instead of the integer
+   representation.

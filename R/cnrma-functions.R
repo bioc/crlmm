@@ -259,6 +259,7 @@ crlmmWrapper <- function(filenames,
 	if(!(file.exists(dirname(crlmmFile)))) stop(dirname(crlmmFile), " does not exist.")
 	if(!(file.exists(dirname(intensityFile)))) stop(dirname(intensityFile), " does not exist.")
 	outfiles <- file.path(dirname(crlmmFile), paste("crlmmSetList_", 1:24, ".rda", sep=""))
+	if(platform == "illumina") filenames <- arrayNames	
 	if(load.it & all(file.exists(outfiles))){
 		load(outfiles[1])
 		crlmmSetList <- get("crlmmSetList")

@@ -26,7 +26,7 @@ options(continue=" ")
 options(prompt="R> ")
 @ 
 
-<<>>=
+<<crlmm>>=
 library(crlmm)
 crlmm:::validCdfNames()
 outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/illumina/HumanCNV370-Duo"
@@ -53,8 +53,8 @@ crlmmWrapper(sampleSheet=samplesheet,
 	     arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
 	     saveDate=TRUE,
 	     cdfName=cdfName,
-	     load.it=FALSE,
-	     save.it=FALSE,
+	     load.it=TRUE,
+	     save.it=TRUE,
 	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
 	     crlmmFile=file.path(outdir, "snpsetObject.rda"),
 	     rgFile=file.path(outdir, "rgFile.rda"))
@@ -93,6 +93,12 @@ crlmmSetList object.  See the copynumber.Rnw vignette for example plots.
 load(filename)
 cn <- copyNumber(crlmmSetList)
 @ 
+
+\section{Session information}
+<<sessionInfo, results=tex>>=
+toLatex(sessionInfo())
+@ 
+
 
 \end{document}
 

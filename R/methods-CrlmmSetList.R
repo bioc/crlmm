@@ -73,6 +73,7 @@ setMethod("addFeatureAnnotation", "CrlmmSetList", function(object, ...){
 	
 	position <- c(position.snp, position.np)
 	chrom <- c(chr.snp, chr.np)
+	names(chrom) <- names(position)
 
 	##We may not have annotation for all of the snps
 	if(!all(featureNames(object) %in% names(position))){
@@ -198,6 +199,12 @@ setMethod("splitByChromosome", "CrlmmSetList", function(object, cdfName, outdir)
 	k <- grep("chr", colnames(snpProbes))
 	if(length(k) < 1) stop("chr or chromosome not in colnames(snpProbes)")
 	for(CHR in 1:24){
+		##The Illumina crlmm annotation packages uses 'X' and 'Y'
+		##The Affy  crlmm annotation packages use 23 and 24 for X and Y, respectively
+		if(length(grep("human", cdfName)) > 0 & CHR == 23) ##illumina platform
+			CHR <- "X"
+		if(length(grep("human", cdfName)) > 0 & CHR == 24) ##illumina platform
+			CHR <- "Y"		
 		cat("Chromosome ", CHR, "\n")
 		snps <- rownames(snpProbes)[snpProbes[, k] == CHR]
 		cnps <- rownames(cnProbes)[cnProbes[, k] == CHR]
