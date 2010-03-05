@@ -1,24 +1,53 @@
-\name{crlmmIllumina}
-\alias{crlmmIllumina}
-\title{Genotype Illumina Infinium II BeadChip data with CRLMM}
+\name{crlmmIlluminaV2}
+\alias{crlmmIlluminaV2}
+\title{Read and Genotype Illumina Infinium II BeadChip data with CRLMM}
 \description{
   Implementation of the CRLMM algorithm for
   data from Illumina's Infinium II BeadChips.
 }
 \usage{
 
-crlmmIllumina(RG, XY, stripNorm=TRUE, 
-      useTarget=TRUE, row.names=TRUE, col.names=TRUE,
-      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
-      gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
-      snpFile, cnFile, mixtureSampleSize=10^5,
-      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
-      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
+crlmmIlluminaV2(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
+      arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
+      saveDate=FALSE, save.rg=FALSE, rgFile,
+      stripNorm=TRUE, useTarget=TRUE, row.names=TRUE, col.names=TRUE,
+      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
+      seed=1, save.ab=FALSE, snpFile, cnFile,
+      mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
+      cdfName, sns, recallMin=10, recallRegMin=1000,
+      returnParams=FALSE, badSNP=.7)
 }
 
 \arguments{
-  \item{RG}{\code{NChannelSet} containing R and G bead intensities}
-  \item{XY}{\code{NChannelSet} containing X and Y bead intensities}
+  \item{sampleSheet}{\code{data.frame} containing Illumina sample sheet
+    information (for required columns, refer to BeadStudio Genotyping
+    guide - Appendix A).}
+  \item{arrayNames}{character vector containing names of arrays to be
+    read in.  If \code{NULL}, all arrays that can be found in the
+    specified working directory will be read in.}
+  \item{ids}{vector containing ids of probes to be read in.  If
+    \code{NULL} all probes found on the first array are read in.}
+  \item{path}{character string specifying the location of files to be
+    read by the function}
+  \item{arrayInfoColNames}{(used when \code{sampleSheet} is specified)
+    list containing elements 'barcode' which indicates column names in
+    the \code{sampleSheet} which contains the arrayNumber/barcode number
+    and 'position' which indicates the strip number.  In older style
+    sample sheets, this information is combined (usually in a column
+    named 'SentrixPosition') and this should be specified as
+    \code{list(barcode=NULL, position="SentrixPosition")}}
+  \item{highDensity}{logical (used when \code{sampleSheet} is
+    specified). If \code{TRUE}, array extensions '\_A', '\_B' in
+    sampleSheet are replaced with 'R01C01', 'R01C02' etc.}
+  \item{sep}{character string specifying separator used in .idat file
+    names.}
+  \item{fileExt}{list containing elements 'Green' and 'Red' which
+    specify the .idat file extension for the Cy3 and Cy5 channels.}
+  \item{saveDate}{'logical'.  Should the dates from each .idat be saved
+    with sample information?}
+  \item{save.rg}{'logical'. Save RG data read in from idat files?}
+  \item{rgFile}{'character' specifying filename to use to save RG data.}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
   \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
     Should the reference HapMap intensities be used in strip-level normalization?}
@@ -64,11 +93,8 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
 }
 
 \details{
-  Note: The user should specify either the \code{RG} or \code{XY}
-  intensities, not both.  Alternatively if \code{crlmmIllumina} has been
-  run already with \code{save.it=TRUE}, the preprocessed data can be
-  loaded from file by specifying \code{load.it=TRUE} and
-  \code{snpFile} (\code{RG} or \code{XY} are not needed in this case).
+  This function combines the reading of data from idat files using 
+  \code{readIdatFiles} and genotyping to reduce memory.  
 }
 
 \references{
@@ -89,7 +115,9 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
 \author{Matt Ritchie}
 
 \examples{
-## crlmmOut = crlmmIllumina(RG)
+## crlmmOut = crlmmIlluminaV2(samples,path=path,arrayInfoColNames=list(barcode="Chip",position="Section"),
+##                             saveDate=TRUE,cdfName="human370v1c",returnParams=TRUE)
+
 }
-\seealso{\code{\link{readIdatFiles}, \code{\link{crlmmIlluminaV2}}}
+\seealso{\code{\link{crlmmIllumina}}, \code{\link{readIdatFiles}}}
 \keyword{classif}

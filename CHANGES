@@ -410,3 +410,6 @@ Such files arise when scanner settings contain the line <GenerateVersionTwoIdatF
 If this is modified to <GenerateVersionTwoIdatFiles>true</GenerateVersionTwoIdatFiles>, 
 then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
  * Removed AllClasses.R from Collate field in DESCRIPTION file (causes an error in build)
+
+2010-03-05 M. Ritchie - committed version 1.5.29
+ * crlmmIlluminaV2() now exported.  Added man page crlmmIlluminaV2.Rd
