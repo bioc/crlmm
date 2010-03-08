@@ -413,3 +413,19 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 
 2010-03-05 M. Ritchie - committed version 1.5.29
  * crlmmIlluminaV2() now exported.  Added man page crlmmIlluminaV2.Rd
+
+2010-03-07 R. Scharpf committed version 1.5.30
+
+- one can use ff in conjunction with affy platforms 5.0 and 6.0
+
+- more s4-style code
+
+- preprocessing / genotyping is basically the same set of commands with either illumina/affy platforms (though illumina-users may have to play with some of the options for reading idat files
+
+- if ff package is loaded, the assayData elements are ff objects
+
+- the classes all inherit from 'CrlmmContainer' that contains an additional slot 'options' and 'genomeAnnotation'.   options is a list with the default arguments to snprma, crlmm, etc, as well as a few global settings such as 'verbose' and 'seed'.  I added the genomeAnnotation slot simply because I want to be able to use ff-objects for the feature-level data.   Maybe with setClassUnion we could avoid adding the genomeAnnotation slot (and use featureData instead), but I didn't have much success with this.
+
+- the batchSize argument will run the genotyping (crlmmGT) in batches to reduce the RAM.  The default is batches of size 1000.
+
+- The crlmm.Rd file contains an example with / without ff for Affymetrix data.

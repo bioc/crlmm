@@ -8,11 +8,12 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
 
 importMethodsFrom(Biobase, annotation, "annotation<-",
                   annotatedDataFrameFrom, assayData, "assayData<-",
+		  snpCallProbability,
                   combine, dims, experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
                   fvarMetadata, fvarLabels, pData, phenoData,
                   "phenoData<-", protocolData, "protocolData<-",
-                  pubMedIds, rowMedians, sampleNames, storageMode,
+                  pubMedIds, rowMedians, sampleNames, snpCall, storageMode,
                   "storageMode<-", updateObject, varLabels)
 
 importFrom(Biobase, assayDataElement, assayDataElementNames,
@@ -20,11 +21,16 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
            validMsg)
 
 ## oligoClasses
-importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
+##importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 
-importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
-		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
+##S3 method ffdf and class ffdf
+importFrom(ff, ffdf, ff, as.ff, as.ffdf)
+
+
+
+##importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
+##		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
+##		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber)
@@ -60,8 +66,24 @@ importFrom(mvtnorm, dmvnorm)
 ## ellipse
 importFrom(ellipse, ellipse)
 
-exportMethods(copyNumber)
-export(cnOptions, crlmm, crlmmIllumina, crlmmIlluminaV2, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
+
+##exportClasses(FFSet)
+exportMethods(annotatedDataFrameFrom,
+	copyNumber, initialize, 
+              ##show, "$", "[[", "[", 
+	      genomeAnnotation,
+	      lM,
+	      CA,
+	      CB,
+	      A,
+	      B,
+	      snpCall,
+	      confs,
+	      chromosome,
+	      position,
+	      isSnp)
+export(crlmmOptions, crlmm, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam, validCdfNames)
+
 
 
 #############
@@ -69,10 +91,5 @@ export(cnOptions, crlmm, crlmmIllumina, crlmmIlluminaV2, crlmmCopynumber, ellips
 #############
 
 ##export everything that does not start with a .
-##exportPattern("^[^\\.]")
+exportPattern("^[^\\.]")
 
-##export(thresholdModelParams, computeCopynumber.CNSet, nuphiAllele, coefs, biasAdjNP, 
-##       nonpolymorphic.poe, crlmmWrapper,
-##       loadIlluminaCallSet, loadIlluminaRG, loadIlluminaCnrma,
-##       cnrma, 
-##       crlmmGT, oneBatch)

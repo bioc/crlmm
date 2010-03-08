@@ -14,7 +14,7 @@
 
 }
 \usage{
-snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, sns, AFile="A.rda", BFile="B.rda")
+snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, AFile="A.rda", BFile="B.rda")
 }
 \arguments{
   \item{filenames}{
@@ -38,10 +38,6 @@ snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbo
   \item{cdfName}{
     cdfName: 'genomewidesnp5', 'genomewidesnp6'
     See \code{validCdfNames}.
-}
-
-  \item{sns}{
-    Sample names.
 }
 
 \item{AFile}{'character' for naming the quantile normalized
@@ -70,9 +66,11 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  snprmaOutput <- snprma(cels)
-  snprmaOutput[["A"]][1:10,]
-  snprmaOutput[["B"]][1:10,]
+  snprmaResult <-  snprma(cels, cdfName="genomewidesnp5")
+  str(snprmaResult)
+  load("A.rda")
+  A[1:10, ]
+  unlink(list("A.rda", "B.rda"))
 }
 }
 \keyword{manip}

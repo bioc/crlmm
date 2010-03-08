@@ -195,9 +195,9 @@ getParam.SnpSuperSet <- function(object, name, batch){
 ##	saved.objects
 ##})
 
-setMethod("computeCopynumber", "SnpSuperSet",
-	  function(object, cnOptions){
-		  computeCopynumber.SnpSuperSet(object, cnOptions)
-	  })
+##setMethod("computeCopynumber", "SnpSuperSet",
+##	  function(object, cnOptions){
+##		  computeCopynumber.SnpSuperSet(object, cnOptions)
+##	  })
 
 	

@@ -9,54 +9,47 @@ Depends just to get rid of annoying warnings while transitioning.
 - Allele plots
 - M v S plots
 
-R. Scharpf (after next release)
+R. Scharpf 
+ 
+ - harmonize CNSet and FFSet classes
+   use-cases:
+      - import S3 classes and methods from ff in the NAMESPACE (but this would require installing ff)
 
-- crlmm should return a SnpSet object with elements A, B, calls, and
-  confs in the assayData when save.it=TRUE.  These objects can be very
-  big, so...  
+      - initialization of FFSet  (can it extend CNSet directly?)
+      - subsetting of FFSet objects
+      - snp-specific plots  (FFSet or CNSet)
+      - batch effect plots  (FFSet or CNSet)
+      - with cbs
+      - with hmm
+ - ff support for Illumina platforms
+ - fix all the install warnings
+ - add README file to inst/scripts to outline the vignettes
+   Vignettes:
+      copynumber_SmallData.Rnw    (Affy 5.0 or Affy 6.0.  Fewer than 300 samples)
+      copynumber_BigData.Rnw      (Affy 5.0 or Affy 6.0.  300+ samples.  Requires ff package.)
+      illumina_copynumber_small.Rnw  (Illumina platforms.  Fewer than 300 samples)
+      illumina_copynumber_big.Rnw    (Illumina platforms.  More than 300 samples.  Requires ff package.)
+ - documentation for FFSet class/methods
+ - bias adjustment for X chromosome
+ - where to find examples downstream (smoothing)
+ - downstream objects should be similar whether using ff or regular matrices
 
-- crlmm function should have an option to return nothing and write to
-  file a SnpSet object for each chromosome.  This would help the copy
-  number part that runs by chromosome
+## this should be moved to vanillaice
+## - Allow a copy-neutral ROH state by not having an equal prior on the
+##    ellipses.  For instance,
+##
+##     normal state:  1/4 AA, 1/2 AB, 1/4 BB
+##    
+##    copy-neutral ROH:  (1-epsilon)/2 AA,  epsilon AB,  (1-epsilon)/2
+##    BB
 
 B Carvalho
 
 - crlmm should return results in CHP files (still can't write CHP files)
 - add parallel support (normalization and summarization)
 
-  ***********************************************************
-  *                                                         *       
-  *                FOR CNRMA                                *
-  *                                                         *
-  ***********************************************************
 
-  o Bias adjustment for X chromosome
 
-  o Adjust nu for altered copy number (crosshyb)
-
-  o Should store parameters in something besides the featureData slot
-
-    - Perhaps add a matrix slot for parameters and a slot for batch.
-
-    - Need accessors
-
-    - how to store parameters for chromosome X (should be nu_A_male,
-      nu_A_female, etc.)?
-
-  o Provide a SNP- and sample-specific estimate of the variance for
-    computing emission probabilities.  (Currently, only SNP-specific)
-
-    (DONE -- version 1.3.10
-
-  o Allow a copy-neutral ROH state by not having an equal prior on the
-    ellipses.  For instance,
-
-    normal state:  1/4 AA, 1/2 AB, 1/4 BB
-    
-    copy-neutral ROH:  (1-epsilon)/2 AA,  epsilon AB,  (1-epsilon)/2
-    BB
-
-  o Define a class that contains settings for genotyping/copynumber estimation
 
 
 

@@ -1,125 +1,186 @@
-crlmm <- function(filenames, row.names=TRUE, col.names=TRUE,
-                  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  save.it=FALSE, load.it=FALSE,
-		  snprmaFile="snp_rmaResult.rda",
-		  callsFile="genotypes.rda",
-		  confsFile="confs.rda",
-		  AFile="A.rda",
-		  BFile="B.rda",
-                  mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
-                  cdfName, sns, recallMin=10, recallRegMin=1000,
-                  returnParams=FALSE, badSNP=0.7,
-		  crlmmBatchSize=1000){
-	BS <- crlmmBatchSize
-	if(load.it & file.exists(snprmaFile) & file.exists(callsFile)) return() ##nothing to do
-	if (load.it & !file.exists(snprmaFile)){
-		##stop("'intensityFile' is missing, and you chose either load.it or save.it")
-		message("'snprmaFile' does not exist and you chose to load.it.  Rerunning snprma...")
-		load.it <- FALSE
-	} 
-	if (missing(sns)) sns <- basename(filenames)
-	if (!load.it){
-		res <- snprma(filenames,
-			      fitMixture=TRUE,
-			      mixtureSampleSize=mixtureSampleSize,
-			      verbose=verbose,
-			      eps=eps,
-			      cdfName=cdfName,
-			      sns=sns,
-			      AFile=AFile,
-			      BFile=BFile)
-		save(res, file=snprmaFile)##file.path(dirname(snprmaFile), "res.rda"))
-	} else {
-		message("Loading snprmaFile...")
-		load(snprmaFile)
-		res <- get("res")
-	}
-	SKW <- res[["SKW"]]
-	SNR <- res[["SNR"]]	
-	load(AFile)
-	load(BFile)
-	if(isPackageLoaded("ff")) {open(A); open(B)}
-	if(row.names) row.names <- res$gns
-	if(col.names) col.names <- res$sns	
-##	}else{
-##		if (verbose) message("Loading ", snprmaFile, ".")
-##		obj <- load(snprmaFile)
-##		if (verbose) message("Done.")
-##		if (obj != "res")
-##			stop("Object in ", snprmaFile, " seems to be invalid.")
-##	}
-	##path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
-	##load(file.path(path, "snpProbes.rda"))
-	gns <- res[["gns"]]
-	sns <- colnames(A)
-	nc <- ncol(A)	
-	##
-	##Ensures that if ff package is loaded, ordinary matrices are still passed to crlmmGT
-	if(nc > BS){
-		## genotype the samples in batches
+setMethod("crlmm", "AffymetrixAlleleSet", function(object, filenames){
+	message("Initializing AlleleSet")
+	obj <- construct(object, filenames)
+	obj <- snprma(obj, filenames)
+	ops <- crlmmOptions(obj)
+	if(ops$copynumber & ops$nonpolymorphic)
+		obj <- cnrma(obj, filenames)
+	message("Initializing CallSet")
+	object <- as(obj, "CallSet")
+	rm(obj); gc()
+	callSet <- crlmm.batch(object)
 
-		##number crlmm batches
+})
+setMethod("crlmm", "IlluminaAlleleSet", function(object, filenames){
+	RG <- construct(object, filenames)
+	RG <- readIdatFiles(RG, filenames)
+	XY <- RGtoXY(RG)
+	rm(RG); gc()
+	storageMode(XY) <- "environment"
+	stripNorm <- crlmmOptions(XY)$readOpts[["stripNorm"]]
+	useTarget <- crlmmOptions(XY)$readOpts[["useTarget"]]
+	verbose <- crlmmOptions(XY)$verbose
+	if(stripNorm)
+		XY = stripNormalize(XY, useTarget=useTarget, verbose=verbose)
+	## See the coercion step ... this puts X -> A and Y -> B
+	alleleSet <- as(XY, "IlluminaAlleleSet")
+	##Do i need to pass zero.  Is the only thing updated the mixtureParams and SNR?
+	alleleSet <- preprocessInfinium2(alleleSet, zero=Z(XY))
+	rm(XY); gc()
+	##Initialize call set
+	callSet <- as(alleleSet, "CallSet")
+	callSet <- crlmm.batch(callSet)
+	return(callSet)
+})
+
+##setMethod("getFeatureData", "SmallDataOptions", function(object){
+##        if(object$platform != "Illumina") stop("only for Illumina platforms")
+##        message("reading first idat file to extract feature data")
+##        fileExt <- object$illuminaOpts[["fileExt"]]
+##        filenames <- object$filenames
+##        grnfile = paste(filenames[1], fileExt$green, sep=fileExt$sep)
+##        if(!file.exists(grnfile)){
+##                stop(paste(grnfile, " does not exist. Check fileExt argument"))
+##        }
+##        G <- readIDAT(grnfile)
+##        idsG = rownames(G$Quants)
+##        nr <- length(idsG)
+##        fD <- new("AnnotatedDataFrame", data=data.frame(row.names=idsG))##, varMetadata=data.frame(labelDescript
+##        return(fD)
+##})
+
+##crlmm.IlluminaAlleleSet <- function(object, filenames){
+##	message("Initializing CallSet")
+##	object <- as(object, "IlluminaCallSet")
+##	rm(obj); gc()
+##	##Call in batches to reduce ram
+##	nc <- ncol(object)
+##	object$gender <- crlmmOptions(object)$crlmmOpts[["gender"]]
+##	if(is.null(object$gender)) object$gender <- rep(NA, nc)
+##	cOps <- crlmmOptions(object)$crlmmOpts
+##	BS <- cOps$batchSize
+##	gc()
+##	if(nc > BS){
+##		N <- ceiling(nc/BS)
+##		S <- ceiling(nc/N)
+##		colindex <- split(1:nc, rep(1:nc, each=S, length.out=nc))
+##	} else {
+##		colindex <- list(1:nc)
+##	}
+##	if(length(colindex) > 1)
+##		message("Calling genotypes in batches of size ", length(colindex[[1]]), " to reduce required RAM")
+##	row.index <- which(isSnp(object)==1 | is.na(isSnp(object)))
+##	if(length(colindex) > 1){
+##		for(i in seq(along=colindex)){
+##			col.index <- colindex[[i]]
+##			tmp <- crlmm.AffymetrixCallSet(object[row.index, col.index])
+##			calls(object)[row.index, col.index] <- calls(tmp)
+##			confs(object)[row.index, col.index] <- confs(tmp)
+##			object$gender[col.index] <- tmp$gender
+##			rm(tmp); gc()
+##		}
+##	} else {
+##		col.index <- colindex[[1]]
+##		tmp <- crlmm.AffymetrixCallSet(object[row.index, col.index])  ##ensure matrix is passed
+##		## enables writing to file
+##		calls(object)[row.index, col.index] <- calls(tmp)
+##		confs(object)[row.index, col.index] <- confs(tmp)
+##		object$gender <- tmp$gender
+##	}
+##	##Return a CallSet object
+##	class(object) <- "CallSet"
+##	return(object)	
+##}
+
+
+crlmm.batch <- function(object){
+	##Call in batches to reduce ram
+	nc <- ncol(object)
+	object$gender <- crlmmOptions(object)$crlmmOpts[["gender"]]
+	cOps <- crlmmOptions(object)$crlmmOpts
+	BS <- cOps$batchSize
+	gc()
+	if(nc > BS){
 		N <- ceiling(nc/BS)
-		##samples per batch
 		S <- ceiling(nc/N)
 		colindex <- split(1:nc, rep(1:nc, each=S, length.out=nc))
 	} else {
 		colindex <- list(1:nc)
 	}
 	if(length(colindex) > 1)
-		message("Calling genotypes in batches of size ", length(colindex[[1]]), " to reduce required RAM")	
-	if(isPackageLoaded("ff")){
-		confs <- initializeBigMatrix(nrow(A), ncol(A))
-		calls <- initializeBigMatrix(nrow(A), ncol(A))
-	} else{
-		confs <- matrix(NA, nrow(A), ncol(A))
-		calls <- matrix(NA, nrow(A), ncol(A))
-	}	
-	sex <- vector("list", length(colindex))
-	for(i in seq(along=colindex)){
-		aMatrix <- A[1:length(gns), colindex[[i]]]
-		bMatrix <- B[1:length(gns), colindex[[i]]]
-		snr <- res[["SNR"]][colindex[[i]]]
-		mix <- res[["mixtureParameters"]][, colindex[[i]]]
-		##	res2 <- crlmmGT(res[["A"]], res[["B"]], res[["SNR"]],
-		res2 <- tryCatch(crlmmGT(aMatrix,
-					 bMatrix,
-					 snr,
-					 mix,
-					 res[["cdfName"]],
-					 gender=gender,
-					 row.names=row.names,
-					 col.names=col.names[colindex[[i]]],
-					 recallMin=recallMin,
-					 recallRegMin=1000,
-					 SNRMin=SNRMin,
-					 returnParams=returnParams,
-					 badSNP=badSNP,
-					 verbose=verbose), error=function(e) NULL)
-		if(is.null(res2)) {
-			unlink(callsFile)
-			unlink(confsFile)
-			stop("error in call to crlmmGT")
+		message("Calling genotypes in batches of size ", length(colindex[[1]]), " to reduce required RAM")
+	row.index <- which(isSnp(object)==1 | is.na(isSnp(object)))
+	if(length(colindex) > 1){
+		for(i in seq(along=colindex)){
+			col.index <- colindex[[i]]
+			tmp <- crlmm.CallSet(object[row.index, col.index])
+			calls(object)[row.index, col.index] <- calls(tmp)
+			confs(object)[row.index, col.index] <- confs(tmp)
+			object$gender[col.index] <- tmp$gender
+			rm(tmp); gc()
 		}
-		rm(aMatrix, bMatrix, snr, mix); gc()
-		calls[1:length(gns), colindex[[i]]] <- res2[["calls"]]
-		confs[1:length(gns), colindex[[i]]] <- res2[["confs"]]
-		sex[[i]] <- res2[["gender"]]
-		rm(res2); gc()
+	} else {
+		col.index <- colindex[[1]]
+		tmp <- crlmm.CallSet(object[row.index, col.index])  ##ensure matrix is passed
+		## enables writing to file
+		calls(object)[row.index, col.index] <- calls(tmp)
+		confs(object)[row.index, col.index] <- confs(tmp)
+		object$gender <- tmp$gender
 	}
-	if(isPackageLoaded("ff")) close(B)
-	rm(B); gc()
-	if(isPackageLoaded("ff")) close(calls)
-	save(calls, file=callsFile)
-	rm(calls); gc()
-	if(isPackageLoaded("ff")) close(confs)
-	save(confs, file=confsFile)
-	rm(confs); gc()
-	res$gender <- unlist(sex)
-	save(res, file=snprmaFile)
-	if(isPackageLoaded("ff")) close(A)
-	rm(list=ls()); gc()
-	return()
+	##Return a CallSet object
+	class(object) <- "CallSet"
+	return(object)
+}
+
+crlmm.CallSet <- function(object){
+##		  filenames, row.names=TRUE, col.names=TRUE,
+##                  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
+##                  save.it=FALSE, load.it=FALSE,
+##		  snprmaFile="snp_rmaResult.rda",
+##		  callsFile="genotypes.rda",
+##		  confsFile="confs.rda",
+##		  AFile="A.rda",
+##		  BFile="B.rda",
+##                  mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
+##                  cdfName, sns, recallMin=10, recallRegMin=1000,
+##                  returnParams=FALSE, badSNP=0.7,
+##		  crlmmBatchSize=1000){
+	ops <- crlmmOptions(object)
+	cOps <- ops$crlmmOpts
+	cdfName <- annotation(object)
+	verbose <- ops$verbose
+	probs <- cOps$probs
+	mixtureParams <- cOps$mixtureParams
+	DF <- cOps$DF
+	SNRMin <- cOps$SNRMin
+	recallMin <- cOps$recallMin
+	recallRegMin <- cOps$recallRegMin
+	badSNP <- cOps$badSNP
+	gender <- object$gender
+	res2 <- tryCatch(crlmmGT(A=as.matrix(A(object)),
+				 B=as.matrix(B(object)),
+				 SNR=object$SNR,
+				 mixtureParams=mixtureParams,
+				 cdfName=cdfName,
+				 row.names=featureNames(object),
+				 col.names=sampleNames(object),
+				 gender=gender,
+				 recallMin=recallMin,
+				 recallRegMin=recallRegMin,
+				 SNRMin=SNRMin,
+				 returnParams=TRUE,
+				 badSNP=badSNP,
+				 verbose=verbose), error=function(e) NULL)
+	if(is.null(res2)) stop("error in call to crlmmGT")
+	stopifnot(identical(featureNames(object), rownames(res2[["calls"]])))
+	stopifnot(identical(sampleNames(object), colnames(res2[["calls"]])))
+	calls(object) <- res2[["calls"]]
+	##P <- res2[["confs"]]
+	##X <- -1000*log(1-P)
+	confs(object) <- res2[["confs"]]
+	object$gender <- res2[["gender"]]
+	rm(res2); gc()
+	return(object)
 }
 
 crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,

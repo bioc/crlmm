@@ -17,18 +17,28 @@
 	      cnFile="cnSet",
 	      cnrmaFile="cn_rmaResult.rda",
 	      snprmaFile="snp_rmaResult.rda",
-	      confsFile="confsFile.rda",
+	      confsFile="confs.rda",
+	      protocolFile="protocolFile.rda",
 	      save.it = TRUE, 
 	      save.cnset = TRUE, 
 	      load.it = TRUE, 
-	      MIN.OBS = 3, MIN.SAMPLES = 10, batch = NULL, DF.PRIOR = 50, 
-	      bias.adj = FALSE, prior.prob = rep(1/4, 4), 
-	      SNRmin = 4, chromosome = 1:24, seed = 123, verbose = TRUE, 
-	      GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, 
+	      MIN.OBS = 3, 
+	      MIN.SAMPLES = 10, 
+	      batch = NULL, 
+	      DF.PRIOR = 50, 
+	      bias.adj = FALSE, 
+	      prior.prob = rep(1/4, 4), 
+	      SNRMin = 4, 
+	      chromosome = 1:24, 
+	      seed = 123, 
+	      verbose = TRUE, 
+	      GT.CONF.THR = 0.99, 
+	      PHI.THR = 2^6, nHOM.THR = 5, 
 	      MIN.NU = 2^3, MIN.PHI = 2^3, 
 	      THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, unlink = TRUE, 
 	      use.poe=FALSE, 
-	      crlmmBatchSize=1000, ...)
+	      crlmmBatchSize=1000, 
+	      whichBatch, ...)
 }
 \arguments{
   \item{outdir}{
@@ -40,26 +50,26 @@
 
   \item{AFile}{
 
-  File name for quantile normalized intensities for the A allele is <outdir>/AFile<.rda>
+  File name for quantile normalized intensities for the A allele is <outdir>/AFile.
 
 }
 
   \item{BFile}{
 
-  File name for quantile normalized intensities for the B allele is <outdir>/BFile<.rda>
+  File name for quantile normalized intensities for the B allele is <outdir>/BFile.
 
 }
 
   \item{CAFile}{
 
-  File name for A allele copy number is <outdir>/AFile<.rda>.  Copy
+  File name for A allele copy number is <outdir>/CAFile.  Copy
   number at nonpolymorphic loci is stored in this file.
 
 }
 
   \item{CBFile}{
 
-  File name for B allele copy number is <outdir>/AFile<.rda>.  The 'B
+  File name for B allele copy number is <outdir>/CBFile.  The 'B
   allele' copy number at nonpolymorphic loci is zero (copy number for
   nonpolymorphic loci is stored in the 'A allele').
 
@@ -67,7 +77,7 @@
 
   \item{callsFile}{
 
-  File name for storing biallelic genotypes from the crlmm algorithm is <outdir>/genotypes<.rda>
+  File name for storing biallelic genotypes from the crlmm algorithm is <outdir>/genotypes.
 
 }
 
@@ -75,20 +85,23 @@
 
   Applicable for the Illumina platform only.
 
-  File name for storing the normalized R and G summaries is <outdir>/rgFile<.rda>
+  File name for storing the normalized R and G summaries is <outdir>/rgFile.
 
 }
 
   \item{cnFile}{
 
-  Filename for CNSet object is <outdir>/cnSet_<batch>_<CHR><.rda>
+  Filename for CNSet object is <outdir>/cnSet_<batch>_<CHR><.rda>.
+  Such a file is only created if the R package ff is not loaded.  If
+  ff is in the search path, chromosome / batch - specific CNSet
+  objects are not saved.
        
 }
 
 \item{cnrmaFile}{
 
   Filename for summary statistics from the quantile normalization of
-  the nonpolymorphic probes is <outdir>/cnrmaFile<.rda>.  Currently,
+  the nonpolymorphic probes is <outdir>/cnrmaFile.  Currently,
   this file contains only the skew and is not used elswhere. This file
   is not meant to be loaded by the user.
 
@@ -97,7 +110,7 @@
 \item{snprmaFile}{
 
   Filename for summary statistics from the quantile normalization of
-  the A and B alleles is <outdir>/snprmaFile<.rda>.  Currently, this
+  the A and B alleles is <outdir>/snprmaFile.  Currently, this
   file contains skew, signal to noise ratio, mixture model parameter,
   the platform ids for the SNPs, and the sample names.  This file is
   not meant to be loaded by the user.
@@ -107,9 +120,15 @@
 \item{confsFile}{
 
 	The crlmm confidence scores for the biallelic genotype calls
-	are stored in <outdir>/consFile<.rda>.  
+	are stored in <outdir>/consFile.  
 	
 	This file is not meant to be loaded by the user.
+
+}
+
+\item{protocolFile}{ 
+
+   The protocol data (e.g., scan dates of the arrays) are stored in <outdir>/protocolFile
 
 }
 
@@ -134,8 +153,18 @@
   \item{load.it}{
 
   If \code{TRUE}, intermediate files are loaded from \code{outdir}.
-  See \code{rgFile}, \code{intensityFile}, \code{crlmmFile}.
+  In particular, the following files are loaded if available in the directory \code{outdir}:
 
+  - AFile  (if not available, rerun snprma)
+  - BFile  (if not available, rerun snprma)
+  - snprmaFile (if not available, rerun snprma)
+  - cnrmaFile (if not available, rerun cnrma)
+  - rgFile 
+  - callsFile  (if not available, rerun crlmm genotyping)
+  - confsFile  (if not available, rerun crlmm genotyping)
+  - CAFile     
+  - CBFile
+  
 }
 
   \item{MIN.OBS}{
@@ -196,7 +225,7 @@
 
 }
 
-  \item{SNRmin}{
+  \item{SNRMin}{
 
   The signal to noise ratio (SNR) estimated during the CRLMM
   genotyping is a summary measure of sample quality based on the
@@ -311,11 +340,20 @@
 
 }
 
+\item{whichBatch}{
+
+	'integer'. If missing, copy number is estimated in all batches
+	(only applicable for \code{crlmmCopynumber} function).  If not
+	missing, copy number is estimated for
+	\code{unique(batch)[whichBatch]} batches.
+
+}
+
 
   \item{\dots}{
 
-  Additional arguments are passed to \code{readIdatFiles} (Illumina
-  platforms only).
+%  Additional arguments are passed to \code{readIdatFiles} (Illumina
+%  platforms only).
 
 }
 }

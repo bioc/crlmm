@@ -1,7 +1,31 @@
-snprma <- function(filenames, mixtureSampleSize=10^5,
-		   fitMixture=FALSE, eps=0.1, verbose=TRUE,
-		   seed=1, cdfName, sns, AFile="A.rda", BFile="B.rda"){
-	if (missing(sns)) sns <- basename(filenames)
+setMethod("snprma", "AffymetrixAlleleSet", function(object, filenames){
+	snprma.AffymetrixAlleleSet(object, filenames)
+})
+setMethod("snprma", "NChannelSet", function(object, ops, ...){
+	object <- preprocessInfinium2(object, ops)
+})
+
+snprma.AffymetrixAlleleSet <- function(object, filenames){
+##		   filenames,
+##		   mixtureSampleSize=10^5,
+##		   fitMixture=FALSE,
+##		   eps=0.1,
+##		   verbose=TRUE,
+##		   seed=1,
+##		   cdfName,
+##		   AFile="A.rda",
+##		   BFile="B.rda"){
+	ops <- crlmmOptions(object)
+	rmaOps <- ops$snprmaOpts
+	mixtureSampleSize <- rmaOps$mixtureSampleSize
+	fitMixture <- rmaOps$fitMixture
+	eps <- rmaOps$eps
+	verbose <- ops$verbose
+	seed <- ops$seed
+	cdfName <- annotation(object)
+	A <- A(object)
+	B <- B(object)
+	sns <- basename(filenames)
 	##ADD CHECK TO SEE IF LOADED
 	if (missing(cdfName))
 		cdfName <- read.celfile.header(filenames[1])$cdfName
@@ -28,10 +52,13 @@ snprma <- function(filenames, mixtureSampleSize=10^5,
 	SMEDIAN <- getVarInEnv("SMEDIAN")
 	theKnots <- getVarInEnv("theKnots")
 	gns <- getVarInEnv("gns")
+	snpIndex <- which(isSnp(object)==1)
+	stopifnot(identical(featureNames(object)[snpIndex], gns))
   
 	##We will read each cel file, summarize, and run EM one by one
 	##We will save parameters of EM to use later
 	mixtureParams <- matrix(0, 4, length(filenames))
+	colnames(mixtureParams) <- basename(filenames)
 	SNR <- vector("numeric", length(filenames))
 	SKW <- vector("numeric", length(filenames))
   
@@ -44,23 +71,6 @@ snprma <- function(filenames, mixtureSampleSize=10^5,
 	##S will hold (A+B)/2 and M will hold A-B
 	##NOTE: We actually dont need to save S. Only for pics etc...
 	##f is the correction. we save to avoid recomputing
-  
-	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
-	load(file.path(path, "cnProbes.rda"))
-	cnProbes <- get("cnProbes")
-	nr <- length(pnsa) + nrow(cnProbes)
-	nc <- length(filenames)
-	dns <- list(c(gns, rownames(cnProbes)), sns)
-	if(isPackageLoaded("ff")){
-		message("ff package is loaded.  Creating ff objects for storing normalized and summarized intensities")
-		A <- initializeBigMatrix(nr, nc)
-		B <- initializeBigMatrix(nr, nc)
-		open(A)
-		open(B)
-	}  else {
-		A <- matrix(0L, nr, nc, dimnames=dns)
-		B <- matrix(0L, nr, nc, dimnames=dns)
-	}
 	if(verbose){
 		message("Processing ", length(filenames), " files.")
 		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
@@ -91,15 +101,29 @@ snprma <- function(filenames, mixtureSampleSize=10^5,
 			if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
 			else cat(".")
 	}
-	if(isPackageLoaded("ff")) { close(A); close(B)}
+##	A(object) <- A
+##	B(object) <- B
+	object@assayData[["alleleA"]] <- A
+	object@assayData[["alleleB"]] <- B
+	##closeObject(object, A)
+	##closeObject(object, B)
+	##if(isPackageLoaded("ff")) { close(A); close(B)} else {save(A, file=AFile); save(B, file=BFile)}
 	if (verbose)
-		if (getRversion() > '2.7.0') close(pb)
-		else cat("\n")
+		if (getRversion() > '2.7.0') close(pb) else cat("\n")
+	##else cat("\n")
 	if (!fitMixture) SNR <- mixtureParams <- NA
-	save(A, file=AFile)
-	save(B, file=BFile)
-	return(list(sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName,
-		    cnnames=rownames(cnProbes)))
+	sampleStats <- data.frame(SKW=SKW,
+				  SNR=SNR)
+##				  batch=ops$cnOpts$batch)
+	crlmmOpts <- crlmmOptions(object)$crlmmOpts
+	crlmmOpts$mixtureParams <- mixtureParams
+	crlmmOptions(object)$crlmmOpts <- crlmmOpts
+	pD <- new("AnnotatedDataFrame",
+		  data=sampleStats,
+		  varMetadata=data.frame(labelDescription=colnames(sampleStats)))
+	sampleNames(pD) <- sampleNames(object)
+	phenoData(object) <- pD
+	return(object)
 }
 
 fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=10, verbose=FALSE){

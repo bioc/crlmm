@@ -75,20 +75,34 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
 \examples{
 ## this can be slow
 if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
+   ## For small datasets:
   path <- system.file("celFiles", package="hapmapsnp5")
-
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  crlmm(cels, cdfName="genomewidesnp5")
-  ## clean
-  unlink("A.rda")
-  unlink("B.rda")
-  unlink("snp_rmaResult.rda")
-  unlink("calls.rda")
-  unlink("confs.rda")
+  obj <- constructClass("genomewidesnp5")
+  class(obj)
+  str(crlmmOptions(obj))  ## default settings can be modified by changing the elements of this list
+  callSet <- crlmm(obj, cels)
+  ##Accessors
+  A(callSet)[1:5,]
+  B(callSet)[1:5,]
+  calls(callSet)[1:5,]
+  confs(callSet)[1:5,]
+  callProbability(callSet)[1:5,]
+  ## For big datasets
+  if(require(ff)){
+	  options(fffinalizer="close", fftempdir=".", fffinonexit="TRUE")
+	  obj <- constructClass("genomewidesnp5")
+	  class(obj)
+	  callSet <- crlmm(obj, cels)
+	  A(callSet)
+	  B(callSet)
+	  calls(callSet)
+	  confs(callSet)
+  }
 }
 }
-\seealso{\code{\link{cnOptions}}}
+\seealso{\code{\link{cnOptions}}, \code{\link{preprocessAndGenotype}}}
 \keyword{classif}
 

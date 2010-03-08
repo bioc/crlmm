@@ -54,7 +54,8 @@ library(crlmm)
 library(hapmapsnp5)
 path <- system.file("celFiles", package="hapmapsnp5")
 celFiles <- list.celfiles(path, full.names=TRUE)
-system.time(crlmmResult <- crlmm(celFiles, verbose=FALSE))
+system.time(crlmmResult <- crlmm(celFiles, verbose=FALSE, cdfName="genomewidesnp5"))
+
 @ 
 
 The \Robject{crlmmResult} is a \Rclass{SnpSet} (see Biobase) object.

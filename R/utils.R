@@ -183,7 +183,11 @@ isValidCdfName <- function(cdfName){
 	return(result)
 }
 
-initializeBigMatrix <- function(nr, nc, batch, vmode="integer"){
+initializeBigMatrix <- function(dns, vmode="integer"){
+##initializeBigMatrix <- function(nr, nc, vmode="integer"){
+	nr <- length(dns[[1]])
+	nc <- length(dns[[2]])
+	if(isPackageLoaded("ff")){
 	if(prod(nr, nc) > 2^31){
 		##Need multiple matrices
 		## -- use ffdf
@@ -209,13 +213,176 @@ initializeBigMatrix <- function(nr, nc, batch, vmode="integer"){
 				   finalizer="close",
 				   overwrite=TRUE)
 		resultsff <- do.call(ffdf, results)
+		##dimnames(resultsff) <- dns
 	} else {
 		resultsff <- ff(dim=c(nr, nc),
 				vmode=vmode,
 				finalizer="close",
 				overwrite=TRUE)
+##				dimnames=dns)
 	}
+	resultsff[,] <- NA
+}  else resultsff <- matrix(NA, nr, nc)
 	return(resultsff)
 }
 
+paramNames <- function(){
+	c("tau2A", "tau2B", "sig2A", "sig2B",
+	  "nuA", "nuB", "nuA.se", "nuB.se", "phiA", "phiB", "phiA2", "phiB2",
+	  "phiA.se", "phiB.se", "corr", "corrA.BB", "corrB.AA")
+}
 
+initializeParamObject <- function(dimnames){
+	nr <- length(dimnames[[1]])
+	nc <- length(dimnames[[2]])		
+	ll <- vector("list", 17)
+	if(isPackageLoaded("ff")){
+		for(i in 1:17) ll[[i]] <- ff(dim=c(nr,nc), vmode="double", finalizer="close", dimnames=dimnames, overwrite=TRUE)
+		names(ll) <- paramNames()
+		ll <- do.call(ffdf, ll)
+	} else {
+		for(i in 1:17) ll[[i]] <- matrix(NA, nr, nc, dimnames=dimnames)
+		names(ll) <- paramNames()
+	}
+	return(ll)
+}
+
+whichPlatform <- function(cdfName){
+	index <- grep("genomewidesnp", cdfName)
+	if(length(index) > 0){
+		platform <- "Affymetrix"
+	} else{
+		index <- grep("human", cdfName)
+		platform <- "Illumina"
+	}
+	return(platform)
+}
+
+updateParams <- function(cnParams, object, row.index, batch){
+	labels.asis <- fvarLabels(object)[4:20]
+	B <- batch
+	batch <- paste("_", batch, sep="")
+	labels <- as.character(sapply(labels.asis, function(x, batch) strsplit(x, batch)[[1]][1], batch=batch))
+	labels <- gsub("X", "2", labels)
+	if(!isPackageLoaded("ff")){
+		##batch <- paste("_", strsplit(labels.asis[1], batch), sep="")
+		##labels <- gsub("_", "\\.", labels.asis)
+		##labels <- gsub(paste("\\.", batch, sep=""), "", labels)
+		j <- match(B, colnames(cnParams[[1]]))
+		for(i in seq(along=labels)){
+			ii <- match(labels[i], names(cnParams))
+			jj <- match(labels.asis[i], fvarLabels(object))
+			cnParams[[ii]][, j] <- fData(object)[, jj]
+		}
+	} else {
+		##labels <- as.character(sapply(labels.asis, function(x, batch) strsplit(x, batch)[[1]][1], batch=batch))		
+		##labels <- gsub("_", "\\.", labels.asis)
+		##labels <- gsub("X", "2", labels)		
+		col.index <- match(labels, colnames(cnParams))
+		cnParams[row.index, col.index] <- fData(object)[, 4:20]
+	}
+	return(cnParams)
+}
+
+##			tau2A[row.index, i] <- getParam(cnSet, "tau2A", unique(batch)[i])
+##			tau2B[row.index, i] <- getParam(cnSet, "tau2B", unique(batch)[i])
+##			sig2A[row.index, i] <- getParam(cnSet, "sig2A", unique(batch)[i])
+##			sig2B[row.index, i] <- getParam(cnSet, "sig2B", unique(batch)[i])
+##			nuA[row.index, i] <- getParam(cnSet, "nuA", unique(batch)[i])
+##			nuA.se[row.index, i] <- getParam(cnSet, "nuA.se", unique(batch)[i])					
+##			nuB[row.index, i] <- getParam(cnSet, "nuB", unique(batch)[i])
+##			nuB.se[row.index, i] <- getParam(cnSet, "nuB.se", unique(batch)[i])										
+##			phiA[row.index, i] <- getParam(cnSet, "phiA", unique(batch)[i])
+##			phiA.se[row.index, i] <- getParam(cnSet, "phiA.se", unique(batch)[i])																				
+##			phiB[row.index, i] <- getParam(cnSet, "phiB", unique(batch)[i])
+##			phiB.se[row.index, i] <- getParam(cnSet, "phiB.se", unique(batch)[i])															
+##			corr[row.index, i] <- getParam(cnSet, "corr", unique(batch)[i])
+##			corrA.BB[row.index, i] <- getParam(cnSet, "corrA.BB", unique(batch)[i])
+##			corrB.AA[row.index, i] <- getParam(cnSet, "corrB.AA", unique(batch)[i])
+##			if(CHR==23){
+##				phiA2[row.index, i] <- getParam(cnSet, "phiA2", unique(batch)[i])
+##				phiB2[row.index, i] <- getParam(cnSet, "phiB2", unique(batch)[i])
+##			}
+##			if(!isPackageLoaded("ff")){
+##				save(cnSet, file=paste(cnFile, "_", PLATE, "_", CHR, ".rda", sep=""))				
+##				cnParams <- list(tau2A=tau2A,
+##						 tau2B=tau2B,
+##						 sig2A=sig2A,
+##						 sig2B=sig2B,
+##						 nuA=nuA,
+##						 nuB=nuB,
+##						 nuA.se=nuA.se,
+##						 nuB.se=nuB.se,
+##						 phiA=phiA,
+##						 phiA2=phiA2,
+##						 phiB=phiB,
+##						 phiB2=phiB2,
+##						 phiA.se=phiA.se,
+##						 phiB.se=phiB.se,
+##						 corr=corr,
+##						 corrA.BB=corrA.BB,
+##						 corrB.AA=corrB.AA)
+##				save(cnParams, file=paste(outfile, "cnParams_", PLATE, "_", CHR, ".rda", sep=""))
+##			}
+
+##parameterMatrix <- function(object){
+##	CHR <- unique(chromosome(object))
+##	tau2A[row.index, i] <- getParam(cnSet, "tau2A", unique(batch)[i])
+##	tau2B[row.index, i] <- getParam(cnSet, "tau2B", unique(batch)[i])
+##	sig2A[row.index, i] <- getParam(cnSet, "sig2A", unique(batch)[i])
+##	sig2B[row.index, i] <- getParam(cnSet, "sig2B", unique(batch)[i])
+##	nuA[row.index, i] <- getParam(cnSet, "nuA", unique(batch)[i])
+##	nuA.se[row.index, i] <- getParam(cnSet, "nuA.se", unique(batch)[i])					
+##	nuB[row.index, i] <- getParam(cnSet, "nuB", unique(batch)[i])
+##	nuB.se[row.index, i] <- getParam(cnSet, "nuB.se", unique(batch)[i])										
+##	phiA[row.index, i] <- getParam(cnSet, "phiA", unique(batch)[i])
+##	phiA.se[row.index, i] <- getParam(cnSet, "phiA.se", unique(batch)[i])																				
+##	phiB[row.index, i] <- getParam(cnSet, "phiB", unique(batch)[i])
+##	phiB.se[row.index, i] <- getParam(cnSet, "phiB.se", unique(batch)[i])															
+##	corr[row.index, i] <- getParam(cnSet, "corr", unique(batch)[i])
+##	corrA.BB[row.index, i] <- getParam(cnSet, "corrA.BB", unique(batch)[i])
+##	corrB.AA[row.index, i] <- getParam(cnSet, "corrB.AA", unique(batch)[i])
+##	CA[row.index, sample.index] <- cnSet@assayData[["CA"]]
+##	CB[row.index, sample.index] <- cnSet@assayData[["CB"]]
+##	if(CHR==23){
+##		phiA2[row.index, i] <- getParam(cnSet, "phiA2", unique(batch)[i])
+##		phiB2[row.index, i] <- getParam(cnSet, "phiB2", unique(batch)[i])
+##	}
+##	paramFF <- ffdf(tau2A=tau2A,
+##			tau2B=tau2B,
+##			sig2A=sig2A,
+##			sig2B=sig2B,
+##			nuA=nuA,
+##			nuB=nuB,
+##			nuA.se=nuA.se,
+##			nuB.se=nuB.se,
+##			phiA=phiA,
+##			phiA2=phiA2,
+##			phiB=phiB,
+##			phiB2=phiB2,
+##			phiA.se=phiA.se,
+##			phiB.se=phiB.se,
+##			corr=corr,
+##			corrA.BB=corrA.BB,
+##			corrB.AA=corrB.AA)
+##	return(paramFF)
+##}
+
+constructClass <- function(annotation){
+	thisclass <- whichClass(annotation)
+	obj <- new(thisclass, annotation=annotation)
+	crlmmOptions(obj) <- getOptions(obj)
+	obj
+}
+
+whichClass <- function(cdfName){
+	stopifnot(isValidCdfName(cdfName))
+	platform <- whichPlatform(cdfName)
+	if(isPackageLoaded("ff")){
+		thisclass <- paste(platform, "AlleleSet", sep="")
+	} else {
+		thisclass <- paste(platform, "AlleleSet", sep="")
+	}
+	return(thisclass)
+}
+setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)

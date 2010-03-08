@@ -40,6 +40,23 @@ setMethod("getParam", signature(object="eSet",
 		  getParam.SnpSuperSet(object, name, ...)
 })
 
+
+
+setMethod("plot", signature("eSet"), function(x, y, add=FALSE, ...){
+	A <- log2(A(x))
+	B <- log2(B(x))
+	if(!add){
+		plot(A, B, ...)
+	} else{
+		points(A, B, ...)
+	}
+})
+setMethod("points", signature("eSet"), function(x, ...){
+	A <- log2(A(x))
+	B <- log2(B(x))
+	points(A, B, ...)
+})
+
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects
