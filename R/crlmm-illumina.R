@@ -453,14 +453,14 @@ RGtoXY <- function(RG, chipType) {
 	## RS: this should be put elsewhere -- perhaps in utils.R
 	##  -- see validCdfNames() in utils.R.  are these consistent?
 	chipList <- c("human1mv1c",             # 1M
-		      "human370v1c",            # 370CNV
-		      "human650v3a",            # 650Y
-		      "human610quadv1b",        # 610 quad
-		      "human660quadv1a",        # 660 quad
-		      "human370quadv3c",        # 370CNV quad
-		      "human550v3b",            # 550K
-		      "human1mduov3b",          # 1M Duo
-		      "humanomni1quadv1b")      # Omni1 quad
+		          "human370v1c",            # 370CNV
+		          "human650v3a",            # 650Y
+		          "human610quadv1b",        # 610 quad
+		          "human660quadv1a",        # 660 quad
+		          "human370quadv3c",        # 370CNV quad
+		          "human550v3b",            # 550K
+		          "human1mduov3b",          # 1M Duo
+		          "humanomni1quadv1b")      # Omni1 quad
 	if(missing(chipType)){
 		chipType = match.arg(annotation(RG), chipList)
 	} else chipType = match.arg(chipType, chipList)
@@ -570,7 +570,7 @@ RGtoXY <- function(RG, chipType) {
 	##  XY@assayData$zero[XY@assayData$X==0 | XY@assayData$Y==0] = 1
 	gc()
 
-	storageMode(XY) = "lockedEnvironment"
+	## storageMode(XY) = "lockedEnvironment"
 	return(XY)
 }
 
@@ -619,7 +619,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
 	}
 	if(verbose)
 		cat("\n")
-	XY
+	return(XY)
 	##  XYNorm = new("NChannelSet",
 	##                X=Xqws+16,
 	##                Y=Yqws+16,
@@ -645,7 +645,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
 ##				save.it=FALSE,
 ##				snpFile,
 ##				cnFile) {
-preprocessInfinium2 <- function(object, zero){  
+preprocessInfinium2 <- function(object) { ## , zero){  
 	storageMode(object) <- "environment"
 	ops <- crlmmOptions(object)
 	mixtureSampleSize <- ops$snprmaOpts[["mixtureSampleSize"]]
@@ -798,8 +798,8 @@ preprocessInfinium2 <- function(object, zero){
 ##	}
 
 	##RS: I don't think A and B were updated, so probably do not need to reassign
-	A(object) <- A
-	B(object) <- B
+##	A(object) <- A
+##	B(object) <- B
 	if (!fitMixture) SNR <- mixtureParams <- NA
 	sampleStats <- data.frame(SKW=SKW,
 				  SNR=SNR)

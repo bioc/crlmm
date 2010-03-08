@@ -429,3 +429,7 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 - the batchSize argument will run the genotyping (crlmmGT) in batches to reduce the RAM.  The default is batches of size 1000.
 
 - The crlmm.Rd file contains an example with / without ff for Affymetrix data.
+
+2010-03-08 M. Ritchie committed version 1.5.31
+ * removed a few unnecessary lines of code from crlmm-illumina.R (zero not needed as argument for preprocessInfinium2() and storageMode should not be "lockedEnvironment" in RGtoXY()) 
+ * added "humanomni1quadv1b" to validCdfName() in utils.R
