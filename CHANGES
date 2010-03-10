@@ -438,4 +438,6 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 
 **	   This is a roll back to version 1.5.24 
 	   
+2010-03-08 R.Scharpf committed version 1.5.33
 
+**	  Added annotatedDataFrameFrom methods for ff_matrix and ffdf (in utils)
