@@ -1,39 +1,17 @@
 Package: crlmm
 Type: Package
 Title: Genotype Calling (CRLMM) and Copy Number Analysis tool for Affymetrix SNP 5.0 and 6.0 and Illumina arrays.
-Version: 1.5.31
-Date: 2010-03-08
-Author: Rafael A Irizarry, Benilton S Carvalho <carvalho@bclab.org>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.edu.au>
-Maintainer: Benilton S Carvalho <carvalho@bclab.org>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.EDU.AU>
+Version: 1.5.32
+Date: 2010-02-05
+Author: Rafael A Irizarry, Benilton S Carvalho <bcarvalh@jhsph.edu>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.edu.au>
+Maintainer: Benilton S Carvalho <bcarvalh@jhsph.edu>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.EDU.AU>
 Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays, as well as a copy number tool specific to 5.0, 6.0, and Illumina platforms
 License: Artistic-2.0
-Depends: R (>= 2.11.0),
-         methods,
-         Biobase (>= 2.7.2),
-         oligoClasses (>= 1.9.28)
-Imports: affyio (>= 1.15.2),
-         preprocessCore,
-         utils,
-         stats,
-         genefilter,
-         splines,
-         mvtnorm,
-         ellipse,
-         SNPchip,ff
-Suggests: hapmapsnp5,
-          hapmapsnp6,
-          genomewidesnp5Crlmm (>= 1.0.2),
-          genomewidesnp6Crlmm (>= 1.0.2),
-          snpMatrix,
-          metaArray
-Collate: AllClasses.R
-	 AllGenerics.R
-	 methods-AffymetrixAlleleSet.R
-	 methods-IlluminaAlleleSet.R
-	 methods-CrlmmContainer.R
+Depends: methods, Biobase (>= 2.7.2), R (>= 2.11.0), oligoClasses (>= 1.9.21)
+Imports: affyio (>= 1.15.2), preprocessCore, utils, stats, genefilter, splines, mvtnorm, ellipse, SNPchip
+Suggests: hapmapsnp5, hapmapsnp6, genomewidesnp5Crlmm (>= 1.0.2),genomewidesnp6Crlmm (>= 1.0.2), snpMatrix
+Collate: AllGenerics.R
 	 methods-CNSet.R
-	 methods-AlleleSet.R
-	 methods-CallSet.R
 	 methods-eSet.R
          methods-SnpSuperSet.R
          cnrma-functions.R

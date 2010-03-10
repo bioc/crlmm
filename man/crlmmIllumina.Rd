@@ -68,7 +68,7 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
   intensities, not both.  Alternatively if \code{crlmmIllumina} has been
   run already with \code{save.it=TRUE}, the preprocessed data can be
   loaded from file by specifying \code{load.it=TRUE} and
-  \code{snpFile} (\code{RG} or \code{XY} are not needed in this case).
+  \code{intensityFile} (\code{RG} or \code{XY} are not needed in this case).
 }
 
 \references{
@@ -91,5 +91,4 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
 \examples{
 ## crlmmOut = crlmmIllumina(RG)
 }
-\seealso{\code{\link{readIdatFiles}, \code{\link{crlmmIlluminaV2}}}
 \keyword{classif}

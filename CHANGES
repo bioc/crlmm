@@ -433,3 +433,9 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 2010-03-08 M. Ritchie committed version 1.5.31
  * removed a few unnecessary lines of code from crlmm-illumina.R (zero not needed as argument for preprocessInfinium2() and storageMode should not be "lockedEnvironment" in RGtoXY()) 
  * added "humanomni1quadv1b" to validCdfName() in utils.R
+
+2010-03-08 R.Scharpf committed version 1.5.32
+
+**	   This is a roll back to version 1.5.24 
+	   
+

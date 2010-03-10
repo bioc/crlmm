@@ -54,7 +54,7 @@ crlmmWrapper(sampleSheet=samplesheet,
 	     saveDate=TRUE,
 	     cdfName=cdfName,
 	     load.it=FALSE,
-	     save.it=TRUE,
+	     save.it=FALSE,
 	     intensityFile=file.path(outdir, "normalizedIntensities.rda"),
 	     crlmmFile=file.path(outdir, "snpsetObject.rda"),
 	     rgFile=file.path(outdir, "rgFile.rda"))
@@ -67,8 +67,7 @@ contains the crlmm genotype calls.
 
 
 <<SNR>>=
-##CHR <- 1
-CHR <- "X"
+CHR <- 1
 filename <- paste(outdir, "/crlmmSetList_", CHR, ".rda", sep="")
 load(filename)
 hist(crlmmSetList[[1]]$SNR)

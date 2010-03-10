@@ -142,17 +142,22 @@
 ##})
 
 getParam.SnpSuperSet <- function(object, name, batch){
-	if(missing(batch)) label <- name
-	else  label <- paste(name, batch, sep="_")
-	colindex <- grep(label, fvarLabels(object))
-	if(length(colindex) >= 1){
-		param <- fData(object)[, colindex]
-	} else param <- NULL
-	if(any(is.na(colindex))){
-		stop(paste(label, " not found in object"))
-	}
-	return(param)
-}
+		  label <- paste(name, batch, sep="_")
+		  colindex <- grep(label, fvarLabels(object))
+		  if(length(colindex) == 1){
+			  param <- fData(object)[, colindex]
+		  }
+		  if(length(colindex) < 1){
+			  param <- NULL
+		  }
+		  if(is.na(colindex)){
+			  stop(paste(label, " not found in object"))
+		  }
+		  if(length(colindex) > 1){
+			  stop(paste(label, " not unique"))
+		  }
+		  return(param)
+	  }
 
 
 
@@ -195,9 +200,9 @@ getParam.SnpSuperSet <- function(object, name, batch){
 ##	saved.objects
 ##})
 
-##setMethod("computeCopynumber", "SnpSuperSet",
-##	  function(object, cnOptions){
-##		  computeCopynumber.SnpSuperSet(object, cnOptions)
-##	  })
+setMethod("computeCopynumber", "SnpSuperSet",
+	  function(object, cnOptions){
+		  computeCopynumber.SnpSuperSet(object, cnOptions)
+	  })
 
 	

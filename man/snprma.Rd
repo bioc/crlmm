@@ -6,15 +6,12 @@
   Preprocessing tool for SNP arrays.
 }
 \description{
-
   SNPRMA will preprocess SNP chips. The preprocessing consists of
   quantile normalization to a known target distribution and
-  summarization to the SNP-Allele level. This function is not
-  typically called directly.
-
+  summarization to the SNP-Allele level.
 }
 \usage{
-snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, AFile="A.rda", BFile="B.rda")
+snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, sns)
 }
 \arguments{
   \item{filenames}{
@@ -36,18 +33,11 @@ snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbo
     Seed to be used when sampling.
 }
   \item{cdfName}{
-    cdfName: 'genomewidesnp5', 'genomewidesnp6'
-    See \code{validCdfNames}.
+    cdfName: 'GenomeWideSnp\_5', 'GenomeWideSnp\_6'
 }
-
-\item{AFile}{'character' for naming the quantile normalized
-intensities for the A allele.  This object also contains the
-normalized intensities for the nonpolymorphic loci, depending on the
-platform }
-
-\item{BFile}{'character' for naming the quantile normalized
-intensities for the B allele.  }
-
+  \item{sns}{
+    Sample names.
+}
 }
 \value{
   \item{A}{Summarized intensities for Allele A}
@@ -66,11 +56,9 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  snprmaResult <-  snprma(cels, cdfName="genomewidesnp5")
-  str(snprmaResult)
-  load("A.rda")
-  A[1:10, ]
-  unlink(list("A.rda", "B.rda"))
+  snprmaOutput <- snprma(cels)
+  snprmaOutput[["A"]][1:10,]
+  snprmaOutput[["B"]][1:10,]
 }
 }
 \keyword{manip}

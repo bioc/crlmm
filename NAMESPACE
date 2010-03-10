@@ -1,4 +1,3 @@
-## crlmm NAMESPACE
 useDynLib("crlmm", .registration=TRUE)
 
 ## Biobase
@@ -8,12 +7,11 @@ importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
 
 importMethodsFrom(Biobase, annotation, "annotation<-",
                   annotatedDataFrameFrom, assayData, "assayData<-",
-		  snpCallProbability,
                   combine, dims, experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
                   fvarMetadata, fvarLabels, pData, phenoData,
                   "phenoData<-", protocolData, "protocolData<-",
-                  pubMedIds, rowMedians, sampleNames, snpCall, storageMode,
+                  pubMedIds, rowMedians, sampleNames, storageMode,
                   "storageMode<-", updateObject, varLabels)
 
 importFrom(Biobase, assayDataElement, assayDataElementNames,
@@ -21,75 +19,44 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
            validMsg)
 
 ## oligoClasses
-##importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
+importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 
-##S3 method ffdf and class ffdf
-importFrom(ff, ffdf, ff, as.ff, as.ffdf)
+importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
+		  "confs<-", cnConfidence, "cnConfidence<-", 
+		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-")
 
 
+importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
 
-##importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-##		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
-##		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
+importFrom(oligoClasses, copyNumber)
 
-importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
-           copyNumber)
-
-## graphics
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
 
-## grDevices
 importFrom(grDevices, grey)
 
-## affyio
 importFrom(affyio, read.celfile.header, read.celfile)
 
-## preprocessCore
-importFrom(preprocessCore, normalize.quantiles.use.target,
-           normalize.quantiles)
+importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
 
-## utils
-importFrom(utils, data, packageDescription, setTxtProgressBar,
-           txtProgressBar)
+importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
 
-## stats
-importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
-           sd, update)
+importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, update)
 
-## genefilter
 importFrom(genefilter, rowSds)
 
-## mvtnorm
 importFrom(mvtnorm, dmvnorm)
 
-## ellipse
 importFrom(ellipse, ellipse)
 
+exportMethods(A, B, copyNumber)
+export(cnOptions, crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
 
-##exportClasses(FFSet)
-exportMethods(annotatedDataFrameFrom,
-	copyNumber, initialize, 
-              ##show, "$", "[[", "[", 
-	      genomeAnnotation,
-	      lM,
-	      CA,
-	      CB,
-	      A,
-	      B,
-	      snpCall,
-	      confs,
-	      chromosome,
-	      position,
-	      isSnp)
-export(crlmmOptions, crlmm, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam, validCdfNames)
-
-
-
-#############
-## TO REMOVE
-#############
-
-##export everything that does not start with a .
-exportPattern("^[^\\.]")
-
+##export(##viterbi.CNSet, ##move to VanillaICE
+##	combineIntensities,
+##	whichPlatform,
+##	isValidCdfName,
+##	crlmmWrapper,
+##        withinGenotypeMoments,  
+##	locationAndScale, getParam.SnpSuperSet)
+export(thresholdModelParams, computeCopynumber.CNSet, nuphiAllele, coefs, biasAdjNP)

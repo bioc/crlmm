@@ -35,26 +35,14 @@ setMethod("chromosome", "eSet", function(object) fData(object)$chromosome)
 setMethod("position", "eSet", function(object) fData(object)$position)
 
 setMethod("getParam", signature(object="eSet",
-				name="character"),
-	  function(object, name, ...){
-		  getParam.SnpSuperSet(object, name, ...)
-})
-
-
-
-setMethod("plot", signature("eSet"), function(x, y, add=FALSE, ...){
-	A <- log2(A(x))
-	B <- log2(B(x))
-	if(!add){
-		plot(A, B, ...)
-	} else{
-		points(A, B, ...)
-	}
-})
-setMethod("points", signature("eSet"), function(x, ...){
-	A <- log2(A(x))
-	B <- log2(B(x))
-	points(A, B, ...)
+				name="character",
+				batch="ANY"),
+	  function(object, name, batch){
+		  if(length(batch) > 1){
+			  warning("batch argument to getParam should have length 1.  Only using the first")
+			  batch <- batch[1]
+		  }
+		  getParam.SnpSuperSet(object, name, batch)
 })
 
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
