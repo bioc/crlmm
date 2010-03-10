@@ -1,3 +1,80 @@
+##---------------------------------------------------------------------------
+##---------------------------------------------------------------------------
+getProtocolData.Affy <- function(filenames){
+	scanDates <- data.frame(ScanDate=sapply(filenames, celfileDate))
+	rownames(scanDates) <- basename(rownames(scanDates))
+	protocoldata <- new("AnnotatedDataFrame",
+			    data=scanDates,
+			    varMetadata=data.frame(labelDescription=colnames(scanDates),
+			                           row.names=colnames(scanDates)))
+	return(protocoldata)
+}
+getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
+	pkgname <- getCrlmmAnnotationName(cdfName)
+	if(!require(pkgname, character.only=TRUE)){
+		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
+		msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+		message(strwrap(msg))
+		stop("Package ", pkgname, " could not be found.")
+		rm(suggCall, msg)
+	}
+	loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+	loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+	gns <- getVarInEnv("gns")
+	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+	load(file.path(path, "snpProbes.rda"))
+
+	if(copynumber){
+		load(file.path(path, "cnProbes.rda"))
+		cnProbes <- get("cnProbes")
+		snpIndex <- seq(along=gns)
+		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex) 
+		featurenames <- c(gns, rownames(cnProbes))
+	} else featurenames <- gns
+	fvarlabels=c("chromosome", "position", "isSnp")
+	M <- matrix(NA, length(featurenames), 3, dimnames=list(featurenames, fvarlabels))
+	index <- match(rownames(snpProbes), rownames(M)) #only snp probes in M get assigned position
+	M[index, "position"] <- snpProbes[, grep("pos", colnames(snpProbes))]
+	M[index, "chromosome"] <- snpProbes[, grep("chr", colnames(snpProbes))]
+	M[index, "isSnp"] <- 1L
+	index <- which(is.na(M[, "isSnp"]))
+	M[index, "isSnp"] <- 1L
+
+	if(copynumber){
+		index <- match(rownames(cnProbes), rownames(M)) #only snp probes in M get assigned position
+		M[index, "position"] <- cnProbes[, grep("pos", colnames(cnProbes))]
+		M[index, "chromosome"] <- cnProbes[, grep("chr", colnames(cnProbes))]
+		M[index, "isSnp"] <- 0L
+	}
+	return(new("AnnotatedDataFrame", data=data.frame(M)))
+	##list(snpIndex, npIndex, fns)
+	##crlmmOpts$snpRange <- range(snpIndex)
+	##crlmmOpts$npRange <- range(npIndex)
+}
+construct <- function(filenames, cdfName){
+	protocolData <- getProtocolData.Affy(filenames)
+	M <- getFeatureData.Affy(cdfName)
+	dns <- list(rownames(M), basename(filenames))
+	nr <- nrow(M)
+	alleleSet <- new("AffymetrixAlleleSet", 
+			 alleleA=initializeBigMatrix(dns),
+			 alleleB=initializeBigMatrix(dns),
+			 genomeAnnotation=M,
+			 options=crlmmOptions(object),
+			 annotation=annotation(object))
+	protocolData(alleleSet) <- protocolData
+	sampleNames(alleleSet) <- basename(filenames)
+	featureNames(alleleSet) <- dns[[1]]
+	return(alleleSet)
+}
+
+
+
+
+
+##---------------------------------------------------------------------------
+##---------------------------------------------------------------------------
 rowCovs <- function(x, y, ...){
 	notna <- !is.na(x)
 	N <- rowSums(notna)

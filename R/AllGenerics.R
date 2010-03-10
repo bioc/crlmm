@@ -1,5 +1,3 @@
-setGeneric("A", function(object) standardGeneric("A"))
-setGeneric("B", function(object) standardGeneric("B"))
 ##setGeneric("A<-", function(object, value) standardGeneric("A<-"))
 ##setGeneric("B<-", function(object, value) standardGeneric("B<-"))
 

@@ -1,5 +1,8 @@
 useDynLib("crlmm", .registration=TRUE)
 
+## this is temporary
+exportPattern("^[^\\.]")
+
 ## Biobase
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
 		  NChannelSet, MIAME, Versioned, VersionedBiobase,
@@ -23,7 +26,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", 
-		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-")
+		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
 
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
