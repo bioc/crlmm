@@ -92,7 +92,6 @@ genotype <- function(filenames, cdfName, mixtureSampleSize=10^5,
 		     fitMixture=TRUE,
 		     eps=0.1, verbose=TRUE,
 		     seed=1, sns, copynumber=FALSE,
-		     batchSize=1000,
 		     probs=rep(1/3, 3),
 		     DF=6,
 		     SNRMin=5,
@@ -138,7 +137,7 @@ genotype <- function(filenames, cdfName, mixtureSampleSize=10^5,
 		cnrmaRes <- cnrma(filenames=filenames[j],
 				  cdfName=cdfName,
 				  row.names=featureNames(callSet)[np.index],				  
-				  sns=sns,
+				  sns=sns[j],
 				  seed=seed,
 				  verbose=verbose)
 		stopifnot(identical(featureNames(callSet)[np.index], rownames(cnrmaRes)))
@@ -381,85 +380,40 @@ harmonizeDimnamesTo <- function(object1, object2){
 	return(object1)
 }
 
-crlmmCopynumber <- function(filenames, cnOptions, object, ...){
-	if(!missing(object)){
-		stopifnot(class(object) == "CNSet")
-		createIntermediateObjects <- FALSE
-	} else {
-		createIntermediateObjects <- TRUE
-		crlmmResults <- crlmmWrapper(filenames, cnOptions, ...)
-		snprmaResult <- crlmmResults[["snprmaResult"]]
-		cnrmaResult <- crlmmResults[["cnrmaResult"]]
-		callSet <- crlmmResults[["callSet"]]
-		rm(crlmmResults); gc()
-		annotation(callSet) <- cnOptions[["cdfName"]]
-		stopifnot(identical(featureNames(callSet), snprmaResult[["gns"]]))
-		path <- system.file("extdata", package=paste(annotation(callSet), "Crlmm", sep=""))	
-		load(file.path(path, "snpProbes.rda"))
-		snpProbes <- get("snpProbes")
-		load(file.path(path, "cnProbes.rda"))
-		cnProbes <- get("cnProbes")	
-		k <- grep("chr", colnames(snpProbes))
-		if(length(k) < 1) stop("chr or chromosome not in colnames(snpProbes)")
-	}
-	set.seed(cnOptions[["seed"]])  ##for reproducibility
+
+
+crlmmCopynumber <- function(object, cnOptions, ...){
 	chromosome <- cnOptions[["chromosome"]]
-	SNRmin <- cnOptions[["SNRmin"]]
-	for(CHR in chromosome){
-		cat("Chromosome ", CHR, "\n")
-		if(createIntermediateObjects){
-			snps <- rownames(snpProbes)[snpProbes[, k] == CHR]
-			cnps <- rownames(cnProbes)[cnProbes[, k] == CHR]
-			index.snps <- match(snps, featureNames(callSet))
-			index.nps <- match(cnps, rownames(cnrmaResult[["NP"]]))
-			if(!is.null(cnrmaResult)){
-				npI <- cnrmaResult$NP[index.nps, ]
-			} else npI <- NULL
-			snpI <- list(A=snprmaResult$A[index.snps, ],
-				     B=snprmaResult$B[index.snps, ],
-				     sns=snprmaResult$sns,
-				     gns=snprmaResult$gns[index.snps],
-				     SNR=snprmaResult$SNR,
-				     SKW=snprmaResult$SKW,
-				     mixtureParams=snprmaResult$mixtureParams,
-				     cdfName=snprmaResult$cdfName)
-			cnOptions[["batch"]] <- cnOptions[["batch"]][snpI[["SNR"]]  >= SNRmin]
-			cnSet <- combineIntensities(res=snpI,
-						    NP=npI,
-						    callSet=callSet[index.snps, ])
-			if(any(cnSet$SNR > SNRmin)){
-				message(paste("Excluding samples with SNR < ", SNRmin))
-				cnSet <- cnSet[, cnSet$SNR >= SNRmin]
-			}
-			rm(snpI, npI, snps, cnps, index.snps, index.nps); gc()
-			pData(cnSet)$batch <- cnOptions[["batch"]]
-			featureData(cnSet) <- lm.parameters(cnSet, cnOptions)
-		} else {
-			cnSet <- object
-		}
-		if(CHR != 24){		
-			cnSet <- computeCopynumber(cnSet, cnOptions)
-		} else{
-			message("Copy number estimates not available for chromosome Y.  Saving only the 'callSet' object for this chromosome")
-			alleleSet <- cnSet
-			save(alleleSet, file=file.path(cnOptions[["outdir"]], paste("alleleSet_", CHR, ".rda", sep="")))
-			rm(cnSet, alleleSet); gc()
-			next()
-		}
-		if(length(chromosome) == 1){
-			if(cnOptions[["save.cnset"]]){
-				save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
-			}
-		}
-		if(length(chromosome) > 1){
-			save(cnSet, file=file.path(cnOptions[["outdir"]], paste("cnSet_", CHR, ".rda", sep="")))
-			rm(cnSet); gc()
-		} else {
-			return(cnSet)
+	which.batch <- cnOptions[["whichbatch"]]
+	SNRMin <- cnOptions[["SNRMin"]]
+	cnSet <- new("CNSetLM",
+		     alleleA=A(object),
+		     alleleB=B(object),
+		     call=calls(object),
+		     callProbability=confs(object),
+		     CA=initializeBigMatrix("CA", nrow(object), ncol(object)),
+		     CB=initializeBigMatrix("CB", nrow(object), ncol(object)),
+		     annotation=annotation(object),
+		     featureData=featureData(object),
+		     experimentData=experimentData(object),
+		     phenoData=phenoData(object))
+	rm(object); gc()
+	if(any(cnSet$SNR < SNRMin)){
+		message("Excluding ", sum(cnSet$SNR < SNRMin), " samples with SNR below ", SNRMin)
+		cnSet <- cnSet[, cnSet$SNR > SNRMin]
+	}
+	batches <- split(1:ncol(cnSet), cnSet$batch)
+	if(any(sapply(batches, length) < MIN.SAMPLES)) message("Excluding batches with fewer than ", MIN.SAMPLES, " samples")
+	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
+	for(i in chromosome){
+		cat("Chromosome ", i, "\n")
+		for(j in batches){
+			if(i >= 24) next()
+			row.index <- which(chromosome(cnSet) == i)
+			tmp <- computeCopynumber(cnSet[row.index, j], cnOptions)
+			##message("Copy number estimates not available for chromosome Y.  Saving only the 'callSet' object for this chromosome")
 		}
 	}
-	saved.objects <- list.files(cnOptions[["outdir"]], pattern="cnSet", full.names=TRUE)		
-	return(saved.objects)
 }
 
 
@@ -731,15 +685,16 @@ thresholdCopynumber <- function(object){
 ##
 ##}
 
-cnOptions <- function(outdir="./",
-		      cdfName,
-		      crlmmFile,
-		      intensityFile,
-		      rgFile="rgFile.rda",
-		      save.it=TRUE,
-		      save.cnset=TRUE,
-		      load.it=TRUE,
-		      splitByChr=TRUE,
+cnOptions <- function(
+##		      outdir="./",
+##		      cdfName,
+##		      crlmmFile,
+##		      intensityFile,
+##		      rgFile="rgFile.rda",
+##		      save.it=TRUE,
+##		      save.cnset=TRUE,
+##		      load.it=TRUE,
+##		      splitByChr=TRUE,
 		      MIN.OBS=3,
 		      MIN.SAMPLES=10,
 		      batch=NULL,
@@ -763,32 +718,33 @@ cnOptions <- function(outdir="./",
 ##		      cbsOpts=NULL,
 		      ##hmmOpts=NULL,
 		      ...){
-	if(missing(cdfName)) stop("must specify cdfName")
-	if(!file.exists(outdir)){
-		message(outdir, " does not exist.  Trying to create it.")
-		dir.create(outdir, recursive=TRUE)
-	}
-	stopifnot(isValidCdfName(cdfName))
-##	if(hiddenMarkovModel){
-##		hmmOpts <- hmmOptions(...)
+##	if(missing(cdfName)) stop("must specify cdfName")
+##	if(!file.exists(outdir)){
+##		message(outdir, " does not exist.  Trying to create it.")
+##		dir.create(outdir, recursive=TRUE)
 ##	}
-	if(missing(crlmmFile)){
-		crlmmFile <- file.path(outdir, "snpsetObject.rda")
-	}
-	if(missing(intensityFile)){
-		intensityFile <- file.path(outdir, "normalizedIntensities.rda")
-	}
-	if(is.null(batch))
-		stop("must specify batch -- should be the same length as the number of files")
-	list(outdir=outdir,
-	     cdfName=cdfName,
-	     crlmmFile=crlmmFile,
-	     intensityFile=intensityFile,
-	     rgFile=file.path(outdir, rgFile),
-	     save.it=save.it,
-	     save.cnset=save.cnset,
-	     load.it=load.it,
-	     splitByChr=splitByChr,
+##	stopifnot(isValidCdfName(cdfName))
+####	if(hiddenMarkovModel){
+####		hmmOpts <- hmmOptions(...)
+####	}
+##	if(missing(crlmmFile)){
+##		crlmmFile <- file.path(outdir, "snpsetObject.rda")
+##	}
+##	if(missing(intensityFile)){
+##		intensityFile <- file.path(outdir, "normalizedIntensities.rda")
+##	}
+##	if(is.null(batch))
+##		stop("must specify batch -- should be the same length as the number of files")
+	list(
+##	     outdir=outdir,
+##	     cdfName=cdfName,
+##	     crlmmFile=crlmmFile,
+##	     intensityFile=intensityFile,
+##	     rgFile=file.path(outdir, rgFile),
+##	     save.it=save.it,
+##	     save.cnset=save.cnset,
+##	     load.it=load.it,
+##	     splitByChr=splitByChr,
 	     MIN.OBS=MIN.OBS,
 	     MIN.SAMPLES=MIN.SAMPLES,
 	     batch=batch,

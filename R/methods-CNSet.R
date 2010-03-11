@@ -1,20 +1,45 @@
-setAs("SnpSuperSet", "CNSet",
-      function(from, to){
-	      CA <- CB <- matrix(NA, nrow(from), ncol(from))
-	      dimnames(CA) <- dimnames(CB) <- list(featureNames(from), sampleNames(from))		  
-	      new("CNSet",
-		  call=calls(from),
-		  callProbability=assayData(from)[["callProbability"]],  ##confs(from) returns 1-exp(-x/1000)
-		  alleleA=A(from),
-		  alleleB=B(from),
-		  CA=CA,
-		  CB=CB,
-		  phenoData=phenoData(from),
-		  experimentData=experimentData(from),
-		  annotation=annotation(from),
-		  protocolData=protocolData(from),
-		  featureData=featureData(from))
-      })
+setMethod("show", "CNSet", function(object){
+	callNextMethod(object)
+	cat("lM: ", length(lM(object)), " elements \n")
+	print(names(lM(object)))
+})
+setMethod("[", "CNSet", function(x, i, j, ..., drop=FALSE){
+	x <- callNextMethod(x, i, j, ..., drop=drop)
+	if(!missing(i)){
+		if(class(lM(x)) == "ffdf"){
+			lM(x) <- lapply(physical(lM(x)), function(x, i){open(x); x[i, ]}, i=i)
+		} else {
+			lM(x) <- lapply(lM(x), function(x, i) x[i, , drop=FALSE], i=i)
+		}
+	}
+	x
+})
+setGeneric("lM", function(object) standardGeneric("lM"))
+setGeneric("lM<-", function(object, value) standardGeneric("lM<-"))
+setMethod("lM", "CNSet", function(object) object@lM)
+##setMethod("linearModelParam", "AffymetrixCNSet", function(object) object@linearModelParam)
+setReplaceMethod("lM", c("CNSet", "list_or_ffdf"), function(object, value){
+	object@lM <- value
+	object
+})
+
+##setAs("SnpSuperSet", "CNSet",
+##      function(from, to){
+##	      CA <- CB <- matrix(NA, nrow(from), ncol(from))
+##	      dimnames(CA) <- dimnames(CB) <- list(featureNames(from), sampleNames(from))		  
+##	      new("CNSet",
+##		  call=calls(from),
+##		  callProbability=assayData(from)[["callProbability"]],  ##confs(from) returns 1-exp(-x/1000)
+##		  alleleA=A(from),
+##		  alleleB=B(from),
+##		  CA=CA,
+##		  CB=CB,
+##		  phenoData=phenoData(from),
+##		  experimentData=experimentData(from),
+##		  annotation=annotation(from),
+##		  protocolData=protocolData(from),
+##		  featureData=featureData(from))
+##      })
 
 setMethod("computeCopynumber", "CNSet", function(object, cnOptions){
 	## to do the bias adjustment, initial estimates of the parameters are needed
@@ -151,39 +176,3 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 }
 
 
-
-
-
-
-setMethod("show", "CNSet", function(object){
-	callNextMethod(object)
-##	cat("emissionPr\n")
-##	cat("   array:", nrow(object), "features,", ncol(object), "samples,", dim(emissionPr(object))[3], "states\n")
-##	cat("   hidden states:\n")
-##	cat("      ", dimnames(emissionPr(object))[[3]], "\n")
-##	cat("   Missing values:", sum(is.na(emissionPr(object))), "\n")
-##	if(!all(is.na(emissionPr(object)))){
-##		cat("   minimum value:", min(emissionPr(object), na.rm=TRUE), "\n")
-##	} else  cat("   minimum value: NA (all missing)\n")
-##	cat("rangedData:  ")
-##	cat("    ", show(rangedData(object)), "\n")
-})
-##setMethod("rangedData", "CNSet", function(object) segmentData(object))
-##setReplaceMethod("rangedData", c("CNSet", "RangedData"), function(object, value){
-##	segmentData(object) <- value
-##})
-##
-##setMethod("segmentData", "CNSet", function(object) object@segmentData)
-##setReplaceMethod("segmentData", c("CNSet", "RangedData"), function(object, value){
-##	object@segmentData <- value
-##	object
-##})
-##
-##setMethod("emissionPr", "CNSet", function(object) object@emissionPr)
-##setReplaceMethod("emissionPr", c("CNSet", "array"), function(object, value){
-##	object@emissionPr <- value
-##	object
-##})
-##setMethod("start", "CNSet", function(x, ...) start(segmentData(x), ...))
-##setMethod("end", "CNSet", function(x, ...) end(segmentData(x), ...))
-##setMethod("width", "CNSet", function(x) width(segmentData(x)))
