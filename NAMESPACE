@@ -26,7 +26,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", 
-		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-", A, B)
+		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-", A, B, "A<-", "B<-")
 
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
@@ -52,14 +52,6 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-exportMethods(A, B, copyNumber)
+exportMethods(copyNumber)
 export(cnOptions, crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
-
-##export(##viterbi.CNSet, ##move to VanillaICE
-##	combineIntensities,
-##	whichPlatform,
-##	isValidCdfName,
-##	crlmmWrapper,
-##        withinGenotypeMoments,  
-##	locationAndScale, getParam.SnpSuperSet)
-export(thresholdModelParams, computeCopynumber.CNSet, nuphiAllele, coefs, biasAdjNP)
+export(genotype)

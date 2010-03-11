@@ -42,8 +42,11 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
   ##S will hold (A+B)/2 and M will hold A-B
   ##NOTE: We actually dont need to save S. Only for pics etc...
   ##f is the correction. we save to avoid recomputing
-  A <- matrix(as.integer(0), length(pnsa), length(filenames))
-  B <- matrix(as.integer(0), length(pnsb), length(filenames))
+  ##**RS**
+  ##A <- matrix(as.integer(0), length(pnsa), length(filenames))
+  ##B <- matrix(as.integer(0), length(pnsb), length(filenames))
+  A <- initializeBigMatrix(name="tmpA", length(pnsa), length(filenames))
+  B <- initializeBigMatrix(name="tmpB", length(pnsa), length(filenames))
   
   if(verbose){
     message("Processing ", length(filenames), " files.")

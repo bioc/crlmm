@@ -52,21 +52,152 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 	##crlmmOpts$snpRange <- range(snpIndex)
 	##crlmmOpts$npRange <- range(npIndex)
 }
-construct <- function(filenames, cdfName){
+construct <- function(filenames, cdfName, copynumber=FALSE, sns){
+	if(missing(sns)) sns <- basename(filenames)
 	protocolData <- getProtocolData.Affy(filenames)
-	M <- getFeatureData.Affy(cdfName)
-	dns <- list(rownames(M), basename(filenames))
-	nr <- nrow(M)
-	alleleSet <- new("AffymetrixAlleleSet", 
-			 alleleA=initializeBigMatrix(dns),
-			 alleleB=initializeBigMatrix(dns),
-			 genomeAnnotation=M,
-			 options=crlmmOptions(object),
-			 annotation=annotation(object))
-	protocolData(alleleSet) <- protocolData
-	sampleNames(alleleSet) <- basename(filenames)
-	featureNames(alleleSet) <- dns[[1]]
-	return(alleleSet)
+	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
+	nr <- nrow(featureData); nc <- length(filenames)
+	callSet <- new("SnpSuperSet", 
+			 alleleA=initializeBigMatrix(name="A", nr, nc),
+			 alleleB=initializeBigMatrix(name="B", nr, nc),
+			 call=initializeBigMatrix(name="call", nr, nc),
+			 callProbability=initializeBigMatrix(name="callPr", nr,nc),
+			 featureData=featureData,
+			 annotation=cdfName)
+	protocolData(callSet) <- protocolData
+	sampleNames(callSet) <- sns
+	return(callSet)
+}
+setReplaceMethod("calls", "SnpSuperSet", function(object, value) assayDataElementReplace(object, "call", value))
+setReplaceMethod("confs", "SnpSuperSet", function(object, value) assayDataElementReplace(object, "callProbability", value))
+setMethod("confs", "SnpSuperSet", function(object) assayDataElement(object, "callProbability"))
+crlmm.batch <- function(object,
+			batchSize,
+			mixtureParams,
+			probs=rep(1/3,3),
+			DF=6,
+			SNRMin=5,
+			recallMin=10,
+			recallRegMin=1000,
+			gender=NULL,
+			desctrucitve=FALSE,
+			verbose=TRUE,
+			returnParams=FALSE,
+			badSNP=0.7){
+	##Call in batches to reduce ram
+	BS <- batchSize
+	nc <- ncol(object)
+	if(nc > BS){
+		N <- ceiling(nc/BS)
+		S <- ceiling(nc/N)
+		colindex <- split(1:nc, rep(1:nc, each=S, length.out=nc))
+	} else {
+		colindex <- list(1:nc)
+	}
+	if(length(colindex) > 1)
+		message("Calling genotypes in batches of size ", length(colindex[[1]]), " to reduce required RAM")
+	row.index <- which(isSnp(object)==1 | is.na(isSnp(object)))
+	for(i in seq(along=colindex)){
+		col.index <- colindex[[i]]
+		tmp <- crlmmGT(A=A(object)[row.index, col.index],
+			       B=B(object)[row.index, col.index],
+			       SNR=object$SNR[col.index],
+			       mixtureParams=mixtureParams[, col.index],
+			       cdfName=annotation(object),
+			       row.names=featureNames(object)[row.index],
+			       col.names=sampleNames(object)[col.index],
+			       probs=probs,
+			       DF=DF,
+			       SNRMin=SNRMin,
+			       recallMin=recallMin,
+			       recallRegMin=recallRegMin,
+			       gender=gender,
+			       desctrucitve=desctrucitve,
+			       verbose=verbose,
+			       returnParams=returnParams,
+			       badSNP=badSNP)
+		##ensure matrix is passed
+		calls(object)[row.index, col.index] <- tmp[["calls"]]
+		confs(object)[row.index, col.index] <- tmp[["confs"]]
+		object$gender[col.index] <- tmp$gender
+		rm(tmp); gc()
+	}
+	return(object)
+}
+
+genotype <- function(filenames, cdfName, mixtureSampleSize=10^5,
+		     fitMixture=TRUE,
+		     eps=0.1, verbose=TRUE,
+		     seed=1, sns, copynumber=FALSE,
+		     batchSize=1000,
+		     probs=rep(1/3, 3),
+		     DF=6,
+		     SNRMin=5,
+		     recallMin=10,
+		     recallRegMin=1000,
+		     gender=NULL,
+		     returnParams=TRUE,
+		     badSNP=0.7){
+	if(missing(cdfName)) stop("must specify cdfName")
+	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
+	if(missing(sns)) sns <- basename(filenames)
+	## callSet contains potentially very big matrices
+	## More big matrices are created within snprma, that will then be removed.
+	snprmaRes <- snprma(filenames=filenames,
+			    mixtureSampleSize=mixtureSampleSize,
+			    fitMixture=fitMixture,
+			    eps=eps,
+			    verbose=verbose,
+			    seed=seed,
+			    cdfName=cdfName,
+			    sns=sns)
+	message("Initializing container for assay data elements alleleA, alleleB, call, callProbability")
+	callSet <- construct(filenames=filenames,
+			     cdfName=cdfName,
+			     copynumber=copynumber,
+			     sns=sns)
+	sampleStats <- data.frame(SKW=snprmaRes$SKW,
+				  SNR=snprmaRes$SNR)
+	pD <- new("AnnotatedDataFrame",
+		  data=sampleStats,
+		  varMetadata=data.frame(labelDescription=colnames(sampleStats)))
+	sampleNames(pD) <- sampleNames(callSet)
+	phenoData(callSet) <- pD
+	if(!copynumber){
+		## A and B are the right size
+		A(callSet) <- snprmaRes[["A"]]  ## should work regardless of ff, matrix
+		B(callSet) <- snprmaRes[["B"]]
+	} else {
+		## A and B are not big enough to hold the nonpolymorphic markers
+		index <- which(fData(callSet)[, "isSnp"] == 1)
+		## Inefficient.  
+		## write one column at a time (????).  (we don't want to bring in the whole matrix if its huge)
+		if(isPackageLoaded("ff")){
+			for(j in 1:ncol(callSet)){
+				A(callSet)[index, j] <- snprmaRes[["A"]][, j]  
+				B(callSet)[index, j] <- snprmaRes[["B"]][, j]
+			}
+			delete(snprmaRes[["A"]])##removes the file on disk
+			delete(snprmaRes[["B"]])##removes the file on disk
+		} else {
+			A(callSet)[index, ] <- snprmaRes[["A"]]
+			B(callSet)[index, ] <- snprmaRes[["B"]]
+		}
+	}
+	gc()
+	callSet <- crlmm.batch(object=callSet,
+				batchSize=batchSize,
+				mixtureParams=snprmaRes$mixtureParams,
+				probs=probs,
+				DF=DF,
+				SNRMin=SNRMin,
+				recallMin=recallMin,
+				recallRegMin=recallRegMin,
+				gender=gender,
+				verbose=verbose,
+				returnParams=returnParams,
+				badSNP=badSNP)
+	return(callSet)
 }
 
 

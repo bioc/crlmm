@@ -155,7 +155,69 @@ celDates <- function(celfiles){
 	return(celdts)
 }
 
+validCdfNames <- function(){
+	c("genomewidesnp6",
+	  "genomewidesnp5",
+	  "human370v1c",
+	  "human370quadv3c",
+	  "human550v3b",
+	  "human650v3a",
+	  "human610quadv1b",
+	  "human660quadv1a",
+	  "human1mduov3b",
+	  "humanomni1quadv1b")
+}
+isValidCdfName <- function(cdfName){
+	chipList <- validCdfNames()
+	result <- cdfName %in% chipList	
+	if(!(result)){
+		warning("cdfName must be one of the following: ",
+			chipList)
+	}
+	return(result)
+}
 
+isPackageLoaded <- function(pkg){
+	stopifnot(is.character(pkg))
+	pkg <- paste("package:", pkg, sep="")
+	pkg %in% search()
+}
 
+initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
+	if(isPackageLoaded("ff")){
+		if(prod(nr, nc) > 2^31){
+			##Need multiple matrices
+			## -- use ffdf
+			
+			## How many samples per ff object
+			S <- floor(2^31/nr - 1)
+
+			## How many ff objects
+			L <- ceiling(nc/S)
+			name <- paste(name, 1:L, sep="_")
+
+			results <- vector("list", L)
+			##resultsB <- vector("list", L)			
+			for(i in 1:(L-1)){  ## the Lth object may have fewer than nc columns
+				results[[i]] <- createFF(name=name[i],
+							 dim=c(nr, S),
+							 vmode=vmode)
+			}
+			##the Lth element
+			leftOver <- nc - ((L-1)*S)
+			results[[L]] <- createFF(name=name[L],
+						 dim=c(nr, leftOver),
+						 vmode=vmode)
+			resultsff <- do.call(ffdf, results)
+			##dimnames(resultsff) <- dns
+		} else {
+			resultsff <- createFF(name=name,
+					      dim=c(nr, nc),
+					      vmode=vmode)
+		}
+		resultsff[,] <- NA
+	}  else resultsff <- matrix(NA, nr, nc)
+	return(resultsff)
+}
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)
