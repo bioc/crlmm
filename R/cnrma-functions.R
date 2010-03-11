@@ -54,7 +54,8 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 	##crlmmOpts$snpRange <- range(snpIndex)
 	##crlmmOpts$npRange <- range(npIndex)
 }
-construct <- function(filenames, cdfName, copynumber=FALSE, sns){
+construct <- function(filenames, cdfName, copynumber=FALSE, sns, verbose=TRUE){
+	if(verbose) message("Initializing container for assay data elements alleleA, alleleB, call, callProbability")
 	if(missing(sns)) sns <- basename(filenames)
 	protocolData <- getProtocolData.Affy(filenames)
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
@@ -108,7 +109,8 @@ genotype <- function(filenames, cdfName, mixtureSampleSize=10^5,
 	callSet <- construct(filenames=filenames,
 			     cdfName=cdfName,
 			     copynumber=copynumber,
-			     sns=sns)
+			     sns=sns,
+			     verbose=verbose)
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
 	batches <- splitIndicesByLength(1:ncol(callSet), ocSamples())
@@ -122,7 +124,7 @@ genotype <- function(filenames, cdfName, mixtureSampleSize=10^5,
 				    cdfName=cdfName,
 				    sns=sns)
 		stopifnot(identical(featureNames(callSet)[snp.index], snprmaRes$gns))
-		message("Initializing container for assay data elements alleleA, alleleB, call, callProbability")
+
 		pData(callSet)$SKW[j] <- snprmaRes$SKW
 		pData(callSet)$SNR[j] <- snprmaRes$SNR
 		A(callSet)[snp.index, j] <- snprmaRes[["A"]]
