@@ -684,7 +684,6 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   ##     because this might intefere with other analyses
   ##     (like what happened to GCRMA)
   set.seed(seed)
-
   idx <- sort(sample(autosomeIndex, mixtureSampleSize))
   
   ##S will hold (A+B)/2 and M will hold A-B
@@ -800,7 +799,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 ## reads in the .idats and genotypes in the one function and removes objects 
 ## after they have been used
 crlmmIlluminaV2 = function(sampleSheet=NULL,
-			  arrayNames=NULL,
+                          arrayNames=NULL,
 			  ids=NULL,
 			  path=".",
 			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),

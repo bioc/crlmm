@@ -183,6 +183,29 @@ isPackageLoaded <- function(pkg){
 	pkg %in% search()
 }
 
+paramNames <- function(){
+	c("tau2A", "tau2B", "sig2A", "sig2B",
+	  "nuA", "nuA.se", "nuB",  "nuB.se", "phiA", "phiB", "phiAX", "phiBX",
+	  "phiA.se", "phiB.se", "corr", "corrA.BB", "corrB.AA")
+}
+
+initializeParamObject <- function(dimnames){
+	nr <- length(dimnames[[1]])
+	nc <- length(dimnames[[2]])		
+	ll <- vector("list", 17)
+	name <- paramNames()
+	if(isPackageLoaded("ff")){
+		for(i in 1:17) ll[[i]] <- ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
+		names(ll) <- paramNames()
+		ll <- do.call(ffdf, ll)
+	} else {
+		for(i in 1:17) ll[[i]] <- matrix(NA, nr, nc, dimnames=dimnames)
+		names(ll) <- paramNames()
+	}
+	return(ll)
+}
+
+
 initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 	if(isPackageLoaded("ff")){
 		if(prod(nr, nc) > 2^31){
@@ -221,3 +244,17 @@ initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 }
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)
+
+
+##annotatedDataFrameFromFF <- function (object, byrow = FALSE, ...){
+##    dims <- dim(object)
+##    if (is.null(dims) || all(dims == 0)) 
+##        annotatedDataFrameFrom(NULL, byrow = byrow, ...)
+##    else {
+##        N <- if (byrow)  dims[1]       else dims[2]
+##        nms <- if (byrow) rownames(object)  else colnames(object)
+##        data <- data.frame(numeric(N), row.names = nms)[, FALSE]
+##        dimLabels <- if (byrow) c("featureNames", "featureColumns")  else c("sampleNames", "sampleColumns")
+##        new("AnnotatedDataFrame", data = data, dimLabels = dimLabels)
+##    }
+##}

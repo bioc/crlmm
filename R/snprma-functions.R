@@ -127,3 +127,5 @@ fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=1
  return(list(coef= -fit1, medF1=medF1, sigma1=sigmas[1], sigma2=sigmas[2]))
 }
 
+
+

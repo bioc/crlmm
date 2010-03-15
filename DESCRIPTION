@@ -34,7 +34,7 @@ Collate: AllGenerics.R
          cnrma-functions.R
          crlmm-functions.R
          crlmm-illumina.R
-         snprma-functions.R
+	 snprma-functions.R
          utils.R
          zzz.R
 LazyLoad: yes
