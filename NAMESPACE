@@ -1,7 +1,7 @@
 useDynLib("crlmm", .registration=TRUE)
 
 ## this is temporary
-exportPattern("^[^\\.]")
+## exportPattern("^[^\\.]")
 
 ## Biobase
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
@@ -22,7 +22,7 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
            validMsg)
 
 ## oligoClasses
-importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet)
+importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", 
@@ -53,5 +53,7 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 
 exportMethods(copyNumber)
-export(cnOptions, crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
-export(genotype)
+export(crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
+export(genotype, crlmmIlluminaRS)
+
+

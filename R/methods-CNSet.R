@@ -41,9 +41,37 @@ setReplaceMethod("lM", c("CNSet", "list_or_ffdf"), function(object, value){
 ##		  featureData=featureData(from))
 ##      })
 
-setMethod("computeCopynumber", "CNSet", function(object, cnOptions){
+setMethod("computeCopynumber", "CNSet",
+	  function(object,
+		   MIN.OBS,
+		   DF.PRIOR,
+		   bias.adj,
+		   prior.prob,
+		   seed,
+		   verbose,
+		   GT.CONF.THR,
+		   PHI.THR,
+		   nHOM.THR,
+		   MIN.NU,
+		   MIN.PHI,
+		   thresholdCopynumber){
 	## to do the bias adjustment, initial estimates of the parameters are needed
 	##  The initial estimates are gotten by running computeCopynumber with cnOptions[["bias.adj"]]=FALSE
+
+		  cnOptions <- list(
+				    DF.PRIOR=DF.PRIOR,
+				    MIN.OBS=MIN.OBS,
+				    GT.CONF.THR=GT.CONF.THR,
+				    bias.adj=bias.adj,
+				    prior.prob=prior.prob,
+				    seed=seed,
+				    verbose=verbose,
+				    PHI.THR=PHI.THR,
+				    nHOM.THR=nHOM.THR,
+				    MIN.NU=MIN.NU,
+				    MIN.PHI=MIN.PHI,
+				    THR.NU.PHI=THR.NU.PHI,
+				    thresholdCopynumber=thresholdCopynumber)		  
 	bias.adj <- cnOptions[["bias.adj"]]
 	if(bias.adj & all(is.na(CA(object)))){
 		cnOptions[["bias.adj"]] <- FALSE
@@ -57,32 +85,32 @@ setMethod("computeCopynumber", "CNSet", function(object, cnOptions){
 	object
 })
 
-setMethod("computeCopynumber", "character", function(object, cnOptions){
-	crlmmFile <- object
-	isCNSet <- length(grep("cnSet", crlmmFile[1])) > 0
-	for(i in seq(along=crlmmFile)){
-		cat("Processing ", crlmmFile[i], "...\n")
-		load(crlmmFile[i])
-		if(isCNSet){
-			object <- get("cnSet")
-		} else {
-			object <- get("callSetPlus")
-		}
-		CHR <- unique(chromosome(object))
-		##if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
-		if(all(CHR==24)){
-			message("skipping chromosome 24")
-			next()
-		}
-		cat("----------------------------------------------------------------------------\n")
-		cat("-        Estimating copy number for chromosome", CHR, "\n")
-		cat("----------------------------------------------------------------------------\n")
-		cnSet <- computeCopynumber(object, cnOptions)
-		save(cnSet, file=file.path(dirname(crlmmFile), paste("cnSet_", CHR, ".rda", sep="")))
-		if(!isCNSet) if(cnOptions[["unlink"]]) unlink(crlmmFile[i])
-		rm(object, cnSet); gc();
-	}	
-})
+##setMethod("computeCopynumber", "character", function(object, cnOptions){
+##	crlmmFile <- object
+##	isCNSet <- length(grep("cnSet", crlmmFile[1])) > 0
+##	for(i in seq(along=crlmmFile)){
+##		cat("Processing ", crlmmFile[i], "...\n")
+##		load(crlmmFile[i])
+##		if(isCNSet){
+##			object <- get("cnSet")
+##		} else {
+##			object <- get("callSetPlus")
+##		}
+##		CHR <- unique(chromosome(object))
+##		##if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
+##		if(all(CHR==24)){
+##			message("skipping chromosome 24")
+##			next()
+##		}
+##		cat("----------------------------------------------------------------------------\n")
+##		cat("-        Estimating copy number for chromosome", CHR, "\n")
+##		cat("----------------------------------------------------------------------------\n")
+##		cnSet <- computeCopynumber(object, cnOptions)
+##		save(cnSet, file=file.path(dirname(crlmmFile), paste("cnSet_", CHR, ".rda", sep="")))
+##		if(!isCNSet) if(cnOptions[["unlink"]]) unlink(crlmmFile[i])
+##		rm(object, cnSet); gc();
+##	}	
+##})
 
 
 

@@ -4,7 +4,7 @@
 setGeneric("getParam", function(object, name, batch) standardGeneric("getParam"))
 setGeneric("cnIndex", function(object) standardGeneric("cnIndex"))
 setGeneric("cnNames", function(object) standardGeneric("cnNames"))
-setGeneric("computeCopynumber", function(object, cnOptions) standardGeneric("computeCopynumber"))
+setGeneric("computeCopynumber", function(object, ...) standardGeneric("computeCopynumber"))
 setGeneric("pr", function(object, name, batch, value) standardGeneric("pr"))
 setGeneric("snpIndex", function(object) standardGeneric("snpIndex"))
 setGeneric("snpNames", function(object) standardGeneric("snpNames"))
