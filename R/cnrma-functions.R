@@ -67,6 +67,9 @@ construct <- function(filenames, cdfName, copynumber=FALSE, sns, verbose=TRUE){
 			 callProbability=initializeBigMatrix(name="callPr", nr,nc),
 			 featureData=featureData,
 			 annotation=cdfName)
+	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
+	colnames(pd)=c("SKW", "SNR", "gender")
+	phenoData(callSet) <- new("AnnotatedDataFrame", data=pd)
 	protocolData(callSet) <- protocolData
 	sampleNames(callSet) <- sns
 	return(callSet)

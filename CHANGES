@@ -473,3 +473,7 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
      (currently saving intermediate steps in crlmmIlluminaRS)
      removed cnOptions function and changed arguments to crlmmCopynumber
 
+2010-03-18 R.Scharpf committed version 1.5.38
+
+** a few updates to initializeBigMatrix
+** show, [ defined for CNSetLM

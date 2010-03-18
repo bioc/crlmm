@@ -211,36 +211,34 @@ initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 		if(prod(nr, nc) > 2^31){
 			##Need multiple matrices
 			## -- use ffdf
-			
 			## How many samples per ff object
 			S <- floor(2^31/nr - 1)
-
 			## How many ff objects
 			L <- ceiling(nc/S)
 			name <- paste(name, 1:L, sep="_")
-
-			results <- vector("list", L)
+			resultsff <- vector("list", L)
 			##resultsB <- vector("list", L)			
 			for(i in 1:(L-1)){  ## the Lth object may have fewer than nc columns
-				results[[i]] <- createFF(name=name[i],
-							 dim=c(nr, S),
-							 vmode=vmode)
+				resultsff[[i]] <- createFF(name=name[i],
+							   dim=c(nr, S),
+							   vmode=vmode)
 			}
 			##the Lth element
 			leftOver <- nc - ((L-1)*S)
-			results[[L]] <- createFF(name=name[L],
-						 dim=c(nr, leftOver),
-						 vmode=vmode)
-			resultsff <- do.call(ffdf, results)
+			resultsff[[L]] <- createFF(name=name[L],
+						   dim=c(nr, leftOver),
+						   vmode=vmode)
+			resultsff[[L]][,] <- NA
+			results <- do.call(ffdf, resultsff)
+			rm(resultsff); gc()
 			##dimnames(resultsff) <- dns
 		} else {
-			resultsff <- createFF(name=name,
-					      dim=c(nr, nc),
-					      vmode=vmode)
+			results <- createFF(name=name,
+					    dim=c(nr, nc),
+					    vmode=vmode)
 		}
-		resultsff[,] <- NA
-	}  else resultsff <- matrix(NA, nr, nc)
-	return(resultsff)
+	}  else results <- matrix(NA, nr, nc)
+	return(results)
 }
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)

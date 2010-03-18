@@ -1,9 +1,9 @@
-setMethod("show", "CNSet", function(object){
+setMethod("show", "CNSetLM", function(object){
 	callNextMethod(object)
 	cat("lM: ", length(lM(object)), " elements \n")
 	print(names(lM(object)))
 })
-setMethod("[", "CNSet", function(x, i, j, ..., drop=FALSE){
+setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	x <- callNextMethod(x, i, j, ..., drop=drop)
 	if(!missing(i)){
 		if(class(lM(x)) == "ffdf"){
@@ -16,9 +16,9 @@ setMethod("[", "CNSet", function(x, i, j, ..., drop=FALSE){
 })
 setGeneric("lM", function(object) standardGeneric("lM"))
 setGeneric("lM<-", function(object, value) standardGeneric("lM<-"))
-setMethod("lM", "CNSet", function(object) object@lM)
+setMethod("lM", "CNSetLM", function(object) object@lM)
 ##setMethod("linearModelParam", "AffymetrixCNSet", function(object) object@linearModelParam)
-setReplaceMethod("lM", c("CNSet", "list_or_ffdf"), function(object, value){
+setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
 	object@lM <- value
 	object
 })
