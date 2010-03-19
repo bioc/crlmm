@@ -14,7 +14,9 @@ importMethodsFrom(Biobase, annotation, "annotation<-",
                   fData, featureData, "featureData<-", featureNames,
                   fvarMetadata, fvarLabels, pData, phenoData,
                   "phenoData<-", protocolData, "protocolData<-",
-                  pubMedIds, rowMedians, sampleNames, storageMode,
+                  pubMedIds, rowMedians, sampleNames, snpCall,
+                  snpCallProbability,
+		  "snpCall<-", "snpCallProbability<-", storageMode,
                   "storageMode<-", updateObject, varLabels)
 
 importFrom(Biobase, assayDataElement, assayDataElementNames,

@@ -477,3 +477,10 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 
 ** a few updates to initializeBigMatrix
 ** show, [ defined for CNSetLM
+
+2010-03-18 R.Scharpf committed version 1.5.38
+
+** import snpCall, snpCallProbability, snpCall<-, snpCallProbability<-
+   from Biobase
+** updates to genotype and crlmmIlluminaRS
+** class union of ff_matrix, matrix, and ffdf

@@ -236,6 +236,7 @@ initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 			results <- createFF(name=name,
 					    dim=c(nr, nc),
 					    vmode=vmode)
+			results[,] <- NA
 		}
 	}  else results <- matrix(NA, nr, nc)
 	return(results)

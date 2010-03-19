@@ -1,3 +1,15 @@
+setReplaceMethod("snpCall", c("SnpSuperSet", "ff_or_matrix"),
+                 function(object, ..., value)
+{
+    assayDataElementReplace(object, "call", value)
+})
+setReplaceMethod("snpCallProbability", c("SnpSuperSet", "ff_or_matrix"),
+                 function(object, ..., value)
+{
+    assayDataElementReplace(object, "callProbability", value)
+})
+
+
 ## Method("initialize", "AlleleSet",
 ##        function(.Object,
 ##                 assayData = assayDataNew(alleleA=alleleA,
