@@ -1,5 +1,6 @@
 \name{crlmm}
 \alias{crlmm}
+\alias{crlmm2}
 
 \title{Genotype oligonucleotide arrays with CRLMM}
 \description{
@@ -9,6 +10,12 @@
 }
 \usage{
 crlmm(filenames, row.names=TRUE, col.names=TRUE,
+      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
+      gender=NULL, save.it=FALSE, load.it=FALSE,
+      intensityFile, mixtureSampleSize=10^5,
+      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
+      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
+crlmm2(filenames, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, save.it=FALSE, load.it=FALSE,
       intensityFile, mixtureSampleSize=10^5,
@@ -49,6 +56,10 @@ crlmm(filenames, row.names=TRUE, col.names=TRUE,
   \item{batchQC}{Batch Quality Score}
   \item{params}{Recalibrated parameters}
 }
+\details{
+  'crlmm2' allows one to genotype very large datasets (via ff package) and also permits
+  the use of clusters or multiple cores (via snow package) to speed up genotyping.
+  }
 \references{
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
   normalization, and genotype calls of high-density oligonucleotide SNP
@@ -69,6 +80,23 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
   cels <- list.celfiles(path, full.names=TRUE)
   (crlmmOutput <- crlmm(cels))
 }
+
+\dontrun{
+## HPC Example
+library(ff)
+library(snow)
+library(crlmm)
+## genotype 50K SNPs at a time
+ocProbesets(50000)
+## setup cluster - 8 cores on the machine
+setCluster(8, "SOCK")
+
+path <- system.file("celFiles", package="hapmapsnp5")
+cels <- list.celfiles(path, full.names=TRUE)
+crlmmOutput <- crlmm2(cels)
+
+}
+
 }
 \keyword{classif}
 

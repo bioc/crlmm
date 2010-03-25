@@ -1,6 +1,7 @@
 \name{snprma}
 \Rdversion{1.1}
 \alias{snprma}
+\alias{snprma2}
 
 \title{
   Preprocessing tool for SNP arrays.
@@ -12,6 +13,7 @@
 }
 \usage{
 snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, sns)
+snprma2(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbose = TRUE, seed = 1, cdfName, sns)
 }
 \arguments{
   \item{filenames}{
@@ -49,6 +51,10 @@ snprma(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verbo
   \item{mixtureParams}{Parameters from mixture model}
   \item{cdfName}{Name of the CDF}
 }
+\details{
+  'snprma2' allows one to genotype very large datasets (via ff package) and also permits
+  the use of clusters or multiple cores (via snow package) to speed up preprocessing.
+  }
 \examples{
 if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
   path <- system.file("celFiles", package="hapmapsnp5")
@@ -60,6 +66,22 @@ if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
   snprmaOutput[["A"]][1:10,]
   snprmaOutput[["B"]][1:10,]
 }
+\dontrun{
+## HPC Example
+library(ff)
+library(snow)
+library(crlmm)
+## genotype 50K SNPs at a time
+ocProbesets(50000)
+## setup cluster - 8 cores on the machine
+setCluster(8, "SOCK")
+
+path <- system.file("celFiles", package="hapmapsnp5")
+cels <- list.celfiles(path, full.names=TRUE)
+snprmaOutput <- snprma2(cels)
+
+}
+
 }
 \keyword{manip}
 \keyword{classif}

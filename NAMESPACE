@@ -57,14 +57,16 @@ importFrom(ellipse, ellipse)
 exportClasses(CNSetLM)
 exportMethods(copyNumber, open, "[", show, lM, "lM<-")
 export(crlmm, 
-	      crlmmCopynumber, 
-	      crlmmIllumina, 
-	      crlmmIlluminaRS, 
-	      ellipse, 
-	      genotype, 
-	      getParam, 
-	      readIdatFiles, 
-	      snprma) 
+       crlmmCopynumber, 
+       crlmmIllumina, 
+       crlmmIlluminaRS, 
+       ellipse, 
+       genotype, 
+       getParam, 
+       readIdatFiles, 
+       snprma,
+       snprma2,
+       crlmm2) 
 
 export(initializeBigMatrix, initializeParamObject)
 

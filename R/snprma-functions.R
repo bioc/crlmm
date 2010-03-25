@@ -1,17 +1,21 @@
-snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1, verbose=TRUE, seed=1, cdfName, sns){
+snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
+                   eps=0.1, verbose=TRUE, seed=1, cdfName, sns){
   if (missing(sns)) sns <- basename(filenames)
-  ##ADD CHECK TO SEE IF LOADED
   if (missing(cdfName))
     cdfName <- read.celfile.header(filenames[1])$cdfName
-  ##  stuffDir <- changeToCrlmmAnnotationName(cdfName)
   pkgname <- getCrlmmAnnotationName(cdfName)
+
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-    suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-    msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+    suggCall <- paste("library(", pkgname,
+                      ", lib.loc='/Altern/Lib/Loc')",
+                      sep="")
+    msg <- paste("If", pkgname,
+                 "is installed on an alternative location,",
+                 "please load it manually by using", suggCall)
     message(strwrap(msg))
     stop("Package ", pkgname, " could not be found.")
-    rm(suggCall, msg)
   }
+  
   if(verbose) message("Loading annotations and mixture model parameters.")
   loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
@@ -32,6 +36,9 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
   mixtureParams <- matrix(0, 4, length(filenames))
   SNR <- vector("numeric", length(filenames))
   SKW <- vector("numeric", length(filenames))
+##   mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames))
+##   SNR <- initializeBigVector("crlmmSNR-", length(filenames), "numeric")
+##   SKW <- initializeBigVector("crlmmSKW-", length(filenames), "numeric")
   
   ## This is the sample for the fitting of splines
   ## BC: I like better the idea of the user passing the seed,
@@ -47,10 +54,13 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
   
   if(verbose){
     message("Processing ", length(filenames), " files.")
-    if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
+    pb <- txtProgressBar(min=0, max=length(filenames), style=3)
   }
+  
+  ##for skewness. no need to do everything
+  idx2 <- sample(length(fid), 10^5)
+  
   ##We start looping throug cel files
-  idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
   for(i in seq(along=filenames)){
     y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
     x <- log2(y[idx2])
@@ -70,13 +80,9 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE, eps=0.1,
       mixtureParams[, i] <- tmp[["coef"]]
       SNR[i] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
     }
-    if (verbose)
-      if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
-      else cat(".")
+    if (verbose) setTxtProgressBar(pb, i)
   }
-  if (verbose)
-    if (getRversion() > '2.7.0') close(pb)
-    else cat("\n")
+  if (verbose) close(pb)
   if (!fitMixture) SNR <- mixtureParams <- NA
   ## gns comes from preprocStuff.rda
   list(A=A, B=B, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
@@ -127,5 +133,106 @@ fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=1
  return(list(coef= -fit1, medF1=medF1, sigma1=sigmas[1], sigma2=sigmas[2]))
 }
 
+snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
+                    eps=0.1, verbose=TRUE, seed=1, cdfName, sns){
+  if (missing(sns)) sns <- basename(filenames)
+  if (missing(cdfName))
+    cdfName <- read.celfile.header(filenames[1])[["cdfName"]]
+  pkgname <- getCrlmmAnnotationName(cdfName)
+  stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
+  
+  if(verbose) message("Loading annotations and mixture model parameters.")
+  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+  pnsa <- getVarInEnv("pnsa")
+  pnsb <- getVarInEnv("pnsb")
+  gns <- getVarInEnv("gns")
+  
+  ##We will read each cel file, summarize, and run EM one by one
+  ##We will save parameters of EM to use later
+  if(verbose) message("Initializing objects.")
+  mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
+  SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
+  SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
+  
+  ## This is the sample for the fitting of splines
+  ## BC: I like better the idea of the user passing the seed,
+  ##     because this might intefere with other analyses
+  ##     (like what happened to GCRMA)
+  ##S will hold (A+B)/2 and M will hold A-B
+  ##NOTE: We actually dont need to save S. Only for pics etc...
+  ##f is the correction. we save to avoid recomputing
+  A <- initializeBigMatrix("crlmmA-", length(pnsa), length(filenames), "integer")
+  B <- initializeBigMatrix("crlmmB-", length(pnsb), length(filenames), "integer")
+
+  sampleBatches <- splitIndicesByNode(seq(along=filenames))
+
+  if(verbose) message("Processing ", length(filenames), " files.")
+
+  ocLapply(sampleBatches, processCEL, filenames=filenames,
+           fitMixture=fitMixture, A=A, B=B, SKW=SKW, SNR=SNR,
+           mixtureParams=mixtureParams, eps=eps, seed=seed,
+           mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
+           neededPkgs=c("crlmm", pkgname))
+  
+  list(A=A, B=B, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
+}
 
 
+processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
+                       mixtureParams, eps, seed, mixtureSampleSize,
+                       pkgname){
+  
+  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+  autosomeIndex <- getVarInEnv("autosomeIndex")
+  pnsa <- getVarInEnv("pnsa")
+  pnsb <- getVarInEnv("pnsb")
+  fid <- getVarInEnv("fid")
+  reference <- getVarInEnv("reference")
+  aIndex <- getVarInEnv("aIndex")
+  bIndex <- getVarInEnv("bIndex")
+  SMEDIAN <- getVarInEnv("SMEDIAN")
+  theKnots <- getVarInEnv("theKnots")
+  gns <- getVarInEnv("gns")
+
+  ## for mixture
+  set.seed(seed)
+  idx <- sort(sample(autosomeIndex, mixtureSampleSize))
+  ##for skewness. no need to do everything
+  idx2 <- sample(length(fid), 10^5)
+
+  open(A)
+  open(B)
+  open(SKW)
+  open(mixtureParams)
+  open(SNR)
+
+  for (k in i){
+    y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
+    x <- log2(y[idx2])
+    SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
+    rm(x)
+    y <- normalize.quantiles.use.target(y, target=reference)
+    A[, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+    B[, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+    rm(y)
+    
+    if(fitMixture){
+      S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
+      M <- log2(A[idx, k])-log2(B[idx, k])
+      tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
+      mixtureParams[, k] <- tmp[["coef"]]
+      SNR[k] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
+    } else {
+      mixtureParams[, k] <- NA
+      SNR[k] <- NA
+    }
+  }
+  close(A)
+  close(B)
+  close(SKW)
+  close(mixtureParams)
+  close(SNR)
+  TRUE
+}

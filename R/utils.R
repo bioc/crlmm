@@ -37,7 +37,7 @@ getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
 }
 
 list2SnpSet <- function(x, returnParams=FALSE){
-  pd <- data.frame(SNR=x[["SNR"]], gender=x[["gender"]],
+  pd <- data.frame(SNR=x[["SNR"]][], gender=x[["gender"]],
                    batchQC=rep(x[["batchQC"]], ncol(x[["calls"]])),
                    row.names=colnames(x[["calls"]]))
   pdv <- data.frame(labelDescription=c("Signal-to-noise Ratio",
@@ -205,7 +205,7 @@ initializeParamObject <- function(dimnames){
 	return(ll)
 }
 
-
+## BC: how about moving initializeBigMatrix to oligoClasses?
 initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 	if(isPackageLoaded("ff")){
 		if(prod(nr, nc) > 2^31){
@@ -238,9 +238,32 @@ initializeBigMatrix <- function(name, nr, nc, vmode="integer"){
 					    vmode=vmode)
 			results[,] <- NA
 		}
-	}  else results <- matrix(NA, nr, nc)
+	}  else {
+          theNA <- switch(vmode,
+                          integer=NA_integer_,
+                          double=NA_real_,
+                          character=NA_character_,
+                          stop("Mode ", vmode, " not implemented for regular matrices"))
+          results <- matrix(theNA, nr, nc)
+        }
 	return(results)
 }
+
+initializeBigVector <- function(name, n, vmode="integer"){
+  if(isPackageLoaded("ff")){
+    results <- ff(vmode=vmode, length=n, pattern=file.path(ldPath(), basename(name)))
+  }  else {
+    theNA <- switch(vmode,
+                    integer=NA_integer_,
+                    double=NA_real_,
+                    character=NA_character_,
+                    stop("Mode ", vmode, " not implemented for regular matrices"))
+    results <- rep(theNA, n)
+  }
+  return(results)
+}
+
+
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)
 
