@@ -14,32 +14,28 @@ setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	}
 	x
 })
-setGeneric("lM", function(object) standardGeneric("lM"))
-setGeneric("lM<-", function(object, value) standardGeneric("lM<-"))
 setMethod("lM", "CNSetLM", function(object) object@lM)
-##setMethod("linearModelParam", "AffymetrixCNSet", function(object) object@linearModelParam)
 setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
 	object@lM <- value
 	object
 })
 
-##setAs("SnpSuperSet", "CNSet",
-##      function(from, to){
-##	      CA <- CB <- matrix(NA, nrow(from), ncol(from))
-##	      dimnames(CA) <- dimnames(CB) <- list(featureNames(from), sampleNames(from))		  
-##	      new("CNSet",
-##		  call=calls(from),
-##		  callProbability=assayData(from)[["callProbability"]],  ##confs(from) returns 1-exp(-x/1000)
-##		  alleleA=A(from),
-##		  alleleB=B(from),
-##		  CA=CA,
-##		  CB=CB,
-##		  phenoData=phenoData(from),
-##		  experimentData=experimentData(from),
-##		  annotation=annotation(from),
-##		  protocolData=protocolData(from),
-##		  featureData=featureData(from))
-##      })
+setAs("SnpSuperSet", "CNSetLM", function(from, to){
+	stopifnot("batch" %in% varLabels(from))
+	cnSet <- new("CNSetLM",
+		     alleleA=A(from),
+		     alleleB=B(from),
+		     call=snpCall(from),
+		     callProbability=snpCallProbability(from),
+		     CA=initializeBigMatrix("CA", nrow(from), ncol(from)),
+		     CB=initializeBigMatrix("CB", nrow(from), ncol(from)),
+		     annotation=annotation(from),
+		     featureData=featureData(from),
+		     experimentData=experimentData(from),
+		     phenoData=phenoData(from))
+	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(from$batch)))
+	return(cnSet)
+})
 
 setMethod("computeCopynumber", "CNSet",
 	  function(object,
@@ -54,24 +50,24 @@ setMethod("computeCopynumber", "CNSet",
 		   nHOM.THR,
 		   MIN.NU,
 		   MIN.PHI,
+		   THR.NU.PHI,
 		   thresholdCopynumber){
 	## to do the bias adjustment, initial estimates of the parameters are needed
 	##  The initial estimates are gotten by running computeCopynumber with cnOptions[["bias.adj"]]=FALSE
-
 		  cnOptions <- list(
-				    DF.PRIOR=DF.PRIOR,
 				    MIN.OBS=MIN.OBS,
-				    GT.CONF.THR=GT.CONF.THR,
+				    DF.PRIOR=DF.PRIOR,
 				    bias.adj=bias.adj,
 				    prior.prob=prior.prob,
 				    seed=seed,
 				    verbose=verbose,
+				    GT.CONF.THR=GT.CONF.THR,
 				    PHI.THR=PHI.THR,
 				    nHOM.THR=nHOM.THR,
 				    MIN.NU=MIN.NU,
 				    MIN.PHI=MIN.PHI,
 				    THR.NU.PHI=THR.NU.PHI,
-				    thresholdCopynumber=thresholdCopynumber)		  
+				    thresholdCopynumber=thresholdCopynumber)
 	bias.adj <- cnOptions[["bias.adj"]]
 	if(bias.adj & all(is.na(CA(object)))){
 		cnOptions[["bias.adj"]] <- FALSE
@@ -85,72 +81,6 @@ setMethod("computeCopynumber", "CNSet",
 	object
 })
 
-##setMethod("computeCopynumber", "character", function(object, cnOptions){
-##	crlmmFile <- object
-##	isCNSet <- length(grep("cnSet", crlmmFile[1])) > 0
-##	for(i in seq(along=crlmmFile)){
-##		cat("Processing ", crlmmFile[i], "...\n")
-##		load(crlmmFile[i])
-##		if(isCNSet){
-##			object <- get("cnSet")
-##		} else {
-##			object <- get("callSetPlus")
-##		}
-##		CHR <- unique(chromosome(object))
-##		##if(length(CHR) > 1) stop("More than one chromosome in the object. This method requires one chromosome at a time.")		
-##		if(all(CHR==24)){
-##			message("skipping chromosome 24")
-##			next()
-##		}
-##		cat("----------------------------------------------------------------------------\n")
-##		cat("-        Estimating copy number for chromosome", CHR, "\n")
-##		cat("----------------------------------------------------------------------------\n")
-##		cnSet <- computeCopynumber(object, cnOptions)
-##		save(cnSet, file=file.path(dirname(crlmmFile), paste("cnSet_", CHR, ".rda", sep="")))
-##		if(!isCNSet) if(cnOptions[["unlink"]]) unlink(crlmmFile[i])
-##		rm(object, cnSet); gc();
-##	}	
-##})
-
-
-
-
-
-##setMethod("computeHmm", "SnpSuperSet", function(object, hmmOptions){
-##	cnSet <- computeCopynumber(object, hmmOptions)
-##	computeHmm(cnSet, hmmOptions)
-##})
-
-## Genotype everything to get callSetPlus objects
-## Go from callSets to Segments sets, writing only the segment set to file
-## Safe, but very inefficient. Writes the quantile normalized data to file several times...
-##setMethod("computeHmm", "character", function(object, hmmOptions){
-##	outdir <- cnOptions[["outdir"]]
-##	hmmOptions <- hmmOptions[["hmmOpts"]]
-##	filenames <- object
-##	for(i in seq(along=filenames)){
-##		chrom <- gsub(".rda", "", strsplit(filenames[i], "_")[[1]][[2]])
-##		if(hmmOptions[["verbose"]])
-##			message("Fitting HMM to chromosome ", chrom)
-##		if(file.exists(filenames[i])){
-##			message("Loading ", filenames[i])
-##			load(filenames[i])
-##			cnSet <- get("cnSet")
-##		} else {
-##			stop("File ", filenames[i], " does not exist.")
-##		}
-##		hmmOptions$emission <- computeEmission(filenames[i], hmmOptions)
-##		cnSet <- computeHmm(cnSet, hmmOptions)
-##		##MIN.MARKERS <- hmmOptions[["MIN.MARKERS"]]
-##		##segmentSet <- segments[segments$nprobes >= MIN.MARKERS, ]
-##		message("Saving ", file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-##		save(cnSet,
-##		     file=file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-##		unlink(file.path(outdir, paste("cnSet_", chrom, ".rda", sep="")))
-##	}
-##	fns <- list.files(outdir, pattern="cnSet", full.names=TRUE)
-##	return(fns)	
-##})
 
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)

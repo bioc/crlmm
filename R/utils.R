@@ -195,7 +195,7 @@ initializeParamObject <- function(dimnames){
 	ll <- vector("list", 17)
 	name <- paramNames()
 	if(isPackageLoaded("ff")){
-		for(i in 1:17) ll[[i]] <- ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
+		for(i in 1:17) ll[[i]] <- createFF(name=name[i], dim=c(nr, nc), vmode="double")            ##ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
 		names(ll) <- paramNames()
 		ll <- do.call(ffdf, ll)
 	} else {

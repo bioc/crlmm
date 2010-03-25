@@ -54,8 +54,19 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-exportMethods(copyNumber)
-export(crlmm, crlmmIllumina, crlmmCopynumber, ellipse, readIdatFiles, snprma, getParam) 
-export(genotype, crlmmIlluminaRS)
+exportClasses(CNSetLM)
+exportMethods(copyNumber, open, "[", show, lM, "lM<-")
+export(crlmm, 
+	      crlmmCopynumber, 
+	      crlmmIllumina, 
+	      crlmmIlluminaRS, 
+	      ellipse, 
+	      genotype, 
+	      getParam, 
+	      readIdatFiles, 
+	      snprma) 
+
+export(initializeBigMatrix, initializeParamObject)
+
 
 

@@ -88,7 +88,6 @@ setMethod("open", "AlleleSet", function(con, ...){
 	for(i in 1:L) open(eval(substitute(assayData(object)[[NAME]], list(NAME=names[i]))))
 	return()
 })
-
 ##setReplaceMethod("calls", "SnpSuperSet", function(object, value) assayDataElementReplace(object, "call", value))
 ##setReplaceMethod("confs", "SnpSuperSet", function(object, value) assayDataElementReplace(object, "callProbability", value))
 ##setMethod("confs", "SnpSuperSet", function(object) assayDataElement(object, "callProbability"))
@@ -284,9 +283,9 @@ crlmmIlluminaRS <- function(sampleSheet=NULL,
 				     sep=sep,
 				     fileExt=fileExt,
 				     saveDate=TRUE)
-		XY <- RGtoXY(RG, chipType=cdfName)
-		rm(RG); gc()
-		res <- preprocessInfinium2(XY,
+		RG <- RGtoXY(RG, chipType=cdfName)
+		protocolData <- protocolData(RG)
+		res <- preprocessInfinium2(RG,
 					   mixtureSampleSize=mixtureSampleSize,
 					   fitMixture=TRUE,
 					   verbose=verbose,
@@ -296,6 +295,7 @@ crlmmIlluminaRS <- function(sampleSheet=NULL,
 					   sns=sns[j],
 					   stripNorm=stripNorm,
 					   useTarget=useTarget)
+		rm(RG); gc()
 		## MR: number of rows should be number of SNPs + number of nonpolymorphic markers.
 		##  Here, I'm just using the # of rows returned from the above function
 		if(k == 1){
@@ -305,22 +305,19 @@ crlmmIlluminaRS <- function(sampleSheet=NULL,
 				       alleleB=initializeBigMatrix(name="B", nr=nrow(res[[1]]), nc=length(sns)),
 				       call=initializeBigMatrix(name="call", nr=nrow(res[[1]]), nc=length(sns)),
 				       callProbability=initializeBigMatrix(name="callPr", nr=nrow(res[[1]]), nc=length(sns)),
-				       experimentData=experimentData(XY),
-				       annotation=annotation(XY))
+				       annotation=cdfName)
 			sampleNames(callSet) <- sns
 			phenoData(callSet) <- getPhenoData(sampleSheet=sampleSheet,
 							   arrayNames=sns,
 							   arrayInfoColNames=arrayInfoColNames)
-			pD <- data.frame(matrix(NA, length(sns), 1),
-					 row.names=sns)
+			pD <- data.frame(matrix(NA, length(sns), 1), row.names=sns)
 			colnames(pD) <- "ScanDate"
 			protocolData(callSet) <- new("AnnotatedDataFrame", data=pD)
-			pData(protocolData(callSet))[j, ] <- pData(protocolData(XY))
+			pData(protocolData(callSet))[j, ] <- pData(protocolData)
 			featureNames(callSet) <- res[["gns"]]
 			pData(callSet)$SKW <- rep(NA, length(sns))
 			pData(callSet)$SNR <- rep(NA, length(sns))
 			pData(callSet)$gender <- rep(NA, length(sns))
-			##sampleNames(callSet) <- sns
 		}
 		if(k > 1 & nrow(res[[1]]) != nrow(callSet)){
 			##RS: I don't understand why the IDATS for the
@@ -334,7 +331,6 @@ crlmmIlluminaRS <- function(sampleSheet=NULL,
 		suppressWarnings(B(callSet)[snp.index, j] <- res[["B"]])
 		pData(callSet)$SKW[j] <- res$SKW
 		pData(callSet)$SNR[j] <- res$SNR
-		##mixtureParams[, j] <- res$mixtureParams
 		mixtureParams <- res$mixtureParams
 		rm(res); gc()
 		##MR:  edit snp.index
@@ -575,8 +571,8 @@ harmonizeDimnamesTo <- function(object1, object2){
 
 
 crlmmCopynumber <- function(object,
-			    batch,
 			    chromosome=1:23,
+			    which.batches,
 			    MIN.SAMPLES=10,
 			    SNRMin=5,
 			    MIN.OBS=3,
@@ -592,36 +588,38 @@ crlmmCopynumber <- function(object,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
 			    thresholdCopynumber=TRUE){
-	which.batch <- cnOptions[["whichbatch"]]
-	cnSet <- new("CNSetLM",
-		     alleleA=A(object),
-		     alleleB=B(object),
-		     call=snpCall(object),
-		     callProbability=snpCallProbability(object),
-		     CA=initializeBigMatrix("CA", nrow(object), ncol(object)),
-		     CB=initializeBigMatrix("CB", nrow(object), ncol(object)),
-		     annotation=annotation(object),
-		     featureData=featureData(object),
-		     experimentData=experimentData(object),
-		     phenoData=phenoData(object))
-	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(cnSet$batch)))
-	rm(object); gc()
-	if(any(cnSet$SNR < SNRMin)){
-		message("Excluding ", sum(cnSet$SNR < SNRMin), " samples with SNR below ", SNRMin)
-		cnSet <- cnSet[, cnSet$SNR > SNRMin]
-	}
-	batches <- split(1:ncol(cnSet), cnSet$batch)
+	stopifnot("batch" %in% varLabels(object))
+	stopifnot("chromosome" %in% fvarLabels(object))
+	stopifnot("position" %in% fvarLabels(object))
+	stopifnot("isSnp" %in% fvarLabels(object))
+	batch <- object$batch
+	batches <- split((1:ncol(object))[object$SNR > SNRMin], batch[object$SNR > SNRMin])
 	if(any(sapply(batches, length) < MIN.SAMPLES)) message("Excluding batches with fewer than ", MIN.SAMPLES, " samples")
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
+	if(missing(which.batches)) which.batches <- seq(along=batches)
 	for(i in chromosome){
-		cat("Chromosome ", i, "\n")
+		if(verbose) cat("Chromosome ", i, "\n")
 		if(i >= 24) next()
-		for(j in batches){
-			row.index <- which(chromosome(cnSet) == i)
-			tmp <- cnSet[row.index, j]
-			featureData(tmp) <- lm.parameters(tmp)
+		ii <- which.batches[1]
+		for(j in batches[which.batches]){
+			if(verbose) message("Batch ", ii, " of ", length(which.batches))
+			row.index <- which(chromosome(object) == i)
+			##Note that ffdf assayDataElements are data.frames after subsetting(not matrices)
+			ca <- as.matrix(CA(object)[row.index, j])
+			cb <- as.matrix(CB(object)[row.index, j])
+			dimnames(ca) <- dimnames(cb) <- list(featureNames(object)[row.index], sampleNames(object)[j])
+			tmp <- new("CNSet",
+				   call=as.matrix(calls(object)[row.index, j]),
+				   callProbability=as.matrix(snpCallProbability(object)[row.index, j]),
+				   alleleA=as.matrix(A(object)[row.index, j]),
+				   alleleB=as.matrix(B(object)[row.index, j]),
+				   CA=ca, CB=cb,
+				   phenoData=phenoData(object)[j, ],
+				   annotation=annotation(object))
+			featureData(tmp) <- addFeatureAnnotation(tmp)
+			featureData(tmp) <- lm.parameters(tmp, batch=unique(batch[j]))
+			tmp$batch <- batch[j]
 			tmp <- computeCopynumber(tmp,
-						 SNRMin=SNRMin,
 						 MIN.OBS=MIN.OBS,
 						 DF.PRIOR=DF.PRIOR,
 						 bias.adj=bias.adj,
@@ -633,18 +631,24 @@ crlmmCopynumber <- function(object,
 						 nHOM.THR=nHOM.THR,
 						 MIN.NU=MIN.NU,
 						 MIN.PHI=MIN.PHI,
+						 THR.NU.PHI=THR.NU.PHI,
 						 thresholdCopynumber=thresholdCopynumber)
 			fData(tmp) <- fData(tmp)[, -(1:3)]
-			CA(cnSet)[row.index, j] <- tmp@assayData[["CA"]]
-			CB(cnSet)[row.index, j] <- tmp@assayData[["CB"]]
+			CA(tmp) <- matrix(as.integer(CA(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
+					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
+			CB(tmp) <- matrix(as.integer(CB(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
+					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
+			CA(object)[row.index, j] <- CA(tmp)
+			CB(object)[row.index, j] <- CB(tmp)
 			labels.asis <- fvarLabels(tmp)
-			labels.asis <- gsub("_", ".", labels.asis)
-			k <- match(labels.asis, colnames(lM(cnSet)))
-			lM(cnSet)[row.index, k] <- fData(tmp)
+			labels.asis <- gsub(paste("_", unique(tmp$batch), sep=""), paste(".", ii, sep=""), labels.asis)
+			k <- match(labels.asis, colnames(lM(object)))
+			lM(object)[row.index, k] <- fData(tmp)
 			rm(tmp); gc()
+			ii <- ii+1
 		}
 	}
-	return(cnSet)
+	return(object)
 }
 
 
@@ -941,9 +945,9 @@ cnOptions <- function(
 }
 
 ##linear model parameters
-lm.parameters <- function(object, cnOptions){
+lm.parameters <- function(object, batch){##cnOptions){
 	fD <- fData(object)
-	batch <- object$batch
+	##batch <- object$batch
 	uplate <- unique(batch)
 	parameterNames <- c(paste("tau2A", uplate, sep="_"),
 			    paste("tau2B", uplate, sep="_"),
@@ -1105,7 +1109,7 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 			##Assign values to object
 			object <- pr(object, "nuA", batch, nuA)
 			object <- pr(object, "phiA", batch, phiA)			
-			if(verbose) message("Thresholding nu and phi")
+			##if(verbose) message("Thresholding nu and phi")
 			object <- thresholdModelParams(object, cnOptions)
 		} else {
 			object <- pr(object, "nuA", batch, nuA)		
@@ -1126,7 +1130,7 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 			##Assign values to object
 			object <- pr(object, "nuA", batch, nuA)
 			object <- pr(object, "phiA", batch, phiA)			
-			if(verbose) message("Thresholding nu and phi")
+			##if(verbose) message("Thresholding nu and phi")
 			object <- thresholdModelParams(object, cnOptions)
 			##reassign values (now thresholded at MIN.NU and MIN.PHI
 			nuA <- getParam(object, "nuA", batch)
@@ -1153,10 +1157,9 @@ withinGenotypeMoments <- function(object, cnOptions, tmp.objects){
 	vA <- tmp.objects[["vA"]]
 	vB <- tmp.objects[["vB"]]
 	Ns <- tmp.objects[["Ns"]]
-	G <- snpCallProbability(object) 
+	G <- snpCall(object) 
 	GT.CONF.THR <- cnOptions$GT.CONF.THR
 	CHR <- unique(chromosome(object))
-
 	A <- A(object)
 	B <- B(object)
 ##	highConf <- (1-exp(-confs(object)/1000)) > GT.CONF.THR
@@ -1276,14 +1279,14 @@ oneBatch <- function(object, cnOptions, tmp.objects){
 		muA[index[[j]], j+2] <- mus[, 1]
 		muB[index[[j]], j+2] <- mus[, 2]
 	}
-	nobsA <- Ns[, "A"] > 10
-	nobsB <- Ns[, "B"] > 10
+	nobsA <- Ns[, "A"] > MIN.OBS
+	nobsB <- Ns[, "B"] > MIN.OBS
 	notMissing <- !(is.na(muA[, "A"]) | is.na(muA[, "B"]) | is.na(muB[, "A"]) | is.na(muB[, "B"]))
 	complete <- list()
 	complete[[1]] <- which(correct.orderA & correct.orderB & nobsA & notMissing) ##be selective here
 	complete[[2]] <- which(correct.orderA & correct.orderB & nobsB & notMissing) ##be selective here	
 	size <- min(5000, length(complete[[1]]))
-	if(size == 5000) complete <- lapply(complete, function(x) sample(x, size))
+	if(size > 5000) complete <- lapply(complete, function(x) sample(x, size))
 	if(CHR == 23){
 		index <- list()
 		index[[1]] <- which(Ns[, "A"] == 0)
@@ -1821,13 +1824,13 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 	THR.NU.PHI <- cnOptions$THR.NU.PHI
 	if(THR.NU.PHI){
 		verbose <- cnOptions$verbose
-		if(verbose) message("Thresholding nu and phi")
+		##if(verbose) message("Thresholding nu and phi")
 		object <- thresholdModelParams(object, cnOptions)
 	}		
-	if(verbose) message("\nAllele specific copy number")	
+	##if(verbose) message("\nAllele specific copy number")	
 	object <- polymorphic(object, cnOptions, tmp.objects)
 	if(any(!isSnp(object))){ ## there are nonpolymorphic probes
-		if(verbose) message("\nCopy number for nonpolymorphic probes...")	
+		##if(verbose) message("\nCopy number for nonpolymorphic probes...")	
 		object <- nonpolymorphic(object, cnOptions, tmp.objects)
 	}
 	##---------------------------------------------------------------------------
