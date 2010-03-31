@@ -2,14 +2,15 @@
 \alias{crlmmCopynumber}
 \title{Locus- and allele-specific estimation of copy number}
 \description{
+  Locus- and allele-specific estimation of copy number.
 }
 \usage{
-crlmmCopynumber(object, batch, chromosome = 1:23, MIN.SAMPLES = 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
+crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES = 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
 }
 \arguments{
   \item{object}{object of class \code{SnpSuperSet}.
 }
-  \item{batch}{ Character vector with length equal to the number of
+  \item{which.batches}{ Character vector with length equal to the number of
   samples.  Used to adjust for batch effects.  Chemistry plate or
   date often work well.  See examples.
 }
@@ -105,15 +106,7 @@ crlmmCopynumber(object, batch, chromosome = 1:23, MIN.SAMPLES = 10, SNRMin = 5, 
   5 are assigned the value 5.  
 }
 }
-\details{
-}
-\value{
-}
-\references{
-}
 \author{R. Scharpf}
-\note{}
-\seealso{}
 \examples{
 ## data(example.callSet)
 ## cnSet <- crlmmCopynumber(example.callSet)

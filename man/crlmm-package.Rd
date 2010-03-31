@@ -25,10 +25,10 @@ To use this package, the user must have additional data packages:
 }
 \author{
 Rafael A Irizarry
-Maintainer: Benilton S Carvalho <bcarvalh@jhsph.edu>
+Maintainer: Benilton S Carvalho <carvalho@bclab.org>
 }
 \references{
-  Carvalho B, Louis TA, Irizarry RA. Describing Uncertainty in
-  Genome-wide Genotype Calling. (in prep)
+  Carvalho BS, Louis TA, Irizarry RA. Quantifying uncertainty in genotype
+  calls. Bioinformatics. 2010 Jan 15;26(2):242-9. Epub 2009 Nov 11.
 }
 \keyword{ package }

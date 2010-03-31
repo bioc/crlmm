@@ -1,5 +1,5 @@
 %\VignetteIndexEntry{crlmm Vignette - Genotyping}
-%\VignetteDepends{crlmm, hapmapsnp5, genomewidesnp5Crlmm}
+%\VignetteDepends{crlmm, hapmapsnp6, genomewidesnp6Crlmm}
 %\VignetteKeywords{genotype, crlmm, SNP 5, SNP 6}
 %\VignettePackage{crlmm}
 \documentclass{article}
@@ -51,8 +51,8 @@ package.
 <<crlmm>>=
 require(oligoClasses)
 library(crlmm)
-library(hapmapsnp5)
-path <- system.file("celFiles", package="hapmapsnp5")
+library(hapmapsnp6)
+path <- system.file("celFiles", package="hapmapsnp6")
 celFiles <- list.celfiles(path, full.names=TRUE)
 system.time(crlmmResult <- crlmm(celFiles, verbose=FALSE))
 @ 

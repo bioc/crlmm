@@ -27,13 +27,12 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-		  "confs<-", cnConfidence, "cnConfidence<-", 
-		  isSnp, chromosome, position, CA, "CA<-", CB, "CB<-", A, B, "A<-", "B<-")
+		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
+		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B,
+		  "A<-", "B<-")
 
-
-importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles)
-
-importFrom(oligoClasses, copyNumber)
+importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
+           copyNumber, initializeBigMatrix, initializeBigVector)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot)
@@ -54,6 +53,8 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
+importFrom(ff, ffdf)
+
 exportClasses(CNSetLM)
 exportMethods(copyNumber, open, "[", show, lM, "lM<-")
 export(crlmm, 
@@ -68,7 +69,7 @@ export(crlmm,
        snprma2,
        crlmm2) 
 
-export(initializeBigMatrix, initializeParamObject)
+export(initializeParamObject)
 
 
 

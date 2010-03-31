@@ -29,8 +29,7 @@ genotype(filenames, cdfName, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE
   \item{returnParams}{'logical'. Return recalibrated parameters from crlmm.}
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
-\details{
-}
+
 \value{	A \code{SnpSuperSet} instance.}
 \references{
 
@@ -51,17 +50,16 @@ this will greatly reduce the RAM required for big jobs.  See
 
 \seealso{
 	\code{\link{snprma}}, \code{\link{crlmm}},
-	\code{\link{validCdfNames}},
-	\code{\link{oligoClasses}{ocSamples}},
-	\code{\link{oligoClasses}{ldOpts}}
+	\code{\link[oligoClasses]{ocSamples}},
+	\code{\link[oligoClasses]{ldOpts}}
 }
 \examples{
-if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
-  path <- system.file("celFiles", package="hapmapsnp5")
+if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
+  path <- system.file("celFiles", package="hapmapsnp6")
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  (crlmmOutput <- genotype(cels, cdfName="genomewidesnp5"))
+  (crlmmOutput <- genotype(cels, cdfName="genomewidesnp6"))
 }
 }
 \keyword{ classif }

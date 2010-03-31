@@ -72,8 +72,8 @@ crlmm2(filenames, row.names=TRUE, col.names=TRUE,
 }
 \examples{
 ## this can be slow
-if (require(genomewidesnp5Crlmm) & require(hapmapsnp5)){
-  path <- system.file("celFiles", package="hapmapsnp5")
+if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
+  path <- system.file("celFiles", package="hapmapsnp6")
 
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
@@ -91,7 +91,7 @@ ocProbesets(50000)
 ## setup cluster - 8 cores on the machine
 setCluster(8, "SOCK")
 
-path <- system.file("celFiles", package="hapmapsnp5")
+path <- system.file("celFiles", package="hapmapsnp6")
 cels <- list.celfiles(path, full.names=TRUE)
 crlmmOutput <- crlmm2(cels)
 

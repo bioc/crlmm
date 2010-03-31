@@ -56,8 +56,8 @@ snprma2(filenames, mixtureSampleSize = 10^5, fitMixture = FALSE, eps = 0.1, verb
   the use of clusters or multiple cores (via snow package) to speed up preprocessing.
   }
 \examples{
-if (require(genomewidesnp5Crlmm) & require(hapmapsnp5) & require(oligoClasses)){
-  path <- system.file("celFiles", package="hapmapsnp5")
+if (require(genomewidesnp6Crlmm) & require(hapmapsnp6) & require(oligoClasses)){
+  path <- system.file("celFiles", package="hapmapsnp6")
 
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
@@ -76,7 +76,7 @@ ocProbesets(50000)
 ## setup cluster - 8 cores on the machine
 setCluster(8, "SOCK")
 
-path <- system.file("celFiles", package="hapmapsnp5")
+path <- system.file("celFiles", package="hapmapsnp6")
 cels <- list.celfiles(path, full.names=TRUE)
 snprmaOutput <- snprma2(cels)
 

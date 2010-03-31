@@ -795,27 +795,29 @@ crlmmWrapper <- function(filenames, cnOptions, ...){
 	return(crlmmResults)
 }
 
-validCdfNames <- function(){
-	c("genomewidesnp6",
-	  "genomewidesnp5",
-	  "human370v1c",
-	  "human370quadv3c",
-	  "human550v3b",
-	  "human650v3a",
-	  "human610quadv1b",
-	  "human660quadv1a",
-	  "human1mduov3b")
-}
+## NOTE: THIS IS ALSO IN UTILS.R
+## validCdfNames <- function(){
+## 	c("genomewidesnp6",
+## 	  "genomewidesnp5",
+## 	  "human370v1c",
+## 	  "human370quadv3c",
+## 	  "human550v3b",
+## 	  "human650v3a",
+## 	  "human610quadv1b",
+## 	  "human660quadv1a",
+## 	  "human1mduov3b")
+## }
 
-isValidCdfName <- function(cdfName){
-	chipList <- validCdfNames()
-	result <- cdfName %in% chipList	
-	if(!(result)){
-		warning("cdfName must be one of the following: ",
-			chipList)
-	}
-	return(result)
-}
+## NOTE: THIS IS ALSO IN UTILS.R
+## isValidCdfName <- function(cdfName){
+## 	chipList <- validCdfNames()
+## 	result <- cdfName %in% chipList	
+## 	if(!(result)){
+## 		warning("cdfName must be one of the following: ",
+## 			chipList)
+## 	}
+## 	return(result)
+## }
 
 whichPlatform <- function(cdfName){
 	index <- grep("genomewidesnp", cdfName)
