@@ -339,7 +339,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   if(verbose) message("Loading annotations.")
   loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
   loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
-
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
   XIndex <- getVarInEnv("XIndex")

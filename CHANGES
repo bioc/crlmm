@@ -489,3 +489,10 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 
 ** added parallel/large dataset support to snprma/crlmm
 ** merged changes on .41 with my local changes
+
+2010-04-01 R.Scharpf committed version 1.5.44
+
+** added functions genotype2, cnrma2 for preprocessing and genotyping
+   with crlmm2
+** added crlmmCopynumber2 for parallel support with copy number
+   est. (needs more checking)

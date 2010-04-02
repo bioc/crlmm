@@ -1,3 +1,4 @@
+setGeneric("batch", function(object) standardGeneric("batch"))
 setGeneric("getParam", function(object, name, batch) standardGeneric("getParam"))
 setGeneric("cnIndex", function(object) standardGeneric("cnIndex"))
 setGeneric("cnNames", function(object) standardGeneric("cnNames"))

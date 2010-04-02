@@ -12,7 +12,7 @@ importMethodsFrom(Biobase, annotation, "annotation<-",
                   annotatedDataFrameFrom, assayData, "assayData<-",
                   combine, dims, experimentData, "experimentData<-",
                   fData, featureData, "featureData<-", featureNames,
-                  fvarMetadata, fvarLabels, pData, phenoData,
+                  fvarMetadata, fvarLabels, pData, "pData<-", phenoData,
                   "phenoData<-", protocolData, "protocolData<-",
                   pubMedIds, rowMedians, sampleNames, snpCall,
                   snpCallProbability,
@@ -67,7 +67,12 @@ export(crlmm,
        readIdatFiles, 
        snprma,
        snprma2,
-       crlmm2) 
+       crlmm2,
+       genotype2,
+       cnrma2,
+       processCEL2,
+       batch,
+       crlmmCopynumber2)
 
 export(initializeParamObject)
 

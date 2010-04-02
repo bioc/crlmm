@@ -45,6 +45,14 @@ setMethod("getParam", signature(object="eSet",
 		  getParam.SnpSuperSet(object, name, batch)
 })
 
+setMethod("batch", "eSet", function(object){
+	if("batch" %in% varLabels(object)){
+		return(object$batch)
+	} else {
+		return(protocolData(object)$batch)
+	}
+})
+
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects

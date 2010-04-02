@@ -184,23 +184,40 @@ isPackageLoaded <- function(pkg){
 }
 
 paramNames <- function(){
-	c("tau2A", "tau2B", "sig2A", "sig2B",
-	  "nuA", "nuA.se", "nuB",  "nuB.se", "phiA", "phiB", "phiAX", "phiBX",
-	  "phiA.se", "phiB.se", "corr", "corrA.BB", "corrB.AA")
+	c("tau2A",
+	  "tau2B", "sig2A", "sig2B",
+	  "nuA", ##"nuA.se",
+	  "nuB",  ##"nuB.se",
+	  "phiA",
+	  "phiB",
+	  "phiPrimeA",
+	  "phiPrimeB",
+	  ##"phiA.se", "phiB.se",
+	  "corrAB",
+	  "corrBB",
+	  "corrAA")
+}
+
+loadObject <- function(filename, load.it){
+	fname <- paste(filename, ".rda", sep="")
+	if(load.it & file.exists(file.path(ldPath(), fname))){
+		message("load.it is TRUE, loading previously saved ff object")
+		return(TRUE)
+	} else return(FALSE)
 }
 
 initializeParamObject <- function(dimnames){
 	nr <- length(dimnames[[1]])
-	nc <- length(dimnames[[2]])		
-	ll <- vector("list", 17)
+	nc <- length(dimnames[[2]])
 	name <- paramNames()
+	ll <- vector("list", length(name))
 	if(isPackageLoaded("ff")){
-		for(i in 1:17) ll[[i]] <- createFF(name=name[i], dim=c(nr, nc), vmode="double")            ##ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
-		names(ll) <- paramNames()
+		for(i in seq(along=ll)) ll[[i]] <- createFF(name=name[i], dim=c(nr, nc), vmode="double")            ##ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
+		names(ll) <- name
 		ll <- do.call(ffdf, ll)
 	} else {
-		for(i in 1:17) ll[[i]] <- matrix(NA, nr, nc, dimnames=dimnames)
-		names(ll) <- paramNames()
+		for(i in seq(along=ll)) ll[[i]] <- matrix(NA, nr, nc, dimnames=dimnames)
+		names(ll) <- name
 	}
 	return(ll)
 }

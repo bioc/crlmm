@@ -3,6 +3,7 @@ setMethod("show", "CNSetLM", function(object){
 	cat("lM: ", length(lM(object)), " elements \n")
 	print(names(lM(object)))
 })
+
 setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	x <- callNextMethod(x, i, j, ..., drop=drop)
 	if(!missing(i)){
@@ -14,14 +15,22 @@ setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	}
 	x
 })
+
 setMethod("lM", "CNSetLM", function(object) object@lM)
 setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
 	object@lM <- value
 	object
 })
 
+
+
+setMethod("open", "CNSetLM", function(con,...){
+	callNextMethod(con,...)
+	lapply(physical(lM(con)), open)
+})
+
 setAs("SnpSuperSet", "CNSetLM", function(from, to){
-	stopifnot("batch" %in% varLabels(from))
+	stopifnot("batch" %in% varLabels(protocolData(from)))
 	cnSet <- new("CNSetLM",
 		     alleleA=A(from),
 		     alleleB=B(from),
@@ -32,8 +41,9 @@ setAs("SnpSuperSet", "CNSetLM", function(from, to){
 		     annotation=annotation(from),
 		     featureData=featureData(from),
 		     experimentData=experimentData(from),
+		     protocolData=protocolData(from),
 		     phenoData=phenoData(from))
-	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(from$batch)))
+	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(protocolData(from)$batch)))
 	return(cnSet)
 })
 
