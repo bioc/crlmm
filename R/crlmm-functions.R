@@ -419,30 +419,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                              cIndexes=cIndexes, SMEDIAN=SMEDIAN,
                              theKnots=theKnots, DF=DF, probs=probs,
                              batchSize=ocProbesets())
-##   last <- 0
-##   for (idxBatch in seq(along=snpBatches)){
-##     snps <- snpBatches[[idxBatch]]
-##     rSnps <- range(snps)
-##     IndexesBatch <- list(autosomeIndex[autosomeIndex %in% snps]-last,
-##                          XIndex[XIndex %in% snps]-last,
-##                          YIndex[YIndex %in% snps]-last)
-##     IndexesBatch <- lapply(IndexesBatch, as.integer)
-##     tmpA <- A[snps,]
-##     tmpB <- B[snps,]
-##     newparamsBatch[[idxBatch]] <- gtypeCallerR(tmpA, tmpB, fIndex, mIndex,
-##                                                params[["centers"]][snps,],
-##                                                params[["scales"]][snps,],
-##                                                params[["N"]][snps,],
-##                                                IndexesBatch, cIndexes,
-##                                                sapply(IndexesBatch, length),
-##                                                sapply(cIndexes, length),
-##                                                SMEDIAN, theKnots,
-##                                                mixtureParams[], DF, probs, 0.025)
-##     last <- rSnps[2]
-##     rm(snps, rSnps, IndexesBatch, tmpA, tmpB)
-##   }
-##   rm(last)
-  
   newparams <- vector("list", 3)
   names(newparams) <- c("centers", "scales", "N")
   newparams[["centers"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 1))
@@ -525,8 +501,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   ## ## MOVE TO C#######
 
   ## running in batches
-  ## snpBatches <- splitIndicesByLength(1:nrow(A), ocProbesets())
-
   process2 <- function(idxBatch, snpBatches, autosomeIndex, XIndex,
                        YIndex, A, B, mixtureParams, fIndex, mIndex,
                        params, cIndexes, SMEDIAN, theKnots, DF, probs,
@@ -569,35 +543,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
            mIndex=mIndex, params=params, cIndexes=cIndexes,
            SMEDIAN=SMEDIAN, theKnots=theKnots, DF=DF, probs=probs,
            regionInfo=regionInfo, batchSize=ocProbesets())
-  
-##   last <- 0
-##   for (idxBatch in seq(along=snpBatches)){
-##     snps <- snpBatches[[idxBatch]]
-##     tmpA <- A[snps,]
-##     tmpB <- B[snps,]
-##     rSnps <- range(snps)
-##     IndexesBatch <- list(autosomeIndex[autosomeIndex %in% snps]-last,
-##                          XIndex[XIndex %in% snps]-last,
-##                          YIndex[YIndex %in% snps]-last)
-##     IndexesBatch <- lapply(IndexesBatch, as.integer)
-##     ImNull <- gtypeCallerR2(tmpA, tmpB, fIndex, mIndex,
-##                             params[["centers"]][snps,],
-##                             params[["scales"]][snps,],
-##                             params[["N"]][snps,],
-##                             IndexesBatch, cIndexes,
-##                             sapply(IndexesBatch, length),
-##                             sapply(cIndexes, length),
-##                             SMEDIAN, theKnots, mixtureParams[],
-##                             DF, probs, 0.025,
-##                             which(regionInfo[snps, 2]),
-##                             which(regionInfo[snps, 1]))
-##     A[snps,] <- tmpA
-##     B[snps,] <- tmpB
-##     last <- rSnps[2]
-##     rm(tmpA, tmpB, snps, rSnps, IndexesBatch, ImNull)
-##   }
-##   
-##   gc(verbose=FALSE)
   ##  END MOVE TO C#######
   ## ##################
   
