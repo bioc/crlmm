@@ -501,5 +501,11 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 ** modified the storage of RG, XY and genotype call data to use the ff package and initializeBigMatrix() function from oligoClasses package.  The genotype call data now includes non-polymorphic probes (which have NA calls).  Functions which use ff storage are named readIdatFiles2(), RGtoXY2(), preprocessInfinium2v2(), crlmmIllumina2() and crlmmIlluminaV2().
 
 2010-04-08 B Carvalho committed version 1.5.46
-
 ** moved NEWS to inst/
+
+2010-04-09 M. Ritchie committed version 1.5.47
+** fixed bugs in code and removed copy number probes from output 
+(now saved separately as before - SnpSuperSet not used)
+** crlmmIllumina2() and crlmmIlluminaV2() now use the crlmmGT2() 
+function (which expects ff objects and supports parallel processing)
+** updated crlmmIllumina.pdf vignette

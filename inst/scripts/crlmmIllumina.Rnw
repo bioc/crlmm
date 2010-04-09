@@ -44,12 +44,15 @@ In this user guide we read in and genotype data from 40 HapMap samples
 which have been analyzed using Illumina's 370k Duo BeadChips.
 This data is available in the \Rpackage{hapmap370k} package.  
 Additional chip-specific model parameters and basic SNP annotation 
-information used by CRLMM is stored in the \Rpackage{human370v1c} package.
-These can be downloaded from \href{http://rafalab.jhsph.edu/software.html}{http://rafalab.jhsph.edu/software.html}
-and must be installed for the following code to work.
+information used by CRLMM is stored in the \Rpackage{human370v1cCrlmm} package.
+These packages can be installed in the usual way using the \Rfunction{biocLite} function.
 
-\section{Reading in data}
+<<<echo=TRUE, results=hide, eval=FALSE>>=
+source("http://www.bioconductor.org/biocLite.R")
+biocLite(c("hapmap370k", "human370v1cCrlmm"))
+@ 
 
+\section{Reading in data} 
 The function \Rfunction{readIdatFiles} extracts the Red and Green intensities 
 from the binary {\tt idat} files output by Illumina's scanning device.
 The file {\tt samples370k.csv} contains information about each sample.
@@ -58,7 +61,7 @@ The file {\tt samples370k.csv} contains information about each sample.
 options(width=50)
 @ 
 
-<<read>>=
+<<read, results=hide, eval=TRUE>>=
 library(Biobase)
 library(crlmm)
 library(hapmap370k)
@@ -112,8 +115,7 @@ mtext("Array", side=1, outer=TRUE)
 
 \section{Genotyping}
 
-Next we use the function \Rfunction{crlmmIllumina} which performs preprocessing followed by genotyping
-using the CRLMM algorithm.
+Next we use the function \Rfunction{crlmmIllumina} which performs preprocessing followed by genotyping using the CRLMM algorithm.
 
 <<genotype, results=hide, cache=TRUE>>=
 crlmmResult = crlmmIllumina(RG=RG, cdfName="human370v1c", sns=pData(RG)$ID, returnParams=TRUE)
