@@ -29,7 +29,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B,
-		  "A<-", "B<-")
+		  "A<-", "B<-", open, close)
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)
@@ -56,25 +56,20 @@ importFrom(ellipse, ellipse)
 importFrom(ff, ffdf)
 
 exportClasses(CNSetLM)
-exportMethods(copyNumber, open, "[", show, lM, "lM<-")
+exportMethods(open, "[", show, lM)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
-       crlmmIlluminaRS, 
-       ellipse, 
+##       ellipse, 
        genotype, 
-       getParam, 
        readIdatFiles, 
        snprma,
        snprma2,
        crlmm2,
        genotype2,
-       cnrma2,
-       processCEL2,
        batch,
        crlmmCopynumber2)
-
-export(initializeParamObject)
+##export(initializeParamObject, biasAdjNP2)
 
 
 

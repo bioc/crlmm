@@ -1,5 +1,6 @@
 \name{genotype}
 \alias{genotype}
+\alias{genotype2}
 \title{
 	Preprocessing and genotyping of Affymetrix arrays.
 }
@@ -7,11 +8,18 @@
 	Preprocessing and genotyping of Affymetrix arrays.	
 }
 \usage{
-genotype(filenames, cdfName, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =
+0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs =
+rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
+gender = NULL, returnParams = TRUE, badSNP = 0.7)
+
+genotype2(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}
-  \item{cdfName}{  annotation package  (see also \code{validCdfNames})}
+  \item{cdfName}{  annotation package  (see also
+  \code{validCdfNames})}
+  \item{batch}{ batch variable. See details. }
   \item{mixtureSampleSize}{    Sample size to be use when fitting the mixture model.}
  \item{eps}{   Stop criteria.}
   \item{verbose}{  Logical.  Whether to print descriptive messages during processing.}
@@ -28,6 +36,23 @@ genotype(filenames, cdfName, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE
   with same length as filenames.  If missing, the gender is predicted.}
   \item{returnParams}{'logical'. Return recalibrated parameters from crlmm.}
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
+}
+
+\details{
+
+	For large datasets it is important to utilize the large data
+	support by installing and loading the ff package before
+	calling the genotype or genotype2 function.
+
+	Currently, two functions are provided for preprocessing and
+	genotyping Affymetrix platforms: genotype and genotype2. For
+	small datasets, genotype and genotype2 are identical.  For
+	large datasets, genotype2 provides large data support (via ff)
+	and permits the use of clusters or multiple cores (via snow
+	package) to speed up genotyping (similar to \code{crlmm2}).
+	The \code{genotype} function will be phased out in the future
+	and replaced by \code{genotype2}.
+
 }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -51,15 +76,33 @@ this will greatly reduce the RAM required for big jobs.  See
 \seealso{
 	\code{\link{snprma}}, \code{\link{crlmm}},
 	\code{\link[oligoClasses]{ocSamples}},
-	\code{\link[oligoClasses]{ldOpts}}
+	\code{\link[oligoClasses]{ldOpts}},
+	\code{\link{batch}},
+	\code{\link{crlmmCopynumber}}
 }
 \examples{
-if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
+if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
+
   path <- system.file("celFiles", package="hapmapsnp6")
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-  (crlmmOutput <- genotype(cels, cdfName="genomewidesnp6"))
+
+  ## To use less RAM, specify a smaller argument to ocProbesets
+  ocProbesets(50e3)
+  (cnSet <- genotype2(cels, cdfName="genomewidesnp6",
+  copynumber=TRUE))
+
+  dim(cnSet)
+  table(isSnp(cnSet))
+
+## The above is a trivial example.  Typically you may have a large
+##    number of cel files, many of which were processed at different
+##    times. For such datasets, it is important to set a batch
+##    variable.  If not specified, the scan date of the file is used
+##    as the batch variable.  
+      batch(cnSet)
+      protocolData(cnSet)$ScanDate
 }
 }
 \keyword{ classif }

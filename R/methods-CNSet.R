@@ -16,6 +16,7 @@ setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	x
 })
 
+
 setMethod("lM", "CNSetLM", function(object) object@lM)
 setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
 	object@lM <- value

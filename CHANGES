@@ -509,3 +509,9 @@ then readIDAT() should work. Thanks to Pierre Cherel who reported this error.
 ** crlmmIllumina2() and crlmmIlluminaV2() now use the crlmmGT2() 
 function (which expects ff objects and supports parallel processing)
 ** updated crlmmIllumina.pdf vignette
+
+2010-04-11 R. Scharpf committed version 1.5.48
+** added a few .Rd files
+
+
+

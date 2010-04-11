@@ -1,29 +1,53 @@
 \name{crlmmCopynumber}
 \alias{crlmmCopynumber}
+\alias{crlmmCopynumber2}
 \title{Locus- and allele-specific estimation of copy number}
 \description{
   Locus- and allele-specific estimation of copy number.
 }
 \usage{
-crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES = 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
+crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES
+= 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE,
+prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR =
+0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3,
+THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
+
+crlmmCopynumber2(object, which.batches, MIN.SAMPLES = 10, SNRMin = 5,
+MIN.OBS = 1, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4,
+4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6,
+nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE,
+thresholdCopynumber = TRUE)
+
 }
 \arguments{
   \item{object}{object of class \code{SnpSuperSet}.
 }
+
   \item{which.batches}{ Character vector with length equal to the number of
   samples.  Used to adjust for batch effects.  Chemistry plate or
   date often work well.  See examples.
+
+  Ignored in crlmmCopynumber2.
+
 }
+
  \item{chromosome}{Numeric vector indicating which chromosomes to
  process (length <= 23). For chromosome X, use 23. A copy number
  method for chromosome Y is not yet available.
 }
+
   \item{MIN.SAMPLES}{ 'Integer'.  The minimum number of samples in a
-  batch.  Bathes with fewer than MIN.SAMPLES are skipped.
+  batch.  Bathes with fewer than MIN.SAMPLES are skipped.  Therefore,
+  samples in batches with fewer than MIN.SAMPLES have NA's for the
+  allele-specific copy number and NA's for the linear model
+  parameters.
+
 }
+
   \item{SNRMin}{ Samples with low signal to noise ratios are
   excluded.  
 }
+
   \item{MIN.OBS}{ 
 
   For genotypes with fewer than \code{MIN.OBS}, the within-genotype
@@ -56,6 +80,8 @@ crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES = 10, SNRM
   of the samples have a copy number alteration.  For additional
   information, see Scharpf et al., 2009.
 
+  This argument is ignored in crlmmCopynumber2.
+
 }
   \item{prior.prob}{
 
@@ -64,10 +90,9 @@ crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES = 10, SNRM
   normal copy number, and amplification, respectively.
 
 }
-  \item{seed}{ Seed for sampling.
-}
-  \item{verbose}{ Logical. 
-}
+  \item{seed}{ Seed for random number generation.}
+
+  \item{verbose}{ Logical. }
 
   \item{GT.CONF.THR}{ 
 
@@ -101,20 +126,39 @@ crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES = 10, SNRM
   \code{MIN.PHI} are ignored.
 }
   \item{thresholdCopynumber}{
+
   If \code{TRUE}, allele-specific number estimates are truncated.
   Values less than 0.05 are assigned the value 0.05; values exceeding
   5 are assigned the value 5.  
+
+  Ignored in crlmmCopynumber2.  Extreme values are automatically
+  truncated.
+
 }
+}
+
+\details{
+
+	The function crlmmCopynumber uses matrices instead of ff
+	objects if the ff library is not loaded.
+
+	The function crlmmCopynumber2 allows parallel processing via
+	and requires large data support via the ff package.
+
+	We plan to phase out crlmmCopynumber and replace this function
+	by crlmmCopynumber2.
+
 }
 \author{R. Scharpf}
 \examples{
 ## data(example.callSet)
-## cnSet <- crlmmCopynumber(example.callSet)
+## cnSet <- crlmmCopynumber2(example.callSet)
 ## total copy number
 ## cn <- copyNumber(cnSet)
 ## allele-specific copy number
-## ca <- CA(cnSet) ## A dosage
-## cb <- CB(cnSet) ## B dosage
+## ca <- CA(cnSet)/100 ## A dosage
+## cb <- CB(cnSet)/100 ## B dosage
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
+\keyword{manip}
