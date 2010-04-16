@@ -349,7 +349,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   regionInfo <- getVarInEnv("regionInfo")
   params <- getVarInEnv("params")
   
-  ##IF gender not provide, we predict
+  ## IF gender not provide, we predict
+  ## FIXME: XIndex may be greater than ocProbesets()
   if(is.null(gender)){
     if(verbose) message("Determining gender.")
     XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
@@ -446,16 +447,16 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     names(data4reg) <- c("AA", "AB", "BB")
     regParams <- cbind(  coef(lm(AA~AB*BB, data=data4reg)),
                        c(coef(lm(AB~AA+BB, data=data4reg)), 0), 
-                       coef(lm(BB~AA*AB, data=data4reg)))
+                         coef(lm(BB~AA*AB, data=data4reg)))
     rownames(regParams) <- c("intercept", "X", "Y", "XY")
     rm(data4reg)
   
     minN <- 3
     newparams[["centers"]][newparams[["N"]] < minN] <- NA
     Index <- setdiff(which(rowSums(is.na(newparams[["centers"]]))==1), YIndex)
-    if(verbose) cat("Filling out empty centers")
+    if(verbose) message("Filling out empty centers", appendLF=FALSE)
     for(i in Index){
-      if(verbose) if(i%%10000==0)cat(".")
+      if(verbose) if(i%%10000==0) message(".", appendLF=FALSE)
       mu <- newparams[["centers"]][i, ]
       j <- which(is.na(mu))
       newparams[["centers"]][i, j] <- c(1, mu[-j], prod(mu[-j]))%*%regParams[, j]
@@ -472,7 +473,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     newparams[["centers"]][is.na(newparams[["centers"]])] <- params[["centers"]][is.na(newparams[["centers"]])]
     if(verbose) cat("\n")
   
-    if(verbose) message("Calculating and standardizing size of shift.")
+    if(verbose) message("Calculating and standardizing size of shift... ", appendLF=FALSE)
     GG <- DD <- newparams[["centers"]] - params[["centers"]]
     DD <- sweep(DD, 2, colMeans(DD[autosomeIndex, ]))
     SS <- cov(DD[autosomeIndex, ])
@@ -491,12 +492,15 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       dev=1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev)
     }
   }
+  if (verbose) message("OK")
     
   ## BC: must keep SD
   params[-2] <- newparams[-2]
-  
-  rm(newparams);gc(verbose=FALSE)  
-  if(verbose) cat("Calling", NR, "SNPs... ")
+  rm(newparams)
+  gc(verbose=FALSE)  
+
+  if(verbose) message("Calling ", NR, " SNPs... ", appendLF=FALSE)
+
   ## ###################
   ## ## MOVE TO C#######
 
