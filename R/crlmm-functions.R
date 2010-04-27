@@ -316,6 +316,27 @@ crlmm2 <- function(filenames, row.names=TRUE, col.names=TRUE,
   return(list2SnpSet(res2, returnParams=returnParams))
 }
 
+predictGender <- function(cols, theA, theB, XIndex){
+  n <- length(cols)
+  med <- numeric(n)
+  if (n > 0){
+    open(theA)
+    open(theB)
+    for (i in 1:n){
+      vA <- log2(theA[XIndex, cols[i]])
+      vB <- log2(theB[XIndex, cols[i]])
+      med[i] <- median(vA+vB)/2
+      rm(vA, vB)
+    }
+    close(theA)
+    close(theB)
+    rm(theA, theB)
+  }
+  rm(n)
+  gc(verbose=FALSE)
+  med
+}
+
 crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                      col.names=NULL, probs=c(1/3, 1/3, 1/3), DF=6,
                      SNRMin=5, recallMin=10, recallRegMin=1000,
@@ -337,8 +358,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 
   if(verbose) message("Loading annotations.")
-  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
-  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+  obj1 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  obj2 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
   ## this is toget rid of the 'no visible binding' notes
   ## variable definitions
   XIndex <- getVarInEnv("XIndex")
@@ -348,12 +369,16 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   theKnots <- getVarInEnv("theKnots")
   regionInfo <- getVarInEnv("regionInfo")
   params <- getVarInEnv("params")
+  rm(list=c(obj1, obj2), envir=.crlmmPkgEnv)
+  rm(obj1, obj2)
   
   ## IF gender not provide, we predict
   ## FIXME: XIndex may be greater than ocProbesets()
   if(is.null(gender)){
     if(verbose) message("Determining gender.")
-    XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+##    XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+    XMedian <- ocLapply(splitIndicesByNode(1:NC), predictGender, theA=A, theB=B, XIndex=XIndex, neededPkgs="crlmm")
+    XMedian <- unlist(XMedian)
     if(sum(SNR[] > SNRMin)==1){
       gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
     }else{
@@ -403,8 +428,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                         sapply(cIndexes, length), SMEDIAN,
                         theKnots, mixtureParams[], DF, probs, 0.025)
     
-    last <- rSnps[2]
-    rm(snps, rSnps, IndexesBatch, tmpA, tmpB)
+    rm(snps, rSnps, IndexesBatch, tmpA, tmpB, last)
+    gc(verbose=FALSE)
     close(A)
     close(B)
     close(mixtureParams)
@@ -425,7 +450,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   newparams[["centers"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 1))
   newparams[["scales"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 2))
   newparams[["N"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 3))
-  rm(newparamsBatch)
+  rm(newparamsBatch); gc(verbose=FALSE)
   if(verbose) message("Done.")
   if(verbose) message("Estimating recalibration parameters.")
   d <- newparams[["centers"]] - params$centers
@@ -460,6 +485,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       mu <- newparams[["centers"]][i, ]
       j <- which(is.na(mu))
       newparams[["centers"]][i, j] <- c(1, mu[-j], prod(mu[-j]))%*%regParams[, j]
+      rm(mu, j)
     }
     
     ##remaing NAs are made like originals
@@ -534,8 +560,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                             which(regionInfo[snps, 1]))
     A[snps,] <- tmpA
     B[snps,] <- tmpB
-    last <- rSnps[2]
-    rm(tmpA, tmpB, snps, rSnps, IndexesBatch, ImNull)
+    rm(tmpA, tmpB, snps, rSnps, IndexesBatch, ImNull, last)
+    gc(verbose=FALSE)
     close(A)
     close(B)
     close(mixtureParams)

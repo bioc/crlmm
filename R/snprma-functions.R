@@ -142,10 +142,12 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
   stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
   
   if(verbose) message("Loading annotations and mixture model parameters.")
-  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+  obj <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   pnsa <- getVarInEnv("pnsa")
   pnsb <- getVarInEnv("pnsb")
   gns <- getVarInEnv("gns")
+  rm(list=obj, envir=.crlmmPkgEnv)
+  rm(obj)
   
   ##We will read each cel file, summarize, and run EM one by one
   ##We will save parameters of EM to use later
@@ -173,6 +175,11 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
            mixtureParams=mixtureParams, eps=eps, seed=seed,
            mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
            neededPkgs=c("crlmm", pkgname))
+  close(mixtureParams)
+  close(SNR)
+  close(SKW)
+  close(A)
+  close(B)
   
   list(A=A, B=B, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
 }
@@ -182,9 +189,9 @@ processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
                        mixtureParams, eps, seed, mixtureSampleSize,
                        pkgname){
   
-  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
-  loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
-  loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+  obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+  obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+  obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
   autosomeIndex <- getVarInEnv("autosomeIndex")
   pnsa <- getVarInEnv("pnsa")
   pnsb <- getVarInEnv("pnsb")
@@ -195,6 +202,8 @@ processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
   SMEDIAN <- getVarInEnv("SMEDIAN")
   theKnots <- getVarInEnv("theKnots")
   gns <- getVarInEnv("gns")
+  rm(list=c(obj1, obj2, obj3), envir=.crlmmPkgEnv)
+  rm(obj1, obj2, obj3)
 
   ## for mixture
   set.seed(seed)
@@ -222,8 +231,10 @@ processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
       S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
       M <- log2(A[idx, k])-log2(B[idx, k])
       tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
+      rm(S, M)
       mixtureParams[, k] <- tmp[["coef"]]
       SNR[k] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
+      rm(tmp)
     } else {
       mixtureParams[, k] <- NA
       SNR[k] <- NA
@@ -234,5 +245,7 @@ processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
   close(SKW)
   close(mixtureParams)
   close(SNR)
+  rm(list=ls())
+  gc(verbose=FALSE)
   TRUE
 }
