@@ -369,6 +369,9 @@ readIDAT <- function(idatFile){
 
   versionNumber <- readBin(tempCon, "integer", n=1, size=8, 
                            endian="little", signed=FALSE)
+
+  if(versionNumber<3)
+	  stop("Older style IDAT files not supported:  consider updating your scanner settings")
   
   nFields <- readBin(tempCon, "integer", n=1, size=4, 
                      endian="little", signed=FALSE)
