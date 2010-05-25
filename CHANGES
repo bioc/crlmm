@@ -522,3 +522,11 @@ function (which expects ff objects and supports parallel processing)
 2010-05-25 R. Scharpf committed version 1.7.2
 ** added example dataset
 ** fixed vignette: inst/scripts/copynumber.Rnw
+
+2010-05-25 R. Scharpf committed version 1.7.3
+** put back in the following check in readIDAT (from r 45050):
+  if(versionNumber<3)
+    stop("Older style IDAT files not supported:  consider updating your scanner settings")
+
+2010-05-25 R. Scharpf committed version 1.7.4
+** wrapped readIDAT in a tryCatch()	   

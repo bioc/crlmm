@@ -87,7 +87,8 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       cat("reading", arrayNames[i], "\t")
 	       idsG = idsR = G = R = NULL
 	       cat(paste(sep, fileExt$green, sep=""), "\t")
-	       G = readIDAT(grnidats[i])
+	       err <- tryCatch(G = readIDAT(grnidats[i]), error=function(e) NULL)
+	       if(is.null(err)) next()
 	       idsG = rownames(G$Quants)
 	       headerInfo$nProbes[i] = G$nSNPsRead
 	       headerInfo$Barcode[i] = G$Barcode
@@ -235,11 +236,11 @@ readIdatFiles2 <- function(sampleSheet=NULL,
 	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
 	       stop("Cannot find matching .idat files")
-       if(path[1] != "."){
+       if(path[1] != "." & path[1] != ""){
 	       grnidats = file.path(path, grnfiles)
 	       redidats = file.path(path, redfiles)
        }  else {
-	       message("path arg not set.  Assuming files are in local directory")
+	       message("path arg not set.  Assuming files are in local directory, or that complete path is provided")
 	       grnidats <- grnfiles
 	       redidats <- redfiles
        }
@@ -257,11 +258,12 @@ readIdatFiles2 <- function(sampleSheet=NULL,
        dates = list(decode=rep(NA, narrays),
                     scan=rep(NA, narrays))
        ## read in the data
-       for(i in seq(along=arrayNames)) {
+       for(i in seq_along(arrayNames)) {
 	       cat("reading", arrayNames[i], "\t")
 	       idsG = idsR = G = R = NULL
 	       cat(paste(sep, fileExt$green, sep=""), "\t")
-	       G = readIDAT(grnidats[i])
+	       G <- tryCatch(readIDAT(grnidats[i]), error=function(e) NULL)
+	       if(is.null(G)) { cat("\n"); next() }
 	       idsG = rownames(G$Quants)
 	       headerInfo$nProbes[i] = G$nSNPsRead
 	       headerInfo$Barcode[i] = G$Barcode
