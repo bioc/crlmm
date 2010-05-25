@@ -54,7 +54,6 @@ readIdatFiles <- function(sampleSheet=NULL,
                }
                pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
-       
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
        redfiles = paste(arrayNames, fileExt$red, sep=sep)
@@ -360,7 +359,6 @@ readIdatFiles2 <- function(sampleSheet=NULL,
 
 ## the readIDAT() and readBPM() functions below were provided by Keith Baggerly, 27/8/2008
 readIDAT <- function(idatFile){
-
   fileSize <- file.info(idatFile)$size
 
   tempCon <- file(idatFile,"rb")

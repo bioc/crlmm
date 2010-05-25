@@ -91,17 +91,33 @@ setMethod("computeCopynumber", "CNSet",
 	}
 	object
 })
-
-
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
+	ffIsLoaded <- class(calls(object))[[1]]=="ff"
 	CA <- CA(object)
 	CB <- CB(object)
+	if(ffIsLoaded){
+		open(CA)
+		open(CB)
+		CA <- CA[,]
+		CB <- CB[,]
+	}
 	CN <- CA + CB
 	##For nonpolymorphic probes, CA is the total copy number
 	CN[!I, ] <- CA(object)[!I, ]
+	CN <- CN/100
 	CN
 })
+
+##setMethod("copyNumber", "CNSet", function(object){
+##	I <- isSnp(object)
+##	CA <- CA(object)
+##	CB <- CB(object)
+##	CN <- CA + CB
+##	##For nonpolymorphic probes, CA is the total copy number
+##	CN[!I, ] <- CA(object)[!I, ]
+##	CN
+##})
 
 
 setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){

@@ -4,7 +4,6 @@
 \alias{CNSetLM}
 \alias{CNSetLM-class}
 \alias{[,CNSetLM-method}
-\alias{lM}
 \alias{lM,CNSetLM-method}
 \alias{lM<-,CNSetLM,list_or_ffdf-method}
 \alias{open,CNSetLM-method}

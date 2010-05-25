@@ -1,8 +1,8 @@
 Package: crlmm
 Type: Package
 Title: Genotype Calling (CRLMM) and Copy Number Analysis tool for Affymetrix SNP 5.0 and 6.0 and Illumina arrays.
-Version: 1.7.1
-Date: 2010-04-16
+Version: 1.7.2
+Date: 2010-05-25
 Author: Rafael A Irizarry, Benilton S Carvalho <carvalho@bclab.org>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.edu.au>
 Maintainer: Benilton S Carvalho <carvalho@bclab.org>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.EDU.AU>
 Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays, as well as a copy number tool specific to 5.0, 6.0, and Illumina platforms
@@ -23,7 +23,8 @@ Imports: affyio (>= 1.15.2),
          utils
 Suggests: hapmapsnp6,
           genomewidesnp6Crlmm (>= 1.0.2),
-          snpMatrix
+          snpMatrix,
+	  ellipse
 Collate: AllGenerics.R
 	 AllClasses.R
 	 methods-CNSet.R
@@ -33,6 +34,7 @@ Collate: AllGenerics.R
          crlmm-functions.R
          crlmm-illumina.R
 	 snprma-functions.R
+	 plot-methods.R
          utils.R
          zzz.R
 LazyLoad: yes

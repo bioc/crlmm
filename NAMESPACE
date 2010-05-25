@@ -70,6 +70,7 @@ export(crlmm,
        batch,
        crlmmCopynumber2)
 ##export(initializeParamObject, biasAdjNP2)
+##export(construct)
 
 
 
