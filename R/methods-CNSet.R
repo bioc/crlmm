@@ -95,8 +95,15 @@ setMethod("computeCopynumber", "CNSet",
 
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
+	ffIsLoaded <- class(calls(cnSet))[[1]]=="ff"
 	CA <- CA(object)
 	CB <- CB(object)
+	if(ffIsLoaded){
+		open(CA)
+		open(CB)
+		CA <- CA[,]
+		CB <- CB[,]
+	}
 	CN <- CA + CB
 	##For nonpolymorphic probes, CA is the total copy number
 	CN[!I, ] <- CA(object)[!I, ]
