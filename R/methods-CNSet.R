@@ -95,7 +95,7 @@ setMethod("computeCopynumber", "CNSet",
 
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
-	ffIsLoaded <- class(calls(cnSet))[[1]]=="ff"
+	ffIsLoaded <- class(calls(object))[[1]]=="ff"
 	CA <- CA(object)
 	CB <- CB(object)
 	if(ffIsLoaded){
