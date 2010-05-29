@@ -18,7 +18,7 @@
 
 \begin{document}
 \title{Copy number estimation and genotype calling with \Rpackage{crlmm}}
-\date{May, 2009}
+\date{\today}
 \author{Rob Scharpf}
 \maketitle
 

@@ -530,3 +530,6 @@ function (which expects ff objects and supports parallel processing)
 
 2010-05-25 R. Scharpf committed version 1.7.4
 ** wrapped readIDAT in a tryCatch()	   
+
+2010-05-26 R. Scharpf committed version 1.7.5
+** minor edits to inst/scripts/copynumber.Rnw
