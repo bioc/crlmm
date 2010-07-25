@@ -87,8 +87,11 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       cat("reading", arrayNames[i], "\t")
 	       idsG = idsR = G = R = NULL
 	       cat(paste(sep, fileExt$green, sep=""), "\t")
-	       err <- tryCatch(G = readIDAT(grnidats[i]), error=function(e) NULL)
-	       if(is.null(err)) next()
+	       G <- tryCatch(readIDAT(grnidats[i]), error=function(e) NULL)
+	       if(is.null(G)) { 
+		       if(i==1) stop("Read in of first IDAT file failed - check your data")
+     		   else cat("\n"); next()
+		   }
 	       idsG = rownames(G$Quants)
 	       headerInfo$nProbes[i] = G$nSNPsRead
 	       headerInfo$Barcode[i] = G$Barcode
@@ -263,7 +266,10 @@ readIdatFiles2 <- function(sampleSheet=NULL,
 	       idsG = idsR = G = R = NULL
 	       cat(paste(sep, fileExt$green, sep=""), "\t")
 	       G <- tryCatch(readIDAT(grnidats[i]), error=function(e) NULL)
-	       if(is.null(G)) { cat("\n"); next() }
+	       if(is.null(G)) { 
+		       if(i==1) stop("Read in of first IDAT file failed - check your data")
+     		   else cat("\n"); next()
+		   }
 	       idsG = rownames(G$Quants)
 	       headerInfo$nProbes[i] = G$nSNPsRead
 	       headerInfo$Barcode[i] = G$Barcode

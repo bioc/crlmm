@@ -533,3 +533,6 @@ function (which expects ff objects and supports parallel processing)
 
 2010-05-26 R. Scharpf committed version 1.7.5
 ** minor edits to inst/scripts/copynumber.Rnw
+
+2010-07-25 M. Ritchie committed version 1.7.6
+** fixed bug introduced in 1.7.4 by addition of tryCatch() into readIdatFiles().  Thanks to Nolwenn Le Meur for pointing this out.
