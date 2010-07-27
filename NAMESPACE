@@ -55,7 +55,7 @@ importFrom(ellipse, ellipse)
 
 importFrom(ff, ffdf)
 
-exportClasses(CNSetLM)
+exportClasses(CNSetLM, list_or_ffdf, ffdf)
 exportMethods(open, "[", show, lM, copyNumber, totalCopyNumber)
 export(crlmm, 
        crlmmCopynumber, 

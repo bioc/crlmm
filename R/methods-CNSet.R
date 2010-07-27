@@ -18,7 +18,11 @@ setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 
 
 setMethod("lM", "CNSetLM", function(object) object@lM)
-setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
+setReplaceMethod("lM", c("CNSetLM", "ffdf"), function(object, value){
+	object@lM <- value
+	object
+})
+setReplaceMethod("lM", c("CNSetLM", "list"), function(object, value){
 	object@lM <- value
 	object
 })
@@ -112,24 +116,24 @@ setMethod("copyNumber", "CNSet", function(object){
 
 setMethod("totalCopyNumber", "CNSet", function(object, i, j){
 	if(missing(i) & missing(j)){
-		if(inherits(CA(object), "ff")) stop("Must specify i and/or j for ff objects")
+		if(inherits(CA(object), "ff") | inherits(CA(object), "ffdf")) stop("Must specify i and/or j for ff objects")
 	}
 	if(missing(i) & !missing(j)){
 		snp.index <- which(isSnp(object))	
-		cn.total <- CA(cnSet)[, j]	
-		cb <- CB(cnSet)[snp.index, j]	
+		cn.total <- as.matrix(CA(cnSet)[, j])
+		cb <- as.matrix(CB(cnSet)[snp.index, j]	)
 		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb		
 	}
 	if(!missing(i) & missing(j)){
 		snp.index <- intersect(which(isSnp(object)), i)
-		cn.total <- CA(cnSet)[i, ]	
-		cb <- CB(cnSet)[snp.index, ]	
+		cn.total <- as.matrix(CA(cnSet)[i, ])
+		cb <- as.matrix(CB(cnSet)[snp.index, ])	
 		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb				
 	}
 	if(!missing(i) & !missing(j)){
 		snp.index <- intersect(which(isSnp(object)), i)		
-		cn.total <- CA(cnSet)[i, j]	
-		cb <- CB(cnSet)[snp.index, j]	
+		cn.total <- as.matrix(CA(cnSet)[i, j])	
+		cb <- as.matrix(CB(cnSet)[snp.index, j])
 		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
 	}
 	cn.total <- cn.total/100

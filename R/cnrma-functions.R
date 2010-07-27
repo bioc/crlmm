@@ -1042,6 +1042,9 @@ crlmmCopynumber2 <- function(object,
 	stopifnot("chromosome" %in% fvarLabels(object))
 	stopifnot("position" %in% fvarLabels(object))
 	stopifnot("isSnp" %in% fvarLabels(object))
+	##tmp <- initializeParamObject(list(featureNames(object), unique(protocolData(object)$batch)))
+	##lM(object) <- tmp
+	object@lM <- initializeParamObject(list(featureNames(object), unique(protocolData(object)$batch)))
 	lM(object) <- initializeParamObject(list(featureNames(object), unique(protocolData(object)$batch)))
 	batch <- batch(object)
 	XIndex.snps <- which(chromosome(object) == 23 & isSnp(object) & !is.na(chromosome(object)))
