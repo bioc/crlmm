@@ -354,6 +354,10 @@ mtext("Mb", 1, outer=TRUE, line=2)
 %	}
 %}
 %@ 
+\section{Session information}
+<<sessionInfo, results=tex>>=
+toLatex(sessionInfo())
+@ 
 
 
 \end{document}

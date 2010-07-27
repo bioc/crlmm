@@ -98,6 +98,7 @@ setMethod("computeCopynumber", "CNSet",
 
 
 setMethod("copyNumber", "CNSet", function(object){
+	message("This accessor will be deprecated.")
 	I <- isSnp(object)
 	ffIsLoaded <- inherits(CA(object), "ff")
 	CA <- CA(object)

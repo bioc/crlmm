@@ -9,6 +9,7 @@
 \alias{lM<-,CNSetLM,list_or_ffdf-method}
 \alias{open,CNSetLM-method}
 \alias{show,CNSetLM-method}
+\alias{copyNumber,CNSet-method}
 
 \title{CNSetLM class}
 \description{Container for allele-specific copy number and linear model

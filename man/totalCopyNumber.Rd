@@ -5,14 +5,13 @@
 \alias{totalCopyNumber,CNSet-method}
 \title{Method for computing total copy number from either ff}
 \description{
- ~~ Methods for function \code{totalCopyNumber} in Package `crlmm' ~~
+	calculates the sum of the allele-specific CN estimates
 }
 \section{Methods}{
 \describe{
 
 \item{\code{signature(object = "CNSet")}}{
-%%  ~~describe this method here~~
+  an object of class \code{CNSet} or \code{CNSetLM}.			     			     			     
 }
 }}
 \keyword{methods}
-\keyword{ ~~ other possible keyword(s) ~~ }

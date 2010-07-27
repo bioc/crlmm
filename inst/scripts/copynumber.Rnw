@@ -33,7 +33,7 @@ options(continue=" ", width=70)
 
 \begin{abstract}
   This vignette estimates copy number for HapMap samples on the
-  Affymetrix 6.0 platform.  See \citep{Scharpf2009} for the working
+  Affymetrix 6.0 platform.  See \citep{Scharpf2010} for the working
   paper.
   
 \end{abstract}
@@ -61,7 +61,7 @@ can be helpful for limiting the influence of batch effects.
 
 <<celfiles>>=
 celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/crlmm/release"
+outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/affy"
 dir.create(outdir, showWarnings=FALSE)
 ## CEPH and Yoruban
 batch <- substr(basename(celFiles), 13, 13)
@@ -318,9 +318,15 @@ cn.nonpolymorphic <- CA(x[np.index, ])/100
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
-cn <- copyNumber(x)
+path <- system.file("scripts", package="crlmm")
+source(file.path(path, "helperFunctions.R"))
+cn <- totalCopyNumber(x, i=c(snp.index, np.index))
 apply(cn, 2, median, na.rm=TRUE)
 @ 
+
+(Note: the accessor totalCopyNumber method is sourced from a few
+helper functions. Documentation will be available in the devel version
+of the \Rpackage{oligoClasses} package.)
 
 \subsection{Other accessors}
 
@@ -369,13 +375,14 @@ area of research.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1, mar=c(4, 5, 4, 2))
-plot(position(x), copyNumber(x)[, 1], pch=".", 
-     cex=2, xaxt="n", col="grey20", ylim=c(0,4), 
+plot(position(x), copyNumber(x)[, 1]/100, pch=21, 
+     cex=0.4, xaxt="n", col="grey20", ylim=c(0,5), 
      ylab="copy number", xlab="physical position (Mb)",
      main=paste(sampleNames(x)[1], ", CHR:", unique(chromosome(x))))
-points(position(x)[!isSnp(x)], copyNumber(x)[!isSnp(x), 1],
-       pch=".", cex=2, col="lightblue")
+points(position(x)[!isSnp(x)], copyNumber(x)[!isSnp(x), 1]/100,
+       pch=21, cex=0.4, col="lightblue", bg="lightblue")
 axis(1, at=pretty(range(position(x))), labels=pretty(range(position(x)))/1e6)
+abline(h=2)
 @ 
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
@@ -435,7 +442,7 @@ the vignette is currently under development.
 % The following code chunk is
 %displayed in Figure \ref{fig:prediction}.
 
-<<predictionRegions, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
+<<predictionRegions, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE, echo=FALSE>>=
 i <- snp.index[1]
 #plotCNSetLM=crlmm:::plotCNSetLM
 ##trace(plotCNSetLM, browser)

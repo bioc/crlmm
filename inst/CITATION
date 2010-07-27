@@ -28,6 +28,21 @@ citEntry(entry="article",
                       "R/Bioconductor software for Illumina's Infinium whole-genome genotyping BeadChips.",
                       "Bioinformatics. 2009 Oct 1;25(19):2621-3."))
 
+citEntry(entry="article",  
+  title  = "A multilevel model to address batch effects in copy number estimation
+	using SNP arrays",
+  author = paste("Robert B Scharpf and",
+                 "Ingo Ruczinski and",
+		 "Benilton Carvalho and",
+		 "Betty Doan and",
+		 "Aravinda Chakravarti and",
+		 "Rafael A Irizarry"),
+  journal = "Biostatistics",
+  year = "2010",
+  textVersion = paste("Scharpf RB, Ruczinski I, Carvalho B, Doan B, Chakravarti A, Irizarry RA",
+                      "A multilevel model to address batch effects in copy number estimation
+		      using SNP arrays"
+                      "Biostatistics. 2010."))
 
 citFooter("We have invested a lot of time and effort in creating crlmm,",
           "please cite it when using it for data analysis.")
