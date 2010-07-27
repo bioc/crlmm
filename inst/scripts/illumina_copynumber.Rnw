@@ -17,25 +17,28 @@
 \newcommand{\R}{\textsf{R}}
 
 \begin{document}
-\title{Copy number estimation and genotype calling with \Rpackage{crlmm}}
-\date{\today}
+\title{Using \crlmm{} for copy number estimation and genotype calling
+  with Illumina platforms} 
+
+\date{\today} 
+
 \author{Rob Scharpf}
 \maketitle
 
 Allele-specific copy number estimation in the crlmm package is
 available for several Illumina platforms.  As described in the
-\texttt{copynumber.pdf} vignette, this algorithm works best when there
-are a sufficient number of samples such that AA, AB, and BB genotypes
-are observed at most loci. For small studies (e.g., fewer than 50
-samples), there will be a large number of SNPs that are
+\texttt{copynumber} vignette, copy number estimation in \crlmm{} works
+best when there are a sufficient number of samples such that AA, AB,
+and BB genotypes are observed at most loci. For small studies (e.g.,
+fewer than 50 samples), there will be a large number of SNPs that are
 monomorphic. For monomorphic SNPs, the estimation problem becomes more
 difficult and alternative strategies that estimate the relative total
-copy number (as to absolute allele-specific copy number) may be
-preferable.  In the following code, we list the platforms for which
-annotation packages are available for computations performed by
-\crlmm{}. Next we create a directory where output files will be stored
-and indicate the directory that contains the IDAT files that will be
-used in our analysis.
+copy number may be preferable.  In addition to installing \crlmm{},
+one must also install the appropriate annotation package for the
+Illumina platform.  In the following code, we list the platforms for
+which annotation packages are currently available. Next we create a
+directory where output files will be stored and indicate the directory
+that contains the IDAT files that will be used in our analysis.
 
 <<setup, echo=FALSE, results=hide>>=
 options(width=70)
@@ -80,9 +83,11 @@ from the RG object and added to the \Robject{SnpSet} returned by
 samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
 samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
 arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
-##Check that files exist
 grnfiles = all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
 redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
+@ 
+
+<<samplesToProcess2, echo=FALSE>>=
 if(!exists("crlmmResult")){
 	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
 		RG <- readIdatFiles(samplesheet, 
@@ -100,207 +105,167 @@ if(!exists("crlmmResult")){
 		range(protocolData(crlmmResult)$ScanDate)
 		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
 		rm(RG); gc()
-	} else {
-		message("Loading previously saved crlmm results")
-		load(file.path(outdir, "snpFile.rda"))
-		res <- get("res")
-		load(file.path(outdir, "cnFile.rda"))
-		cnAB <- get("cnAB")
-		load(file.path(outdir, "crlmmResult.rda"))
-	}
+	} 
 }
 @ 
 
-After running the crlmm algorithm, the only thing we need to do is
-pull together the various intermediate files and genotype calls for
-use by the copy number estimation algorithm.  As described in the
-\texttt{copynumber.pdf} vignette, two \R{} functions for copy number
-estimation are available: \Rfunction{crlmmCopynumber} and
-\Rfunction{crlmmCopynumber2}.  The latter requires that the assay data
-elements are represented using \Robject{ff} objects.  As the dataset
-for this vignette is small (43 arrays) and the above steps did not
-make use of the \Robject{ff} features, constructing \Robject{ff}
-objects at this point in the analysis would have little purpose.  The
+<<samplesToProcess3, eval=FALSE>>=
+RG <- readIdatFiles(samplesheet, 
+		    path=dirname(arrayNames[1]), 
+		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
+		    saveDate=TRUE)
+crlmmResult <- crlmmIllumina(RG=RG, 
+			     cdfName="human370v1c", 
+			     sns=pData(RG)$ID, 
+			     returnParams=TRUE,
+			     cnFile=file.path(outdir, "cnFile.rda"),
+			     snpFile=file.path(outdir, "snpFile.rda"),
+			     save.it=TRUE)
+protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
+range(protocolData(crlmmResult)$ScanDate)
+rm(RG); gc()
+@ 
+
+\noindent Finally, we load a few of the intermediate files that were
+created during the preprocessing and genotyping.
+<<loadIntermediate, eval=FALSE>>=
+load(file.path(outdir, "snpFile.rda"))
+res <- get("res")
+load(file.path(outdir, "cnFile.rda"))
+cnAB <- get("cnAB")
+load(file.path(outdir, "crlmmResult.rda"))
+@ 
+
+<<loadIntermediate, eval=TRUE, echo=FALSE>>=
+if(!exists("res")){
+	load(file.path(outdir, "snpFile.rda"))
+	res <- get("res")
+	load(file.path(outdir, "cnFile.rda"))
+	cnAB <- get("cnAB")
+	load(file.path(outdir, "crlmmResult.rda"))
+}
+@ 
+
+After running the crlmm algorithm, we construct a container for
+storing the quantile normalized intensities, genotype calls, and
+allele-specific copy number estimates.  A few helper functions for
+facilitating the construction of this container have been added to the
+inst/scripts directory of this package and can be sourced as follows.
+Documentation for these helper functions will be available in the
+devel version of this package.
+
+<<constructContainer, eval=FALSE>>=
+path <- system.file("scripts", package="crlmm")
+source(file.path(path, "helperFunctions.R"))
+fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
+new.order <- order(fD$chromosome, fD$position)
+fD <- fD[new.order, ]
+aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
+protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
+container <- new("CNSetLM", 
+		 assayData=aD,
+		 phenoData=phenoData(crlmmResult),
+		 protocolData=protocolData(crlmmResult),
+		 featureData=fD,
+		 annotation="human370v1c")
+@ 
+
+<<container2,echo=FALSE>>=
+if(!file.exists(file.path(outdir, "cnSet"))){
+	path <- system.file("scripts", package="crlmm")
+	source(file.path(path, "helperFunctions.R"))
+	fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
+	new.order <- order(fD$chromosome, fD$position)
+	fD <- fD[new.order, ]
+	aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
+	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
+	container <- new("CNSetLM", 
+			 assayData=aD,
+			 phenoData=phenoData(crlmmResult),
+			 protocolData=protocolData(crlmmResult),
+			 featureData=fD,
+			 annotation="human370v1c")
+}
+@ 
+
+
+
+As described in the \texttt{copynumber} vignette, two \R{} functions
+for copy number estimation are available: \Rfunction{crlmmCopynumber}
+and \Rfunction{crlmmCopynumber2}.  The latter requires that the assay
+data elements are represented using \Robject{ff} objects.  As the
+dataset for this vignette is small (43 arrays) and the above steps did
+not make use of the \Robject{ff} features, constructing \Robject{ff}
+objects at this point in the analysis would serve little purpose.  The
 decision to use ordinary matrices or \Robject{ff} objects should be
-decided at the very beginning of the analysis and then propogated to
-both the genotyping and copy number estimation steps.  
+decided at the beginning of the analysis and then propogated to both
+the genotyping and copy number estimation steps.  Here, we use the
+\Rfunction{crlmmCopynumber} to estimate copy number.
 
-In the following code, we define helper functions to construct a
-\Robject{featureData} object that chromosome and physical position
-annotation for each marker. We then define a constructor for
-initializing the assay data -- the copy number estimation algorithm
-requires normalized intensities, genotype calls, and genotype
-confidence scores.  Note that the order of the construction is
-important.  In particular, the validity method for the
-\Robject{CNSetLM} object requires a 'batch' label in the
-\Robject{protocolData} slot and that 'chromosome', 'position', and
-'isSnp' labels are present in the \Robject{featureData} slot.  With
-the object \Robject{cnSet} in hand, one can proceed with the copy
-number analysis as outlined in the \texttt{copynumber.pdf} vignette.
-Useful accessors and visualizations of the locus-level estimates are
-also discussed in the \texttt{copynumber.pdf} vignette.
-
-<<constructCnSet_helperFunctions, echo=TRUE>>=
-constructFeatureData <- function(gns, cdfName){
-	pkgname <- paste(cdfName, "Crlmm", sep="")	
-	path <- system.file("extdata", package=pkgname)
-	load(file.path(path, "cnProbes.rda"))
-	load(file.path(path, "snpProbes.rda"))
-	cnProbes$chr <- chromosome2integer(cnProbes$chr)
-	cnProbes <- as.matrix(cnProbes)
-	snpProbes$chr <- chromosome2integer(snpProbes$chr)
-	snpProbes <- as.matrix(snpProbes)
-	mapping <- rbind(snpProbes, cnProbes, deparse.level=0)
-	mapping <- mapping[match(gns, rownames(mapping)), ]
-	isSnp <- 1L-as.integer(gns %in% rownames(cnProbes))
-	mapping <- cbind(mapping, isSnp, deparse.level=0)
-	stopifnot(identical(rownames(mapping), gns))
-	colnames(mapping) <- c("chromosome", "position", "isSnp")
-	new("AnnotatedDataFrame",
-	    data=data.frame(mapping),
-	    varMetadata=data.frame(labelDescription=colnames(mapping)))	
-}
-constructAssayData <- function(np, snp, object, storage.mode="environment", order.index){
-	stopifnot(identical(snp$gns, featureNames(object)))
-	gns <- c(featureNames(object), np$gns)
-	sns <- np$sns
-	np <- np[1:2]
-	snp <- snp[1:2]
-	stripnames <- function(x) {
-		dimnames(x) <- NULL
-		x
-	}
-	np <- lapply(np, stripnames)
-	snp <- lapply(snp, stripnames)
-	A <- rbind(snp[[1]], np[[1]], deparse.level=0)[order.index, ]
-	B <- rbind(snp[[2]], np[[2]], deparse.level=0)[order.index, ]
-	gt <- stripnames(calls(object))
-	emptyMatrix <- matrix(integer(), nrow(np[[1]]), ncol(A))
-	gt <- rbind(gt, emptyMatrix, deparse.level=0)[order.index,]
-	pr <- stripnames(snpCallProbability(object))
-	pr <- rbind(pr, emptyMatrix, deparse.level=0)[order.index, ]
-	emptyMatrix <- matrix(integer(), nrow(A), ncol(A))	
-	aD <- assayDataNew(storage.mode,
-			   alleleA=A,
-			   alleleB=B,
-			   call=gt,
-			   callProbability=pr,
-			   CA=emptyMatrix,
-			   CB=emptyMatrix)
-}
+<<estimateCopynumber, echo=FALSE>>=
 if(!exists("cnSet")){
 	if(!file.exists(file.path(outdir, "cnSet.rda"))){
-		fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
-		new.order <- order(fD$chromosome, fD$position)
-		fD <- fD[new.order, ]
-		aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
-		protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-		cnSet <- new("CNSetLM", 
-			     assayData=aD,
-			     phenoData=phenoData(crlmmResult),
-			     protocolData=protocolData(crlmmResult),
-			     featureData=fD,
-			     annotation="human370v1c")
-		cnSet <- crlmmCopynumber(cnSet, verbose=FALSE)
+		cnSet <- crlmmCopynumber(container, verbose=FALSE)
 		save(cnSet, file=file.path(outdir, "cnSet.rda"))
 	} else load(file.path(outdir, "cnSet.rda"))
 }
 @ 
 
-\paragraph{Extracting the locus-level copy number estimates.}  At
-polymorphic loci, the total copy number is the sum of the number of
+<<estimateCopynumber, eval=FALSE>>=
+cnSet <- crlmmCopynumber(container, verbose=TRUE)
+@ 
+
+%In the following code, we define helper functions to construct a
+%\Robject{featureData} object that chromosome and physical position
+%annotation for each marker. We then define a constructor for
+%initializing the assay data -- the copy number estimation algorithm
+%requires normalized intensities, genotype calls, and genotype
+%confidence scores.  Note that the order of the construction is
+%important.  In particular, the validity method for the
+%\Robject{CNSetLM} object requires a 'batch' label in the
+%\Robject{protocolData} slot and that 'chromosome', 'position', and
+%'isSnp' labels are present in the \Robject{featureData} slot.  With
+%the object \Robject{cnSet} in hand, one can proceed with the copy
+%number analysis as outlined in the \texttt{copynumber.pdf} vignette.
+%Useful accessors and visualizations of the locus-level estimates are
+%also discussed in the \texttt{copynumber.pdf} vignette.
+
+
+\paragraph{Accessors for extracting the locus-level copy number
+  estimates.}
+
+As an example of how to use accessors to obtain the allele-specific CN
+estimates, the following code chunk extracts the allele-specific copy
+number for polymorphic markers on chromosome 21.
+
+<<acn-accessor>>=
+marker.index <- which(chromosome(cnSet) == 21 & isSnp(cnSet))
+ca <- CA(cnSet)[marker.index, ]/100
+cb <- CB(cnSet)[marker.index, ]/100
+missing.index <- which(rowSums(is.na(ca))==ncol(cnSet))
+ca <- ca[-missing.index, ]
+cb <- cb[-missing.index, ]
+@ 
+\noindent Negating the \Robject{isSnp} function could be used to
+extract the estimates at nonpolymorphic markers. For instance,
+<<monomorphic-accessor>>=
+cn.monomorphic <- CA(cnSet)[which(chromosome(cnSet) == 21 & !isSnp(cnSet)), ]/100
+@ 
+
+At polymorphic loci, the total copy number is the sum of the number of
 copies of the A allele and the number of copies for the B allele.  At
 nonpolymorphic loci, the total copy number is the number of copies for
-the A allele.  (Note that NAs are recorded for the number of copies of
-the B allele at nonpolymorphic loci.)  In the following code, we show
-how the allele-specific estimates can be extracted when the assay data
-elements are of class matrix.  Users that used \Robject{ff} to reduce
-the memory footprint may skip this code chunk.  A simple check for the
-class of the \Robject{assayData} elements in the \Robject{cnSet} object is
-
-<<checkClass>>=
-(adClass <- class(CA(cnSet))[[1]])
-@ 
-
-We now compute the total copy number for the polymorphic markers.  The
-accessor \Robject{isSnp} is helpful for determining the indices of the
-polymorphic markers.  The \Rfunction{crlmmCopynumber} multiples the
-allele-specific estimates by 100 and saves as integers to reduce the
-file size.  The final step is to put the copy number estimates back on
-the original scale.  
-
-<<copynumberAccessors>>=
-if(adClass == "matrix"){
-	snp.index <- which(isSnp(cnSet))
-	ca <- CA(cnSet)
-	cb <- CB(cnSet)[snp.index, ]
-	cn.total <- ca
-	cn.total[snp.index, ] <- ca[snp.index, ] + cb
-	cn.total <- cn.total/100
-	dimnames(cn.total) <- NULL
-	cn.total[1:5, 1:5]
-##	rm(ca, cb); gc()
-}
-@ 
-
-We next illustrate how to extract copy number when the assay data
-elements inherit from the \Robject{ff} class.  Since the assay data
-elements are of class \Robject{matrix}, we convert these assayData
-elements to \Robjects{ff} objects (this step can be omitted as the the
-assay data elements are presumably already of class
-\Robject{ff}).
-
-<<convertToFF>>=
-if(require("ff")){
-	ca <- initializeBigMatrix("CA", nr=nrow(cnSet), nc=ncol(cnSet), vmode="integer", initdata=CA(cnSet))
-	cb <- initializeBigMatrix("CB", nr=nrow(cnSet), nc=ncol(cnSet), vmode="integer", initdata=CB(cnSet))
-	dimnames(cb) <- dimnames(ca) <- list(featureNames(cnSet), sampleNames(cnSet))
-	CA(cnSet) <- ca
-	CB(cnSet) <- cb
-}
-@ 
-
-More care is required when extracting copy number from the
-\Robject{ff} objects as these objects can potentially be very large.
-In particular, there is no advantage of utilizing \Robject{ff} objects
-to reduce RAM if one attempts to bring all of the data stored on disk
-to RAM.  Instead, we suggest extracting only subsets of the rows
-and/or a columns as needed.  Note that subsetting the \Robject{cnSet}
-object itself can be a particularly dangerous operation as all of the
-assay data elements are retrieved from disk. For instance, a dataset
-comprised of 10,000 samples with 1 million markers would have assay
-data elements that are each 1 million rows $\times$ 10,000 columns.
-The following command ({\it not evaluated}) would create a
-\Robject{CNSetLM} object in which the assay data elements are matrices
-with data in RAM and not on disk
-
-<<donotdo, eval=FALSE>>=
-cnSet[,]
-@ 
-
-Here, we give an example whereby total copy number is obtained for all
-of the markers on chromosome 1 for the first 20 samples.
-
-<<copyNumberWithFF>>=
-if(inherits(CA(cnSet), "ff")){
-	marker.index <- which(chromosome(cnSet) == 1)
-	snp.index <- which(isSnp(cnSet) & chromosome(cnSet) == 1)
-	sample.index <- 1:20
-	cn.total <- CA(cnSet)[marker.index, sample.index]
-	cb <- CB(cnSet)[snp.index, sample.index]	
-	cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
-	cn.total <- cn.total/100
-	dimnames(cn.total) <- NULL
-	cn.total[1:5, 1:5]	
-}
-@ 
-
-The following helper function can facilitate access to the total copy
-number.
+the A allele.  The helper function totalCopyNumber can be used to
+extract the total copy number for all polymorphic and nonpolymorphic
+markers.  Documentation of the \Rfunction{totalCopyNumber} will be
+available in the devel version of the \Rpackage{oligoClasses}.
 
 <<copyNumberHelper>>=
-##trace(totalCopyNumber, browser, signature="CNSet")
-cn.total2 <- totalCopyNumber(cnSet, i=which(chromosome(cnSet)==1), j=1:20)
+cn.total <- ca+cb
+cn.total2 <- totalCopyNumber(cnSet, i=marker.index)
+cn.total2 <- cn.total2[-missing.index, ]
+dimnames(cn.total) <- NULL
+all.equal(cn.total2, cn.total)
 @ 
 
 A few simple visualizations may be helpful at this point. The first
@@ -319,14 +284,15 @@ hist(cnSet$SNR, breaks=15)
 <<firstSample, fig=TRUE>>=
 low.snr <- which(cnSet$SNR == min(cnSet$SNR))
 high.snr <- which(cnSet$SNR == max(cnSet$SNR))
-x <- position(cnSet)[chromosome(cnSet) == 1]
+x <- position(cnSet)[marker.index]
+x <- x[-missing.index]
 par(mfrow=c(2,1), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
 for(j in c(low.snr, high.snr)){
-	cn <- copyNumber(cnSet)[, j]/100
+	cn <- cn.total[, j]
 	cn[cn < 0.05] <- 0.05
 	plot(x,
-	     cn[chromosome(cnSet) == 1],
-	     pch=".", ylab="copy number", xaxt="n", log="y")
+	     cn,
+	     pch=".", ylab="copy number", xaxt="n", ylim=c(0, 6))
 }
 axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
@@ -340,10 +306,7 @@ followed by a segmentation or hidden markov model.
 <<removeOutliers, fig=TRUE>>=
 par(mfrow=c(2,1), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
 for(j in c(low.snr, high.snr)){
-	x <- position(cnSet)[chromosome(cnSet)==1]
-	cn <- copyNumber(cnSet)[, j]/100
-	cn[cn < 0.05] <- 0.05
-	##cn <- log(cn)
+	cn <- cn.total[, j]
 	x <- x[!is.na(cn)]
 	cn <- cn[!is.na(cn)]
 	y <- as.numeric(runmed(cn, k=3))

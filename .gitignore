@@ -2,3 +2,8 @@
 auto*
 *.so
 *.o
+*.aux
+*.log
+*.tex
+sync
+illumina_copynumber-*
