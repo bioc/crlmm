@@ -299,7 +299,7 @@ The following helper function can facilitate access to the total copy
 number.
 
 <<copyNumberHelper>>=
-trace(totalCopyNumber, browser, signature="CNSet")
+##trace(totalCopyNumber, browser, signature="CNSet")
 cn.total2 <- totalCopyNumber(cnSet, i=which(chromosome(cnSet)==1), j=1:20)
 @ 
 

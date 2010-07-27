@@ -236,7 +236,7 @@ readIdatFiles2 <- function(sampleSheet=NULL,
 	       stop("Cannot find .idat files")
        if(length(grnfiles)!=length(redfiles))
 	       stop("Cannot find matching .idat files")
-       if(path[1] != "."){
+       if(path[1] != "." & path[1] != ""){
 	       grnidats = file.path(path, grnfiles)
 	       redidats = file.path(path, redfiles)
        }  else {
