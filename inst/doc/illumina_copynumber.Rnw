@@ -1,0 +1,16 @@
+%\VignetteIndexEntry{crlmm Vignette - Copy number for Illumina platforms}
+%\VignetteDepends{crlmm}
+%\VignetteKeywords{crlmm,illumina}
+%\VignettePackage{crlmm}
+
+%%% The real .Rnw is under inst/scripts.
+%%% It cannot be added here because it depends on external
+%%% data not yet available as a BioC package
+\documentclass{article}
+\begin{document}
+The real .Rnw is under inst/scripts. It cannot be added here because
+it depends on external data not yet available as a BioC package
+<<eval=FALSE>>=
+##See inst/scripts/illumina_copynumber
+@ 
+\end{document}
