@@ -103,7 +103,9 @@ if(!exists("crlmmResult")){
 	} else {
 		message("Loading previously saved crlmm results")
 		load(file.path(outdir, "snpFile.rda"))
+		res <- get("res")
 		load(file.path(outdir, "cnFile.rda"))
+		cnAB <- get("cnAB")
 		load(file.path(outdir, "crlmmResult.rda"))
 	}
 }
@@ -203,6 +205,102 @@ if(!exists("cnSet")){
 		save(cnSet, file=file.path(outdir, "cnSet.rda"))
 	} else load(file.path(outdir, "cnSet.rda"))
 }
+@ 
+
+\paragraph{Extracting the locus-level copy number estimates.}  At
+polymorphic loci, the total copy number is the sum of the number of
+copies of the A allele and the number of copies for the B allele.  At
+nonpolymorphic loci, the total copy number is the number of copies for
+the A allele.  (Note that NAs are recorded for the number of copies of
+the B allele at nonpolymorphic loci.)  In the following code, we show
+how the allele-specific estimates can be extracted when the assay data
+elements are of class matrix.  Users that used \Robject{ff} to reduce
+the memory footprint may skip this code chunk.  A simple check for the
+class of the \Robject{assayData} elements in the \Robject{cnSet} object is
+
+<<checkClass>>=
+(adClass <- class(CA(cnSet))[[1]])
+@ 
+
+We now compute the total copy number for the polymorphic markers.  The
+accessor \Robject{isSnp} is helpful for determining the indices of the
+polymorphic markers.  The \Rfunction{crlmmCopynumber} multiples the
+allele-specific estimates by 100 and saves as integers to reduce the
+file size.  The final step is to put the copy number estimates back on
+the original scale.  
+
+<<copynumberAccessors>>=
+if(adClass == "matrix"){
+	snp.index <- which(isSnp(cnSet))
+	ca <- CA(cnSet)
+	cb <- CB(cnSet)[snp.index, ]
+	cn.total <- ca
+	cn.total[snp.index, ] <- ca[snp.index, ] + cb
+	cn.total <- cn.total/100
+	dimnames(cn.total) <- NULL
+	cn.total[1:5, 1:5]
+##	rm(ca, cb); gc()
+}
+@ 
+
+We next illustrate how to extract copy number when the assay data
+elements inherit from the \Robject{ff} class.  Since the assay data
+elements are of class \Robject{matrix}, we convert these assayData
+elements to \Robjects{ff} objects (this step can be omitted as the the
+assay data elements are presumably already of class
+\Robject{ff}).
+
+<<convertToFF>>=
+if(require("ff")){
+	ca <- initializeBigMatrix("CA", nr=nrow(cnSet), nc=ncol(cnSet), vmode="integer", initdata=CA(cnSet))
+	cb <- initializeBigMatrix("CB", nr=nrow(cnSet), nc=ncol(cnSet), vmode="integer", initdata=CB(cnSet))
+	dimnames(cb) <- dimnames(ca) <- list(featureNames(cnSet), sampleNames(cnSet))
+	CA(cnSet) <- ca
+	CB(cnSet) <- cb
+}
+@ 
+
+More care is required when extracting copy number from the
+\Robject{ff} objects as these objects can potentially be very large.
+In particular, there is no advantage of utilizing \Robject{ff} objects
+to reduce RAM if one attempts to bring all of the data stored on disk
+to RAM.  Instead, we suggest extracting only subsets of the rows
+and/or a columns as needed.  Note that subsetting the \Robject{cnSet}
+object itself can be a particularly dangerous operation as all of the
+assay data elements are retrieved from disk. For instance, a dataset
+comprised of 10,000 samples with 1 million markers would have assay
+data elements that are each 1 million rows $\times$ 10,000 columns.
+The following command ({\it not evaluated}) would create a
+\Robject{CNSetLM} object in which the assay data elements are matrices
+with data in RAM and not on disk
+
+<<donotdo, eval=FALSE>>=
+cnSet[,]
+@ 
+
+Here, we give an example whereby total copy number is obtained for all
+of the markers on chromosome 1 for the first 20 samples.
+
+<<copyNumberWithFF>>=
+if(inherits(CA(cnSet), "ff")){
+	marker.index <- which(chromosome(cnSet) == 1)
+	snp.index <- which(isSnp(cnSet) & chromosome(cnSet) == 1)
+	sample.index <- 1:20
+	cn.total <- CA(cnSet)[marker.index, sample.index]
+	cb <- CB(cnSet)[snp.index, sample.index]	
+	cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
+	cn.total <- cn.total/100
+	dimnames(cn.total) <- NULL
+	cn.total[1:5, 1:5]	
+}
+@ 
+
+The following helper function can facilitate access to the total copy
+number.
+
+<<copyNumberHelper>>=
+trace(totalCopyNumber, browser, signature="CNSet")
+cn.total2 <- totalCopyNumber(cnSet, i=which(chromosome(cnSet)==1), j=1:20)
 @ 
 
 A few simple visualizations may be helpful at this point. The first

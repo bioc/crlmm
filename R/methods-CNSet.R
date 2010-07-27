@@ -95,7 +95,7 @@ setMethod("computeCopynumber", "CNSet",
 
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
-	ffIsLoaded <- class(calls(object))[[1]]=="ff"
+	ffIsLoaded <- inherits(CA(object), "ff")
 	CA <- CA(object)
 	CB <- CB(object)
 	if(ffIsLoaded){
@@ -108,6 +108,33 @@ setMethod("copyNumber", "CNSet", function(object){
 	##For nonpolymorphic probes, CA is the total copy number
 	CN[!I, ] <- CA(object)[!I, ]
 	CN
+})
+
+setMethod("totalCopyNumber", "CNSet", function(object, i, j){
+	if(missing(i) & missing(j)){
+		if(inherits(CA(object), "ff")) stop("Must specify i and/or j for ff objects")
+	}
+	if(missing(i) & !missing(j)){
+		snp.index <- which(isSnp(object))	
+		cn.total <- CA(cnSet)[, j]	
+		cb <- CB(cnSet)[snp.index, j]	
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb		
+	}
+	if(!missing(i) & missing(j)){
+		snp.index <- intersect(which(isSnp(object)), i)
+		cn.total <- CA(cnSet)[i, ]	
+		cb <- CB(cnSet)[snp.index, ]	
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb				
+	}
+	if(!missing(i) & !missing(j)){
+		snp.index <- intersect(which(isSnp(object)), i)		
+		cn.total <- CA(cnSet)[i, j]	
+		cb <- CB(cnSet)[snp.index, j]	
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
+	}
+	cn.total <- cn.total/100
+	dimnames(cn.total) <- NULL
+	return(cn.total)
 })
 
 
