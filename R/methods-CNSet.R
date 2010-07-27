@@ -105,8 +105,8 @@ setMethod("copyNumber", "CNSet", function(object){
 	if(ffIsLoaded){
 		open(CA)
 		open(CB)
-		CA <- CA[,]
-		CB <- CB[,]
+		CA <- as.matrix(CA[,])
+		CB <- as.matrix(CB[,])
 	}
 	CN <- CA + CB
 	##For nonpolymorphic probes, CA is the total copy number
