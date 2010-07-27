@@ -119,8 +119,9 @@ make use of the \Robject{ff} features, constructing \Robject{ff}
 objects at this point in the analysis would have little purpose.  The
 decision to use ordinary matrices or \Robject{ff} objects should be
 decided at the very beginning of the analysis and then propogated to
-both the genotyping and copy number estimation steps.  In the
-following code, we define helper functions to construct a
+both the genotyping and copy number estimation steps.  
+
+In the following code, we define helper functions to construct a
 \Robject{featureData} object that chromosome and physical position
 annotation for each marker. We then define a constructor for
 initializing the assay data -- the copy number estimation algorithm
@@ -135,7 +136,7 @@ number analysis as outlined in the \texttt{copynumber.pdf} vignette.
 Useful accessors and visualizations of the locus-level estimates are
 also discussed in the \texttt{copynumber.pdf} vignette.
 
-<<constructCnSet, echo=FALSE>>=
+<<constructCnSet_helperFunctions, echo=TRUE>>=
 constructFeatureData <- function(gns, cdfName){
 	pkgname <- paste(cdfName, "Crlmm", sep="")	
 	path <- system.file("extdata", package=pkgname)

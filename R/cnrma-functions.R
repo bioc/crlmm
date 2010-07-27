@@ -65,23 +65,38 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 			stop("batch variable must be the same length as the filenames")
 		protocolData$batch <- batch
 	}
-	rownames(pData(protocolData)) <- NULL
+	rownames(pData(protocolData)) <- sns
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
 	nr <- nrow(featureData); nc <- length(filenames)
-	callSet <- new("CNSetLM", 
-		       alleleA=initializeBigMatrix(name="A", nr, nc),
-		       alleleB=initializeBigMatrix(name="B", nr, nc),
-		       call=initializeBigMatrix(name="call", nr, nc),
-		       callProbability=initializeBigMatrix(name="callPr", nr,nc),
-		       CA=initializeBigMatrix(name="CA", nr, nc),
-		       CB=initializeBigMatrix(name="CB", nr, nc),
-		       protocolData=protocolData,
-		       featureData=featureData,
-		       annotation=cdfName)
+
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
-	phenoData(callSet) <- new("AnnotatedDataFrame", data=pd)
-	rownames(pData(callSet)) <- NULL
+	pD <- new("AnnotatedDataFrame", data=pd)
+	alleleA <- initializeBigMatrix(name="A", nr, nc)
+	colnames(alleleA) <- sns
+	alleleB <- initializeBigMatrix(name="B", nr, nc)
+	colnames(alleleB) <- sns
+	call=initializeBigMatrix(name="call", nr, nc)
+	colnames(call) <- sns
+	callProbability=initializeBigMatrix(name="callPr", nr,nc)
+	colnames(callProbability) <- sns
+	CA=initializeBigMatrix(name="CA", nr, nc)
+	colnames(CA) <- sns
+	CB=initializeBigMatrix(name="CB", nr, nc)
+	colnames(CB) <- sns
+	callSet <- new("CNSetLM", 
+		       alleleA=alleleA,
+		       alleleB=alleleB,
+		       call=call,
+		       callProbability=callProbability,
+		       CA=CA,
+		       CB=CB,
+		       protocolData=protocolData,
+		       featureData=featureData,
+		       phenoData=pD,
+		       annotation=cdfName)
+##	phenoData(callSet) <- new("AnnotatedDataFrame", data=pd)
+##	rownames(pData(callSet)) <- NULL
 	phenoData(callSet)$sampleNames <- sns
 	return(callSet)
 }

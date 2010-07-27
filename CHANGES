@@ -524,4 +524,9 @@ function (which expects ff objects and supports parallel processing)
 2010-05-26 R Scharpf committed version 1.6.2
 ** fixed bug in copyNumber method for CNSet
 
+2010-06-19 R Scharpf committed version 1.6.3
+
+** modified construct() function so that the phenoData is created
+   before initializing a CNSetLM object.
+
 

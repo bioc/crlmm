@@ -72,4 +72,3 @@ export(crlmm,
 ##export(initializeParamObject, biasAdjNP2)
 
 
-
