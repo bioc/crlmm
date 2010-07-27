@@ -55,17 +55,19 @@ steps are required.  The first step is to read in the IDAT files and
 create a container for storing the red and green intensities. These
 intensities are quantile normalized in the function
 \Rfunction{crlmmIllumina}, and then genotyped using the crlmm
-algorithm.  Details on the crlmm algorithm are described elsewhere.
-It is important to specify \Robject{save.it = TRUE} and provide output
-files to store the quantile normalized intensities. We will make use
-of the normalized intensities when we estimate copy number.  The
-object returned by \Rfunction{crlmmIllumina} in an instance of the
-\Robject{SnpSet} class, a container for storing the genotype calls and
-the genotype confidence scores.  The genotype confidence scores are
-saved as an integer, and can be converted back to a $[0, 1]$
-probability scale by the transformation $round(-1000*log2(1-p))$.  At
-this point, one may want to extract the scan date of the arrays for
-later use.
+algorithm.  Details on the crlmm genotyping algorithm are described
+elsewhere.  It is important to specify \Robject{save.it = TRUE} and
+provide output files to store the quantile normalized intensities. We
+will make use of the normalized intensities when we estimate copy
+number.  The object returned by \Rfunction{crlmmIllumina} in an
+instance of the \Robject{SnpSet} class, a container for storing the
+genotype calls and the genotype confidence scores.  The genotype
+confidence scores are saved as an integer, and can be converted back
+to a $[0, 1]$ probability scale by the transformation
+$round(-1000*log2(1-p))$.  At this point, one may want to extract the
+scan date of the arrays for later use.  The scan dates can be pulled
+from the RG object and added to the \Robject{SnpSet} returned by
+\Rfunction{crlmmIllumina} as illustrated below.
 
 %\texttt{copynumber.pdf} vignette, we provide an option to preprocess
 %and genotype using ordinary matrices (large RAM, but quicker access)
