@@ -632,7 +632,8 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
                "human370quadv3c",        # 370CNV quad
                "human550v3b",            # 550K
                "human1mduov3b",          # 1M Duo
-               "humanomni1quadv1b")      # Omni1 quad
+               "humanomni1quadv1b",      # Omni1 quad
+               "humanomniexpress12v1b") # Omni express 12
   if(missing(chipType)){
 	  chipType = match.arg(annotation(RG), chipList)
   } else chipType = match.arg(chipType, chipList)
@@ -738,7 +739,8 @@ RGtoXY2 = function(RG, chipType, verbose=TRUE) {
                "human370quadv3c",        # 370CNV quad
                "human550v3b",            # 550K
                "human1mduov3b",          # 1M Duo
-               "humanomni1quadv1b")      # Omni1 quad
+               "humanomni1quadv1b",      # Omni1 quad
+	       "humanomniexpress12v1b")  # Omni express 12
   if(missing(chipType)){
 	  chipType = match.arg(annotation(RG), chipList)
   } else chipType = match.arg(chipType, chipList)
@@ -950,25 +952,27 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   # separate out copy number probes
   npIndex = getVarInEnv("npProbesFid")
   nprobes = length(npIndex)
-  narrays = ncol(XY)
-  A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
-  B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
+  if(length(nprobes)>0) {
+    narrays = ncol(XY)
+    A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
+    B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
-  # new lines below - useful to keep track of zeroed out probes
-  zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
+    # new lines below - useful to keep track of zeroed out probes
+    zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
 
-  colnames(A) <- colnames(B) <- colnames(zero) <- sns
-  rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
+    colnames(A) <- colnames(B) <- colnames(zero) <- sns
+    rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
   
-  cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
-  if(save.it & !missing(cnFile)) {
-    t0 <- proc.time() 
-    save(cnAB, file=cnFile) 
-    t0 <- proc.time()-t0
-    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+    cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
+    if(save.it & !missing(cnFile)) {
+      t0 <- proc.time() 
+      save(cnAB, file=cnFile) 
+      t0 <- proc.time()-t0
+      if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+    }
+    rm(cnAB, B, zero)
   }
-  rm(cnAB, B, zero)
-  
+
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
   nprobes <- length(snpIndex)
@@ -1090,22 +1094,24 @@ preprocessInfinium2v2 <- function(XY, mixtureSampleSize=10^5,
     # separate out copy number probes
     npIndex = getVarInEnv("npProbesFid")
     nprobes = length(npIndex)
-    A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
-    B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
+    if(length(nprobes)>0) {
+      A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
+      B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
-    # new lines below - useful to keep track of zeroed out probes
-    zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
+      # new lines below - useful to keep track of zeroed out probes
+      zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
 
-    colnames(A) <- colnames(B) <- colnames(zero) <- sns
-    rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
+      colnames(A) <- colnames(B) <- colnames(zero) <- sns
+      rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
   
-    cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
+      cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
     
-    t0 <- proc.time() 
-    save(cnAB, file=cnFile) 
-    t0 <- proc.time()-t0
-    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
-     rm(cnAB, B, zero)
+      t0 <- proc.time() 
+      save(cnAB, file=cnFile) 
+      t0 <- proc.time()-t0
+      if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+       rm(cnAB, B, zero)
+    }
   }
   
   # next process snp probes
