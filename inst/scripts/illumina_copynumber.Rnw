@@ -46,6 +46,7 @@ options(continue=" ")
 @ 
 
 <<libraries>>=
+library(ff)
 library(crlmm)
 crlmm:::validCdfNames()
 if(length(grep("development", sessionInfo()[[1]]$status)) == 1){
@@ -92,7 +93,7 @@ redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
 <<samplesToProcess2, echo=FALSE>>=
 ## To speed up repeated calls to Sweave 
 RG <- checkExists("RG", .path=outdir,
-		  .FUN=readIdatFiles,
+		  .FUN=readIdatFiles2,
 		  sampleSheet=samplesheet,
 		  path=dirname(arrayNames[1]),
 		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
@@ -100,7 +101,7 @@ RG <- checkExists("RG", .path=outdir,
 annotation(RG) <- "human370v1c"
 crlmmResult <- checkExists("crlmmResult",
 			   .path=outdir,
-			   .FUN=crlmmIllumina,
+			   .FUN=crlmmIllumina2,
 			   RG=RG,
 			   sns=pData(RG)$ID, 
 			   returnParams=TRUE,
@@ -111,7 +112,7 @@ protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
 @ 
 
 <<samplesToProcess3, eval=FALSE>>=
-RG <- readIdatFiles(samplesheet, 
+RG <- readIdatFiles2(samplesheet[1:10, ], 
 		    path=dirname(arrayNames[1]), 
 		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
 		    saveDate=TRUE)
@@ -136,8 +137,9 @@ cnAB <- get("cnAB")
 @ 
 
 <<loadIntermediate, echo=FALSE>>=
-res <- checkExists("res", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
-cnAB <- checkExists("cnAB", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
+trace(checkExists, browser)
+res <- checkExists("snpFile", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
+cnAB <- checkExists("cnFile", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
 @ 
 
 After running the crlmm algorithm, we construct a container for
@@ -148,41 +150,18 @@ inst/scripts directory of this package and can be sourced as follows.
 Documentation for these helper functions will be available in the
 devel version of this package.
 
-<<constructContainer, eval=FALSE>>=
-path <- system.file("scripts", package="crlmm")
-source(file.path(path, "helperFunctions.R"))
-fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
-new.order <- order(fD$chromosome, fD$position)
-fD <- fD[new.order, ]
-aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
-protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-container <- new("CNSetLM", 
-		 assayData=aD,
-		 phenoData=phenoData(crlmmResult),
-		 protocolData=protocolData(crlmmResult),
-		 featureData=fD,
-		 annotation="human370v1c")
+<<constructContainer1, check=FALSE>>=
+container <- checkExists("container",
+			 .path=outdir,
+			 .FUN=constructIlluminaCNSet,
+			 res=res,
+			 cnAB=cnAB,
+			 crlmmResult=crlmmResult)
 @ 
 
-<<container2,echo=FALSE>>=
-if(!file.exists(file.path(outdir, "cnSet"))){
-	path <- system.file("scripts", package="crlmm")
-	source(file.path(path, "helperFunctions.R"))
-	fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
-	new.order <- order(fD$chromosome, fD$position)
-	fD <- fD[new.order, ]
-	aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
-	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-	container <- new("CNSetLM", 
-			 assayData=aD,
-			 phenoData=phenoData(crlmmResult),
-			 protocolData=protocolData(crlmmResult),
-			 featureData=fD,
-			 annotation="human370v1c")
-}
+<<constructContainer2, eval=FALSE>>=
+container <- constructIlluminaCNSet(res=res, cnAB=cnAB, crlmmResult=crlmmResult)
 @ 
-
-
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
 for copy number estimation are available: \Rfunction{crlmmCopynumber}
@@ -196,17 +175,14 @@ decided at the beginning of the analysis and then propogated to both
 the genotyping and copy number estimation steps.  Here, we use the
 \Rfunction{crlmmCopynumber} to estimate copy number.
 
-<<estimateCopynumber, echo=FALSE>>=
-if(!exists("cnSet")){
-	if(!file.exists(file.path(outdir, "cnSet.rda"))){
-		cnSet <- crlmmCopynumber(container, verbose=FALSE)
-		save(cnSet, file=file.path(outdir, "cnSet.rda"))
-	} else load(file.path(outdir, "cnSet.rda"))
-}
+<<estimateCopynumber1, echo=FALSE>>=
+cnSet <- checkExists("cnSet", .path=outdir,
+		     .FUN=crlmmCopynumberLD,
+		     object=container)
 @ 
 
 <<estimateCopynumber, eval=FALSE>>=
-cnSet <- crlmmCopynumber(container, verbose=TRUE)
+cnSet <- crlmmCopynumberLD(container)
 @ 
 
 %In the following code, we define helper functions to construct a

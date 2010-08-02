@@ -3159,3 +3159,23 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 			   CA=emptyMatrix,
 			   CB=emptyMatrix)
 }
+constructIlluminaCNSet <- function(res,
+				   cnAB,
+				   crlmmResult){
+	fD <- constructIlluminaFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
+	new.order <- order(fD$chromosome, fD$position)
+	fD <- fD[new.order, ]
+	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, order.index=new.order)
+	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
+	container <- new("CNSetLM", 
+			 assayData=aD,
+			 phenoData=phenoData(crlmmResult),
+			 protocolData=protocolData(crlmmResult),
+			 featureData=fD,
+			 annotation="human370v1c")
+	lM(container) <- initializeParamObject(list(featureNames(container), unique(protocolData(container)$batch)))
+	container
+}
+				   
+				   
+

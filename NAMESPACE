@@ -60,6 +60,7 @@ exportMethods(open, "[", show, lM, lines)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
+       crlmmIllumina2,
        genotype, 
        readIdatFiles, 
        readIdatFiles2,
@@ -69,6 +70,7 @@ export(crlmm,
        genotype2, genotypeLD,
        batch,
        crlmmCopynumber2, crlmmCopynumberLD)
+export(constructIlluminaCNSet)
 
 
 
