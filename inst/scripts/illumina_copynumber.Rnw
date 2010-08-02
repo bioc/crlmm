@@ -147,20 +147,22 @@ storing the quantile normalized intensities, genotype calls, and
 allele-specific copy number estimates.  A few helper functions for
 facilitating the construction of this container have been added to the
 inst/scripts directory of this package and can be sourced as follows.
-Documentation for these helper functions will be available in the
-devel version of this package.
 
-<<constructContainer1, check=FALSE>>=
-container <- checkExists("container",
-			 .path=outdir,
-			 .FUN=constructIlluminaCNSet,
-			 crlmmResult=crlmmResult,
-			 snpFile=snpFile,
-			 cnFile=cnFile)
+
+<<constructContainer1, echo=FALSE>>=
+##only load if cnSet object has not been created
+if(!file.exists(file.path(outdir, "cnSet.rda"))){
+	container <- checkExists("container",
+				 .path=outdir,
+				 .FUN=constructIlluminaCNSet,
+				 crlmmResult=crlmmResult,
+				 snpFile=snpFile,
+				 cnFile=cnFile)
+}
 @ 
 
 <<constructContainer2, eval=FALSE>>=
-container <- constructIlluminaCNSet(res=res, cnAB=cnAB, crlmmResult=crlmmResult)
+container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=snpFile, cnFile=cnFile)
 @ 
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
@@ -177,7 +179,7 @@ the genotyping and copy number estimation steps.  Here, we use the
 
 <<estimateCopynumber1, echo=FALSE>>=
 cnSet <- checkExists("cnSet", .path=outdir,
-		     .FUN=crlmmCopynumberLD,
+		     .FUN=crlmmCopynumber,
 		     object=container)
 @ 
 
@@ -290,40 +292,6 @@ axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
 @ 
 
-%Next we remove some of the waves using \Rpackage{limma}'s function
-%\Rfunction{loessFit}.
-%<<wavecorrection, fig=TRUE>>=
-%require(limma)
-%par(mfrow=c(2,2), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
-%for(j in c(low.snr, high.snr)){
-%	y <- copyNumber(cnSet)[chromosome(cnSet) == 1, j]/100
-%	missing <- is.na(y)
-%	x <- x[!missing]
-%	y <- y[!missing]
-%	dist <- diff(x)
-%	index <- c(0, cumsum(log10(dist) > 6))
-%	x.split <- split(x, index)
-%	y <- as.numeric(runmed(y, k=3))
-%	y.split <- split(y, index)
-%	y.smooth <- vector("list", length(y.split))
-%	for(i in seq_along(y.smooth)){
-%		fit <- loessFit(y=y.split[[i]], x= x.split[[i]], span=0.3)
-%		y.smooth[[i]] <- 2+fit$residuals 
-%	}
-%	plot(unlist(x.split),
-%	     unlist(y.split),
-%	     pch=".", ylab="copy number", xaxt="n", log="y", ylim=c(0.5,5))
-%	plot(unlist(x.split),
-%	     unlist(y.smooth),
-%	     pch=".", ylab="copy number", xaxt="n", log="y", ylim=c(0.5,5), yaxt="n")
-%	legend("topright", bty="n", legend=paste("SNR =", round(cnSet$SNR[j], 1)))
-%	abline(h=2, col="grey70")	
-%	if(j == high.snr){
-%		axis(1, at=pretty(x), labels=pretty(x/1e6))
-%		mtext("Mb", 1, outer=TRUE, line=2)
-%	}
-%}
-%@ 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
