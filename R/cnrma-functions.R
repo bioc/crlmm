@@ -3159,9 +3159,13 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 			   CA=emptyMatrix,
 			   CB=emptyMatrix)
 }
-constructIlluminaCNSet <- function(res,
-				   cnAB,
-				   crlmmResult){
+constructIlluminaCNSet <- function(crlmmResult,
+				   snpFile,
+				   cnFile){
+	load(file.path(outdir, "snpFile.rda"))
+	res <- get("res")
+	load(file.path(outdir, "cnFile.rda"))
+	cnAB <- get("cnAB")	
 	fD <- constructIlluminaFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
 	new.order <- order(fD$chromosome, fD$position)
 	fD <- fD[new.order, ]

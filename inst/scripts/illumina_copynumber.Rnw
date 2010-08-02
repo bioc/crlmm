@@ -117,7 +117,7 @@ RG <- readIdatFiles2(samplesheet[1:10, ],
 		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
 		    saveDate=TRUE)
 annotation(RG) <- "human370v1c"
-crlmmResult <- crlmmIllumina(RG=RG, 
+crlmmResult <- crlmmIllumina2(RG=RG, 
 			     cdfName="human370v1c", 
 			     sns=pData(RG)$ID, 
 			     returnParams=TRUE,
@@ -127,20 +127,20 @@ crlmmResult <- crlmmIllumina(RG=RG,
 protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
 @ 
 
-\noindent Finally, we load a few of the intermediate files that were
-created during the preprocessing and genotyping.
-<<loadIntermediate, eval=FALSE>>=
-load(file.path(outdir, "snpFile.rda"))
-res <- get("res")
-load(file.path(outdir, "cnFile.rda"))
-cnAB <- get("cnAB")
-@ 
-
-<<loadIntermediate, echo=FALSE>>=
-trace(checkExists, browser)
-res <- checkExists("snpFile", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
-cnAB <- checkExists("cnFile", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
-@ 
+%\noindent Finally, we load a few of the intermediate files that were
+%created during the preprocessing and genotyping.
+%<<loadIntermediate, eval=FALSE>>=
+%load(file.path(outdir, "snpFile.rda"))
+%res <- get("res")
+%load(file.path(outdir, "cnFile.rda"))
+%cnAB <- get("cnAB")
+%@ 
+%
+%<<loadIntermediate, echo=FALSE>>=
+%trace(checkExists, browser)
+%res <- checkExists("snpFile", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
+%cnAB <- checkExists("cnFile", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
+%@ 
 
 After running the crlmm algorithm, we construct a container for
 storing the quantile normalized intensities, genotype calls, and
@@ -154,9 +154,9 @@ devel version of this package.
 container <- checkExists("container",
 			 .path=outdir,
 			 .FUN=constructIlluminaCNSet,
-			 res=res,
-			 cnAB=cnAB,
-			 crlmmResult=crlmmResult)
+			 crlmmResult=crlmmResult,
+			 snpFile=snpFile,
+			 cnFile=cnFile)
 @ 
 
 <<constructContainer2, eval=FALSE>>=
