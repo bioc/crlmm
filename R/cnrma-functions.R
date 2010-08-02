@@ -68,21 +68,26 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 	rownames(pData(protocolData)) <- sns
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
 	nr <- nrow(featureData); nc <- length(filenames)
-	callSet <- new("CNSetLM", 
-		       alleleA=initializeBigMatrix(name="A", nr, nc),
-		       alleleB=initializeBigMatrix(name="B", nr, nc),
-		       call=initializeBigMatrix(name="call", nr, nc),
-		       callProbability=initializeBigMatrix(name="callPr", nr,nc),
-		       CA=initializeBigMatrix(name="CA", nr, nc),
-		       CB=initializeBigMatrix(name="CB", nr, nc),
-		       protocolData=protocolData,
-		       featureData=featureData,
-		       annotation=cdfName)
+	ffObjects <- list(alleleA=initializeBigMatrix(name="A", nr, nc),
+			  alleleB=initializeBigMatrix(name="B", nr, nc),
+			  call=initializeBigMatrix(name="call", nr, nc),
+			  callProbability=initializeBigMatrix(name="callPr", nr,nc),
+			  CA=initializeBigMatrix(name="CA", nr, nc),
+			  CB=initializeBigMatrix(name="CB", nr, nc))
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
-	phenoData(callSet) <- new("AnnotatedDataFrame", data=pd)
-	rownames(pData(callSet)) <- NULL
-	phenoData(callSet)$sampleNames <- sns
+	phenoData <- new("AnnotatedDataFrame", data=pd)
+	callSet <- new("CNSetLM", 
+		       alleleA=ffObjects[["alleleA"]],
+		       alleleB=ffObjects[["alleleB"]],
+		       call=ffObjects[["call"]],
+		       callProbability=ffObjects[["callProbability"]],
+		       CA=ffObjects[["CA"]],
+		       CB=ffObjects[["CB"]],
+		       protocolData=protocolData,
+		       phenoData=phenoData,
+		       featureData=featureData,
+		       annotation=cdfName)
 	return(callSet)
 }
 
