@@ -48,7 +48,9 @@ options(continue=" ")
 <<libraries>>=
 library(crlmm)
 crlmm:::validCdfNames()
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/illumina"
+if(length(grep("development", sessionInfo()[[1]]$status)) == 1){
+	outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/devel/illumina"	
+} else outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/illumina"	
 dir.create(outdir, showWarnings=FALSE, recursive=TRUE)
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @ 
@@ -88,25 +90,24 @@ redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
 @ 
 
 <<samplesToProcess2, echo=FALSE>>=
-if(!exists("crlmmResult")){
-	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
-		RG <- readIdatFiles(samplesheet, 
-				    path=dirname(arrayNames[1]), 
-				    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
-				    saveDate=TRUE)
-		crlmmResult <- crlmmIllumina(RG=RG, 
-					     cdfName="human370v1c", 
-					     sns=pData(RG)$ID, 
-					     returnParams=TRUE,
-					     cnFile=file.path(outdir, "cnFile.rda"),
-					     snpFile=file.path(outdir, "snpFile.rda"),
-					     save.it=TRUE)
-		protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-		range(protocolData(crlmmResult)$ScanDate)
-		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
-		rm(RG); gc()
-	} 
-}
+## To speed up repeated calls to Sweave 
+RG <- checkExists("RG", .path=outdir,
+		  .FUN=readIdatFiles,
+		  sampleSheet=samplesheet,
+		  path=dirname(arrayNames[1]),
+		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
+		  saveDate=TRUE)
+annotation(RG) <- "human370v1c"
+crlmmResult <- checkExists("crlmmResult",
+			   .path=outdir,
+			   .FUN=crlmmIllumina,
+			   RG=RG,
+			   sns=pData(RG)$ID, 
+			   returnParams=TRUE,
+			   cnFile=file.path(outdir, "cnFile.rda"),
+			   snpFile=file.path(outdir, "snpFile.rda"),
+			   save.it=TRUE)
+protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
 @ 
 
 <<samplesToProcess3, eval=FALSE>>=
@@ -114,6 +115,7 @@ RG <- readIdatFiles(samplesheet,
 		    path=dirname(arrayNames[1]), 
 		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
 		    saveDate=TRUE)
+annotation(RG) <- "human370v1c"
 crlmmResult <- crlmmIllumina(RG=RG, 
 			     cdfName="human370v1c", 
 			     sns=pData(RG)$ID, 
@@ -122,8 +124,6 @@ crlmmResult <- crlmmIllumina(RG=RG,
 			     snpFile=file.path(outdir, "snpFile.rda"),
 			     save.it=TRUE)
 protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-range(protocolData(crlmmResult)$ScanDate)
-rm(RG); gc()
 @ 
 
 \noindent Finally, we load a few of the intermediate files that were
@@ -133,17 +133,11 @@ load(file.path(outdir, "snpFile.rda"))
 res <- get("res")
 load(file.path(outdir, "cnFile.rda"))
 cnAB <- get("cnAB")
-load(file.path(outdir, "crlmmResult.rda"))
 @ 
 
-<<loadIntermediate, eval=TRUE, echo=FALSE>>=
-if(!exists("res")){
-	load(file.path(outdir, "snpFile.rda"))
-	res <- get("res")
-	load(file.path(outdir, "cnFile.rda"))
-	cnAB <- get("cnAB")
-	load(file.path(outdir, "crlmmResult.rda"))
-}
+<<loadIntermediate, echo=FALSE>>=
+res <- checkExists("res", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
+cnAB <- checkExists("cnAB", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
 @ 
 
 After running the crlmm algorithm, we construct a container for
