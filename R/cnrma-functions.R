@@ -101,7 +101,7 @@ genotype <- function(filenames,
 		     verbose=TRUE,
 		     seed=1,
 		     sns,
-		     copynumber=FALSE,
+		     copynumber=TRUE,
 		     probs=rep(1/3, 3),
 		     DF=6,
 		     SNRMin=5,
@@ -121,6 +121,7 @@ genotype <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
+	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
 	batches <- splitIndicesByLength(1:ncol(callSet), ocSamples())
@@ -184,22 +185,22 @@ genotype <- function(filenames,
 
 ##genotypeLargeData
 genotypeLD <- function(filenames,
-			cdfName,
-			batch,
-			mixtureSampleSize=10^5,
-			eps=0.1,
-			verbose=TRUE,
-			seed=1,
-			sns,
-			copynumber=FALSE,
-		      probs=rep(1/3, 3),
-		      DF=6,
-		      SNRMin=5,
-		      recallMin=10,
-		      recallRegMin=1000,
-		      gender=NULL,
-		      returnParams=TRUE,
-		      badSNP=0.7){
+		       cdfName,
+		       batch,
+		       mixtureSampleSize=10^5,
+		       eps=0.1,
+		       verbose=TRUE,
+		       seed=1,
+		       sns,
+		       copynumber=TRUE,
+		       probs=rep(1/3, 3),
+		       DF=6,
+		       SNRMin=5,
+		       recallMin=10,
+		       recallRegMin=1000,
+		       gender=NULL,
+		       returnParams=TRUE,
+		       badSNP=0.7){
 	if(!isPackageLoaded("ff")) stop("Must load package 'ff'")
 	if(!copynumber){
 		callSet <- crlmm2(filenames=filenames,
@@ -228,17 +229,17 @@ genotypeLD <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-	##lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
+	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
 	snprmaRes <- snprma2(filenames=filenames,
-			       mixtureSampleSize=mixtureSampleSize,
-			       fitMixture=TRUE,
-			       eps=eps,
-			       verbose=verbose,
-			       seed=seed,
-			       cdfName=cdfName,
-			       sns=sns)
+			     mixtureSampleSize=mixtureSampleSize,
+			     fitMixture=TRUE,
+			     eps=eps,
+			     verbose=verbose,
+			     seed=seed,
+			     cdfName=cdfName,
+			     sns=sns)
 	if(verbose) message("Finished preprocessing.")
 	open(snprmaRes[["A"]])
 	open(snprmaRes[["B"]])
@@ -1035,7 +1036,7 @@ crlmmCopynumberLD <- function(object,
 	stopifnot("chromosome" %in% fvarLabels(object))
 	stopifnot("position" %in% fvarLabels(object))
 	stopifnot("isSnp" %in% fvarLabels(object))
-	lM(object) <- initializeParamObject(list(featureNames(object), unique(protocolData(object)$batch)))
+	##lM(object) <- initializeParamObject(list(featureNames(object), unique(protocolData(object)$batch)))
 	batch <- batch(object)
 	XIndex.snps <- which(chromosome(object) == 23 & isSnp(object) & !is.na(chromosome(object)))
 	##YIndex.snps <- (1:nrow(object))[chromosome(object) == 24 & isSnp(object)]
