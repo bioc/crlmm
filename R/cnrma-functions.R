@@ -65,7 +65,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 			stop("batch variable must be the same length as the filenames")
 		protocolData$batch <- batch
 	}
-	rownames(pData(protocolData)) <- NULL
+	rownames(pData(protocolData)) <- sns
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
 	nr <- nrow(featureData); nc <- length(filenames)
 	callSet <- new("CNSetLM", 
@@ -176,7 +176,7 @@ genotype <- function(filenames,
 }
 
 
-genotype2 <- genotypeLDS
+
 ##genotypeLargeData
 genotypeLD <- function(filenames,
 			cdfName,
@@ -297,7 +297,7 @@ genotypeLD <- function(filenames,
 	callSet$gender <- tmp$gender
 	return(callSet)
 }
-
+genotype2 <- genotypeLD
 
 
 genotype3 <- function(filenames,
@@ -1008,7 +1008,7 @@ crlmmCopynumber <- function(object,
 	}
 	return(object)
 }
-crlmmCopynumber2 <- crlmmCopynumber
+
 crlmmCopynumberLD <- function(object,
 			     which.batches,
 			    MIN.SAMPLES=10,
@@ -1143,7 +1143,7 @@ crlmmCopynumberLD <- function(object,
 			neededPkgs="crlmm")
 	return(object)
 }
-
+crlmmCopynumber2 <- crlmmCopynumberLD
 
 fit.lm1 <- function(idxBatch,
 		    snpBatches,

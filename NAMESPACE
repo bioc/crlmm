@@ -67,11 +67,11 @@ export(crlmm,
        snprma,
        snprma2,
        crlmm2,
-       genotype2,
+       genotype2, genotypeLD,
        batch,
-       crlmmCopynumber2)
+       crlmmCopynumber2, crlmmCopynumberLD)
 ##export(initializeParamObject, biasAdjNP2)
-##export(construct)
+export(construct)
 export(plotCNSetLM)
 
 
