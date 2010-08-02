@@ -14,7 +14,7 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =
 rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
 gender = NULL, returnParams = TRUE, badSNP = 0.7)
 
-genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = TRUE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}

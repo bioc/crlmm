@@ -4,6 +4,7 @@
 \alias{CNSetLM}
 \alias{CNSetLM-class}
 \alias{[,CNSetLM-method}
+\alias{lines,CNSetLM-method}
 \alias{lM,CNSetLM-method}
 \alias{lM<-,CNSetLM,list_or_ffdf-method}
 \alias{open,CNSetLM-method}
@@ -41,10 +42,10 @@ Class \code{"\linkS4class{Versioned}"}, by class "CNSet", distance 6.
 \section{Methods}{
   \describe{
     \item{[}{\code{signature(x = "CNSetLM")}: subset \code{CNSetLM} objects}
+    \item{lines}{\code{signature(x="CNSetLM")}: for drawing prediction regions on A vs B scatterplots}
     \item{lM}{\code{signature(object = "CNSetLM")}: Extract list or
     ffdf object containing linear model parameters}
-##    \item{lM<-}{\code{signature(object = "CNSetLM", value = "list_or_ffdf")}: ... }
-    \item{open}{\code{signature(con = "CNSetLM")}: opens file connects
+   \item{open}{\code{signature(con = "CNSetLM")}: opens file connects
     to ff objects for assayData elements and linear model parameters}
     \item{show}{\code{signature(object = "CNSetLM")}: print method
     for the class }
@@ -54,9 +55,7 @@ Class \code{"\linkS4class{Versioned}"}, by class "CNSet", distance 6.
 \seealso{
 	\code{\linkS4class{SnpSuperSet}}, \code{\linkS4class{CNSet}}
 }
-%	~~objects to See Also as \code{\link{~~fun~~}}, ~~~
-%	or \code{\linkS4class{CLASSNAME}} for links to other classes
-%}
+
 \examples{
 showClass("CNSetLM")
 }

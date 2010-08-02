@@ -1,5 +1,6 @@
 \name{readIdatFiles}
 \alias{readIdatFiles}
+\alias{readIdatFiles2}
 
 \title{Reads Idat Files from Infinium II Illumina BeadChips}
 
