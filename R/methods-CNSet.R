@@ -16,6 +16,18 @@ setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
 	x
 })
 
+setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
+	x <- callNextMethod(x, i, j, ..., drop=drop)
+##	if(!missing(i)){
+##		if(class(lM(x)) == "ffdf"){
+##			lM(x) <- lapply(physical(lM(x)), function(x, i){open(x); x[i, ]}, i=i)
+##		} else {
+##			lM(x) <- lapply(lM(x), function(x, i) x[i, , drop=FALSE], i=i)
+##		}
+##	}
+	x
+})
+
 
 setMethod("lM", "CNSetLM", function(object) object@lM)
 setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){

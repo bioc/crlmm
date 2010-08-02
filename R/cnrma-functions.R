@@ -175,15 +175,18 @@ genotype <- function(filenames,
 	return(callSet)
 }
 
-genotype2 <- function(filenames,
-		      cdfName,
-		      batch,
-		      mixtureSampleSize=10^5,
-		      eps=0.1,
-		      verbose=TRUE,
-		      seed=1,
-		      sns,
-		      copynumber=FALSE,
+
+genotype2 <- genotypeLDS
+##genotypeLargeData
+genotypeLD <- function(filenames,
+			cdfName,
+			batch,
+			mixtureSampleSize=10^5,
+			eps=0.1,
+			verbose=TRUE,
+			seed=1,
+			sns,
+			copynumber=FALSE,
 		      probs=rep(1/3, 3),
 		      DF=6,
 		      SNRMin=5,
@@ -1005,8 +1008,8 @@ crlmmCopynumber <- function(object,
 	}
 	return(object)
 }
-
-crlmmCopynumber2 <- function(object,
+crlmmCopynumber2 <- crlmmCopynumber
+crlmmCopynumberLD <- function(object,
 			     which.batches,
 			    MIN.SAMPLES=10,
 			    SNRMin=5,

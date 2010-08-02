@@ -1,6 +1,7 @@
 \name{crlmmCopynumber}
 \alias{crlmmCopynumber}
 \alias{crlmmCopynumber2}
+\alias{crlmmCopynumberLD}
 \title{Locus- and allele-specific estimation of copy number}
 \description{
   Locus- and allele-specific estimation of copy number.
@@ -12,7 +13,7 @@ prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR =
 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3,
 THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
 
-crlmmCopynumber2(object, which.batches, MIN.SAMPLES = 10, SNRMin = 5,
+crlmmCopynumberLD(object, which.batches, MIN.SAMPLES = 10, SNRMin = 5,
 MIN.OBS = 1, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4,
 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6,
 nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE,
@@ -27,7 +28,7 @@ thresholdCopynumber = TRUE)
   samples.  Used to adjust for batch effects.  Chemistry plate or
   date often work well.  See examples.
 
-  Ignored in crlmmCopynumber2.
+  Ignored in crlmmCopynumberLD.
 
 }
 
@@ -80,7 +81,7 @@ thresholdCopynumber = TRUE)
   of the samples have a copy number alteration.  For additional
   information, see Scharpf et al., 2009.
 
-  This argument is ignored in crlmmCopynumber2.
+  This argument is ignored in crlmmCopynumberLD.
 
 }
   \item{prior.prob}{
@@ -131,7 +132,7 @@ thresholdCopynumber = TRUE)
   Values less than 0.05 are assigned the value 0.05; values exceeding
   5 are assigned the value 5.  
 
-  Ignored in crlmmCopynumber2.  Extreme values are automatically
+  Ignored in crlmmCopynumberLD.  Extreme values are automatically
   truncated.
 
 }
@@ -142,17 +143,17 @@ thresholdCopynumber = TRUE)
 	The function crlmmCopynumber uses matrices instead of ff
 	objects if the ff library is not loaded.
 
-	The function crlmmCopynumber2 allows parallel processing via
+	The function crlmmCopynumberLD allows parallel processing via
 	and requires large data support via the ff package.
 
 	We plan to phase out crlmmCopynumber and replace this function
-	by crlmmCopynumber2.
+	by crlmmCopynumberLD.
 
 }
 \author{R. Scharpf}
 \examples{
 ## data(example.callSet)
-## cnSet <- crlmmCopynumber2(example.callSet)
+## cnSet <- crlmmCopynumberLD(example.callSet)
 ## total copy number
 ## cn <- copyNumber(cnSet)
 ## allele-specific copy number

@@ -1,6 +1,7 @@
 \name{genotype}
 \alias{genotype}
 \alias{genotype2}
+\alias{genotypeLD}
 \title{
 	Preprocessing and genotyping of Affymetrix arrays.
 }
@@ -13,7 +14,7 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =
 rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
 gender = NULL, returnParams = TRUE, badSNP = 0.7)
 
-genotype2(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = FALSE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}
@@ -42,16 +43,16 @@ genotype2(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbos
 
 	For large datasets it is important to utilize the large data
 	support by installing and loading the ff package before
-	calling the genotype or genotype2 function.
+	calling the genotype or genotypeLD function.
 
 	Currently, two functions are provided for preprocessing and
-	genotyping Affymetrix platforms: genotype and genotype2. For
-	small datasets, genotype and genotype2 are identical.  For
-	large datasets, genotype2 provides large data support (via ff)
+	genotyping Affymetrix platforms: genotype and genotypeLD. For
+	small datasets, genotype and genotypeLD are identical.  For
+	large datasets, genotypeLD provides large data support (via ff)
 	and permits the use of clusters or multiple cores (via snow
 	package) to speed up genotyping (similar to \code{crlmm2}).
 	The \code{genotype} function will be phased out in the future
-	and replaced by \code{genotype2}.
+	and replaced by \code{genotypeLD}.
 
 }
 
@@ -90,7 +91,7 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
 
   ## To use less RAM, specify a smaller argument to ocProbesets
   ocProbesets(50e3)
-  (cnSet <- genotype2(cels, cdfName="genomewidesnp6",
+  (cnSet <- genotypeLD(cels, cdfName="genomewidesnp6",
   copynumber=TRUE))
 
   dim(cnSet)
