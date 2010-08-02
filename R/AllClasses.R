@@ -8,7 +8,6 @@ setMethod("initialize", "CNSetLM", function(.Object, lM=new("list"), ...){
 	.Object@lM <- lM
 	.Object <- callNextMethod(.Object, ...)
 })
-
 setValidity("CNSetLM",
 	    function(object){
 		    if(!"batch" %in% varLabels(protocolData(object)))
