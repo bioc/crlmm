@@ -35,7 +35,7 @@ importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
-           polygon, rect, segments, text, points, boxplot)
+           polygon, rect, segments, text, points, boxplot, lines)
 
 importFrom(grDevices, grey)
 
@@ -56,7 +56,7 @@ importFrom(ellipse, ellipse)
 importFrom(ff, ffdf)
 
 exportClasses(CNSetLM, ffdf, list)
-exportMethods(open, "[", show, lM)
+exportMethods(open, "[", show, lM, lines)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
@@ -72,7 +72,7 @@ export(crlmm,
        crlmmCopynumber2, crlmmCopynumberLD)
 ##export(initializeParamObject, biasAdjNP2)
 export(construct)
-export(plotCNSetLM)
+
 
 
 

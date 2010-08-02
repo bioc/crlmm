@@ -10,3 +10,4 @@ setGeneric("lM", function(object) standardGeneric("lM"))
 setGeneric("lM<-", function(object, value) standardGeneric("lM<-"))
 setGeneric("totalCopyNumber", function(object,...) standardGeneric("totalCopyNumber"))
 
+
