@@ -77,6 +77,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData <- new("AnnotatedDataFrame", data=pd)
+	ffObjects <- lapply(ffObjects, function(x,sns) {colnames(x) <- sns; return(x)}, sns=sns)
 	callSet <- new("CNSetLM", 
 		       alleleA=ffObjects[["alleleA"]],
 		       alleleB=ffObjects[["alleleB"]],
@@ -88,6 +89,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 		       phenoData=phenoData,
 		       featureData=featureData,
 		       annotation=cdfName)
+	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))	
 	return(callSet)
 }
 
@@ -121,7 +123,7 @@ genotype <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
+	##lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
 	batches <- splitIndicesByLength(1:ncol(callSet), ocSamples())
@@ -229,7 +231,7 @@ genotypeLD <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
+
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
 	snprmaRes <- snprma2(filenames=filenames,
