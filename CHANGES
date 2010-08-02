@@ -539,3 +539,6 @@ function (which expects ff objects and supports parallel processing)
 
 2010--7-28 M. Ritchie committed version 1.7.7
 ** added omni express 12 as one of the chip options for Illumina.  Also added a check for copy number probes (this chip doesn't have any).
+
+2010-07-30 R. Scharpf 1.7.8
+** edited construct function for CNSetLM
