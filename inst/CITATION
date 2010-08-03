@@ -40,9 +40,8 @@ citEntry(entry="article",
   journal = "Biostatistics",
   year = "2010",
   textVersion = paste("Scharpf RB, Ruczinski I, Carvalho B, Doan B, Chakravarti A, Irizarry RA",
-                      "A multilevel model to address batch effects in copy number estimation
-		      using SNP arrays"
-                      "Biostatistics. 2010."))
+                      "A multilevel model to address batch effects in copy number estimation using SNP arrays",
+		      "Biostatistics. 2010."))
 
 citFooter("We have invested a lot of time and effort in creating crlmm,",
           "please cite it when using it for data analysis.")
