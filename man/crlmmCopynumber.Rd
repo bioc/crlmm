@@ -11,13 +11,13 @@ crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES
 = 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE,
 prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR =
 0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3,
-THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
+THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, weighted.lm=TRUE)
 
 crlmmCopynumberLD(object, which.batches, MIN.SAMPLES = 10, SNRMin = 5,
 MIN.OBS = 1, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4,
 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6,
 nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE,
-thresholdCopynumber = TRUE)
+thresholdCopynumber = TRUE, weighted.lm=TRUE)
 
 }
 \arguments{
@@ -136,6 +136,12 @@ thresholdCopynumber = TRUE)
   truncated.
 
 }
+
+\item{weighted.lm}{ If \code{TRUE}, a linear model is fit using
+weighted least squares. Otherwise, a linear model is fit without
+weights. The run-time for weighted least squares is substantially
+longer.}
+
 }
 
 \details{
@@ -151,15 +157,4 @@ thresholdCopynumber = TRUE)
 
 }
 \author{R. Scharpf}
-\examples{
-## data(example.callSet)
-## cnSet <- crlmmCopynumberLD(example.callSet)
-## total copy number
-## cn <- copyNumber(cnSet)
-## allele-specific copy number
-## ca <- CA(cnSet)/100 ## A dosage
-## cb <- CB(cnSet)/100 ## B dosage
-}
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
 \keyword{manip}

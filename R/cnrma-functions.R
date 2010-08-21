@@ -24,7 +24,7 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 	gns <- getVarInEnv("gns")
 	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
 	load(file.path(path, "snpProbes.rda"))
-	snpProbes <- getVarInEnv("snpProbes")
+	snpProbes <- get("snpProbes")
 	if(copynumber){
 		load(file.path(path, "cnProbes.rda"))
 		cnProbes <- get("cnProbes")
@@ -759,6 +759,32 @@ nuphiAllele2 <- function(allele, Ystar, W, Ns){
 	return(list(nu, phi))
 }
 
+## linear regression without weights -- design matrix is same for all snps
+linearModel.noweights <- function(allele, Ystar, W, Ns){
+	complete <- rowSums(is.na(W)) == 0 
+	if(any(!is.finite(W))){## | any(!is.finite(V))){
+		i <- which(rowSums(!is.finite(W)) > 0)
+		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
+	}
+	NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
+	if(missing(allele)) stop("must specify allele")
+	if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
+	if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
+	##How to quickly generate Xstar, Xstar = diag(W) %*% X
+	Xstar <- apply(W, 1, generateX, X)
+	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
+	betahat <- matrix(NA, 2, nrow(Ystar))
+	ses <- matrix(NA, 2, nrow(Ystar))
+	for(i in 1:nrow(Ystar)){
+		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
+		ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
+		ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
+	}
+	nu <- betahat[1, ]
+	phi <- betahat[2, ]
+	return(list(nu, phi))
+}
+
 nuphiAlleleX <- function(allele, Ystar, W, Ns, chrX=FALSE){
 	complete <- rowSums(is.na(W)) == 0 
 	if(any(!is.finite(W))){## | any(!is.finite(V))){
@@ -933,7 +959,8 @@ crlmmCopynumber <- function(object,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
-			    thresholdCopynumber=TRUE){
+			    thresholdCopynumber=TRUE,
+			    weighted.lm=TRUE){
 	ffIsLoaded <- class(calls(object))[[1]] == "ff"
 	if(ffIsLoaded){
 		open(object)
@@ -1040,7 +1067,8 @@ crlmmCopynumberLD <- function(object,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
-			    thresholdCopynumber=TRUE){
+			    thresholdCopynumber=TRUE,
+			      weighted.lm=TRUE){
 	stopifnot("batch" %in% varLabels(protocolData(object)))
 	stopifnot("chromosome" %in% fvarLabels(object))
 	stopifnot("position" %in% fvarLabels(object))
@@ -1074,7 +1102,7 @@ crlmmCopynumberLD <- function(object,
 	snpBatches <- splitIndicesByLength(autosomeIndex.snps, ocProbesets())
 	ocLapply(seq(along=snpBatches),
 		 fit.lm1,
-		 autosomeIndex=autosomeIndex.snps,
+		 marker.index=autosomeIndex.snps,
 		 object=object,
 		 Ns=Ns,
 		 normal=normal,
@@ -1096,7 +1124,7 @@ crlmmCopynumberLD <- function(object,
 	if(verbose) message("Estimating total copy number at nonpolymorphic loci")
 	ocLapply(seq(along=snpBatches),
 			fit.lm2,
-			autosomeIndex=autosomeIndex.nps,
+			marker.index=autosomeIndex.nps,
 			object=object,
 			Ns=Ns,
 			normal=normal,
@@ -1117,7 +1145,7 @@ crlmmCopynumberLD <- function(object,
 	if(verbose) message("Estimating allele-specific copy number at polymorphic loci on chromosome X")
 	ocLapply(seq(along=snpBatches),
 			fit.lm3,
-			autosomeIndex=XIndex.snps,
+			marker.index=XIndex.snps,
 			object=object,
 			Ns=Ns,
 			normal=normal,
@@ -1138,7 +1166,7 @@ crlmmCopynumberLD <- function(object,
 	snpBatches <- splitIndicesByLength(XIndex.nps, ocProbesets())
 	tmp <- ocLapply(seq(along=snpBatches),
 			fit.lm4,
-			XIndex=XIndex.nps,
+			marker.index=XIndex.nps,
 			object=object,
 			Ns=Ns,
 			normal=normal,
@@ -1161,7 +1189,8 @@ crlmmCopynumber2 <- crlmmCopynumberLD
 
 fit.lm1 <- function(idxBatch,
 		    snpBatches,
-		    autosomeIndex,
+##		    autosomeIndex,
+		    marker.index,
 		    object,
 		    Ns,
 		    normal,
@@ -1175,7 +1204,8 @@ fit.lm1 <- function(idxBatch,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
-		    verbose, ...){
+		    verbose,
+		    weighted.lm, ...){
 	physical <- get("physical")
 	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
@@ -1285,10 +1315,14 @@ fit.lm1 <- function(idxBatch,
 		wB <- sqrt(1/vB2)
 		YA <- muA*wA
 		YB <- muB*wB
-		res <- nuphiAllele2(allele="A", Ystar=YA, W=wA, Ns=Ns)
+		if(weighted.lm){
+			res <- nuphiAllele2(allele="A", Ystar=YA, W=wA, Ns=Ns)
+		} else res <- linearModel.noweights(allele="A", Ystar=YA, W=wA, Ns=Ns)
 		nuA[, J] <- res[[1]]
 		phiA[, J] <- res[[2]]
-		res <- nuphiAllele2(allele="B", Ystar=YB, W=wB, Ns=Ns)
+		if(!weighted.lm){
+			res <- nuphiAllele2(allele="B", Ystar=YB, W=wB, Ns=Ns)
+		} else res <- linearModel.noweights(allele="B", Ystar=YB, W=wB, Ns=Ns)
 		nuB[, J] <- res[[1]]
 		phiB[, J] <- res[[2]]
 		if(THR.NU.PHI){
@@ -1364,7 +1398,7 @@ fit.lm1 <- function(idxBatch,
 
 fit.lm2 <- function(idxBatch,
 		    snpBatches,
-		    autosomeIndex,
+		    marker.index,
 		    object,
 		    Ns,
 		    normal,
@@ -1378,7 +1412,8 @@ fit.lm2 <- function(idxBatch,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
-		    verbose, ...){
+		    verbose,
+		    weighted.lm, ...){
 	physical <- get("physical")
 	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
@@ -1481,7 +1516,7 @@ fit.lm2 <- function(idxBatch,
 
 fit.lm3 <- function(idxBatch,
 		    snpBatches,
-		    XIndex,
+		    marker.index,
 		    object,
 		    Ns,
 		    normal,
@@ -1719,7 +1754,7 @@ fit.lm3 <- function(idxBatch,
 
 fit.lm4 <- function(idxBatch,
 		    snpBatches,
-		    XIndex,
+		    marker.index,
 		    object,
 		    Ns,
 		    normal,
@@ -3183,7 +3218,7 @@ constructIlluminaCNSet <- function(crlmmResult,
 				   
 
 ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
-	ubatch <- unique(batch(cnSet))[batch]
+	ubatch <- unique(batch(object))[batch]
 	Nu <- nu(object, allele)[index, batch]
 	Phi <- phi(object, allele)[index, batch]
 	centers <- list(Nu, Nu+Phi, Nu+2*Phi)
@@ -3201,4 +3236,142 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 	fns <- featureNames(object)[index]
 	centers$fns <- fns
 	return(centers)	
+}
+
+computeCN <- function(filenames,
+		      object,
+		      which.batches,
+		      MIN.SAMPLES=10,
+		      SNRMin=5,
+		      MIN.OBS=1,
+		      DF.PRIOR=50,
+		      bias.adj=FALSE,
+		      prior.prob=rep(1/4,4),
+		      seed=1,
+		      verbose=TRUE,
+		      GT.CONF.THR=0.99,
+		      PHI.THR=2^6,
+		      nHOM.THR=5,
+		      MIN.NU=2^3,
+		      MIN.PHI=2^3,
+		      THR.NU.PHI=TRUE,
+		      thresholdCopynumber=TRUE,
+		      type=c("autosome.snps", "autosome.nps", "X.snps", "X.nps"),
+		      weighted.lm=TRUE){
+	stopifnot("batch" %in% varLabels(protocolData(object)))
+	stopifnot("chromosome" %in% fvarLabels(object))
+	stopifnot("position" %in% fvarLabels(object))
+	stopifnot("isSnp" %in% fvarLabels(object))
+	batch <- batch(object)
+	if(type=="autosome.snps"){
+		marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		nr <- length(marker.index)
+		Ns <- initializeBigMatrix("Ns", nr, 5)
+		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
+		if(!file.exists(file.path(ldPath(), "normal.snps.rda"))){
+			normal <- initializeBigMatrix("normal.snps", nr, ncol(object), vmode="integer")
+			normal[,] <- 1L
+			save(normal, file=file.path(ldPath(), "normal.snps.rda"))
+		} else load(file.path(ldPath(), "normal.snps.rda"))
+		if(!file.exists(file.path(ldPath(), "flags.snps.rda"))){
+			flags <- initializeBigMatrix("flags.snps", nr, length(unique(batch(object))), vmode="integer")
+			flags[,] <- 0L
+			save(flags, file=file.path(ldPath(), "flags.snps.rda"))
+		} else{
+			load(file.path(ldPath(), "flags.snps.rda"))
+		} 
+		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
+		FUN <- "fit.lm1"
+	}
+	if(type=="autosome.nps"){
+		marker.index <- which(chromosome(object) < 23 & !isSnp(object) & !is.na(chromosome(object)))		
+		##marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		nr <- length(marker.index)
+		Ns <- initializeBigMatrix("Ns", nr, 5)
+		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
+		if(!file.exists(file.path(ldPath(), "normal.snps.rda"))){
+			normal <- initializeBigMatrix("normal.nps", nr, ncol(object), vmode="integer")
+			normal[,] <- 1L
+			save(normal, file=file.path(ldPath(), "normal.nps.rda"))
+		} else load(file.path(ldPath(), "normal.nps.rda"))
+		if(!file.exists(file.path(ldPath(), "flags.nps.rda"))){
+			flags <- initializeBigMatrix("flags.nps", nr, length(unique(batch(object))), vmode="integer")
+			flags[,] <- 0L
+			save(flags, file=file.path(ldPath(), "flags.nps.rda"))
+		} else{
+			load(file.path(ldPath(), "flags.nps.rda"))
+		} 
+		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
+		FUN <- "fit.lm2"
+	}
+	if(type=="X.snps"){
+		marker.index <- which(chromosome(object) == 23 & isSnp(object) & !is.na(chromosome(object)))
+		##marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		nr <- length(marker.index)
+		Ns <- initializeBigMatrix("Ns", nr, 5)
+		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
+		if(!file.exists(file.path(ldPath(), "normal.X.snps.rda"))){
+			normal <- initializeBigMatrix("normal.X.snps", nr, ncol(object), vmode="integer")
+			normal[,] <- 1L
+			save(normal, file=file.path(ldPath(), "normal.X.snps.rda"))
+		} else load(file.path(ldPath(), "normal.X.snps.rda"))
+		if(!file.exists(file.path(ldPath(), "flags.X.snps.rda"))){
+			flags <- initializeBigMatrix("flags.X.snps", nr, length(unique(batch(object))), vmode="integer")
+			flags[,] <- 0L
+			save(flags, file=file.path(ldPath(), "flags.X.snps.rda"))
+		} else{
+			load(file.path(ldPath(), "flags.X.snps.rda"))
+		} 
+		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
+		FUN <- "fit.lm3"
+	}
+	if(type=="X.nps"){
+		marker.index <- which(chromosome(object) == 23 & !isSnp(object) & !is.na(chromosome(object)))		
+		nr <- length(marker.index)
+		Ns <- initializeBigMatrix("Ns", nr, 5)
+		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
+		if(!file.exists(file.path(ldPath(), "normal.X.nps.rda"))){
+			normal <- initializeBigMatrix("normal.X.nps", nr, ncol(object), vmode="integer")
+			normal[,] <- 1L
+			save(normal, file=file.path(ldPath(), "normal.X.nps.rda"))
+		} else load(file.path(ldPath(), "normal.X.nps.rda"))
+		if(!file.exists(file.path(ldPath(), "flags.X.nps.rda"))){
+			flags <- initializeBigMatrix("flags.X.nps", nr, length(unique(batch(object))), vmode="integer")
+			flags[,] <- 0L
+			save(flags, file=file.path(ldPath(), "flags.X.nps.rda"))
+		} else{
+			load(file.path(ldPath(), "flags.X.nps.rda"))
+		} 
+		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
+		FUN <- "fit.lm4"
+	}
+	index.strata <- splitIndicesByLength(marker.index, ocProbesets())
+	obj <- construct(filenames=filenames,
+			 cdfName=annotation(object),
+			 copynumber=TRUE,
+			 batch=batch(object),
+			 sns=sampleNames(object),
+			 fns=featureNames(object)[marker.index])
+	ocLapply(seq(along=index.strata),
+		 match.fun(FUN),
+		 marker.index=marker.index,
+		 object=object,
+		 Ns=Ns,
+		 normal=normal,
+		 snpflags=flags,
+		 snpBatches=index.strata,
+		 batchSize=ocProbesets(),
+		 SNRMin=SNRMin,
+		 MIN.SAMPLES=MIN.SAMPLES,
+		 MIN.OBS=MIN.OBS,
+		 DF=DF.PRIOR,
+		 GT.CONF.THR=GT.CONF.THR,
+		 THR.NU.PHI=THR.NU.PHI,
+		 MIN.NU=MIN.NU,
+		 MIN.PHI=MIN.PHI,
+		 verbose=verbose,
+		 neededPkgs="crlmm",
+		 weighted.lm=weighted.lm)
+	message("finished")
+	return(obj)
 }
