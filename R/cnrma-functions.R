@@ -379,11 +379,11 @@ dqrlsWrapper <- function(x, y, wts, tol=1e-7){
 }
 
 fit.wls <- function(allele, Ystar, W, Ns, autosome=TRUE){
-	complete <- rowSums(is.na(W)) == 0 
-	if(any(!is.finite(W))){## | any(!is.finite(V))){
-		i <- which(rowSums(!is.finite(W)) > 0)
-		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
-	}
+	complete <- which(rowSums(is.na(W)) == 0 & rowSums(is.na(Ystar)) == 0)
+##	if(any(!is.finite(W))){## | any(!is.finite(V))){
+##		i <- which(rowSums(!is.finite(W)) > 0)
+##		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
+##	}
 	NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
 	if(missing(allele)) stop("must specify allele")
 	if(autosome){
@@ -399,7 +399,7 @@ fit.wls <- function(allele, Ystar, W, Ns, autosome=TRUE){
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
 	##Xstar <- apply(W, 1, generateX, X)
 	ww <- rep(1, ncol(Ystar))
-	for(i in 1:nrow(Ystar)){
+	for(i in complete){
 		betahat[, i] <- dqrlsWrapper(W[i, ] * X, Ystar[i, ], ww)
 		##ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
 	}
@@ -795,7 +795,7 @@ fit.lm1 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose,...){
 	if(isPackageLoaded("ff")) physical <- get("physical")
-	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
+	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -1004,7 +1004,7 @@ fit.lm2 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose,...){
 	physical <- get("physical")
-	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
+	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -1115,7 +1115,7 @@ fit.lm3 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose, ...){
 	physical <- get("physical")
-	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
+	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
 		snps <- snpBatches[[idxBatch]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -1354,7 +1354,7 @@ fit.lm4 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose, ...){
 	physical <- get("physical")
-	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))	
+	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))	
 	open(object)
 	open(normal)
 	open(snpflags)
@@ -1938,48 +1938,48 @@ getFlags <- function(object, PHI.THR){
 ##	return(tmp.objects)
 ##}
 
-##imputeCenter <- function(muA, muB, index.complete, index.missing){
-##	index <- index.missing
-##	mnA <- muA
-##	mnB <- muB
-##	for(j in 1:3){
-##		if(length(index[[j]]) == 0) next()
-##		X <- cbind(1, mnA[index.complete,  -j, drop=FALSE], mnB[index.complete,  -j, drop=FALSE])
-##		Y <- cbind(mnA[index.complete, j], mnB[index.complete,  j])
-##		betahat <- solve(crossprod(X), crossprod(X,Y))
-##		X <- cbind(1, mnA[index[[j]],  -j, drop=FALSE],  mnB[index[[j]],  -j, drop=FALSE])
-##		mus <- X %*% betahat
-##		muA[index[[j]], j] <- mus[, 1]
-##		muB[index[[j]], j] <- mus[, 2]
-##	}
-##	list(muA, muB)
-##}
-##
-##imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
-##	index1 <- which(Ns[, 1] == 0 & Ns[, 3] > MIN.OBS)
-##	if(length(index1) > 0){
-##		X <- cbind(1, muA[index.complete[[1]], 3], muB[index.complete[[1]], 3])
-##		Y <- cbind(1, muA[index.complete[[1]], 1], muB[index.complete[[1]], 1])
-##		betahat <- solve(crossprod(X), crossprod(X,Y))
-##		##now with the incomplete SNPs
-##		X <- cbind(1, muA[index1, 3], muB[index1, 3])
-##		mus <- X %*% betahat
-##		muA[index1, 1] <- mus[, 2]
-##		muB[index1, 1] <- mus[, 3]
-##	}
-##	index1 <- which(Ns[, 3] == 0)
-##	if(length(index1) > 0){
-##		X <- cbind(1, muA[index.complete[[2]], 1], muB[index.complete[[2]], 1])
-##		Y <- cbind(1, muA[index.complete[[2]], 3], muB[index.complete[[2]], 3])
-##		betahat <- solve(crossprod(X), crossprod(X,Y))
-##		##now with the incomplete SNPs
-##		X <- cbind(1, muA[index1, 1], muB[index1, 1])
-##		mus <- X %*% betahat
-##		muA[index1, 3] <- mus[, 2]
-##		muB[index1, 3] <- mus[, 3]
-##	}
-##	list(muA, muB)
-##}
+imputeCenter <- function(muA, muB, index.complete, index.missing){
+	index <- index.missing
+	mnA <- muA
+	mnB <- muB
+	for(j in 1:3){
+		if(length(index[[j]]) == 0) next()
+		X <- cbind(1, mnA[index.complete,  -j, drop=FALSE], mnB[index.complete,  -j, drop=FALSE])
+		Y <- cbind(mnA[index.complete, j], mnB[index.complete,  j])
+		betahat <- solve(crossprod(X), crossprod(X,Y))
+		X <- cbind(1, mnA[index[[j]],  -j, drop=FALSE],  mnB[index[[j]],  -j, drop=FALSE])
+		mus <- X %*% betahat
+		muA[index[[j]], j] <- mus[, 1]
+		muB[index[[j]], j] <- mus[, 2]
+	}
+	list(muA, muB)
+}
+
+imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
+	index1 <- which(Ns[, 1] == 0 & Ns[, 3] > MIN.OBS)
+	if(length(index1) > 0){
+		X <- cbind(1, muA[index.complete[[1]], 3], muB[index.complete[[1]], 3])
+		Y <- cbind(1, muA[index.complete[[1]], 1], muB[index.complete[[1]], 1])
+		betahat <- solve(crossprod(X), crossprod(X,Y))
+		##now with the incomplete SNPs
+		X <- cbind(1, muA[index1, 3], muB[index1, 3])
+		mus <- X %*% betahat
+		muA[index1, 1] <- mus[, 2]
+		muB[index1, 1] <- mus[, 3]
+	}
+	index1 <- which(Ns[, 3] == 0)
+	if(length(index1) > 0){
+		X <- cbind(1, muA[index.complete[[2]], 1], muB[index.complete[[2]], 1])
+		Y <- cbind(1, muA[index.complete[[2]], 3], muB[index.complete[[2]], 3])
+		betahat <- solve(crossprod(X), crossprod(X,Y))
+		##now with the incomplete SNPs
+		X <- cbind(1, muA[index1, 1], muB[index1, 1])
+		mus <- X %*% betahat
+		muA[index1, 3] <- mus[, 2]
+		muB[index1, 3] <- mus[, 3]
+	}
+	list(muA, muB)
+}
 
 ##oneBatch <- function(object, cnOptions, tmp.objects){
 ##	muA <- tmp.objects[["muA"]]

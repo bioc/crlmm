@@ -119,7 +119,7 @@ not exist. Existence of this file implies that we have already run the
 copy number estimation and, therefore, we do not need to preprocess
 and genotype the files a second time.
 
-<<genotype>>=
+<<genotype, eval=FALSE>>=
 if(!file.exists(file.path(outdir, "cnSet.assayData_matrix.rda"))){
 	gtSet.assayData_matrix <- checkExists("gtSet.assayData_matrix",
 					   .path=outdir,
@@ -140,7 +140,7 @@ the files that were on the same chemistry plate.  The code chunk below
 will load \Robject{cnSet.assayData_matrix} from disk if this
 computation had already been performed as part of the batch job.
 
-<<copynumber>>=
+<<copynumber, eval=FALSE>>=
 cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      .path=outdir,
 				      .FUN=crlmmCopynumber,
@@ -194,6 +194,7 @@ from the \Robject{outdir}.
 
 <<LDS_copynumber>>=
 Rprof(filename="Rprof_cnff.out", interval=0.1)
+##trace(fit.wls, browser)
 cnSet.assayData_ff <- checkExists("cnSet.assayData_ff",
 				  .path=outdir,
 				  .FUN=crlmmCopynumberLD,

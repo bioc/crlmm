@@ -59,11 +59,11 @@ exportClasses(CNSetLM, ffdf, list)
 exportMethods(open, "[", show, lM, lines, nu, phi, corr, sigma2, tau2)
 exportMethods(CA, CB, totalCopyNumber)
 export(crlmm, 
-       crlmmCopynumber, 
+##       crlmmCopynumber, 
        crlmmIllumina, 
        crlmmIllumina2,
        ellipseCenters,
-       genotype, 
+##       genotype, 
        readIdatFiles, 
        readIdatFiles2,
        snprma,
@@ -75,7 +75,7 @@ export(crlmm,
 export(constructIlluminaCNSet)
 export(linesCNSetLM)
 export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
-       dqrlsWrapper, nuphiAllele)
+       dqrlsWrapper, fit.wls)
 export(computeCopynumber, ACN)
 
 
