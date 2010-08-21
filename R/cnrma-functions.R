@@ -733,45 +733,45 @@ crlmmCopynumberLD <- function(object,
 	snpBatches <- splitIndicesByLength(XIndex.snps, ocProbesets())
 	if(verbose) message("Estimating allele-specific copy number at polymorphic loci on chromosome X")
 	ocLapply(seq(along=snpBatches),
-			fit.lm3,
-			marker.index=XIndex.snps,
-			object=object,
-			Ns=Ns,
-			normal=normal,
-			snpflags=snpflags,
-			snpBatches=snpBatches,
-			batchSize=ocProbesets(),
-			SNRMin=SNRMin,
-			MIN.SAMPLES=MIN.SAMPLES,
-			MIN.OBS=MIN.OBS,
-			DF=DF.PRIOR,
-			GT.CONF.THR=GT.CONF.THR,
-			THR.NU.PHI=THR.NU.PHI,
-			MIN.NU=MIN.NU,
-			MIN.PHI=MIN.PHI,
-			verbose=verbose,
+		 fit.lm3,
+		 marker.index=XIndex.snps,
+		 object=object,
+		 Ns=Ns,
+		 normal=normal,
+		 snpflags=snpflags,
+		 snpBatches=snpBatches,
+		 batchSize=ocProbesets(),
+		 SNRMin=SNRMin,
+		 MIN.SAMPLES=MIN.SAMPLES,
+		 MIN.OBS=MIN.OBS,
+		 DF=DF.PRIOR,
+		 GT.CONF.THR=GT.CONF.THR,
+		 THR.NU.PHI=THR.NU.PHI,
+		 MIN.NU=MIN.NU,
+		 MIN.PHI=MIN.PHI,
+		 verbose=verbose,
 		 neededPkgs="crlmm")
 	if(verbose) message("Estimating total copy number for nonpolymorphic loci on chromosome X")
 	snpBatches <- splitIndicesByLength(XIndex.nps, ocProbesets())
-	tmp <- ocLapply(seq(along=snpBatches),
-			fit.lm4,
-			marker.index=XIndex.nps,
-			object=object,
-			Ns=Ns,
-			normal=normal,
-			snpflags=snpflags,
-			snpBatches=snpBatches,
-			batchSize=ocProbesets(),
-			SNRMin=SNRMin,
-			MIN.SAMPLES=MIN.SAMPLES,
-			MIN.OBS=MIN.OBS,
-			DF=DF.PRIOR,
-			GT.CONF.THR=GT.CONF.THR,
-			THR.NU.PHI=THR.NU.PHI,
-			MIN.NU=MIN.NU,
-			MIN.PHI=MIN.PHI,
-			verbose=verbose,
-			neededPkgs="crlmm")
+	ocLapply(seq(along=snpBatches),
+		 fit.lm4,
+		 marker.index=XIndex.nps,
+		 object=object,
+		 Ns=Ns,
+		 normal=normal,
+		 snpflags=snpflags,
+		 snpBatches=snpBatches,
+		 batchSize=ocProbesets(),
+		 SNRMin=SNRMin,
+		 MIN.SAMPLES=MIN.SAMPLES,
+		 MIN.OBS=MIN.OBS,
+		 DF=DF.PRIOR,
+		 GT.CONF.THR=GT.CONF.THR,
+		 THR.NU.PHI=THR.NU.PHI,
+		 MIN.NU=MIN.NU,
+		 MIN.PHI=MIN.PHI,
+		 verbose=verbose,
+		 neededPkgs="crlmm")
 	return(object)
 }
 crlmmCopynumber2 <- crlmmCopynumberLD
@@ -1248,12 +1248,12 @@ fit.lm3 <- function(idxBatch,
 		YA <- muA*wA
 		YB <- muB*wB
 		##res <- nuphiAlleleX(allele="A", Ystar=YA, W=wA)
-		betas <- fit.wls(allele="A", Ystar=YA, W=wA, autosome=FALSE)
+		betas <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns, autosome=FALSE)
 		nuA[, J] <- betas[1, ]
 		phiA[, J] <- betas[2, ]
 		phiA2[, J] <- betas[3, ]
 		rm(betas)
-		betas <- fit.wls(allele="B", Ystar=YB, W=wB, autosome=FALSE)
+		betas <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns, autosome=FALSE)
 		nuB[, J] <- betas[1, ]
 		phiB[, J] <- betas[2, ]
 		phiB2[, J] <- betas[3, ]
