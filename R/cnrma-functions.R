@@ -769,8 +769,8 @@ fit.lm1 <- function(idxBatch,
 		    marker.index,
 		    object,
 		    Ns,
-		    normal,
-		    snpflags,
+##		    normal,
+##		    snpflags,
 		    batchSize,
 		    SNRMin,
 		    MIN.SAMPLES,
@@ -977,8 +977,8 @@ fit.lm2 <- function(idxBatch,
 		    marker.index,
 		    object,
 		    Ns,
-		    normal,
-		    snpflags,
+##		    normal,
+##		    snpflags,
 		    batchSize,
 		    SNRMin,
 		    MIN.SAMPLES,
@@ -1088,8 +1088,8 @@ fit.lm3 <- function(idxBatch,
 		    marker.index,
 		    object,
 		    Ns,
-		    normal,
-		    snpflags,
+##		    normal,
+##		    snpflags,
 		    batchSize,
 		    SNRMin,
 		    MIN.SAMPLES,
@@ -1327,8 +1327,8 @@ fit.lm4 <- function(idxBatch,
 		    marker.index,
 		    object,
 		    Ns,
-		    normal,
-		    snpflags,
+##		    normal,
+##		    snpflags,
 		    batchSize,
 		    SNRMin,
 		    MIN.SAMPLES,
@@ -1442,7 +1442,6 @@ fit.lm4 <- function(idxBatch,
 		if(any(pseudoAR)){
 			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
 		}
-
 ##              normal.f <- NORM.np[, k]
 ##		A.F <- A.F*normal.f[, gend==2]
 		A.F[A.F==0] <- NA
@@ -2774,6 +2773,7 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 	return(centers)
 }
 
+
 computeCN <- function(object,
 		      filenames,
 		      which.batches,
@@ -2798,89 +2798,44 @@ computeCN <- function(object,
 	stopifnot("position" %in% fvarLabels(object))
 	stopifnot("isSnp" %in% fvarLabels(object))
 	batch <- batch(object)
+	is.snp <- isSnp(object)
+	is.autosome <- chromosome(object) < 23
+	is.annotated <- !is.na(chromosome(object))
+	is.X <- chromosome(object) == 23
 	if(type=="autosome.snps"){
-		marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		marker.index <- which(is.snp & is.autosome & is.annotated)
 		nr <- length(marker.index)
 		Ns <- initializeBigMatrix("Ns", nr, 5)
 		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(!file.exists(file.path(ldPath(), "normal.snps.rda"))){
-			normal <- initializeBigMatrix("normal.snps", nr, ncol(object), vmode="integer")
-			normal[,] <- 1L
-			save(normal, file=file.path(ldPath(), "normal.snps.rda"))
-		} else load(file.path(ldPath(), "normal.snps.rda"))
-		if(!file.exists(file.path(ldPath(), "flags.snps.rda"))){
-			flags <- initializeBigMatrix("flags.snps", nr, length(unique(batch(object))), vmode="integer")
-			flags[,] <- 0L
-			save(flags, file=file.path(ldPath(), "flags.snps.rda"))
-		} else{
-			load(file.path(ldPath(), "flags.snps.rda"))
-		}
 		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
 		FUN <- fit.lm1
 	}
 	if(type=="autosome.nps"){
-		marker.index <- which(chromosome(object) < 23 & !isSnp(object) & !is.na(chromosome(object)))
-		##marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		marker.index <- which(is.autosome & !is.snp & is.annotated)
 		nr <- length(marker.index)
 		Ns <- initializeBigMatrix("Ns", nr, 5)
 		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(!file.exists(file.path(ldPath(), "normal.snps.rda"))){
-			normal <- initializeBigMatrix("normal.nps", nr, ncol(object), vmode="integer")
-			normal[,] <- 1L
-			save(normal, file=file.path(ldPath(), "normal.nps.rda"))
-		} else load(file.path(ldPath(), "normal.nps.rda"))
-		if(!file.exists(file.path(ldPath(), "flags.nps.rda"))){
-			flags <- initializeBigMatrix("flags.nps", nr, length(unique(batch(object))), vmode="integer")
-			flags[,] <- 0L
-			save(flags, file=file.path(ldPath(), "flags.nps.rda"))
-		} else{
-			load(file.path(ldPath(), "flags.nps.rda"))
-		}
 		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
 		FUN <- fit.lm2
 	}
 	if(type=="X.snps"){
-		marker.index <- which(chromosome(object) == 23 & isSnp(object) & !is.na(chromosome(object)))
-		##marker.index <- which(chromosome(object) < 23 & isSnp(object) & !is.na(chromosome(object)))
+		marker.index <- which(is.X & is.snp)
 		nr <- length(marker.index)
 		Ns <- initializeBigMatrix("Ns", nr, 5)
 		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(!file.exists(file.path(ldPath(), "normal.X.snps.rda"))){
-			normal <- initializeBigMatrix("normal.X.snps", nr, ncol(object), vmode="integer")
-			normal[,] <- 1L
-			save(normal, file=file.path(ldPath(), "normal.X.snps.rda"))
-		} else load(file.path(ldPath(), "normal.X.snps.rda"))
-		if(!file.exists(file.path(ldPath(), "flags.X.snps.rda"))){
-			flags <- initializeBigMatrix("flags.X.snps", nr, length(unique(batch(object))), vmode="integer")
-			flags[,] <- 0L
-			save(flags, file=file.path(ldPath(), "flags.X.snps.rda"))
-		} else{
-			load(file.path(ldPath(), "flags.X.snps.rda"))
-		}
 		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
 		FUN <- fit.lm3
 	}
 	if(type=="X.nps"){
-		marker.index <- which(chromosome(object) == 23 & !isSnp(object) & !is.na(chromosome(object)))
+		marker.index <- which(is.X & !is.snp)
 		nr <- length(marker.index)
 		Ns <- initializeBigMatrix("Ns", nr, 5)
 		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(!file.exists(file.path(ldPath(), "normal.X.nps.rda"))){
-			normal <- initializeBigMatrix("normal.X.nps", nr, ncol(object), vmode="integer")
-			normal[,] <- 1L
-			save(normal, file=file.path(ldPath(), "normal.X.nps.rda"))
-		} else load(file.path(ldPath(), "normal.X.nps.rda"))
-		if(!file.exists(file.path(ldPath(), "flags.X.nps.rda"))){
-			flags <- initializeBigMatrix("flags.X.nps", nr, length(unique(batch(object))), vmode="integer")
-			flags[,] <- 0L
-			save(flags, file=file.path(ldPath(), "flags.X.nps.rda"))
-		} else{
-			load(file.path(ldPath(), "flags.X.nps.rda"))
-		}
 		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
 		FUN <- fit.lm4
 	}
 	index.strata <- splitIndicesByLength(marker.index, ocProbesets())
+	## create a separate object for each strata and combine() at the very end.
 	obj <- construct(filenames=filenames,
 			 cdfName=annotation(object),
 			 copynumber=TRUE,
@@ -2892,8 +2847,8 @@ computeCN <- function(object,
 		 marker.index=marker.index,
 		 object=obj,
 		 Ns=Ns,
-		 normal=normal,
-		 snpflags=flags,
+		 ##normal=normal,
+		 ##snpflags=flags,
 		 snpBatches=index.strata,
 		 batchSize=ocProbesets(),
 		 SNRMin=SNRMin,
