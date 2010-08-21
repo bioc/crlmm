@@ -120,7 +120,7 @@ copy number estimation and, therefore, we do not need to preprocess
 and genotype the files a second time.
 
 <<genotype>>=
-if(!file.exists(file.path(outdir, "cnSet.rda"))){
+if(!file.exists(file.path(outdir, "cnSet.assayData_matrix.rda"))){
 	gtSet.assayData_matrix <- checkExists("gtSet.assayData_matrix",
 					   .path=outdir,
 					   .FUN=genotype,
@@ -146,10 +146,6 @@ cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      .FUN=crlmmCopynumber,
 				      object=gtSet.assayData_matrix,
 				      chromosome=22)
-##Rprof(interval=0.1)
-obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=23)
-if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
-	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
 @ 
 
 
@@ -201,13 +197,12 @@ Rprof(filename="Rprof_cnff.out", interval=0.1)
 cnSet.assayData_ff <- checkExists("cnSet.assayData_ff",
 				  .path=outdir,
 				  .FUN=crlmmCopynumberLD,
-				  filenames=celFiles,
-				  cdfName=cdfName,
-				  batch=batch)
+				  object=gtSet.assayData_ff)
 Rprof(NULL)
-if(file.exists(file.path(outdir, "gtSet.assayData_ff.rda")))
-	unlink(file.path(outdir, "gtSet.assayData_ff.rda"))
+##if(file.exists(file.path(outdir, "gtSet.assayData_ff.rda")))
+##	unlink(file.path(outdir, "gtSet.assayData_ff.rda"))
 gc()
+q("no")
 @ 
 
 The objects returned by the \Rfunction{genotypeLD} and

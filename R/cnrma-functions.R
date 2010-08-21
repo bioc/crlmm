@@ -657,8 +657,7 @@ crlmmCopynumberLD <- function(object,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
-			    thresholdCopynumber=TRUE,
-			      weighted.lm=TRUE){
+			    thresholdCopynumber=TRUE){
 	stopifnot("batch" %in% varLabels(protocolData(object)))
 	stopifnot("chromosome" %in% fvarLabels(object))
 	stopifnot("position" %in% fvarLabels(object))
@@ -794,8 +793,7 @@ fit.lm1 <- function(idxBatch,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
-		    verbose,
-		    weighted.lm, ...){
+		    verbose,...){
 	if(isPackageLoaded("ff")) physical <- get("physical")
 	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
@@ -907,20 +905,18 @@ fit.lm1 <- function(idxBatch,
 		wB <- sqrt(1/vB2)
 		YA <- muA*wA
 		YB <- muB*wB
-		if(weighted.lm){
-			res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)
-		} else{
-			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
-			res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)			
-		}
+		res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)
+##		} else{
+##			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
+##			res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)			
+##		}
 		nuA[, J] <- res[[1]]
 		phiA[, J] <- res[[2]]
-		if(weighted.lm){
-			res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)
-		} else {
-			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
-			res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)			
-		}
+		res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)
+##		} else {
+##			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
+##			res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)			
+##		}
 		##nuB[, J] <- res[[1]]
 		nuB[, J] <- res[1, ]
 		##phiB[, J] <- res[[2]]
@@ -1006,8 +1002,7 @@ fit.lm2 <- function(idxBatch,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
-		    verbose,
-		    weighted.lm, ...){
+		    verbose,...){
 	physical <- get("physical")
 	if(verbose) message("Probe batch ", idxBatch, " of ", length(snpBatches))
 	snps <- snpBatches[[idxBatch]]
@@ -2815,8 +2810,7 @@ computeCN <- function(object,
 		      MIN.PHI=2^3,
 		      THR.NU.PHI=TRUE,
 		      thresholdCopynumber=TRUE,
-		      type=c("autosome.snps", "autosome.nps", "X.snps", "X.nps"),
-		      weighted.lm=TRUE){
+		      type=c("autosome.snps", "autosome.nps", "X.snps", "X.nps")){
 	stopifnot("batch" %in% varLabels(protocolData(object)))
 	stopifnot("chromosome" %in% fvarLabels(object))
 	stopifnot("position" %in% fvarLabels(object))
@@ -2930,8 +2924,7 @@ computeCN <- function(object,
 		 MIN.NU=MIN.NU,
 		 MIN.PHI=MIN.PHI,
 		 verbose=verbose,
-		 neededPkgs="crlmm",
-		 weighted.lm=weighted.lm)
+		 neededPkgs="crlmm")
 	message("finished")
 	return(obj)
 }
