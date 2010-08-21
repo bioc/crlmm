@@ -50,18 +50,20 @@ Class \code{"\linkS4class{Versioned}"}, by class "CNSet", distance 6.
     \item{lines}{\code{signature(x="CNSetLM")}: for drawing prediction regions on A vs B scatterplots}
     \item{lM}{\code{signature(object = "CNSetLM")}: Extract list or
     ffdf object containing linear model parameters}
-    \item{nu}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
-            intercept for linear model. See \code{\link{nu}}.}
-  \item{open}{\code{signature(con = "CNSetLM")}: opens file connects
-    to ff objects for assayData elements and linear model parameters}
-    \item{phi}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
-            slope for linear model.  See \code{\link{phi}}.}
+    \item{nu}{\code{signature(object = "CNSetLM", allele="character")}: 
+            intercept for linear model. See \code{\link{nu}}}
+    \item{open}{\code{signature(con = "CNSetLM")}: opens file connection
+               to ff objects for assayData elements and linear model parameters}
+    \item{phi}{\code{signature(object = "CNSetLM", allele="character")}: 
+               slope for linear model.  See \code{\link{phi}}.}
     \item{show}{\code{signature(object = "CNSetLM")}: print method
-    for the class }
-    \item{sigma2}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
-    The within genotype         }   
-	 }
+                 for the class }
+    \item{sigma2}{\code{signature(object = "CNSetLM", allele="character")}: 
+                  Accessor for log2 intensity variance among subjects with genotype AA (allele 'A') and genotype BB (allele 'B')
+	     }
 }
+}
+
 \author{ R. Scharpf}
 \seealso{
 	\code{\linkS4class{SnpSuperSet}}, \code{\linkS4class{CNSet}}

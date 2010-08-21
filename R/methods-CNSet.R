@@ -39,6 +39,7 @@ setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
 
 setMethod("open", "CNSetLM", function(con,...){
 	callNextMethod(con,...)
+	physical <- get("physical")
 	lapply(physical(lM(con)), open)
 })
 
@@ -103,6 +104,7 @@ setMethod("computeCopynumber", "CNSet",
 	}
 	object
 })
+
 setMethod("copyNumber", "CNSet", function(object){
 	I <- isSnp(object)
 	ffIsLoaded <- class(calls(object))[[1]]=="ff"
@@ -210,11 +212,14 @@ setMethod("nu", c("CNSetLM", "character"), function(object, allele){
 	val <- getValue(allele)
 	class.lm <- class(lM(object)) 
 	if(class.lm == "ffdf"){
-		return(physical(lM(object))[[val]])
+		physical <- get("physical")
+		res <- physical(lM(object))[[val]]
+
 	} else {
-		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
-		return(lM(object)[[val]])
+		if(class.lm != "list") stop("lM() must be matrix or ffdf")
+		res <- lM(object)[[val]]
 	}
+	return(res)
 })
 
 setMethod("phi", c("CNSetLM", "character"), function(object, allele){
@@ -227,11 +232,14 @@ setMethod("phi", c("CNSetLM", "character"), function(object, allele){
 	val <- getValue(allele)	
 	class.lm <- class(lM(object)) 
 	if(class.lm == "ffdf"){
-		return(physical(lM(object))[[val]])
+		physical <- get("physical")
+		res <- physical(lM(object))[[val]]
+
 	} else {
-		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
-		return(lM(object)[[val]])
+		if(class.lm != "list") stop("lM() must be matrix or ffdf")
+		res <- lM(object)[[val]]
 	}
+	return(res)
 })
 
 setMethod("sigma2", c("CNSetLM", "character"), function(object, allele){
@@ -242,13 +250,16 @@ setMethod("sigma2", c("CNSetLM", "character"), function(object, allele){
 		       stop("allele must be 'A' or 'B'"))
 	}
 	val <- getValue(allele)	
-	class.lm <- class(lM(object)) 
+	class.lm <- class(lM(object))
 	if(class.lm == "ffdf"){
-		return(physical(lM(object))[[val]])
+		physical <- get("physical")
+		res <- physical(lM(object))[[val]]
+
 	} else {
-		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
-		return(lM(object)[[val]])
+		if(class.lm != "list") stop("lM() must be matrix or ffdf")
+		res <- lM(object)[[val]]
 	}
+	return(res)
 })
 
 setMethod("tau2", c("CNSetLM", "character"), function(object, allele){
@@ -259,13 +270,16 @@ setMethod("tau2", c("CNSetLM", "character"), function(object, allele){
 		       stop("allele must be 'A' or 'B'"))
 	}
 	val <- getValue(allele)
-	class.lm <- class(lM(object)) 
+	class.lm <- class(lM(object))
 	if(class.lm == "ffdf"){
-		return(physical(lM(object))[[val]])
+		physical <- get("physical")
+		res <- physical(lM(object))[[val]]
+
 	} else {
-		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
-		return(lM(object)[[val]])
+		if(class.lm != "list") stop("lM() must be matrix or ffdf")
+		res <- lM(object)[[val]]
 	}
+	return(res)
 })
 
 setMethod("corr", c("CNSetLM", "character"), function(object, allele){
@@ -277,12 +291,15 @@ setMethod("corr", c("CNSetLM", "character"), function(object, allele){
 		       stop("must be AA, AB, or BB"))
 	}
 	val <- getValue(allele)
-	class.lm <- class(lM(object)) 
+	class.lm <- class(lM(object))
 	if(class.lm == "ffdf"){
-		return(physical(lM(object))[[val]])
+		physical <- get("physical")
+		res <- physical(lM(object))[[val]]
+
 	} else {
-		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
-		return(lM(object)[[val]])
+		if(class.lm != "list") stop("lM() must be matrix or ffdf")
+		res <- lM(object)[[val]]
 	}
+	return(res)
 })
 

@@ -1,5 +1,6 @@
 \name{crlmmIllumina}
 \alias{crlmmIllumina}
+\alias{crlmmIllumina2}
 \title{Genotype Illumina Infinium II BeadChip data with CRLMM}
 \description{
   Implementation of the CRLMM algorithm for
@@ -8,6 +9,14 @@
 \usage{
 
 crlmmIllumina(RG, XY, stripNorm=TRUE, 
+      useTarget=TRUE, row.names=TRUE, col.names=TRUE,
+      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
+      gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
+      snpFile, cnFile, mixtureSampleSize=10^5,
+      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
+      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
+
+crlmmIllumina2(RG, XY, stripNorm=TRUE, 
       useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
@@ -64,11 +73,13 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
 }
 
 \details{
+
   Note: The user should specify either the \code{RG} or \code{XY}
   intensities, not both.  Alternatively if \code{crlmmIllumina} has been
   run already with \code{save.it=TRUE}, the preprocessed data can be
   loaded from file by specifying \code{load.it=TRUE} and
   \code{intensityFile} (\code{RG} or \code{XY} are not needed in this case).
+
 }
 
 \references{

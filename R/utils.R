@@ -29,11 +29,12 @@ intMedianSummaries <- function(mat, grps)
 ## R CMD check
 
 isLoaded <- function(dataset, environ=.crlmmPkgEnv)
-  exists(dataset, envir=environ)
+	exists(dataset, envir=environ)
+
 getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
-  if (!isLoaded(dataset))
-    stop("Variable ", dataset, " not found in .crlmmPkgEnv")
-  environ[[dataset]]
+	if (!isLoaded(dataset))
+		stop("Variable ", dataset, " not found in .crlmmPkgEnv")
+	environ[[dataset]]
 }
 
 list2SnpSet <- function(x, returnParams=FALSE){

@@ -1,4 +1,5 @@
 \name{linearModelParams}
+\alias{lM}
 \alias{corr}
 \alias{nu}
 \alias{phi}
@@ -32,27 +33,27 @@ tau2(object, allele)
 
 \details{
 
-\item{\code{lM}:  Extracts entire list of linear model parameters.}
+\code{lM}:  Extracts entire list of linear model parameters.
 
-\item{\code{corr}: The within-genotype correlation of log2(A) and log2(B) intensities.}
+\code{corr}: The within-genotype correlation of log2(A) and log2(B) intensities.
 
-\item{\code{nu}: The intercept for the linear model.  The linear model is
-fit to the A and B alleles independently.}
+\code{nu}: The intercept for the linear model.  The linear model is
+fit to the A and B alleles independently.
 
-\item{\code{phi}: The slope for the linear model.  The linear model is fit
-independently to the A and B alleles.}
+\code{phi}: The slope for the linear model.  The linear model is fit
+independently to the A and B alleles.
 
-\item{\code{sigma2}: For allele A, sigma2 is calculated as the squared MAD
+\code{sigma2}: For allele A, sigma2 is calculated as the squared MAD
 of the log2(intensity) for allele 'A' among subjects with genotype AA.
 For allele B, sigma2 is calculated as the squared MAD of the
 log2(intensity) for allele 'B' among subjects with genotype BB.
-sigma2 can be interpreted as a robust estimate of the signal variance.}
+sigma2 can be interpreted as a robust estimate of the signal variance.
 
-\item{\code{tau2}: For allele A, tau2 is calculated as the squared MAD of
+\code{tau2}: For allele A, tau2 is calculated as the squared MAD of
 the log2(intensity) for allele 'A' among subjects with genotype BB.
 For allele B, tau2 is calculated as the squared MAD of the
 log2(intensity) for allele 'B' among subjects with genotype AA.  tau2
-can be interpeted as a robust estimate of the background variance.}
+can be interpeted as a robust estimate of the background variance.
 
 }
 
@@ -71,25 +72,27 @@ R. Scharpf
 }
 \examples{
 ## object with ff class
-data(sample.CNSetLMff)
-invisible(open(sample.CNSetLMff))
-class(lM(sample.CNSetLMff))
-params <- lM(sample.CNSetLMff)
-nuA <- nu(sample.CNSetLMff, "A")
-nuB <- nu(sample.CNSetLMff, "B")
-phA <- phi(sample.CNSetLMff, "A")
-phB <- phi(sample.CNSetLMff, "B")
-sig2A <- sigma2(sample.CNSetLMff, "A") 
-sig2B <- sigma2(sample.CNSetLMff, "B")
-tau2A <- tau2(sample.CNSetLMff, "A")
-tau2B <- tau2(sample.CNSetLMff, "B")
-corrAA <- corr(sample.CNSetLMff, "AA")
-corrBB <- corr(sample.CNSetLMff, "BB")
-corrAB <- corr(sample.CNSetLMff, "AB")
-invisible(close(sample.CNSetLMff))
+if(require("ff")){
+	data(sample.CNSetLMff)
+	invisible(open(sample.CNSetLMff))
+	class(lM(sample.CNSetLMff))
+	params <- lM(sample.CNSetLMff)
+	nuA <- nu(sample.CNSetLMff, "A")
+	nuB <- nu(sample.CNSetLMff, "B")
+	phA <- phi(sample.CNSetLMff, "A")
+	phB <- phi(sample.CNSetLMff, "B")
+	sig2A <- sigma2(sample.CNSetLMff, "A") 
+	sig2B <- sigma2(sample.CNSetLMff, "B")
+	tau2A <- tau2(sample.CNSetLMff, "A")
+	tau2B <- tau2(sample.CNSetLMff, "B")
+	corrAA <- corr(sample.CNSetLMff, "AA")
+	corrBB <- corr(sample.CNSetLMff, "BB")
+	corrAB <- corr(sample.CNSetLMff, "AB")
+	invisible(close(sample.CNSetLMff))
+}
 ## object with matrix class
 data(sample.CNSetLM)
-class(lM(sample.CNSetlM))
+class(lM(sample.CNSetLM))
 nuA <- nu(sample.CNSetLM, "A")
 nuB <- nu(sample.CNSetLM, "B")
 phA <- phi(sample.CNSetLM, "A")

@@ -11,33 +11,19 @@ linesCNSetLM <- function(x, y, batch, copynumber, x.axis="A", ...){
 	ffIsLoaded <- calls.class[1] == "ff_matrix" | calls.class[1] == "ffdf" | calls.class[1]=="ff"
 	column <- grep(batch, unique(batch(object)))
 	stopifnot(length(column) == 1)
-	if(ffIsLoaded){
-		nuA <- (physical(lM(object))[["nuA"]])[I, column , drop=TRUE]
-		nuB <- (physical(lM(object))[["nuB"]])[I, column , drop=TRUE]
-		phiA <- (physical(lM(object))[["phiA"]])[I, column ,drop=TRUE]
-		phiB <- (physical(lM(object))[["phiB"]])[I, column ,drop=TRUE]
-		tau2A <- (physical(lM(object))[["tau2A"]])[I, column ,drop=TRUE]
-		tau2B <- (physical(lM(object))[["tau2B"]])[I, column ,drop=TRUE]
-		sigma2A <- (physical(lM(object))[["sig2A"]])[I, column ,drop=TRUE]
-		sigma2B <- (physical(lM(object))[["sig2B"]])[I, column ,drop=TRUE]
-		corrAB <- (physical(lM(object))[["corrAB"]])[I, column ,drop=TRUE]
-		corrAA <- (physical(lM(object))[["corrAA"]])[I, column ,drop=TRUE]
-		corrBB <- (physical(lM(object))[["corrBB"]])[I, column ,drop=TRUE]
-	} else {
-		nuA <- lM(object)[["nuA"]][I, column , drop=TRUE]
-		nuB <- lM(object)[["nuB"]][I, column , drop=TRUE]
-		phiA <- lM(object)[["phiA"]][I, column ,drop=TRUE]
-		phiB <- lM(object)[["phiB"]][I, column ,drop=TRUE]
-		tau2A <- lM(object)[["tau2A"]][I, column ,drop=TRUE]
-		tau2B <- lM(object)[["tau2B"]][I, column ,drop=TRUE]
-		sigma2A <- lM(object)[["sig2A"]][I, column ,drop=TRUE]
-		sigma2B <- lM(object)[["sig2B"]][I, column ,drop=TRUE]
-		corrAB <- lM(object)[["corrAB"]][I, column ,drop=TRUE]
-		corrAA <- lM(object)[["corrAA"]][I, column ,drop=TRUE]
-		corrBB <- lM(object)[["corrBB"]][I, column ,drop=TRUE]
-	}
+	nuA <- nu(object, "A")[I, column]
+	nuB <- nu(object, "B")[I, column]
+	phiA <- phi(object, "A")[I, column]
+	phiB <- phi(object, "B")[I, column]		
+	tau2A <- tau2(object, "A")[I, column]
+	tau2B <- tau2(object, "B")[I, column]
+	sigma2A <- sigma2(object, "A")[I, column]
+	sigma2B <- sigma2(object, "B")[I, column]
+	corrAB <- corr(object, "AB")[I, column]
+	corrAA <- corr(object, "AA")[I, column]
+	corrBB <- corr(object, "BB")[I, column]
 	if(all(is.na(nuA))) {
-		message("Parameter estimates for batch ", b, " not available")
+		message("Parameter estimates for batch ", batch, " not available")
 		next()
 	}
 	for(CN in copynumber){

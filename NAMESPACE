@@ -53,7 +53,7 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-importFrom(ff, ffdf)
+importFrom(ff, ffdf, physical.ff, physical.ffdf)
 
 exportClasses(CNSetLM, ffdf, list)
 exportMethods(open, "[", show, lM, lines, nu, phi, corr, sigma2, tau2)
@@ -61,6 +61,7 @@ export(crlmm,
        crlmmCopynumber, 
        crlmmIllumina, 
        crlmmIllumina2,
+       ellipseCenters,
        genotype, 
        readIdatFiles, 
        readIdatFiles2,
@@ -71,7 +72,7 @@ export(crlmm,
        batch,
        crlmmCopynumber2, crlmmCopynumberLD)
 export(constructIlluminaCNSet)
-
+export(linesCNSetLM)
 
 
 
