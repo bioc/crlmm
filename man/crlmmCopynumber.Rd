@@ -32,12 +32,7 @@ thresholdCopynumber = TRUE)
 
 }
 
- \item{chromosome}{Numeric vector indicating which chromosomes to
- process (length <= 23). For chromosome X, use 23. A copy number
- method for chromosome Y is not yet available.
-}
-
-  \item{MIN.SAMPLES}{ 'Integer'.  The minimum number of samples in a
+ \item{MIN.SAMPLES}{ 'Integer'.  The minimum number of samples in a
   batch.  Bathes with fewer than MIN.SAMPLES are skipped.  Therefore,
   samples in batches with fewer than MIN.SAMPLES have NA's for the
   allele-specific copy number and NA's for the linear model

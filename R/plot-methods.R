@@ -1,19 +1,19 @@
-setMethod("lines", c("CNSetLM"), function(x, y, batch, copynumber, ...){
-	linesCNSet(x, y, batch, copynumber, ...)
-})
+setMethod("lines", signature=signature(x="CNSet"),
+	  function(x, y, batch, copynumber, ...){
+		  linesCNSet(x, y, batch, copynumber, ...)
+	  })
+
 linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 	require(ellipse)
 	object <- x
 	I <- y
-	stopifnot(length(I) == 1) 
-	calls.class <- class(calls(object)[[1]])
-	ffIsLoaded <- calls.class[1] == "ff_matrix" | calls.class[1] == "ffdf" | calls.class[1]=="ff"
-	column <- grep(batch, unique(batch(object)))
+	stopifnot(length(I) == 1)
+	column <- grep(batch, batchNames(object))
 	stopifnot(length(column) == 1)
 	nuA <- nu(object, "A")[I, column]
 	nuB <- nu(object, "B")[I, column]
 	phiA <- phi(object, "A")[I, column]
-	phiB <- phi(object, "B")[I, column]		
+	phiB <- phi(object, "B")[I, column]
 	tau2A <- tau2(object, "A")[I, column]
 	tau2B <- tau2(object, "B")[I, column]
 	sigma2A <- sigma2(object, "A")[I, column]
@@ -45,5 +45,5 @@ linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 					      scale=rev(scale)), ...)
 			}
 		}
-	}	
+	}
 }

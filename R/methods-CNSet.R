@@ -17,8 +17,6 @@ linearParamElementReplace <- function(obj, elt, value) {
 }
 
 
-
-
 setMethod("nuA", signature=signature(object="CNSet"), function(object) nu(object, "A"))
 setMethod("nuB", signature=signature(object="CNSet"), function(object) nu(object, "B"))
 setMethod("phiA", signature=signature(object="CNSet"), function(object) phi(object, "A"))
@@ -31,122 +29,79 @@ setMethod("corrAA", signature=signature(object="CNSet"), function(object) corr(o
 setMethod("corrAB", signature=signature(object="CNSet"), function(object) corr(object, "AB"))
 setMethod("corrBB", signature=signature(object="CNSet"), function(object) corr(object, "BB"))
 
-setReplaceMethod("nuA", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("nuA", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "nuA", value)
 	  })
 
-setReplaceMethod("nuB", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("nuB", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "nuB", value)		  
+		  linearParamElementReplace(object, "nuB", value)
 })
 
-setReplaceMethod("phiA", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("phiA", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "phiA", value)		  
+		  linearParamElementReplace(object, "phiA", value)
 })
 
-setReplaceMethod("phiB", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("phiB", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "phiB", value)		  
+		  linearParamElementReplace(object, "phiB", value)
 })
 
-setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "sig2A", value)		  
+		  linearParamElementReplace(object, "sig2A", value)
 })
 
-setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "sig2B", value)		  
+		  linearParamElementReplace(object, "sig2B", value)
 })
 
-setReplaceMethod("tau2A", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("tau2A", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "tau2A", value)		  
+		  linearParamElementReplace(object, "tau2A", value)
 })
 
-setReplaceMethod("tau2B", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("tau2B", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "tau2B", value)		  
+		  linearParamElementReplace(object, "tau2B", value)
 })
 
-setReplaceMethod("corrAA", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("corrAA", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "corrAA", value)		  
+		  linearParamElementReplace(object, "corrAA", value)
 })
 
-setReplaceMethod("corrAB", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("corrAB", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "corrAB", value)		  
+		  linearParamElementReplace(object, "corrAB", value)
 })
 
-setReplaceMethod("corrBB", signature=signature(object="CNSet", value="matrix"), 
+setReplaceMethod("corrBB", signature=signature(object="CNSet", value="matrix"),
 	  function(object, value){
-		  linearParamElementReplace(object, "corrBB", value)		  
+		  linearParamElementReplace(object, "corrBB", value)
 })
 
-
-##setValidity("CNSet",
-##	    function(object){
-##		    if(!"batch" %in% varLabels(protocolData(object)))
-##			    return("'batch' not defined in protocolData")
-##		    if(!"chromosome" %in% fvarLabels(object))
-##			    return("'chromosome' not defined in featureData")
-##		    if(!"position" %in% fvarLabels(object))
-##			    return("'position' not defined in featureData")
-##		    if(!"isSnp" %in% fvarLabels(object))
-##			    return("'isSnp' not defined in featureData")
-##		    return(TRUE)
-##	    })
-
-setMethod("totalCopyNumber", "CNSet", function(object, i, j){
-	if(missing(i) & missing(j)){
-		if(inherits(CA(object), "ff") | inherits(CA(object), "ffdf")) stop("Must specify i and/or j for ff objects")
-	}
-	if(missing(i) & !missing(j)){
-		snp.index <- which(isSnp(object))	
-		cn.total <- as.matrix(CA(cnSet)[, j])
-		cb <- as.matrix(CB(cnSet)[snp.index, j]	)
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb		
-	}
-	if(!missing(i) & missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)
-		cn.total <- as.matrix(CA(cnSet)[i, ])
-		cb <- as.matrix(CB(cnSet)[snp.index, ])	
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb				
-	}
-	if(!missing(i) & !missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)		
-		cn.total <- as.matrix(CA(cnSet)[i, j])	
-		cb <- as.matrix(CB(cnSet)[snp.index, j])
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
-	}
-	cn.total <- cn.total/100
-	dimnames(cn.total) <- NULL
-	return(cn.total)
-})
 
 ##setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){
 ##	ellipse.CNSet(x, copynumber, batch, ...)
 ##})
 
 
-
 ACN <- function(object, allele, i , j){
-	if(missing(i) & missing(j)){
-		if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
-	}
+	bns <- batchNames(object)
+	acn <- list()
 	if(missing(i) & !missing(j)){
 		## calculate ca only for batches indexed by j
-		ubatch <- unique(batch(object))
 		batches <- unique(batch(object)[j])
 		for(k in seq_along(batches)){
-			l <- match(batches[k], ubatch)
+			l <- match(batches[k], bns)
 			bg <- nu(object, allele)[, l]
-			sl <- phi(object, allele)[, l]
+			slope <- phi(object, allele)[, l]
 			I <- allele(object, allele)[, j]
-			acn <- 1/sl*(I - bg)				  
+			acn[[k]] <- 1/slope*(I - bg)
 		}
 	}
 	if(!missing(i) & missing(j)){
@@ -155,75 +110,93 @@ ACN <- function(object, allele, i , j){
 		for(k in seq_along(batches)){
 			##bb <- batches[k]
 			bg <- nu(object, allele)[i, k]
-			sl <- phi(object, allele)[i, k]
+			slope <- phi(object, allele)[i, k]
 			I <- allele(object, allele)[i, j]
-			acn <- 1/sl*(I - bg)
+			acn[[k]] <- 1/slope*(I - bg)
 		}
 	}
 	if(!missing(i) & !missing(j)){
 		ubatch <- unique(batch(object))
 		batches <- unique(batch(object)[j])
+		acn <- list()
 		for(k in seq_along(batches)){
 			l <- match(batches[k], ubatch)
 			bg <- nu(object, allele)[i, l]
-			sl <- phi(object, allele)[i, l]
+			slope <- phi(object, allele)[i, l]
 			I <- allele(object, allele)[i, j]
-			acn <- 1/bg*(I - sl)				  
-		}			  
+			acn[[k]] <- 1/slope*(I - bg)
+		}
 	}
+	if(length(acn) > 1) acn <- do.call("cbind", acn)
+	if(length(acn) == 1) acn <- acn[[1]]
 	return(acn)
 }
 
-setMethod("CA",
-	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
-	  function(object, i, j) {
-		  ca <- ACN(object, allele="A", i, j)
+setMethod("CA", signature=signature(object="CNSet"),
+	  function(object, ...){
+		  ca <- ACN(object, allele="A", ...)
 		  return(ca)
 	  })
-setMethod("CB",
-	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
-	  function(object, i, j) {
-		  cb <- ACN(object, allele="B", i, j)
+setMethod("CB", signature=signature(object="CNSet"),
+	  function(object, ...) {
+		  cb <- ACN(object, allele="B", ...)
 		  return(cb)
 	  })
 
-setMethod("totalCopyNumber",
-	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
-	  function(object, i, j, ...){
-	if(missing(i) & missing(j)){
-		if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
+##setMethod("totalCopyNumber", signature=signature(object="CNSet"),
+totalCopyNumber <- function(object, ..., verbose=TRUE, dimnames=FALSE){
+	ca <- CA(object, ...)
+	cb <- CB(object, ...)
+	is.snp <- isSnp(object)
+	dotArgs <- list(...)
+	if("i" %in% names(dotArgs)){
+		i <- dotArgs[["i"]]
+		np.index <- which(!is.snp[i])
+		if(length(np.index) > 0) cb[np.index, ] <- 0
+	} else {
+		np.index <- which(!is.snp)
+		if(length(np.index) > 0) cb[np.index, ] <- 0
 	}
-	if(missing(i) & !missing(j)){
-		snp.index <- which(isSnp(object))	
-		cn.total <- as.matrix(CA(object)[, j])
-		if(length(snp.index) > 0){
-			cb <- as.matrix(CB(object)[snp.index, j])
-			snps <- (1:nrow(cn.total))[i %in% snp.index]
-			cn.total[snps, ] <- cn.total[snps, j] + cb				
-		}
-	}
-	if(!missing(i) & missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)
-		cn.total <- as.matrix(CA(object)[i, ])
-		if(length(snp.index) > 0){
-			cb <- as.matrix(CB(object)[snp.index, ])
-			snps <- (1:nrow(cn.total))[i %in% snp.index]
-			cn.total[snps, ] <- cn.total[snps, ] + cb				
-		}
-	}
-	if(!missing(i) & !missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)		
-		cn.total <- as.matrix(CA(object)[i, j])
-		if(length(snp.index) > 0){
-			cb <- as.matrix(CB(object)[snp.index, j])
-			snps <- (1:nrow(cn.total))[i %in% snp.index]
-			cn.total[snps, ] <- cn.total[snps, ] + cb
-		}
-	}
-	##cn.total <- cn.total/100
-	dimnames(cn.total) <- NULL
-	return(cn.total)
-})
+	return(ca+cb)
+}
+
+##
+##
+##
+##
+##		  if(missing(i) & !missing(j)){
+##			  ca <- CA(object, i, j)
+##			  snp.index <- which(isSnp(object))
+##			  cn.total <- as.matrix(CA(object)[, j])
+##			  if(length(snp.index) > 0){
+##				  cb <- as.matrix(CB(object)[snp.index, j])
+##				  snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				  cn.total[snps, ] <- cn.total[snps, j] + cb
+##			  }
+##		  }
+##		  if(!missing(i) & missing(j)){
+##			  snp.index <- intersect(which(isSnp(object)), i)
+##			  cn.total <- as.matrix(CA(object)[i, ])
+##			  if(length(snp.index) > 0){
+##				  cb <- as.matrix(CB(object)[snp.index, ])
+##				  snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				  cn.total[snps, ] <- cn.total[snps, ] + cb
+##			  }
+##		  }
+##		  if(!missing(i) & !missing(j)){
+##			  snp.index <- intersect(which(isSnp(object)), i)
+##			  cn.total <- as.matrix(CA(object)[i, j])
+##			  if(length(snp.index) > 0){
+##				  cb <- as.matrix(CB(object)[snp.index, j])
+##				  snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				  cn.total[snps, ] <- cn.total[snps, ] + cb
+##			  }
+##		  }
+##		  ##cn.total <- cn.total/100
+##		  dimnames(cn.total) <- NULL
+##		  return(cn.total)
+##	  })
+
 
 setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
                  function(object, ..., value){

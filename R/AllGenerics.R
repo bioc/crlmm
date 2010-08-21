@@ -7,11 +7,9 @@ setGeneric("computeCopynumber", function(object, ...) standardGeneric("computeCo
 setGeneric("snpIndex", function(object) standardGeneric("snpIndex"))
 setGeneric("snpNames", function(object) standardGeneric("snpNames"))
 
-setGeneric("totalCopyNumber", function(object,...) standardGeneric("totalCopyNumber"))
-
-setGeneric("CA", function(object, i, j, ...) standardGeneric("CA"))
-setGeneric("CB", function(object, i, j, ...) standardGeneric("CB"))
-setGeneric("totalCopyNumber", function(object, i, j, ...) standardGeneric("totalCopyNumber"))
+setGeneric("CA", function(object, ...) standardGeneric("CA"))
+setGeneric("CB", function(object, ...) standardGeneric("CB"))
+##setGeneric("totalCopyNumber", function(object, ...) standardGeneric("totalCopyNumber"))
 
 
 ## The generics below are for internal use with copy number methods

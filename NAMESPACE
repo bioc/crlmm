@@ -34,6 +34,7 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)
 
+
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot, lines)
 
@@ -57,12 +58,12 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf)
 importClassesFrom(oligoClasses, ffdf)
 
 exportMethods(lines)
-exportMethods(CA, CB, totalCopyNumber)
-export(crlmm, 
-       crlmmIllumina, 
+exportMethods(CA, CB)
+export(crlmm,
+       crlmmIllumina,
        crlmmIllumina2,
        ellipseCenters,
-       readIdatFiles, 
+       readIdatFiles,
        readIdatFiles2,
        snprma,
        snprma2,
@@ -74,6 +75,7 @@ export(constructIlluminaCNSet)
 export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
        dqrlsWrapper, fit.wls)
 export(computeCopynumber, ACN)
+export(totalCopyNumber)
 
 ## For debugging
 ## exportPattern("^[^\\.]")
