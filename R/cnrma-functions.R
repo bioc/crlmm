@@ -1270,7 +1270,7 @@ fit.lm3 <- function(idxBatch,
 ##		cB[, k] <- tmp/(1-phistar*phiA2[, J]/phiB[, J])
 ##		cA[, k] <- (A-nuA[, J]-phiA2[, J]*cB[, k])/phiA[, J]
 		##some of the snps are called for the men, but not the women
-		rm(YA, YB, wA, wB, res, tmp, phistar, A, B, G, index)
+		rm(YA, YB, wA, wB, res, phistar, A, B, G, index)
 		##gc()
 	}
 ##	cA[cA < 0.05] <- 0.05
@@ -1467,13 +1467,13 @@ fit.lm4 <- function(idxBatch,
 			nuA[nuA[, J] < MIN.NU, J] <- MIN.NU
 			phiA[phiA[, J] < MIN.PHI, J] <- MIN.PHI
 		}
-		CT1 <- 1/phi1*(A.M-nu1)
-		CT2 <- 1/phi2*(A.F-nu2)
+##		CT1 <- 1/phi1*(A.M-nu1)
+##		CT2 <- 1/phi2*(A.F-nu2)
 ##		tmp <- cA[, k]
 ##		tmp[, gend==1] <- CT1
 ##		tmp[, gend==2] <- CT2
 ##		cA[, k] <- tmp
-		rm(tmp, CT1, CT2, A.F, normal.f, G, AA, BB, Y, X, Ns)
+		rm(A.F, normal.f, G, AA, BB, Y, X, Ns)
 		##gc()
 	}
 ##	cA[cA < 0.05] <- 0.05
