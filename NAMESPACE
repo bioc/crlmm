@@ -57,7 +57,7 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf)
 
 exportClasses(CNSetLM, ffdf, list)
 exportMethods(open, "[", show, lM, lines, nu, phi, corr, sigma2, tau2)
-exportMethods(CA, CB)
+exportMethods(CA, CB, totalCopyNumber)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
