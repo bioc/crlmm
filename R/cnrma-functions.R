@@ -471,22 +471,16 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	W <- W[I, ]
 	if(any(!is.finite(W))){## | any(!is.finite(V))){
 		i <- which(rowSums(!is.finite(W)) > 0)
-		##browser()
 		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
 	}	
 	Ns <- tmp.objects[["Ns"]]	
 	Ns <- Ns[I, ]
 	CHR <- unique(chromosome(object))
-	##batch <- unique(object$batch)
 	batch <- unique(batch(object))
 	nuA <- getParam(object, "nuA", batch)
 	nuB <- getParam(object, "nuB", batch)
-##	nuA.se <- getParam(object, "nuA.se", batch)
-##	nuB.se <- getParam(object, "nuB.se", batch)
 	phiA <- getParam(object, "phiA", batch)
 	phiB <- getParam(object, "phiB", batch)
-##	phiA.se <- getParam(object, "phiA.se", batch)
-##	phiB.se <- getParam(object, "phiB.se", batch)	
 	if(CHR==23){
 		phiAX <- getParam(object, "phiAX", batch)
 		phiBX <- getParam(object, "phiBX", batch)		
@@ -494,7 +488,6 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	NOHET <- mean(Ns[, "AB"], na.rm=TRUE) < 0.05
 	if(missing(allele)) stop("must specify allele")
 	if(CHR == 23){
-		##Design matrix for X chromosome depends on whether there was a sufficient number of AB genotypes
 		if(length(grep("AB", colnames(W))) > 0){
 			if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
 			if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))
@@ -508,27 +501,16 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 		if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous
 		betahat <- matrix(NA, 2, nrow(Ystar))
 	}
-	##How to quickly generate Xstar, Xstar = diag(W) %*% X
-##	Xstar <- apply(W, 1, generateX, X)
-##	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
-	##as.numeric(diag(W[1, ]) %*% X)
 	ww <- rep(1, ncol(Ystar))
 	II <- which(rowSums(is.nan(Ystar)) == 0)
 	for(i in II){
 		betahat[, i] <- dqrlsWrapper(W[i, ] * X, Ystar[i, ], ww)
-		##betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
-		##ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
-		##ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
 	}
 	if(allele == "A"){
 		nuA[complete] <- betahat[1, ]
 		phiA[complete] <- betahat[2, ]
-##		nuA.se[complete] <- ses[1, ]
-##		phiA.se[complete] <- ses[2, ]
 		object <- pr(object, "nuA", batch, nuA)
-##		object <- pr(object, "nuA.se", batch, nuA.se)
 		object <- pr(object, "phiA", batch, phiA)
-##		object <- pr(object, "phiA.se", batch, phiA.se)
 		if(CHR == 23){
 			phiAX[complete] <- betahat[3, ]
 			object <- pr(object, "phiAX", batch, phiAX)			
@@ -537,23 +519,13 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	if(allele=="B"){
 		nuB[complete] <- betahat[1, ]
 		phiB[complete] <- betahat[2, ]
-##		nuB.se[complete] <- ses[1, ]
-##		phiB.se[complete] <- ses[2, ]
 		object <- pr(object, "nuB", batch, nuB)
-##		object <- pr(object, "nuB.se", batch, nuB.se)
 		object <- pr(object, "phiB", batch, phiB)		
-##		object <- pr(object, "phiB.se", batch, phiB.se)
 		if(CHR == 23){
 			phiBX[complete] <- betahat[3, ]
 			object <- pr(object, "phiBX", batch, phiBX)
 		}
 	}
-##	THR.NU.PHI <- cnOptions$THR.NU.PHI
-##	if(THR.NU.PHI){
-##		verbose <- cnOptions$verbose
-##		if(verbose) message("Thresholding nu and phi")
-##		object <- thresholdModelParams(object, cnOptions)
-##	}
 	return(object)
 }
 
