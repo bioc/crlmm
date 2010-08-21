@@ -13,6 +13,9 @@
 \usage{data(sample.CNSetLM)}
 \format{
 
+	This class has been deprecated.  See example below for how to
+	update an existing 'CNSetLM' object to class 'CNSet'.
+ 
 	The data illustrates the \code{CNSetLM-class}, with
 	\code{assayData} containing the quantile-normalized
 	intensities for the A and B alleles, genotype calls and
@@ -22,6 +25,10 @@
 	
 }
 \examples{
+## class CNSetLM has been deprecated
 data(sample.CNSetLM)
+## update to class CNSet
+cnSet <- as(sample.CNSetLM, "CNSet")
+all(isCurrent(cnSet))
 }
 \keyword{datasets}

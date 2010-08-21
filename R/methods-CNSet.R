@@ -17,11 +17,7 @@ linearParamElementReplace <- function(obj, elt, value) {
 }
 
 
-setMethod("nu", c("CNSet", "character"), function(object, allele) nu(lM(object), allele))
-setMethod("phi", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
-setMethod("sigma2", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
-setMethod("tau2", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
-setMethod("corr", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
+
 
 setMethod("nuA", signature=signature(object="CNSet"), function(object) nu(object, "A"))
 setMethod("nuB", signature=signature(object="CNSet"), function(object) nu(object, "B"))

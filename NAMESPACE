@@ -54,10 +54,10 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 
 importFrom(ff, ffdf, physical.ff, physical.ffdf)
+importClassesFrom(oligoClasses, ffdf)
 
-exportClasses(ffdf, list)
 exportMethods(lines)
-exportMethods(CA, CB, totalCopyNumber, initialize)
+exportMethods(CA, CB, totalCopyNumber)
 export(crlmm, 
        crlmmIllumina, 
        crlmmIllumina2,
@@ -68,7 +68,6 @@ export(crlmm,
        snprma2,
        crlmm2,
        genotype2, genotypeLD,
-       batch,
        crlmmCopynumber2, crlmmCopynumberLD)
 export(constructIlluminaCNSet)
 ##export(linesCNSet)
@@ -77,7 +76,7 @@ export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
 export(computeCopynumber, ACN)
 
 ## For debugging
-exportPattern("^[^\\.]")
+## exportPattern("^[^\\.]")
 
 
 

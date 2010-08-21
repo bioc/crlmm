@@ -29,7 +29,7 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 		load(file.path(path, "cnProbes.rda"))
 		cnProbes <- get("cnProbes")
 		snpIndex <- seq(along=gns)
-		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex) 
+		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex)
 		featurenames <- c(gns, rownames(cnProbes))
 	} else featurenames <- gns
 	fvarlabels=c("chromosome", "position", "isSnp")
@@ -76,28 +76,24 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 		featureData <- featureData[index, ]
 	}
 	nr <- nrow(featureData); nc <- length(sns)
-	ffObjects <- list(alleleA=initializeBigMatrix(name="A", nr, nc),
+	adObjects <- list(alleleA=initializeBigMatrix(name="A", nr, nc),
 			  alleleB=initializeBigMatrix(name="B", nr, nc),
 			  call=initializeBigMatrix(name="call", nr, nc),
 			  callProbability=initializeBigMatrix(name="callPr", nr,nc))
-##			  CA=initializeBigMatrix(name="CA", nr, nc),
-##			  CB=initializeBigMatrix(name="CB", nr, nc))
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData <- new("AnnotatedDataFrame", data=pd)
-	ffObjects <- lapply(ffObjects, function(x,sns) {colnames(x) <- sns; return(x)}, sns=sns)
-	callSet <- new("CNSet", 
-		       alleleA=ffObjects[["alleleA"]],
-		       alleleB=ffObjects[["alleleB"]],
-		       call=ffObjects[["call"]],
-		       callProbability=ffObjects[["callProbability"]],
-##		       CA=ffObjects[["CA"]],
-##		       CB=ffObjects[["CB"]],
+	adObjects <- lapply(adObjects, function(x,sns) {colnames(x) <- sns; return(x)}, sns=sns)
+	callSet <- new("CNSet",
+		       alleleA=adObjects[["alleleA"]],
+		       alleleB=adObjects[["alleleB"]],
+		       call=adObjects[["call"]],
+		       callProbability=adObjects[["callProbability"]],
 		       protocolData=protocolData,
 		       phenoData=phenoData,
 		       featureData=featureData,
 		       annotation=cdfName)
-	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))	
+	lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
 	return(callSet)
 }
 
@@ -156,7 +152,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 ##			np.index <- which(isSnp(callSet) == 0)
 ##			cnrmaRes <- cnrma(filenames=filenames[j],
 ##					  cdfName=cdfName,
-##					  row.names=featureNames(callSet)[np.index],				  
+##					  row.names=featureNames(callSet)[np.index],
 ##					  sns=sns[j],
 ##					  seed=seed,
 ##					  verbose=verbose)
@@ -1608,19 +1604,19 @@ processCEL2 <- function(i, filenames, row.names, A, SKW, seed, cdfName, pkgname)
 ##	return(NP)
 ##}
 
-getFlags <- function(object, PHI.THR){
-	batch <- unique(object$batch)
-	nuA <- getParam(object, "nuA", batch)
-	nuB <- getParam(object, "nuB", batch)
-	phiA <- getParam(object, "phiA", batch)
-	phiB <- getParam(object, "phiB", batch)
-	negativeNus <- nuA < 1 | nuB < 1
-	negativePhis <- phiA < PHI.THR | phiB < PHI.THR
-	negativeCoef <- negativeNus | negativePhis
-	notfinitePhi <- !is.finite(phiA) | !is.finite(phiB)
-	flags <- negativeCoef | notfinitePhi
-	return(flags)
-}
+##getFlags <- function(object, PHI.THR){
+##	batch <- unique(object$batch)
+##	nuA <- getParam(object, "nuA", batch)
+##	nuB <- getParam(object, "nuB", batch)
+##	phiA <- getParam(object, "phiA", batch)
+##	phiB <- getParam(object, "phiB", batch)
+##	negativeNus <- nuA < 1 | nuB < 1
+##	negativePhis <- phiA < PHI.THR | phiB < PHI.THR
+##	negativeCoef <- negativeNus | negativePhis
+##	notfinitePhi <- !is.finite(phiA) | !is.finite(phiB)
+##	flags <- negativeCoef | notfinitePhi
+##	return(flags)
+##}
 
 
 ##instantiateObjects <- function(object, cnOptions){
@@ -2737,14 +2733,11 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 	gt <- rbind(gt, emptyMatrix, deparse.level=0)[order.index,]
 	pr <- stripnames(snpCallProbability(object))
 	pr <- rbind(pr, emptyMatrix, deparse.level=0)[order.index, ]
-	emptyMatrix <- matrix(integer(), nrow(A), ncol(A))	
 	aD <- assayDataNew(storage.mode,
 			   alleleA=A,
 			   alleleB=B,
 			   call=gt,
-			   callProbability=pr,
-			   CA=emptyMatrix,
-			   CB=emptyMatrix)
+			   callProbability=pr)
 }
 constructIlluminaCNSet <- function(crlmmResult,
 				   path,
@@ -2758,14 +2751,20 @@ constructIlluminaCNSet <- function(crlmmResult,
 	new.order <- order(fD$chromosome, fD$position)
 	fD <- fD[new.order, ]
 	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, order.index=new.order)
-	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
+	##protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
+	batch <- vector("integer", ncol(crlmmResult))
 	container <- new("CNSet", 
-			 assayData=aD,
+			 call=aD[["call"]],
+			 callProbability=aD[["callProbability"]],
+			 alleleA=aD[["alleleA"]],
+			 alleleB=aD[["alleleB"]],
 			 phenoData=phenoData(crlmmResult),
 			 protocolData=protocolData(crlmmResult),
 			 featureData=fD,
+			 batch=batch,
 			 annotation="human370v1c")
-	lM(container) <- initializeParamObject(list(featureNames(container), unique(protocolData(container)$batch)))
+##	lM(container) <- initializeParamObject(list(featureNames(container), unique(protocolData(container)$batch)))
+	lM(container) <- initializeLmFrom(container)
 	container
 }
 				   

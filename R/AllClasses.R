@@ -3,6 +3,4 @@ setOldClass("ff_matrix")
 setOldClass("ffdf")
 setClassUnion("ff_or_matrix", c("ff_matrix", "matrix", "ffdf"))
 setClassUnion("integerOrMissing", c("integer", "missing", "numeric"))
-##setClass("CNSetLM", contains="CNSet", representation(lM="list_or_ffdf"))
-##setClass("CNSetTest", contains="SnpSuperSet")
 

@@ -34,24 +34,24 @@ setMethod("snpNames", "eSet", function(object){
 setMethod("chromosome", "eSet", function(object) fData(object)$chromosome)
 setMethod("position", "eSet", function(object) fData(object)$position)
 
-setMethod("getParam", signature(object="eSet",
-				name="character",
-				batch="ANY"),
-	  function(object, name, batch){
-		  if(length(batch) > 1){
-			  warning("batch argument to getParam should have length 1.  Only using the first")
-			  batch <- batch[1]
-		  }
-		  getParam.SnpSuperSet(object, name, batch)
-})
+##setMethod("getParam", signature(object="eSet",
+##				name="character",
+##				batch="ANY"),
+##	  function(object, name, batch){
+##		  if(length(batch) > 1){
+##			  warning("batch argument to getParam should have length 1.  Only using the first")
+##			  batch <- batch[1]
+##		  }
+##		  getParam.SnpSuperSet(object, name, batch)
+##})
 
-setMethod("batch", "eSet", function(object){
-	if("batch" %in% varLabels(object)){
-		return(object$batch)
-	} else {
-		return(protocolData(object)$batch)
-	}
-})
+##setMethod("batch", "eSet", function(object){
+##	if("batch" %in% varLabels(object)){
+##		return(object$batch)
+##	} else {
+##		return(protocolData(object)$batch)
+##	}
+##})
 
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
@@ -81,21 +81,21 @@ setMethod("batch", "eSet", function(object){
 
 
 
-setMethod("pr", signature(object="eSet",
-			  name="character",
-			  batch="ANY",
-			  value="numeric"), 
-	  function(object, name, batch, value){
-		  label <- paste(name, batch, sep="_")
-		  colindex <- match(label, fvarLabels(object))
-		  if(length(colindex) == 1){
-			  fData(object)[, colindex] <- value
-		  } 
-		  if(is.na(colindex)){
-			  stop(paste(label, " not found in object"))
-		  }
-		  if(length(colindex) > 1){
-			  stop(paste(label, " not unique"))
-		  }
-		  object
-	  })
+##setMethod("pr", signature(object="eSet",
+##			  name="character",
+##			  batch="ANY",
+##			  value="numeric"), 
+##	  function(object, name, batch, value){
+##		  label <- paste(name, batch, sep="_")
+##		  colindex <- match(label, fvarLabels(object))
+##		  if(length(colindex) == 1){
+##			  fData(object)[, colindex] <- value
+##		  } 
+##		  if(is.na(colindex)){
+##			  stop(paste(label, " not found in object"))
+##		  }
+##		  if(length(colindex) > 1){
+##			  stop(paste(label, " not unique"))
+##		  }
+##		  object
+##	  })

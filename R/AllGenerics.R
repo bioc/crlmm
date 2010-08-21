@@ -16,14 +16,8 @@ setGeneric("totalCopyNumber", function(object, i, j, ...) standardGeneric("total
 
 ## The generics below are for internal use with copy number methods
 ## If we keep them in oligoClasses, we need to export and document
-setGeneric("corr", function(object, allele) standardGeneric("corr"))
-setGeneric("nu", function(object, allele) standardGeneric("nu"))
-setGeneric("phi", function(object, allele) standardGeneric("phi"))
-setGeneric("sigma2", function(object, allele) standardGeneric("sigma2"))
-setGeneric("tau2", function(object, allele) standardGeneric("tau2"))
-
 setGeneric("nuA", function(object) standardGeneric("nuA"))
-setGeneric("nuB", function(object) standardGeneric("nuA"))
+setGeneric("nuB", function(object) standardGeneric("nuB"))
 setGeneric("phiA", function(object) standardGeneric("phiA"))
 setGeneric("phiB", function(object) standardGeneric("phiB"))
 setGeneric("sigma2A", function(object) standardGeneric("sigma2A"))
@@ -33,7 +27,6 @@ setGeneric("tau2B", function(object) standardGeneric("tau2B"))
 setGeneric("corrAA", function(object) standardGeneric("corrAA"))
 setGeneric("corrBB", function(object) standardGeneric("corrBB"))
 setGeneric("corrAB", function(object) standardGeneric("corrAB"))
-
 setGeneric("nuA<-", function(object, value) standardGeneric("nuA<-"))
 setGeneric("nuB<-", function(object, value) standardGeneric("nuB<-"))
 setGeneric("phiA<-", function(object, value) standardGeneric("phiA<-"))
