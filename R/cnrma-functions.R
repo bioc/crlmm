@@ -132,11 +132,11 @@ genotype <- function(filenames,
 	##lM(callSet) <- initializeParamObject(list(featureNames(callSet), unique(protocolData(callSet)$batch)))
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	snp.index <- which(isSnp(callSet)==1)
-	batches <- splitIndicesByLength(1:ncol(callSet), ocSamples())
+	sample.strata <- splitIndicesByLength(1:ncol(callSet), ocSamples())
 	iter <- 1
 ##	for(j in batches){
-	j <- unlist(batches)
-		if(verbose) message("Batch ", iter, " of ", length(batches))
+	j <- unlist(sample.strata)
+		if(verbose) message("Batch ", iter, " of ", length(sample.strata))
 		snprmaRes <- snprma(filenames=filenames[j],
 				    mixtureSampleSize=mixtureSampleSize,
 				    fitMixture=TRUE,
