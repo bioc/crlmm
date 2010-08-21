@@ -130,7 +130,6 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 	class(calls(gtSet.assayData_matrix))
 }
 ##q("no")
-stop()
 @ 
 
 Next, we estimate copy number for the 20 CEL files.  The copy number
@@ -147,9 +146,9 @@ cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      .FUN=crlmmCopynumber,
 				      object=gtSet.assayData_matrix,
 				      chromosome=22)
-Rprof(interval=0.1)
-obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=22)
-Rprof(NULL)
+##Rprof(interval=0.1)
+##obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=22)
+##Rprof(NULL)
 if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
 	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
 @ 
@@ -181,13 +180,14 @@ so that subsequent calls to \verb@Sweave@ can be run interactively.
 
 <<LDS_genotype>>=
 if(!file.exists(file.path(outdir, "cnSet.assayData_ff.rda"))){
-	library(ff)
+	Rprof(filename="Rprof_genotypeff.out", interval=0.1)
 	gtSet.assayData_ff <- checkExists("gtSet.assayData_ff",
 					  .path=outdir,
 					  .FUN=genotypeLD,
 					  filenames=celFiles,
 					  cdfName=cdfName,
 					  batch=batch)
+	Rprof(NULL)
 	class(calls(gtSet.assayData_ff))
 }
 @ 
@@ -198,12 +198,14 @@ practice, once the object \Robject{cnSet.assayData_ff} is created the
 from the \Robject{outdir}.
 
 <<LDS_copynumber>>=
+Rprof(filename="Rprof_cnff.out", interval=0.1)
 cnSet.assayData_ff <- checkExists("cnSet.assayData_ff",
 				  .path=outdir,
 				  .FUN=crlmmCopynumberLD,
 				  filenames=celFiles,
 				  cdfName=cdfName,
 				  batch=batch)
+Rprof(NULL)
 if(file.exists(file.path(outdir, "gtSet.assayData_ff.rda")))
 	unlink(file.path(outdir, "gtSet.assayData_ff.rda"))
 gc()
@@ -373,7 +375,11 @@ genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10],
 
 Allele-specific copy number at polymorphic loci:
 <<ca>>=
-ca <- CA(x[snp.index, ])/100
+##ca <- CA(x[snp.index, ])/100
+snp.index <- which(isSnp(obj))
+ca <- CA(obj, i=snp.index)
+##or
+ca <- ACN(obj, "A", i=snp.index)
 @ 
 
 Total copy number at nonpolymorphic loci:

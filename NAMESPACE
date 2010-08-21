@@ -76,7 +76,7 @@ export(constructIlluminaCNSet)
 export(linesCNSetLM)
 export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
        dqrlsWrapper, nuphiAllele)
-export(computeCopynumber)
+export(computeCopynumber, ACN)
 
 
 

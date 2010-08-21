@@ -237,35 +237,58 @@ setMethod("corr", c("CNSetLM", "character"), function(object, allele){
 	return(res)
 })
 
-setMethod("CB", 
-	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
-	  function(object, i, j){
-		  ##assayDataElement(object, "CB")
-		  browser()
-	  })
+ACN <- function(object, allele, i , j){
+	if(missing(i) & missing(j)){
+		if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
+	}
+	if(missing(i) & !missing(j)){
+		## calculate ca only for batches indexed by j
+		ubatch <- unique(batch(object))
+		batches <- unique(batch(object)[j])
+		for(k in seq_along(batches)){
+			l <- match(batches[k], ubatch)
+			bg <- nu(object, allele)[, l]
+			sl <- phi(object, allele)[, l]
+			I <- allele(object, allele)[, j]
+			acn <- 1/sl*(I - bg)				  
+		}
+	}
+	if(!missing(i) & missing(j)){
+		## calculate ca, cb for all batches
+		batches <- unique(batch(object))
+		for(k in seq_along(batches)){
+			##bb <- batches[k]
+			bg <- nu(object, allele)[i, k]
+			sl <- phi(object, allele)[i, k]
+			I <- allele(object, allele)[i, j]
+			acn <- 1/sl*(I - bg)
+		}
+	}
+	if(!missing(i) & !missing(j)){
+		ubatch <- unique(batch(object))
+		batches <- unique(batch(object)[j])
+		for(k in seq_along(batches)){
+			l <- match(batches[k], ubatch)
+			bg <- nu(object, allele)[i, l]
+			sl <- phi(object, allele)[i, l]
+			I <- allele(object, allele)[i, j]
+			acn <- 1/bg*(I - sl)				  
+		}			  
+	}
+	return(acn)
+}
 
 setMethod("CA",
 	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
 	  function(object, i, j) {
-		  browser()
-		  if(missing(i) & missing(j)){
-			  if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
-		  }
-		  if(missing(i) & !missing(j)){
-			  ## calculate ca only for batches indexed by j
-			  batches <- unique(batch(object))[j]
-			  for(k in seq_along(batches)){
-				  bb <- batches[k]
-			  }
-		  }
-		  if(!missing(i) & missing(j)){
-			  ## calculate ca, cb for all batches
-			  batches <- unique(batch(object))
-		  }
-		  if(!missing(i) & !missing(j)){
-
-		  }
+		  ca <- ACN(object, allele="A", i, j)
 		  return(ca)
+	  })
+setMethod("CB",
+	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
+	  function(object, i, j) {
+		  cb <- ACN(object, allele="B", i, j)
+		  return(cb)
 	  })
 
 setMethod("totalCopyNumber",
@@ -301,7 +324,7 @@ setMethod("totalCopyNumber",
 			cn.total[snps, ] <- cn.total[snps, ] + cb
 		}
 	}
-	cn.total <- cn.total/100
+	##cn.total <- cn.total/100
 	dimnames(cn.total) <- NULL
 	return(cn.total)
 })
