@@ -237,14 +237,17 @@ setMethod("corr", c("CNSetLM", "character"), function(object, allele){
 	return(res)
 })
 
-setMethod("CB", "CNSet", function(object){
-	##assayDataElement(object, "CB")
-	browser()
-})
-setMethod("CA", "CNSet", function(object) {
-	browser()
-	##assayDataElement(object, "CA")
-})
+setMethod("CB", 
+	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
+	  function(object, i, j){
+		  ##assayDataElement(object, "CB")
+		  browser()
+	  })
+setMethod("CA",
+	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
+	  function(object, i, j) {
+		  browser()
+	  })
 
 setMethod("totalCopyNumber",
 	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),

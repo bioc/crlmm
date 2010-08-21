@@ -16,8 +16,8 @@ setGeneric("phi", function(object, allele) standardGeneric("phi"))
 setGeneric("sigma2", function(object, allele) standardGeneric("sigma2"))
 setGeneric("tau2", function(object, allele) standardGeneric("tau2"))
 
-setGeneric("CA", function(object) standardGeneric("CA"))
-setGeneric("CB", function(object) standardGeneric("CB"))
+setGeneric("CA", function(object, i, j, ...) standardGeneric("CA"))
+setGeneric("CB", function(object, i, j, ...) standardGeneric("CB"))
 setGeneric("totalCopyNumber", function(object, i, j, ...) standardGeneric("totalCopyNumber"))
 
 
