@@ -73,7 +73,7 @@ export(crlmm,
        crlmmCopynumber2, crlmmCopynumberLD)
 export(constructIlluminaCNSet)
 export(linesCNSetLM)
-export(linearModel.noweights, computeCN)
+export(linearModel.noweights, computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct)
 
 
 
