@@ -28,7 +28,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
-		  chromosome, position, CA, "CA<-", CB, "CB<-", A, B,
+		  chromosome, position, A, B,
 		  "A<-", "B<-", open, close)
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
