@@ -76,7 +76,7 @@ export(crlmm,
 export(constructIlluminaCNSet)
 export(totalCopynumber)
 export(cnrma, cnrma2)
-exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns)
+exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 export(genotypeSummary,
        shrinkSummary,
        estimateCnParameters)

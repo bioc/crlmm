@@ -10,7 +10,7 @@
 crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1, 
 	        DF.PRIOR = 50, bias.adj = FALSE,
                 prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE,
-                GT.CONF.THR = 0.95, PHI.THR = 2^6, MIN.NU = 2^3, MIN.PHI = 2^3,
+                GT.CONF.THR = 0.95, MIN.NU = 2^3, MIN.PHI = 2^3,
                 THR.NU.PHI = TRUE, type=c("SNP", "NP", "X.SNP", "X.NP"))
 }
 

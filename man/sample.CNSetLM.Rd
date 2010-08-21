@@ -36,7 +36,7 @@ library(ff)
 path <- system.file("extdata", package="crlmm")
 ldPath(path)
 data(sample.CNSetLMff)
-cnSet <- as(sample.CNSetLMff, "CNSet")
+cnSetff <- as(sample.CNSetLMff, "CNSet")
 all(isCurrent(cnSet))
 
 ## a bigger object with multiple batches
@@ -91,18 +91,12 @@ nu(cnSet, "A")[1:5, ]
 nu(cnSet, "B")[1:5, ]
 ## the slope
 phi(cnSet, "A")[1:5, ]
-## the variance for CN > 0 (log2-scale)
-sigma2(cnSet, "A")[1:5, ]
-sigma2(cnSet, "B")[1:5, ]
-## background variance (log2-scale)
-tau2(cnSet, "A")[1:5, ]
-tau2(cnSet, "B")[1:5, ]
 ## correlation within genotype cluster AA
-corr(cnSet, "AA")[1:5, ]
-## correlation within genotype cluster AB
-corr(cnSet, "AB")[1:5, ]
-## correlation within genotype cluster BB
-corr(cnSet, "BB")[1:5, ]
+##corr(cnSet, "AA")[1:5, ]
+#### correlation within genotype cluster AB
+##corr(cnSet, "AB")[1:5, ]
+#### correlation within genotype cluster BB
+##corr(cnSet, "BB")[1:5, ]
 ## --------------------------------------------------
 
 ## --------------------------------------------------
