@@ -96,11 +96,11 @@ setMethod("computeCopynumber", "CNSet",
 	if(bias.adj & all(is.na(fData(object)$nuA_1))){
 		cnOptions[["bias.adj"]] <- FALSE
 	}
-	object <- computeCopynumber.CNSet(object, cnOptions)				
+	object <- cnCNSet(object, cnOptions)				
 	if(bias.adj & !cnOptions[["bias.adj"]]){
 		## Do a second iteration with bias adjustment
 		cnOptions[["bias.adj"]] <- TRUE
-		object <- computeCopynumber.CNSet(object, cnOptions)
+		object <- cnCNSet(object, cnOptions)
 	}
 	object
 })

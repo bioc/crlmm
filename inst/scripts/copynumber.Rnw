@@ -147,7 +147,7 @@ cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      object=gtSet.assayData_matrix,
 				      chromosome=22)
 ##Rprof(interval=0.1)
-##obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=22)
+obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=23)
 ##Rprof(NULL)
 if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
 	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
@@ -376,20 +376,23 @@ genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10],
 Allele-specific copy number at polymorphic loci:
 <<ca>>=
 ##ca <- CA(x[snp.index, ])/100
-snp.index <- which(isSnp(obj))
-ca <- CA(obj, i=snp.index)
+snp.index <- which(isSnp(x))
+ca <- CA(x, i=snp.index)
 ##or
-ca <- ACN(obj, "A", i=snp.index)
+ca <- ACN(x, "A", i=snp.index)
+cb <- CB(x, i=snp.index)
+ct <- ca+cb
 @ 
 
 Total copy number at nonpolymorphic loci:
 <<ca>>=
-cn.nonpolymorphic <- CA(x[np.index, ])/100
+cn.nonpolymorphic <- CA(obj, i=which(!isSnp(obj)))
 @ 
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
-cn <- copyNumber(x)
+##cn <- copyNumber(x)
+cn <- totalCopyNumber(x, sample(1:nrow(x), 1e4), 1:5)
 apply(cn, 2, median, na.rm=TRUE)
 @ 
 

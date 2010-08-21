@@ -2633,7 +2633,7 @@ thresholdModelParams <- function(object, cnOptions){
 	return(object)
 }
 
-computeCopynumber.CNSet <- function(object, cnOptions){
+cnCNSet <- function(object, cnOptions){
 	PLATE <- unique(batch(object))
 	verbose <- cnOptions$verbose
 	tmp.objects <- instantiateObjects(object, cnOptions)
@@ -2695,9 +2695,9 @@ computeCopynumber.CNSet <- function(object, cnOptions){
 	object <- pr(object, "corrA.BB", PLATE, getParam(object, "corrA.BB", PLATE))
 	object <- pr(object, "corrB.AA", PLATE, getParam(object, "corrB.AA", PLATE))
 	##object <- object[order(chromosome(object), position(object)), ]
-	if(cnOptions[["thresholdCopynumber"]]){
-		object <- thresholdCopynumber(object)
-	}
+##	if(cnOptions[["thresholdCopynumber"]]){
+##		object <- thresholdCopynumber(object)
+##	}
 	return(object)
 }
 
