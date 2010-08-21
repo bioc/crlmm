@@ -10,7 +10,7 @@ License: Artistic-2.0
 Depends: R (>= 2.11.0),
          methods,
          Biobase (>= 2.9.0),
-         oligoClasses (>= 1.11.6)
+         oligoClasses (>= 1.11.7)
 Imports: affyio (>= 1.15.2),
          ellipse,
          ff,
@@ -27,6 +27,7 @@ Suggests: hapmapsnp6,
 	  ellipse
 Collate: AllGenerics.R
 	 AllClasses.R
+	 methods-AssayData.R
 	 methods-CNSet.R
 	 methods-eSet.R
          methods-SnpSuperSet.R

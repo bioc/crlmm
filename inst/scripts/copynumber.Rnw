@@ -142,10 +142,10 @@ therefore, we do not need to preprocess and genotype the files a
 second time.
 
 <<genotype>>=
-tmpdir <- "~/tmp"
+tmpdir <- "~/tmp3"
 stop()
-if(FALSE){
-if(file.exists(tmpdir)) unlink(tmpdir, recursive=TRUE)
+##if(FALSE){
+##if(file.exists(tmpdir)) unlink(tmpdir, recursive=TRUE)
 dir.create(tmpdir)
 ##trace(genotype, browser)
 system.time(gtSet2 <- genotype(filenames=celFiles[1:75],
@@ -155,13 +155,100 @@ save(gtSet2, file=file.path(tmpdir, "gtSet2.rda"))
 library(ff)
 ldPath(tmpdir)
 system.time(gtSet <- genotype(filenames=celFiles[1:75],
-			  cdfName=cdfName,
-			  batch=batch[1:75]))
+			      cdfName=cdfName,
+			      batch=batch[1:75]))
 save(gtSet, file=file.path(tmpdir, "gtSet.rda"))
 q("no")
+if(FALSE){
+	library(ff)
+	tmpdir <- "~/tmp"
+	dir.create("~/tmp2")
+	load(file.path(tmpdir, "gtSet.rda"))
+	ldPath("~/tmp2")
+	gtSet <- updateObject(gtSet) ## neeed to remove the old ff objects
+	save(gtSet, file=file.path(ldPath(), "gtSet.rda"))
 }
-load(file.path(tmpdir, "gtSet.rda"))
+
+##trace(summarizeSnps, browser)
+ocProbesets(100e3)
+system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="SNP"))
+system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="NP"))
+system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="X.SNP"))
+system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="X.NP"))
+library(ff)
+load("~/tmp2/gtSet.rda")
+invisible(open(gtSet))
+ocProbesets(100e3)
+
+system.time(gtSet <- shrinkSummary(gtSet, type="SNP"))
+##system.time(gtSet <- shrinkSummary(gtSet, type="NP"))
+system.time(gtSet <- shrinkSummary(gtSet, type="X.SNP"))
+##system.time(gtSet <- shrinkSummary(gtSet, type="X.NP"))
+
+## test: try females only.  try males only
+
+## fit linear model
+##trace(crlmmCopynumber, browser)
+##trace(fit.wls, browser)
+trace(fit.lm1, browser)
+system.time(cnSet <- crlmmCopynumber(gtSet, type="SNP"))
+CA(cnSet)[1:5, 1:5]
+totalCopyNumber(cnSet, i=1:5, j=1:5)
+
+trace(fit.lm2, browser)
+system.time(cnSet <- crlmmCopynumber(gtSet, type="NP"))
+index <- which(!isSnp(cnSet))[1:10]
+totalCopyNumber(cnSet, i=index, j=1:5)
+
+##trace(fit.lm3, browser)
+##trace(summarizeMaleXGenotypes, browser)
+##trace(fit.wls, browser)
+system.time(cnSet <- crlmmCopynumber(gtSet, type="X.SNP"))
+
+trace(fit.lm4, browser)
+system.time(cnSet <- crlmmCopynumber(gtSet, type="X.NP"))
+
+
+Ns(gtSet, batchname="C")[1:5, ]
+medians(gtSet, "A")[1:5, ]
+mads(gtSet, "A")[1:5, ]
+##log scale
+tau2(gtSet, allele="A")[1:5, ]
+tau2(gtSet, allele="B")[1:5, ]
+corr(gtSet)[1:5, ]
+
+
+
+cnSet <- crlmmCopynumber(gtSet, type="autosome.snps")
+
+
+
+
+
+
+gtSet
+tmp=Ns(gtSet)
+
+
+
+NN <- N.AA(gtSet)[1:1000,]
+N.AA(gtSet)[1:1000,] <- NN##do.call(cbind, lapply(NN, function(x) x[, 1]))
+
+
+##tmp=Ns(gtSet)
+##tmp <- Ns(gtSet, genotype="AA")
+##tmp <- Ns(gtSet, genotype="AA", batchname="C")
+##tmp <- Ns(gtSet,  batchname="C")
+##Ns(gtSet, batchname="C") <- tmp
+
 load(file.path(tmpdir, "gtSet2.rda"))
+gtSet2.update <- updateObject(gtSet2)
+isCurrent(gtSet2)
+
+
+
+
+
 
 
 
@@ -184,6 +271,7 @@ estimation step requirees a minimum number of CEL files in each batch
 samples as we do here, it would be far preferable to process all of
 the files that were on the same chemistry plate.  The code chunk below
 will load \Robject{cnSet.assayData_matrix} from disk if this
+
 computation had already been performed as part of the batch job.
 
 <<copynumber, eval=FALSE>>=

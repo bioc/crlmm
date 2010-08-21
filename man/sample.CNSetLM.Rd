@@ -41,18 +41,18 @@ all(isCurrent(cnSetff))
 
 ## a bigger object with multiple batches
 \dontrun{
-outdir <- "/amber1/scratch/rscharpf/jss/hapmap2"
-load(file.path(outdir, "container.rda"))
-container <- object; rm(object)
-container2 <- as(container, "CNSet")
-all(isCurrent(container2))
-## test replacement methods, subset methods
-table(batch(container2))
-##generates warning ... would need open, close in the '[' method
-invisible(open(nuA(container2)))
-xx <- nu(container2, "A")[1:5, ]
-nuA(container2)[1:5, ] <- xx
-invisible(close(nuA(container2)))
+	outdir <- "/amber1/scratch/rscharpf/jss/hapmap2"
+	load(file.path(outdir, "container.rda"))
+	container <- object; rm(object); gc()
+	container2 <- as(container, "CNSet")
+	all(isCurrent(container2))
+	## test replacement methods, subset methods
+	table(batch(container2))
+	##generates warning ... would need open, close in the '[' method
+	invisible(open(nuA(container2)))
+	xx <- nu(container2, "A")[1:5, ]
+	nuA(container2)[1:5, ] <- xx
+	invisible(close(nuA(container2)))
 }
 
 
