@@ -1393,7 +1393,7 @@ fit.lm4 <- function(idxBatch,
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 	nuA <- phiA <- sig2A <- tau2A <- matrix(NA, length(snps), length(unique(batch(object))))
-	cA <- matrix(NA, length(snps), ncol(object))
+##	cA <- matrix(NA, length(snps), ncol(object))
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
 	flags <- snpflags[ii, , drop=FALSE]
 	noflags <- rowSums(flags, na.rm=TRUE) == 0
@@ -1500,18 +1500,17 @@ fit.lm4 <- function(idxBatch,
 		}
 		CT1 <- 1/phi1*(A.M-nu1)
 		CT2 <- 1/phi2*(A.F-nu2)
-		tmp <- cA[, k]
-		tmp[, gend==1] <- CT1
-		tmp[, gend==2] <- CT2
-		cA[, k] <- tmp
+##		tmp <- cA[, k]
+##		tmp[, gend==1] <- CT1
+##		tmp[, gend==2] <- CT2
+##		cA[, k] <- tmp
 		rm(tmp, CT1, CT2, A.F, normal.f, G, AA, BB, Y, X, Ns)
 		gc()
 	}
-
-	cA[cA < 0.05] <- 0.05
-	cA[cA > 5] <-  5
-	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
-	CA(object)[snps, ] <- cA
+##	cA[cA < 0.05] <- 0.05
+##	cA[cA > 5] <-  5
+##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
+##	CA(object)[snps, ] <- cA
 	open(lM(object))
 	tmp <- physical(lM(object))$nuA
 	tmp[snps, ] <- nuA
