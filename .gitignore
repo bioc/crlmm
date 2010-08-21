@@ -8,3 +8,5 @@ illumina_copynumber-*
 Makefile2
 Rprof*
 testing*
+sample.CNSetLMff.rda
+extdata*

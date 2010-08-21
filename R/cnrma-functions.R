@@ -789,13 +789,12 @@ fit.lm1 <- function(idxBatch,
 
 	open(object)
 	open(snpflags)
-	open(normal)
+##	open(normal)
 
 	corrAB <- corrBB <- corrAA <- sig2B <- sig2A <- tau2B <- tau2A <- matrix(NA, length(snps), length(unique(batch(object))))
 	flags <- nuA <- nuB <- phiA <- phiB <- corrAB
 
-	normal.snps <- normal[snps, ]
-	##cB <- cA <- matrix(NA, length(snps), ncol(object))
+##	normal.snps <- normal[snps, ]
 	GG <- as.matrix(calls(object)[snps, ])
 	CP <- as.matrix(snpCallProbability(object)[snps, ])
 	AA <- as.matrix(A(object)[snps, ])
@@ -804,7 +803,7 @@ fit.lm1 <- function(idxBatch,
 	for(k in batches){
 		zzzz <- zzzz+1
 		G <- GG[, k]
-		NORM <- normal.snps[, k]
+		##NORM <- normal.snps[, k]
 		xx <- CP[, k]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		G <- G*highConf*NORM
@@ -998,7 +997,7 @@ fit.lm2 <- function(idxBatch,
 
 	open(object)
 	open(snpflags)
-	open(normal)
+##	open(normal)
 
 ##	cA <- matrix(NA, length(snps), ncol(object))
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
@@ -1017,8 +1016,8 @@ fit.lm2 <- function(idxBatch,
 
 	AA.snp <- as.matrix(A(object)[snp.ind, ])
 	BB.snp <- as.matrix(B(object)[snp.ind, ])
-	NNORM.snp <- as.matrix(normal[snp.ind, ])
-	NORM.np <- as.matrix(normal[snps, ])
+##	NNORM.snp <- as.matrix(normal[snp.ind, ])
+##	NORM.np <- as.matrix(normal[snps, ])
 	AA.np <- as.matrix(A(object)[snps, ])
 	GG <- as.matrix(calls(object)[snp.ind, ])
 	CP <- as.matrix(snpCallProbability(object)[snp.ind, ])
@@ -2896,7 +2895,6 @@ computeCN <- function(object,
 			 sns=sampleNames(object),
 			 fns=featureNames(object)[marker.index])
 	ocLapply(seq(along=index.strata),
-		 ##match.fun(FUN),
 		 FUN,
 		 marker.index=marker.index,
 		 object=obj,
