@@ -1,0 +1,8 @@
+auto*
+.Rhistory
+*.o
+*.so
+*.tex
+sync
+illumina_copynumber-*
+Makefile2
