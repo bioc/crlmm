@@ -140,6 +140,11 @@ will load \Robject{cnSet.assayData_matrix} from disk if this
 computation had already been performed as part of the batch job.
 
 <<copynumber>>=
+stop()
+tms1 <- system.time(tmp <- crlmmCopynumber(gtSet.assayData_matrix))
+reload_pkg("crlmm")
+trace(nuphiAllele, browser)
+tms2 <- system.time(tmp <- crlmmCopynumber(gtSet.assayData_matrix))
 cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      .path=outdir,
 				      .FUN=crlmmCopynumber,

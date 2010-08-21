@@ -8,6 +8,7 @@ setMethod("initialize", "CNSetLM", function(.Object, lM=new("list"), ...){
 	.Object@lM <- lM
 	.Object <- callNextMethod(.Object, ...)
 })
+
 setValidity("CNSetLM",
 	    function(object){
 		    if(!"batch" %in% varLabels(protocolData(object)))
@@ -20,3 +21,6 @@ setValidity("CNSetLM",
 			    return("'isSnp' not defined in featureData")
 		    return(TRUE)
 	    })
+
+##setClass("CNSetTest", contains="SnpSuperSet")
+

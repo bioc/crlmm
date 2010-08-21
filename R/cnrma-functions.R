@@ -367,14 +367,18 @@ corByGenotype <- function(A, B, G, Ns, which.cluster=c(1,2,3)[1], DF.PRIOR){
 	cors
 }
 
-generateX <- function(w, X) as.numeric(diag(w) %*% X)
-generateIXTX <- function(x, nrow=3) {
-	X <- matrix(x, nrow=nrow)
-	XTX <- crossprod(X)
-	solve(XTX)
+dqrlsWrapper <- function(x, y, wts, tol=1e-7){
+	n <- NROW(y)
+	p <- ncol(x)
+	ny <- NCOL(y)
+	.Fortran("dqrls", qr=x*wts, n=n, p=p, y=y * wts, ny=ny,
+		 tol=as.double(tol), coefficients=mat.or.vec(p, ny),
+		 residuals=y, effects=mat.or.vec(n, ny),
+		 rank=integer(1L), pivot=1L:p, qraux=double(p),
+		 work=double(2 * p), PACKAGE="base")[["coefficients"]]
 }
 
-nuphiAllele2 <- function(allele, Ystar, W, Ns){
+fit.wls <- function(allele, Ystar, W, Ns, autosome=TRUE){
 	complete <- rowSums(is.na(W)) == 0 
 	if(any(!is.finite(W))){## | any(!is.finite(V))){
 		i <- which(rowSums(!is.finite(W)) > 0)
@@ -382,21 +386,23 @@ nuphiAllele2 <- function(allele, Ystar, W, Ns){
 	}
 	NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
 	if(missing(allele)) stop("must specify allele")
-	if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
+	if(autosome){
+		if(allele == "A") X <- cbind(1, 2:0)
+		if(allele == "B") X <- cbind(1, 0:2)
+		betahat <- matrix(NA, 2, nrow(Ystar))
+	} else {
+		if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
+		if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))
+		betahat <- matrix(NA, 3, nrow(Ystar))
+	}
 	if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
-	Xstar <- apply(W, 1, generateX, X)
-	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
-	betahat <- matrix(NA, 2, nrow(Ystar))
-	ses <- matrix(NA, 2, nrow(Ystar))
+	##Xstar <- apply(W, 1, generateX, X)
+	ww <- rep(1, ncol(Ystar))
 	for(i in 1:nrow(Ystar)){
-		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
+		betahat[, i] <- dqrlsWrapper(W[i, ] * X, Ystar[i, ], ww)
 		##ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
-		##ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
 	}
-##	nu <- betahat[1, ]
-##	phi <- betahat[2, ]
-##	return(list(nu, phi))
 	return(betahat)
 }
 
@@ -426,35 +432,35 @@ linearModel.noweights <- function(allele, Ystar, W, Ns){
 	return(list(nu, phi))
 }
 
-nuphiAlleleX <- function(allele, Ystar, W, Ns, chrX=FALSE){
-	complete <- rowSums(is.na(W)) == 0 
-	if(any(!is.finite(W))){## | any(!is.finite(V))){
-		i <- which(rowSums(!is.finite(W)) > 0)
-		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
-	}
-	##NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
-	if(missing(allele)) stop("must specify allele")
-	if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
-	if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))	
-	##if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
-	##How to quickly generate Xstar, Xstar = diag(W) %*% X
-	Xstar <- apply(W, 1, generateX, X)
-	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
-
-	betahat <- matrix(NA, 3, nrow(Ystar))
-	ses <- matrix(NA, 3, nrow(Ystar))			
-	##betahat <- matrix(NA, 2, nrow(Ystar))
-	##ses <- matrix(NA, 2, nrow(Ystar))
-	for(i in 1:nrow(Ystar)){
-		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
-		ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
-		ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
-	}
-	nu <- betahat[1, ]
-	phi <- betahat[2, ]
-	phi2 <- betahat[3, ]
-	return(list(nu, phi, phi2))
-}
+##nuphiAlleleX <- function(allele, Ystar, W, Ns, chrX=FALSE){
+##	complete <- rowSums(is.na(W)) == 0 
+##	if(any(!is.finite(W))){## | any(!is.finite(V))){
+##		i <- which(rowSums(!is.finite(W)) > 0)
+##		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
+##	}
+##	##NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
+##	if(missing(allele)) stop("must specify allele")
+##	if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
+##	if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))	
+##	##if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
+##	##How to quickly generate Xstar, Xstar = diag(W) %*% X
+##	Xstar <- apply(W, 1, generateX, X)
+##	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
+##
+##	betahat <- matrix(NA, 3, nrow(Ystar))
+##	ses <- matrix(NA, 3, nrow(Ystar))			
+##	##betahat <- matrix(NA, 2, nrow(Ystar))
+##	##ses <- matrix(NA, 2, nrow(Ystar))
+##	for(i in 1:nrow(Ystar)){
+##		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
+##		ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
+##		ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
+##	}
+##	nu <- betahat[1, ]
+##	phi <- betahat[2, ]
+##	phi2 <- betahat[3, ]
+##	return(list(nu, phi, phi2))
+##}
 
 
 nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
@@ -470,18 +476,17 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	}	
 	Ns <- tmp.objects[["Ns"]]	
 	Ns <- Ns[I, ]
-	
 	CHR <- unique(chromosome(object))
 	##batch <- unique(object$batch)
 	batch <- unique(batch(object))
 	nuA <- getParam(object, "nuA", batch)
 	nuB <- getParam(object, "nuB", batch)
-	nuA.se <- getParam(object, "nuA.se", batch)
-	nuB.se <- getParam(object, "nuB.se", batch)
+##	nuA.se <- getParam(object, "nuA.se", batch)
+##	nuB.se <- getParam(object, "nuB.se", batch)
 	phiA <- getParam(object, "phiA", batch)
 	phiB <- getParam(object, "phiB", batch)
-	phiA.se <- getParam(object, "phiA.se", batch)
-	phiB.se <- getParam(object, "phiB.se", batch)	
+##	phiA.se <- getParam(object, "phiA.se", batch)
+##	phiB.se <- getParam(object, "phiB.se", batch)	
 	if(CHR==23){
 		phiAX <- getParam(object, "phiAX", batch)
 		phiBX <- getParam(object, "phiBX", batch)		
@@ -494,38 +499,36 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 			if(allele == "A") X <- cbind(1, c(1, 0, 2, 1, 0), c(0, 1, 0, 1, 2))
 			if(allele == "B") X <- cbind(1, c(0, 1, 0, 1, 2), c(1, 0, 2, 1, 0))
 		} else{
-			if(allele == "A") X <- cbind(1, c(1, 0, 2, 0), c(0, 1, 0, 2))
+		if(allele == "A") X <- cbind(1, c(1, 0, 2, 0), c(0, 1, 0, 2))
 			if(allele == "B") X <- cbind(1, c(0, 1, 0, 2), c(1, 0, 2, 0))
 		}
+		betahat <- matrix(NA, 3, nrow(Ystar))
 	} else {##autosome
 		if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
-		if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
+		if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous
+		betahat <- matrix(NA, 2, nrow(Ystar))
 	}
 	##How to quickly generate Xstar, Xstar = diag(W) %*% X
-	Xstar <- apply(W, 1, generateX, X)
-	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
+##	Xstar <- apply(W, 1, generateX, X)
+##	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
 	##as.numeric(diag(W[1, ]) %*% X)
-	if(CHR == 23){
-		betahat <- matrix(NA, 3, nrow(Ystar))
-		ses <- matrix(NA, 3, nrow(Ystar))		
-	} else{
-		betahat <- matrix(NA, 2, nrow(Ystar))
-		ses <- matrix(NA, 2, nrow(Ystar))
-	}
-	for(i in 1:nrow(Ystar)){
-		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
-		ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
-		ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
+	ww <- rep(1, ncol(Ystar))
+	II <- which(rowSums(is.nan(Ystar)) == 0)
+	for(i in II){
+		betahat[, i] <- dqrlsWrapper(W[i, ] * X, Ystar[i, ], ww)
+		##betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
+		##ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
+		##ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
 	}
 	if(allele == "A"){
 		nuA[complete] <- betahat[1, ]
 		phiA[complete] <- betahat[2, ]
-		nuA.se[complete] <- ses[1, ]
-		phiA.se[complete] <- ses[2, ]
+##		nuA.se[complete] <- ses[1, ]
+##		phiA.se[complete] <- ses[2, ]
 		object <- pr(object, "nuA", batch, nuA)
-		object <- pr(object, "nuA.se", batch, nuA.se)
+##		object <- pr(object, "nuA.se", batch, nuA.se)
 		object <- pr(object, "phiA", batch, phiA)
-		object <- pr(object, "phiA.se", batch, phiA.se)
+##		object <- pr(object, "phiA.se", batch, phiA.se)
 		if(CHR == 23){
 			phiAX[complete] <- betahat[3, ]
 			object <- pr(object, "phiAX", batch, phiAX)			
@@ -534,12 +537,12 @@ nuphiAllele <- function(object, allele, Ystar, W, tmp.objects, cnOptions){
 	if(allele=="B"){
 		nuB[complete] <- betahat[1, ]
 		phiB[complete] <- betahat[2, ]
-		nuB.se[complete] <- ses[1, ]
-		phiB.se[complete] <- ses[2, ]
+##		nuB.se[complete] <- ses[1, ]
+##		phiB.se[complete] <- ses[2, ]
 		object <- pr(object, "nuB", batch, nuB)
-		object <- pr(object, "nuB.se", batch, nuB.se)
+##		object <- pr(object, "nuB.se", batch, nuB.se)
 		object <- pr(object, "phiB", batch, phiB)		
-		object <- pr(object, "phiB.se", batch, phiB.se)
+##		object <- pr(object, "phiB.se", batch, phiB.se)
 		if(CHR == 23){
 			phiBX[complete] <- betahat[3, ]
 			object <- pr(object, "phiBX", batch, phiBX)
@@ -866,7 +869,9 @@ fit.lm1 <- function(idxBatch,
 	CP <- as.matrix(snpCallProbability(object)[snps, ])
 	AA <- as.matrix(A(object)[snps, ])
 	BB <- as.matrix(B(object)[snps, ])
+	zzzz <- 1
 	for(k in batches){
+		zzzz <- zzzz+1
 		G <- GG[, k]
 		NORM <- normal.snps[, k]
 		xx <- CP[, k]
@@ -957,13 +962,19 @@ fit.lm1 <- function(idxBatch,
 		YA <- muA*wA
 		YB <- muB*wB
 		if(weighted.lm){
-			res <- nuphiAllele2(allele="A", Ystar=YA, W=wA, Ns=Ns)
-		} else res <- linearModel.noweights(allele="A", Ystar=YA, W=wA, Ns=Ns)
+			res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)
+		} else{
+			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
+			res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)			
+		}
 		nuA[, J] <- res[[1]]
 		phiA[, J] <- res[[2]]
-		if(!weighted.lm){
-			res <- nuphiAllele2(allele="B", Ystar=YB, W=wB, Ns=Ns)
-		} else res <- linearModel.noweights(allele="B", Ystar=YB, W=wB, Ns=Ns)
+		if(weighted.lm){
+			res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)
+		} else {
+			if(zzzz==1) message("currently, only weighted least squares (wls) is available... fitting wls")
+			res <- fit.wls(allele="B", Ystar=YB, W=wB, Ns=Ns)			
+		}
 		##nuB[, J] <- res[[1]]
 		nuB[, J] <- res[1, ]
 		##phiB[, J] <- res[[2]]
@@ -1137,7 +1148,6 @@ fit.lm2 <- function(idxBatch,
 	cA[cA > 5] <-  5
 	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
 	CA(object)[snps, ] <- cA
-	##open(lM(object))
 	tmp <- physical(lM(object))$nuA
 	tmp[snps, ] <- nuA.np
 	lM(object)$nuA <- tmp
@@ -1147,9 +1157,6 @@ fit.lm2 <- function(idxBatch,
 	tmp <- physical(lM(object))$phiA
 	tmp[snps, ] <- phiA.np
 	lM(object)$sig2A <- tmp
-##	lM(object)$sig2A[snps, ] <- sig2A.np
-##	lM(object)$nuA[snps, ] <- nuA.np
-##	lM(object)$phiA[snps, ] <- phiA.np
 	lapply(assayData(object), close)
 	lapply(lM(object), close)
 	TRUE
@@ -1306,14 +1313,16 @@ fit.lm3 <- function(idxBatch,
 		wB <- sqrt(1/vB2)
 		YA <- muA*wA
 		YB <- muB*wB
-		res <- nuphiAlleleX(allele="A", Ystar=YA, W=wA)
-		nuA[, J] <- res[[1]]
-		phiA[, J] <- res[[2]]
-		phiA2[, J] <- res[[3]]
-		res <- nuphiAlleleX(allele="B", Ystar=YB, W=wB)
-		nuB[, J] <- res[[1]]
-		phiB[, J] <- res[[2]]
-		phiB2[, J] <- res[[3]]
+		##res <- nuphiAlleleX(allele="A", Ystar=YA, W=wA)
+		betas <- fit.wls(allele="A", Ystar=YA, W=wA, autosome=FALSE)
+		nuA[, J] <- betas[1, ]
+		phiA[, J] <- betas[2, ]
+		phiA2[, J] <- betas[3, ]
+		rm(betas)
+		betas <- fit.wls(allele="B", Ystar=YB, W=wB, autosome=FALSE)
+		nuB[, J] <- betas[1, ]
+		phiB[, J] <- betas[2, ]
+		phiB2[, J] <- betas[3, ]
 		if(THR.NU.PHI){
 			nuA[nuA[, J] < MIN.NU, J] <- MIN.NU
 			nuB[nuB[, J] < MIN.NU, J] <- MIN.NU
@@ -2715,74 +2724,74 @@ thresholdModelParams <- function(object, cnOptions){
 ##}
 
 
-##computeCopynumber.CNSet <- function(object, cnOptions){
-##	##PLATE <- unique(object$batch)
-##	PLATE <- unique(batch(object))
-##	verbose <- cnOptions$verbose
-##	tmp.objects <- instantiateObjects(object, cnOptions)
-##	bias.adj <- cnOptions$bias.adj
-##	if(bias.adj & ncol(object) <= 15){
-##		warning(paste("bias.adj is TRUE, but too few samples to perform this step"))
-##		cnOptions$bias.adj <- bias.adj <- FALSE
-##	}
-##	if(bias.adj){
-##		if(verbose) message("Dropping samples with low posterior prob. of normal copy number (samples dropped is locus-specific)")
-##		tmp.objects <- biasAdjNP(object, cnOptions, tmp.objects)
-##		tmp.objects <- biasAdj(object, cnOptions, tmp.objects)
-##		if(verbose) message("Recomputing location and scale parameters")
-##	}
-##	##update tmp.objects
-##	tmp.objects <- withinGenotypeMoments(object,
-##					     cnOptions=cnOptions,
-##					     tmp.objects=tmp.objects)
-##	object <- locationAndScale(object, cnOptions, tmp.objects)
-##	tmp.objects <- oneBatch(object,
-##				cnOptions=cnOptions,
-##				tmp.objects=tmp.objects)
-##	##coefs calls nuphiAllele.
-##	object <- coefs(object, cnOptions, tmp.objects)
-##	##nuA=getParam(object, "nuA", PLATE)
-##	THR.NU.PHI <- cnOptions$THR.NU.PHI
-##	if(THR.NU.PHI){
-##		verbose <- cnOptions$verbose
-##		##if(verbose) message("Thresholding nu and phi")
-##		object <- thresholdModelParams(object, cnOptions)
-##	}		
-##	##if(verbose) message("\nAllele specific copy number")	
-##	object <- polymorphic(object, cnOptions, tmp.objects)
-##	if(any(!isSnp(object))){ ## there are nonpolymorphic probes
-##		##if(verbose) message("\nCopy number for nonpolymorphic probes...")	
-##		object <- nonpolymorphic(object, cnOptions, tmp.objects)
-##	}
-##	##---------------------------------------------------------------------------
-##	##Note: the replacement method multiples by 100
-####	CA(object)[, batch==PLATE] <- CA(object)
-####	CB(object)[, batch==PLATE] <- CB(object)
-##	##---------------------------------------------------------------------------
-##	##update-the plate-specific parameters for copy number
-##	object <- pr(object, "nuA", PLATE, getParam(object, "nuA", PLATE))
-##	object <- pr(object, "nuA.se", PLATE, getParam(object, "nuA.se", PLATE))
-##	object <- pr(object, "nuB", PLATE, getParam(object, "nuB", PLATE))
-##	object <- pr(object, "nuB.se", PLATE, getParam(object, "nuB.se", PLATE))
-##	object <- pr(object, "phiA", PLATE, getParam(object, "phiA", PLATE))
-##	object <- pr(object, "phiA.se", PLATE, getParam(object, "phiA.se", PLATE))
-##	object <- pr(object, "phiB", PLATE, getParam(object, "phiB", PLATE))
-##	object <- pr(object, "phiB.se", PLATE, getParam(object, "phiB.se", PLATE))
-##	object <- pr(object, "tau2A", PLATE, getParam(object, "tau2A", PLATE))
-##	object <- pr(object, "tau2B", PLATE, getParam(object, "tau2B", PLATE))				
-##	object <- pr(object, "sig2A", PLATE, getParam(object, "sig2A", PLATE))
-##	object <- pr(object, "sig2B", PLATE, getParam(object, "sig2B", PLATE))		
-##	object <- pr(object, "phiAX", PLATE, as.numeric(getParam(object, "phiAX", PLATE)))
-##	object <- pr(object, "phiBX", PLATE, as.numeric(getParam(object, "phiBX", PLATE)))
-##	object <- pr(object, "corr", PLATE, getParam(object, "corr", PLATE))
-##	object <- pr(object, "corrA.BB", PLATE, getParam(object, "corrA.BB", PLATE))
-##	object <- pr(object, "corrB.AA", PLATE, getParam(object, "corrB.AA", PLATE))
-##	##object <- object[order(chromosome(object), position(object)), ]
-##	if(cnOptions[["thresholdCopynumber"]]){
-##		object <- thresholdCopynumber(object)
-##	}
-##	return(object)
-##}
+computeCopynumber.CNSet <- function(object, cnOptions){
+	##PLATE <- unique(object$batch)
+	PLATE <- unique(batch(object))
+	verbose <- cnOptions$verbose
+	tmp.objects <- instantiateObjects(object, cnOptions)
+	bias.adj <- cnOptions$bias.adj
+	if(bias.adj & ncol(object) <= 15){
+		warning(paste("bias.adj is TRUE, but too few samples to perform this step"))
+		cnOptions$bias.adj <- bias.adj <- FALSE
+	}
+	if(bias.adj){
+		if(verbose) message("Dropping samples with low posterior prob. of normal copy number (samples dropped is locus-specific)")
+		tmp.objects <- biasAdjNP(object, cnOptions, tmp.objects)
+		tmp.objects <- biasAdj(object, cnOptions, tmp.objects)
+		if(verbose) message("Recomputing location and scale parameters")
+	}
+	##update tmp.objects
+	tmp.objects <- withinGenotypeMoments(object,
+					     cnOptions=cnOptions,
+					     tmp.objects=tmp.objects)
+	object <- locationAndScale(object, cnOptions, tmp.objects)
+	tmp.objects <- oneBatch(object,
+				cnOptions=cnOptions,
+				tmp.objects=tmp.objects)
+	##coefs calls nuphiAllele.
+	object <- coefs(object, cnOptions, tmp.objects)
+	##nuA=getParam(object, "nuA", PLATE)
+	THR.NU.PHI <- cnOptions$THR.NU.PHI
+	if(THR.NU.PHI){
+		verbose <- cnOptions$verbose
+		##if(verbose) message("Thresholding nu and phi")
+		object <- thresholdModelParams(object, cnOptions)
+	}		
+	##if(verbose) message("\nAllele specific copy number")	
+	object <- polymorphic(object, cnOptions, tmp.objects)
+	if(any(!isSnp(object))){  ##there are nonpolymorphic probes
+		##if(verbose) message("\nCopy number for nonpolymorphic probes...")	
+		object <- nonpolymorphic(object, cnOptions, tmp.objects)
+	}
+	##---------------------------------------------------------------------------
+	##Note: the replacement method multiples by 100
+##	CA(object)[, batch==PLATE] <- CA(object)
+##	CB(object)[, batch==PLATE] <- CB(object)
+	##---------------------------------------------------------------------------
+	##update-the plate-specific parameters for copy number
+	object <- pr(object, "nuA", PLATE, getParam(object, "nuA", PLATE))
+	object <- pr(object, "nuA.se", PLATE, getParam(object, "nuA.se", PLATE))
+	object <- pr(object, "nuB", PLATE, getParam(object, "nuB", PLATE))
+	object <- pr(object, "nuB.se", PLATE, getParam(object, "nuB.se", PLATE))
+	object <- pr(object, "phiA", PLATE, getParam(object, "phiA", PLATE))
+	object <- pr(object, "phiA.se", PLATE, getParam(object, "phiA.se", PLATE))
+	object <- pr(object, "phiB", PLATE, getParam(object, "phiB", PLATE))
+	object <- pr(object, "phiB.se", PLATE, getParam(object, "phiB.se", PLATE))
+	object <- pr(object, "tau2A", PLATE, getParam(object, "tau2A", PLATE))
+	object <- pr(object, "tau2B", PLATE, getParam(object, "tau2B", PLATE))				
+	object <- pr(object, "sig2A", PLATE, getParam(object, "sig2A", PLATE))
+	object <- pr(object, "sig2B", PLATE, getParam(object, "sig2B", PLATE))		
+	object <- pr(object, "phiAX", PLATE, as.numeric(getParam(object, "phiAX", PLATE)))
+	object <- pr(object, "phiBX", PLATE, as.numeric(getParam(object, "phiBX", PLATE)))
+	object <- pr(object, "corr", PLATE, getParam(object, "corr", PLATE))
+	object <- pr(object, "corrA.BB", PLATE, getParam(object, "corrA.BB", PLATE))
+	object <- pr(object, "corrB.AA", PLATE, getParam(object, "corrB.AA", PLATE))
+	##object <- object[order(chromosome(object), position(object)), ]
+	if(cnOptions[["thresholdCopynumber"]]){
+		object <- thresholdCopynumber(object)
+	}
+	return(object)
+}
 
 
 
