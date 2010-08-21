@@ -51,13 +51,15 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 	return(new("AnnotatedDataFrame", data=data.frame(M)))
 }
 
-construct <- function(filenames, cdfName, copynumber=FALSE,
+construct <- function(filenames,
+		      cdfName,
+		      copynumber=TRUE,
 		      sns, verbose=TRUE, batch, fns){
 	if(!missing(batch)){
 		stopifnot(length(batch) == length(sns))
 	}
 	if(missing(sns) & missing(filenames)) stop("one of filenames or samplenames (sns) must be provided")
-	if(verbose) message("Initializing container for assay data elements alleleA, alleleB, call, callProbability")
+	if(verbose) message("Initializing container for copy number estimation")
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
 	if(!missing(fns)){
 		index <- match(fns, featureNames(featureData))
@@ -254,9 +256,8 @@ genotype <- function(filenames,
 		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
 		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
 	}
-##	stopifnot(identical(featureNames(callSet)[snp.index], snprmaRes$gns))
-	pData(callSet)$SKW <- snprmaRes$SKW
-	pData(callSet)$SNR <- snprmaRes$SNR
+	pData(callSet)$SKW <- snprmaRes[["SKW"]]
+	pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	mixtureParams <- snprmaRes$mixtureParams
 	np.index <- which(!is.snp)
 	if(verbose) message("Normalizing nonpolymorphic markers")

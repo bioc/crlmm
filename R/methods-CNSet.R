@@ -432,7 +432,7 @@ setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
                  function(object, ..., value){
 			 assayDataElementReplace(object, "call", value)
 		 })
-setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
-                 function(object, ..., value){
-			 assayDataElementReplace(object, "callProbability", value)
-		 })
+##setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
+##                 function(object, ..., value){
+##			 assayDataElementReplace(object, "callProbability", value)
+##		 })

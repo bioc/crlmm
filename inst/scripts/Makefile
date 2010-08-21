@@ -1,6 +1,16 @@
 ## Need to submit from a fat node!
 all:	illumina_copynumber copynumber 
 
+testing: testing.Rnw
+	echo "Stangle(\"testing.Rnw\")" | R --no-save --no-restore;	
+	cat ~/bin/cluster.template | perl -pe "s/Rprog/testing.R/" > testing.R.sh
+	qsub -m e -r y -cwd -l mem_free=12G,h_vmem=16G testing.R.sh
+
+testingFF: testingFF.Rnw
+	echo "Stangle(\"testingFF.Rnw\")" | R --no-save --no-restore;	
+	cat ~/bin/cluster.template | perl -pe "s/Rprog/testingFF.R/" > testingFF.R.sh
+	qsub -m e -r y -cwd -l mem_free=12G,h_vmem=16G testingFF.R.sh
+
 copynumber:	copynumber.Rnw
 	echo "Stangle(\"copynumber.Rnw\")" | R --no-save --no-restore;	
 	cat ~/bin/cluster.template | perl -pe "s/Rprog/copynumber.R/" > copynumber.R.sh

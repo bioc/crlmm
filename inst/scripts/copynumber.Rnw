@@ -143,7 +143,7 @@ second time.
 
 <<genotype>>=
 tmpdir <- "~/tmp3"
-stop()
+##stop()
 ##if(FALSE){
 ##if(file.exists(tmpdir)) unlink(tmpdir, recursive=TRUE)
 dir.create(tmpdir)
