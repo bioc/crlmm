@@ -836,7 +836,7 @@ fit.lm1 <- function(idxBatch,
 	flags <- nuA <- nuB <- phiA <- phiB <- corrAB
 
 	normal.snps <- normal[snps, ]
-	cB <- cA <- matrix(NA, length(snps), ncol(object))
+	##cB <- cA <- matrix(NA, length(snps), ncol(object))
 	GG <- as.matrix(calls(object)[snps, ])
 	CP <- as.matrix(snpCallProbability(object)[snps, ])
 	AA <- as.matrix(A(object)[snps, ])
@@ -1044,8 +1044,7 @@ fit.lm2 <- function(idxBatch,
 	open(snpflags)
 	open(normal)
 
-	
-	cA <- matrix(NA, length(snps), ncol(object))
+##	cA <- matrix(NA, length(snps), ncol(object))
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
 	flags <- as.matrix(snpflags[,])  
 	noflags <- rowSums(flags, na.rm=TRUE) == 0  ##NA's for unevaluated batches
@@ -1158,7 +1157,7 @@ fit.lm3 <- function(idxBatch,
 	corrAB <- corrBB <- corrAA <- sig2B <- sig2A <- tau2B <- tau2A <- matrix(NA, length(snps), length(unique(batch(object))))
 	phiA2 <- phiB2 <- tau2A
 	flags <- nuA <- nuB <- phiA <- phiB <- corrAB
-	cB <- cA <- matrix(NA, length(snps), ncol(object))
+##	cB <- cA <- matrix(NA, length(snps), ncol(object))
 	gender <- object$gender
 	IX <- matrix(gender, length(snps), ncol(object))
 	NORM <- normal[snps,]
@@ -1298,28 +1297,27 @@ fit.lm3 <- function(idxBatch,
 			phiB2[phiB2[, J] < MIN.PHI, J] <- MIN.PHI
 		}
 		phistar <- phiB2[, J]/phiA[, J]
-		tmp <- (B-nuB[, J] - phistar*A + phistar*nuA[, J])/phiB[, J]
-		cB[, k] <- tmp/(1-phistar*phiA2[, J]/phiB[, J])
-		cA[, k] <- (A-nuA[, J]-phiA2[, J]*cB[, k])/phiA[, J]
+##		tmp <- (B-nuB[, J] - phistar*A + phistar*nuA[, J])/phiB[, J]
+##		cB[, k] <- tmp/(1-phistar*phiA2[, J]/phiB[, J])
+##		cA[, k] <- (A-nuA[, J]-phiA2[, J]*cB[, k])/phiA[, J]
 		##some of the snps are called for the men, but not the women
 		rm(YA, YB, wA, wB, res, tmp, phistar, A, B, G, index)
 		gc()
 	}
-
-	cA[cA < 0.05] <- 0.05
-	cB[cB < 0.05] <- 0.05
-	cA[cA > 5] <-  5
-	cB[cB > 5] <- 5
+##	cA[cA < 0.05] <- 0.05
+##	cB[cB < 0.05] <- 0.05
+##	cA[cA > 5] <-  5
+##	cB[cB > 5] <- 5
 	
 	##--------------------------------------------------
 	##RS: need to fix.  why are there NA's by coercion
-	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
+##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
 	##--------------------------------------------------
 	##ii <- rowSums(is.na(cA)) > 0
 	##these often arise at SNPs with low confidence scores
-	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
-	CA(object)[snps, ] <- cA
-	CB(object)[snps, ] <- cB
+##	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
+##	CA(object)[snps, ] <- cA
+##	CB(object)[snps, ] <- cB
 	snpflags[snps, ] <- flags
 	tmp <- physical(lM(object))$tau2A
 	tmp[snps, ] <- tau2A
