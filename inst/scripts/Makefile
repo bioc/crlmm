@@ -2,7 +2,6 @@
 all:	illumina_copynumber copynumber 
 
 copynumber:	copynumber.Rnw
-##	echo "Sweave(\"$1.Rnw\"); library(tools); texi2dvi(\"$1.tex\", pdf=TRUE)" | R --no-save --no-restore;
 	echo "Stangle(\"copynumber.Rnw\")" | R --no-save --no-restore;	
 	cat ~/bin/cluster.template | perl -pe "s/Rprog/copynumber.R/" > copynumber.R.sh
 	qsub -m e -r y -cwd -l mem_free=12G,h_vmem=16G copynumber.R.sh

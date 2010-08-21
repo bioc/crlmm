@@ -957,25 +957,20 @@ fit.lm1 <- function(idxBatch,
 			phiA[phiA[, J] < MIN.PHI, J] <- MIN.PHI
 			phiB[phiB[, J] < MIN.PHI, J] <- MIN.PHI
 		}
-		## formerly polymorphic():  calculate copy number
-		cA[, k] <- matrix((1/phiA[, J]*(A-nuA[, J])), nrow(A), ncol(A))
-		cB[, k] <- matrix((1/phiB[, J]*(B-nuB[, J])), nrow(B), ncol(B))
+##		cA[, k] <- matrix((1/phiA[, J]*(A-nuA[, J])), nrow(A), ncol(A))
+##		cB[, k] <- matrix((1/phiB[, J]*(B-nuB[, J])), nrow(B), ncol(B))
 		rm(G, A, B, NORM, wA, wB, YA,YB, res, negA, negB, Np, Ns)
 		gc()
 	}
-	cA[cA < 0.05] <- 0.05
-	cB[cB < 0.05] <- 0.05
-	cA[cA > 5] <-  5
-	cB[cB > 5] <- 5
-	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
-	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
+##	cA[cA < 0.05] <- 0.05
+##	cB[cB < 0.05] <- 0.05
+##	cA[cA > 5] <-  5
+##	cB[cB > 5] <- 5
+##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
+##	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
+##	CA(object)[snps, ] <- cA
+##	CB(object)[snps, ] <- cB
 
-
-	
-	CA(object)[snps, ] <- cA
-	CB(object)[snps, ] <- cB
-
-	
 	snpflags[snps, ] <- flags
 	lapply(lM(object), open)
 	
