@@ -1105,16 +1105,15 @@ fit.lm2 <- function(idxBatch,
 			nuA.np[nuA.np[, J] < MIN.NU, J] <- MIN.NU
 			phiA.np[phiA.np[, J] < MIN.PHI, J] <- MIN.PHI
 		}
-		cA[, k] <- 1/phiA.np[, J] * (A.np - nuA.np[, J])
+##		cA[, k] <- 1/phiA.np[, J] * (A.np - nuA.np[, J])
 		sig2A.np[, J] <- rowMAD(log2(A.np*NORM.np[, k]), na.rm=TRUE)
 		rm(NORM.snp, highConf, xx, G, Ns, A.np, X, Y, betahat, mus, logPhiT)
 		gc()
 	}
-
-	cA[cA < 0.05] <- 0.05
-	cA[cA > 5] <-  5
-	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
-	CA(object)[snps, ] <- cA
+##	cA[cA < 0.05] <- 0.05
+##	cA[cA > 5] <-  5
+##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
+##	CA(object)[snps, ] <- cA
 	tmp <- physical(lM(object))$nuA
 	tmp[snps, ] <- nuA.np
 	lM(object)$nuA <- tmp
