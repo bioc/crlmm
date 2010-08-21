@@ -208,21 +208,7 @@ loadObject <- function(filename, load.it){
 	} else return(FALSE)
 }
 
-initializeParamObject <- function(dimnames){
-	nr <- length(dimnames[[1]])
-	nc <- length(dimnames[[2]])
-	name <- paramNames()
-	ll <- vector("list", length(name))
-	if(isPackageLoaded("ff")){
-		for(i in seq(along=ll)) ll[[i]] <- createFF(name=name[i], dim=c(nr, nc), vmode="double")            ##ff(vmode="double", dim=c(nr, nc), pattern=file.path(ldPath(), name[i]), dimnames=dimnames, overwrite=TRUE)
-		names(ll) <- name
-		ll <- do.call(ffdf, ll)
-	} else {
-		for(i in seq(along=ll)) ll[[i]] <- matrix(NA, nr, nc, dimnames=dimnames)
-		names(ll) <- name
-	}
-	return(ll)
-}
+
 
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)

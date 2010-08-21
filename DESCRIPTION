@@ -10,7 +10,7 @@ License: Artistic-2.0
 Depends: R (>= 2.11.0),
          methods,
          Biobase (>= 2.7.2),
-         oligoClasses (>= 1.9.50)
+         oligoClasses (>= 1.11.0)
 Imports: affyio (>= 1.15.2),
          ellipse,
          ff,
@@ -29,6 +29,7 @@ Collate: AllGenerics.R
 	 AllClasses.R
 	 methods-CNSet.R
 	 methods-eSet.R
+	 methods-LinearModelParameter.R
          methods-SnpSuperSet.R
          cnrma-functions.R
          crlmm-functions.R

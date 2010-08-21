@@ -37,7 +37,7 @@ constructIlluminaCNSet(crlmmResult, path, snpFile, cnFile)
 R. Scharpf
 }
 \seealso{
-	\code{\link{CNSetLM-class}}, \code{\link{crlmmIllumina}}
+	\code{\link{CNSet-class}}, \code{\link{crlmmIllumina}}
 }
 
 \keyword{manip}

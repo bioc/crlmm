@@ -29,7 +29,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
-		  "A<-", "B<-", open, close)
+		  "A<-", "B<-", open, close, lM, "lM<-")
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)
@@ -55,15 +55,13 @@ importFrom(ellipse, ellipse)
 
 importFrom(ff, ffdf, physical.ff, physical.ffdf)
 
-exportClasses(CNSetLM, ffdf, list)
-exportMethods(open, "[", show, lM, lines, nu, phi, corr, sigma2, tau2)
-exportMethods(CA, CB, totalCopyNumber)
+exportClasses(ffdf, list)
+exportMethods(lines)
+exportMethods(CA, CB, totalCopyNumber, initialize)
 export(crlmm, 
-##       crlmmCopynumber, 
        crlmmIllumina, 
        crlmmIllumina2,
        ellipseCenters,
-##       genotype, 
        readIdatFiles, 
        readIdatFiles2,
        snprma,
@@ -73,12 +71,13 @@ export(crlmm,
        batch,
        crlmmCopynumber2, crlmmCopynumberLD)
 export(constructIlluminaCNSet)
-export(linesCNSetLM)
+##export(linesCNSet)
 export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
        dqrlsWrapper, fit.wls)
 export(computeCopynumber, ACN)
 
-
+## For debugging
+exportPattern("^[^\\.]")
 
 
 

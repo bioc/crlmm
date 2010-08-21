@@ -1,109 +1,108 @@
-setMethod("show", "CNSetLM", function(object){
-	callNextMethod(object)
-	cat("lM: ", length(lM(object)), " elements \n")
-	print(names(lM(object)))
+linearParamElementReplace <- function(obj, elt, value) {
+    storage.mode <- storageMode(lM(obj))
+    switch(storage.mode,
+           "lockedEnvironment" = {
+               aData <- copyEnv(lM(obj))
+               if (is.null(value)) rm(list=elt, envir=aData)
+               else aData[[elt]] <- value
+               Biobase:::assayDataEnvLock(aData)
+               lM(obj) <- aData
+           },
+           "environment" = {
+               if (is.null(value)) rm(list=elt, envir=lM(obj))
+               else lM(obj)[[elt]] <- value
+           },
+           list = lM(obj)[[elt]] <- value)
+    obj
+}
+
+
+setMethod("nu", c("CNSet", "character"), function(object, allele) nu(lM(object), allele))
+setMethod("phi", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
+setMethod("sigma2", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
+setMethod("tau2", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
+setMethod("corr", c("CNSet", "character"), function(object, allele) phi(lM(object), allele))
+
+setMethod("nuA", signature=signature(object="CNSet"), function(object) nu(object, "A"))
+setMethod("nuB", signature=signature(object="CNSet"), function(object) nu(object, "B"))
+setMethod("phiA", signature=signature(object="CNSet"), function(object) phi(object, "A"))
+setMethod("phiB", signature=signature(object="CNSet"), function(object) phi(object, "B"))
+setMethod("sigma2A", signature=signature(object="CNSet"), function(object) sigma2(object, "A"))
+setMethod("sigma2B", signature=signature(object="CNSet"), function(object) sigma2(object, "B"))
+setMethod("tau2A", signature=signature(object="CNSet"), function(object) tau2(object, "A"))
+setMethod("tau2B", signature=signature(object="CNSet"), function(object) tau2(object, "B"))
+setMethod("corrAA", signature=signature(object="CNSet"), function(object) corr(object, "AA"))
+setMethod("corrAB", signature=signature(object="CNSet"), function(object) corr(object, "AB"))
+setMethod("corrBB", signature=signature(object="CNSet"), function(object) corr(object, "BB"))
+
+setReplaceMethod("nuA", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "nuA", value)
+	  })
+
+setReplaceMethod("nuB", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "nuB", value)		  
 })
 
-setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
-	x <- callNextMethod(x, i, j, ..., drop=drop)
-	if(!missing(i)){
-		if(class(lM(x)) == "ffdf"){
-			lM(x) <- lapply(physical(lM(x)), function(x, i){open(x); x[i, ]}, i=i)
-		} else {
-			lM(x) <- lapply(lM(x), function(x, i) x[i, , drop=FALSE], i=i)
-		}
-	}
-	x
+setReplaceMethod("phiA", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "phiA", value)		  
 })
 
-setMethod("[", "CNSetLM", function(x, i, j, ..., drop=FALSE){
-	x <- callNextMethod(x, i, j, ..., drop=drop)
-##	if(!missing(i)){
-##		if(class(lM(x)) == "ffdf"){
-##			lM(x) <- lapply(physical(lM(x)), function(x, i){open(x); x[i, ]}, i=i)
-##		} else {
-##			lM(x) <- lapply(lM(x), function(x, i) x[i, , drop=FALSE], i=i)
-##		}
-##	}
-	x
+setReplaceMethod("phiB", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "phiB", value)		  
+})
+
+setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "sig2A", value)		  
+})
+
+setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "sig2B", value)		  
+})
+
+setReplaceMethod("tau2A", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "tau2A", value)		  
+})
+
+setReplaceMethod("tau2B", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "tau2B", value)		  
+})
+
+setReplaceMethod("corrAA", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "corrAA", value)		  
+})
+
+setReplaceMethod("corrAB", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "corrAB", value)		  
+})
+
+setReplaceMethod("corrBB", signature=signature(object="CNSet", value="matrix"), 
+	  function(object, value){
+		  linearParamElementReplace(object, "corrBB", value)		  
 })
 
 
-setMethod("lM", "CNSetLM", function(object) object@lM)
-setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
-	object@lM <- value
-	object
-})
-
-
-
-setMethod("open", "CNSetLM", function(con,...){
-	callNextMethod(con,...)
-	physical <- get("physical")
-	lapply(physical(lM(con)), open)
-})
-
-setAs("SnpSuperSet", "CNSetLM", function(from, to){
-	stopifnot("batch" %in% varLabels(protocolData(from)))
-	cnSet <- new("CNSetLM",
-		     alleleA=A(from),
-		     alleleB=B(from),
-		     call=snpCall(from),
-		     callProbability=snpCallProbability(from),
-##		     CA=initializeBigMatrix("CA", nrow(from), ncol(from)),
-##		     CB=initializeBigMatrix("CB", nrow(from), ncol(from)),
-		     annotation=annotation(from),
-		     featureData=featureData(from),
-		     experimentData=experimentData(from),
-		     protocolData=protocolData(from),
-		     phenoData=phenoData(from))
-	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(protocolData(from)$batch)))
-	return(cnSet)
-})
-
-setMethod("computeCopynumber", "CNSet",
-	  function(object,
-		   MIN.OBS,
-		   DF.PRIOR,
-		   bias.adj,
-		   prior.prob,
-		   seed,
-		   verbose,
-		   GT.CONF.THR,
-		   PHI.THR,
-		   nHOM.THR,
-		   MIN.NU,
-		   MIN.PHI,
-		   THR.NU.PHI,
-		   thresholdCopynumber){
-	## to do the bias adjustment, initial estimates of the parameters are needed
-	##  The initial estimates are gotten by running computeCopynumber with cnOptions[["bias.adj"]]=FALSE
-		  cnOptions <- list(
-				    MIN.OBS=MIN.OBS,
-				    DF.PRIOR=DF.PRIOR,
-				    bias.adj=bias.adj,
-				    prior.prob=prior.prob,
-				    seed=seed,
-				    verbose=verbose,
-				    GT.CONF.THR=GT.CONF.THR,
-				    PHI.THR=PHI.THR,
-				    nHOM.THR=nHOM.THR,
-				    MIN.NU=MIN.NU,
-				    MIN.PHI=MIN.PHI,
-				    THR.NU.PHI=THR.NU.PHI,
-				    thresholdCopynumber=thresholdCopynumber)
-	bias.adj <- cnOptions[["bias.adj"]]
-	if(bias.adj & all(is.na(fData(object)$nuA_1))){
-		cnOptions[["bias.adj"]] <- FALSE
-	}
-	object <- cnCNSet(object, cnOptions)				
-	if(bias.adj & !cnOptions[["bias.adj"]]){
-		## Do a second iteration with bias adjustment
-		cnOptions[["bias.adj"]] <- TRUE
-		object <- cnCNSet(object, cnOptions)
-	}
-	object
-})
+##setValidity("CNSet",
+##	    function(object){
+##		    if(!"batch" %in% varLabels(protocolData(object)))
+##			    return("'batch' not defined in protocolData")
+##		    if(!"chromosome" %in% fvarLabels(object))
+##			    return("'chromosome' not defined in featureData")
+##		    if(!"position" %in% fvarLabels(object))
+##			    return("'position' not defined in featureData")
+##		    if(!"isSnp" %in% fvarLabels(object))
+##			    return("'isSnp' not defined in featureData")
+##		    return(TRUE)
+##	    })
 
 setMethod("totalCopyNumber", "CNSet", function(object, i, j){
 	if(missing(i) & missing(j)){
@@ -132,110 +131,11 @@ setMethod("totalCopyNumber", "CNSet", function(object, i, j){
 	return(cn.total)
 })
 
-setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){
-	ellipse.CNSet(x, copynumber, batch, ...)
-})
+##setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){
+##	ellipse.CNSet(x, copynumber, batch, ...)
+##})
 
-setMethod("nu", c("CNSetLM", "character"), function(object, allele){
-	getValue <- function(allele){
-		switch(allele,
-		       A="nuA",
-		       B="nuB",
-		       stop("allele must be 'A' or 'B'"))
-	}	
-	val <- getValue(allele)
-	class.lm <- class(lM(object)) 
-	if(class.lm == "ffdf"){
-		physical <- get("physical")
-		res <- physical(lM(object))[[val]]
 
-	} else {
-		if(class.lm != "list") stop("lM() must be matrix or ffdf")
-		res <- lM(object)[[val]]
-	}
-	return(res)
-})
-
-setMethod("phi", c("CNSetLM", "character"), function(object, allele){
-	getValue <- function(allele){
-		switch(allele,
-		       A="phiA",
-		       B="phiB",
-		       stop("allele must be 'A' or 'B'"))
-	}
-	val <- getValue(allele)	
-	class.lm <- class(lM(object)) 
-	if(class.lm == "ffdf"){
-		physical <- get("physical")
-		res <- physical(lM(object))[[val]]
-
-	} else {
-		if(class.lm != "list") stop("lM() must be matrix or ffdf")
-		res <- lM(object)[[val]]
-	}
-	return(res)
-})
-
-setMethod("sigma2", c("CNSetLM", "character"), function(object, allele){
-	getValue <- function(allele){
-		switch(allele,
-		       A="sig2A",
-		       B="sig2B",
-		       stop("allele must be 'A' or 'B'"))
-	}
-	val <- getValue(allele)	
-	class.lm <- class(lM(object))
-	if(class.lm == "ffdf"){
-		physical <- get("physical")
-		res <- physical(lM(object))[[val]]
-
-	} else {
-		if(class.lm != "list") stop("lM() must be matrix or ffdf")
-		res <- lM(object)[[val]]
-	}
-	return(res)
-})
-
-setMethod("tau2", c("CNSetLM", "character"), function(object, allele){
-	getValue <- function(allele){
-		switch(allele,
-		       A="tau2A",
-		       B="tau2B",
-		       stop("allele must be 'A' or 'B'"))
-	}
-	val <- getValue(allele)
-	class.lm <- class(lM(object))
-	if(class.lm == "ffdf"){
-		physical <- get("physical")
-		res <- physical(lM(object))[[val]]
-
-	} else {
-		if(class.lm != "list") stop("lM() must be matrix or ffdf")
-		res <- lM(object)[[val]]
-	}
-	return(res)
-})
-
-setMethod("corr", c("CNSetLM", "character"), function(object, allele){
-	getValue <- function(allele){
-		switch(allele,
-		       AA="corrAA",
-		       AB="corrAB",
-		       BB="corrBB",
-		       stop("must be AA, AB, or BB"))
-	}
-	val <- getValue(allele)
-	class.lm <- class(lM(object))
-	if(class.lm == "ffdf"){
-		physical <- get("physical")
-		res <- physical(lM(object))[[val]]
-
-	} else {
-		if(class.lm != "list") stop("lM() must be matrix or ffdf")
-		res <- lM(object)[[val]]
-	}
-	return(res)
-})
 
 ACN <- function(object, allele, i , j){
 	if(missing(i) & missing(j)){
@@ -328,3 +228,12 @@ setMethod("totalCopyNumber",
 	dimnames(cn.total) <- NULL
 	return(cn.total)
 })
+
+setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
+                 function(object, ..., value){
+			 assayDataElementReplace(object, "call", value)
+		 })
+setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
+                 function(object, ..., value){
+			 assayDataElementReplace(object, "callProbability", value)
+		 })

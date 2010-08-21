@@ -1,8 +1,7 @@
-setOldClass("ellipse")
 setMethod("lines", c("CNSetLM"), function(x, y, batch, copynumber, ...){
-	linesCNSetLM(x, y, batch, copynumber, ...)
+	linesCNSet(x, y, batch, copynumber, ...)
 })
-linesCNSetLM <- function(x, y, batch, copynumber, x.axis="A", ...){
+linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 	require(ellipse)
 	object <- x
 	I <- y

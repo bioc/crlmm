@@ -86,7 +86,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData <- new("AnnotatedDataFrame", data=pd)
 	ffObjects <- lapply(ffObjects, function(x,sns) {colnames(x) <- sns; return(x)}, sns=sns)
-	callSet <- new("CNSetLM", 
+	callSet <- new("CNSet", 
 		       alleleA=ffObjects[["alleleA"]],
 		       alleleB=ffObjects[["alleleB"]],
 		       call=ffObjects[["call"]],
@@ -311,7 +311,7 @@ genotypeLD <- function(filenames,
 	callSet$gender <- tmp$gender
 	return(callSet)
 }
-genotype2 <- genotypeLD
+genotype <- genotype2 <- genotypeLD
 
 rowCovs <- function(x, y, ...){
 	notna <- !is.na(x)
@@ -774,7 +774,7 @@ crlmmCopynumberLD <- function(object,
 		 neededPkgs="crlmm")
 	return(object)
 }
-crlmmCopynumber2 <- crlmmCopynumberLD
+crlmmCopynumber <- crlmmCopynumber2 <- crlmmCopynumberLD
 
 fit.lm1 <- function(idxBatch,
 		    snpBatches,
@@ -2759,7 +2759,7 @@ constructIlluminaCNSet <- function(crlmmResult,
 	fD <- fD[new.order, ]
 	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, order.index=new.order)
 	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-	container <- new("CNSetLM", 
+	container <- new("CNSet", 
 			 assayData=aD,
 			 phenoData=phenoData(crlmmResult),
 			 protocolData=protocolData(crlmmResult),

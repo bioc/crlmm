@@ -7,17 +7,17 @@
   Locus- and allele-specific estimation of copy number.
 }
 \usage{
-crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES
-= 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE,
-prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR =
-0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3,
-THR.NU.PHI = TRUE, thresholdCopynumber = TRUE, weighted.lm=TRUE)
+%crlmmCopynumber(object, chromosome = 1:23, which.batches, MIN.SAMPLES
+%= 10, SNRMin = 5, MIN.OBS = 3, DF.PRIOR = 50, bias.adj = FALSE,
+%prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE, GT.CONF.THR =
+%0.99, PHI.THR = 2^6, nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3,
+%THR.NU.PHI = TRUE, thresholdCopynumber = TRUE)
 
 crlmmCopynumberLD(object, which.batches, MIN.SAMPLES = 10, SNRMin = 5,
 MIN.OBS = 1, DF.PRIOR = 50, bias.adj = FALSE, prior.prob = rep(1/4,
 4), seed = 1, verbose = TRUE, GT.CONF.THR = 0.99, PHI.THR = 2^6,
 nHOM.THR = 5, MIN.NU = 2^3, MIN.PHI = 2^3, THR.NU.PHI = TRUE,
-thresholdCopynumber = TRUE, weighted.lm=TRUE)
+thresholdCopynumber = TRUE)
 
 }
 \arguments{
@@ -136,11 +136,6 @@ thresholdCopynumber = TRUE, weighted.lm=TRUE)
   truncated.
 
 }
-
-\item{weighted.lm}{ If \code{TRUE}, a linear model is fit using
-weighted least squares. Otherwise, a linear model is fit without
-weights. The run-time for weighted least squares is substantially
-longer.}
 
 }
 

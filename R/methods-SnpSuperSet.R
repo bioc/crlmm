@@ -1,15 +1,3 @@
-setReplaceMethod("snpCall", c("SnpSuperSet", "ff_or_matrix"),
-                 function(object, ..., value)
-{
-    assayDataElementReplace(object, "call", value)
-})
-setReplaceMethod("snpCallProbability", c("SnpSuperSet", "ff_or_matrix"),
-                 function(object, ..., value)
-{
-    assayDataElementReplace(object, "callProbability", value)
-})
-
-
 ## Method("initialize", "AlleleSet",
 ##        function(.Object,
 ##                 assayData = assayDataNew(alleleA=alleleA,
@@ -153,23 +141,23 @@ setReplaceMethod("snpCallProbability", c("SnpSuperSet", "ff_or_matrix"),
 ##	addFeatureAnnotation.crlmm(object, ...)
 ##})
 
-getParam.SnpSuperSet <- function(object, name, batch){
-		  label <- paste(name, batch, sep="_")
-		  colindex <- grep(label, fvarLabels(object))
-		  if(length(colindex) == 1){
-			  param <- fData(object)[, colindex]
-		  }
-		  if(length(colindex) < 1){
-			  param <- NULL
-		  }
-		  if(is.na(colindex)){
-			  stop(paste(label, " not found in object"))
-		  }
-		  if(length(colindex) > 1){
-			  stop(paste(label, " not unique"))
-		  }
-		  return(param)
-	  }
+##getParam.SnpSuperSet <- function(object, name, batch){
+##		  label <- paste(name, batch, sep="_")
+##		  colindex <- grep(label, fvarLabels(object))
+##		  if(length(colindex) == 1){
+##			  param <- fData(object)[, colindex]
+##		  }
+##		  if(length(colindex) < 1){
+##			  param <- NULL
+##		  }
+##		  if(is.na(colindex)){
+##			  stop(paste(label, " not found in object"))
+##		  }
+##		  if(length(colindex) > 1){
+##			  stop(paste(label, " not unique"))
+##		  }
+##		  return(param)
+##	  }
 
 
 

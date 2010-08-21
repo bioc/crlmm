@@ -13,7 +13,7 @@
 \usage{data(sample.CNSetLM)}
 \format{
 
-	The data illustrates the \code{\link{CNSetLM-class}}, with
+	The data illustrates the \code{CNSetLM-class}, with
 	\code{assayData} containing the quantile-normalized
 	intensities for the A and B alleles, genotype calls and
 	confidence scores (call and callProbability), and

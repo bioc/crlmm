@@ -68,7 +68,7 @@ R. Scharpf
 }
 
 \seealso{
-	\code{\link{CNSetLM-class}}
+	\code{\link{CNSet-class}}
 }
 \examples{
 ## object with ff class
