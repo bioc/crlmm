@@ -54,25 +54,6 @@ all(isCurrent(cnSet))
 	nuA(container2)[1:5, ] <- xx
 	invisible(close(nuA(container2)))
 }
-
-
-
-
-nms <- names(lM(sample.CNSetLMff))
-##names must be tau2A, tau2B, ...
-nms2 <- sapply(nms, function(x) strsplit(x, "\\.1")[[1]][[1]], USE.NAMES=FALSE)
-names(sample.CNSetLMff@lM) <- nms2
-cnSetff <- as(sample.CNSetLMff, "CNSet")
-## try replacement method without warning
-nuA(cnSetff)[1:10, ] <- matrix(1:10, 10, 1)
-
-## try subset method without warning
-
-
-
-## information on the features
-fvarLabels(cnSet)
-##
 ## --------------------------------------------------
 ## accessors for the feature-level info
 ## --------------------------------------------------
@@ -81,8 +62,6 @@ position(cnSet)[1:5]
 isSnp(cnSet)[1:5]
 ## 980 nonpolymorphic markers and 1139 polymoprhic markers
 table(isSnp(cnSet))
-## --------------------------------------------------
-
 ## --------------------------------------------------
 ## sample-level statistics computed by crlmm
 ## --------------------------------------------------
@@ -95,16 +74,14 @@ cnSet$SKW[1:5]
 ## the gender (gender is imputed unless specified in the call to crlmm)
 table(cnSet$gender)  ## 1=male, 2=female
 ## --------------------------------------------------
-
-
 ## --------------------------------------------------
-## accessors for linear model parameters estimated from
-## the linear model for copy number
-## (note that the parameters have dimension R x C, where
-##  R corresponds to the number of features and C corresponds
-##  to the number of batches)
-## --------------------------------------------------
-## estimate of background
+##
+## accessors for parameters estimated from the linear model for copy
+## number (note that the parameters have dimension R x C, where R
+## corresponds to the number of features and C corresponds to the
+## number of batches)
+## -------------------------------------------------- estimate of
+## background
 dim(nu(cnSet, "A"))
 ## background for the A allele in the 2 batches for the
 ## first 5 markers
@@ -146,15 +123,15 @@ cn2 <- CA(cnSet, i=index, j=1:2)
 ## note, ca+cb will give NAs at nonpolymorphic loci
 CA(cnSet, i=index, j=1:2) + cb
 ## A shortcut for total copy number
-cn3 <- totalCopyNumber(cnSet, i=1:5, j=1:2)
+cn3 <- totalCopynumber(cnSet, i=1:5, j=1:2)
 all.equal(cn3, cn1)
-cn4 <- totalCopyNumber(cnSet, i=index, j=1:2)
+cn4 <- totalCopynumber(cnSet, i=index, j=1:2)
 all.equal(cn4, cn2)
 
 ## markers 1-5, all samples
-cn5 <- totalCopyNumber(cnSet, i=1:5)
+cn5 <- totalCopynumber(cnSet, i=1:5)
 ## all markers, samples 1-5
-cn6 <- totalCopyNumber(cnSet, j=1:5)
+cn6 <- totalCopynumber(cnSet, j=1:5)
 
 ## NOTE: subsetting the object before extracting copy number
 ##       can be very inefficient when the data set is very large,

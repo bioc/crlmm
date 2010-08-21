@@ -74,19 +74,12 @@ export(crlmm,
        genotype2, genotypeLD,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(constructIlluminaCNSet)
-##export(linesCNSet)
-##export(fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
-##       dqrlsWrapper, fit.wls)
-export(computeCopynumber, totalCopynumber)
+export(totalCopynumber)
 export(cnrma, cnrma2)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns)
 export(genotypeSummary,
        shrinkSummary,
        estimateCnParameters)
-##       summarizeSnps,
-##       summarizeNps,
-##       shrinkGenotypeSummaries,
-##       summarizeMaleXGenotypes
 
 ## For debugging
 ## exportPattern("^[^\\.]")

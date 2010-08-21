@@ -80,9 +80,9 @@ cn4 <- totalCopynumber(cnSet, i=index, j=1:2)
 all.equal(cn4, cn2)
 
 ## markers 1-5, all samples
-cn5 <- totalCopyNumber(cnSet, i=1:5)
+cn5 <- totalCopynumber(cnSet, i=1:5)
 ## all markers, samples 1-5
-cn6 <- totalCopyNumber(cnSet, j=1:5)
+cn6 <- totalCopynumber(cnSet, j=1:5)
 
 ## NOTE: subsetting the object before extracting copy number
 ##       can be very inefficient when the data set is very large,

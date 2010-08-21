@@ -2,14 +2,14 @@
 ##setGeneric("getParam", function(object, name, batch) standardGeneric("getParam"))
 setGeneric("cnIndex", function(object) standardGeneric("cnIndex"))
 setGeneric("cnNames", function(object) standardGeneric("cnNames"))
-setGeneric("computeCopynumber", function(object, ...) standardGeneric("computeCopynumber"))
+##setGeneric("computeCopynumber", function(object, ...) standardGeneric("computeCopynumber"))
 ##setGeneric("pr", function(object, name, batch, value) standardGeneric("pr"))
 setGeneric("snpIndex", function(object) standardGeneric("snpIndex"))
 setGeneric("snpNames", function(object) standardGeneric("snpNames"))
 
 setGeneric("CA", function(object, ...) standardGeneric("CA"))
 setGeneric("CB", function(object, ...) standardGeneric("CB"))
-##setGeneric("totalCopyNumber", function(object, ...) standardGeneric("totalCopyNumber"))
+setGeneric("totalCopynumber", function(object, ...) standardGeneric("totalCopynumber"))
 
 
 setGeneric("Ns", function(object, ...) standardGeneric("Ns"))

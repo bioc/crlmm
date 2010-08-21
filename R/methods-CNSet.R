@@ -421,7 +421,9 @@ setMethod("CB", signature=signature(object="CNSet"),
 		  return(cb)
 	  })
 
-totalCopynumber <- function(object, ...){
+##totalCopynumber <- function(object, ...){
+setMethod("totalCopynumber", signature=signature(object="CNSet"),
+	  function(object, ...){
 	message("copy number at nonpolymorphic probes is not currently available")
 	ca <- CA(object, ...)
 	cb <- CB(object, ...)
@@ -436,7 +438,7 @@ totalCopynumber <- function(object, ...){
 		if(length(np.index) > 0) cb[np.index, ] <- 0
 	}
 	return(ca+cb)
-}
+})
 
 setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
                  function(object, ..., value){
