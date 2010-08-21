@@ -4,11 +4,16 @@
 \alias{CNSetLM}
 \alias{CNSetLM-class}
 \alias{[,CNSetLM-method}
+\alias{corr,CNSetLM,character-method}
 \alias{lines,CNSetLM-method}
 \alias{lM,CNSetLM-method}
 \alias{lM<-,CNSetLM,list_or_ffdf-method}
 \alias{open,CNSetLM-method}
+\alias{nu,CNSetLM,character-method}
+\alias{phi,CNSetLM,character-method}
 \alias{show,CNSetLM-method}
+\alias{sigma2,CNSetLM,character-method}
+\alias{tau2,CNSetLM,character-method}
 
 \title{CNSetLM class}
 \description{Container for allele-specific copy number and linear model
@@ -45,10 +50,16 @@ Class \code{"\linkS4class{Versioned}"}, by class "CNSet", distance 6.
     \item{lines}{\code{signature(x="CNSetLM")}: for drawing prediction regions on A vs B scatterplots}
     \item{lM}{\code{signature(object = "CNSetLM")}: Extract list or
     ffdf object containing linear model parameters}
-   \item{open}{\code{signature(con = "CNSetLM")}: opens file connects
+    \item{nu}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
+            intercept for linear model. See \code{\link{nu}}.}
+  \item{open}{\code{signature(con = "CNSetLM")}: opens file connects
     to ff objects for assayData elements and linear model parameters}
+    \item{phi}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
+            slope for linear model.  See \code{\link{phi}}.}
     \item{show}{\code{signature(object = "CNSetLM")}: print method
     for the class }
+    \item{sigma2}{\code{signature(object = "CNSetLM"), \code{signature(allele="character")}}: 
+    The within genotype         }   
 	 }
 }
 \author{ R. Scharpf}

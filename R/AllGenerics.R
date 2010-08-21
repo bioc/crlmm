@@ -10,4 +10,10 @@ setGeneric("lM", function(object) standardGeneric("lM"))
 setGeneric("lM<-", function(object, value) standardGeneric("lM<-"))
 setGeneric("totalCopyNumber", function(object,...) standardGeneric("totalCopyNumber"))
 
+setGeneric("corr", function(object, allele) standardGeneric("corr"))
+setGeneric("nu", function(object, allele) standardGeneric("nu"))
+setGeneric("phi", function(object, allele) standardGeneric("phi"))
+setGeneric("sigma2", function(object, allele) standardGeneric("sigma2"))
+setGeneric("tau2", function(object, allele) standardGeneric("tau2"))
+
 

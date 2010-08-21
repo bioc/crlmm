@@ -47,22 +47,48 @@ library(oligoClasses)
 library(crlmm)
 crlmm:::validCdfNames()
 cdfName <- "genomewidesnp6"
+pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
+if(getRversion() < "2.12.0"){
+	rpath <- getRversion()
+} else rpath <- "trunk"
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
 @ 
 
-\paragraph{Preprocess and genotype.}
+\paragraph{About this vignette.} This vignette was created using CEL
+files that are located in a specific directory on my computer
+(\Robject{pathToCels}).  Long computations are saved in the output
+directory \Robject{outdir}.  Users should change these variables as
+appropriate.  The following code chunk should fail unless the above
+arguments have been set appropriately.
+
+<<checkSetup>>=
+if(!file.exists(outdir)) stop("Please specify valid directory for storing output")
+if(!file.exists(pathToCels)) stop("Please specify the correct path to the CEL files")
+@ 
+
+Processed data from codechunks requiring long computations are saved
+to disk automatically by wrapping function calls in the
+\Robject{checkExists} function.  After the initial batch job,
+subsequent calls to \verb@Sweave@ will load saved computations from
+disk and can therefore be run interactively. This may be useful as you
+begin to explore some of the tools for accessing processed data and
+visualizations.
+
+\paragraph{Preprocessing and genotyping.}
 
 In the following code chunk, we provide the complete path to the
-Affymetrix CEL files, assign a path to store the normalized
-intensities and genotype data, and define a 'batch' variable. The
-batch variable will later be useful when we estimate copy number.  We
-typically use the 96 well chemistry plate or the scan date of the
-array as a surrogate for batch. Adjusting by date or chemistry plate
-can be helpful for limiting the influence of batch effects.  
+Affymetrix CEL files and define a 'batch' variable. The
+\Robject{batch} variable will later be useful when we estimate copy
+number.  We typically use the 96 well chemistry plate or the scan date
+of the array as a surrogate for batch. Adjusting by date or chemistry
+plate can be critical for limiting the influence of batch effects. For
+the HapMap CEL files in our analysis, the CEPH (C) and Yoruban (Y)
+samples were run on separate plates and can be extracted from the CEL
+filename as below.  
 
 <<celfiles>>=
-celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/1m/crlmm"
-if(!file.exists(outdir)) dir.create(outdir)
+celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
+if(length(celFiles) < 1) stop("Please specify the appropriate path to CEL files")
 ## CEPH and Yoruban
 batch <- substr(basename(celFiles), 13, 13)
 celFiles <- celFiles[batch %in% c("C", "Y")]
@@ -77,115 +103,164 @@ summarized for each locus.  As the markers at polymorphic loci on the
 Affymetrix 6.0 platform are identical, we summarize the intensities by
 the median. For the nonpolymorphic markers, no summarization step is
 performs.  Next, the \crlmm{} package provides a genotype call and a
-confidence score at each polymorphic locus.  Unless the dataset is small
-(e.g., fewer than 50 samples), we suggest installing and loading the
-\R{} package \Rpackage{ff}.  The function \Rfunction{genotype} checks to
-see whether the \Rpackage{ff} is loaded.  If loaded, the normalized
-intensities and genotype are stored as \Robject{ff} objects on disk.
-Otherwise, the genotypes and normalized intensities are stored in
-matrices.  A word of caution: the \Rfunction{genotype} function requires
-a potentially large amount of RAM even when the \R{} package
-\Rpackage{ff} is loaded.  Users with large datasets may want to skip
-this part.  For the 180 HapMap samples processed in this vignette, the
-\Rfunction{genotype} function required 25MB RAM. The next two code
-chunks should be submitted as batch jobs.
+confidence score at each polymorphic locus.  Unless the dataset is
+small (e.g., fewer than 50 samples), we suggest installing and loading
+the \R{} package \Rpackage{ff}.  The function \Rfunction{genotype}
+checks to see whether the \Rpackage{ff} is loaded.  If loaded, the
+normalized intensities and genotype are stored as \Robject{ff} objects
+on disk.  Otherwise, the genotypes and normalized intensities are
+stored in matrices.  A word of caution: the \Rfunction{genotype}
+function without \Rpackage{ff} requires a potentially large amount of
+RAM.  Therefore, we illustrate the \Robject{genotype} function using
+only the first 20 CEL files. We wrap the function \Rfunction{genotype}
+in the \Rfunction{checkExists} so that a user can load and inspect the
+saved object.  We first check that the file \Robject{cnSet.rda} does
+not exist. Existence of this file implies that we have already run the
+copy number estimation and, therefore, we do not need to preprocess
+and genotype the files a second time.
 
 <<genotype>>=
-if(!exists("cnSet")){
-	if(!file.exists(file.path(outdir, "cnSet.rda"))){
-		##ops <- options(error=recover)
-		cnSet <- genotype(celFiles, cdfName=cdfName, copynumber=TRUE, batch=batch)
-		save(cnSet, file=file.path(outdir, "cnSet.rda"))
-	} else load(file.path(outdir, "cnSet.rda"))
+if(!file.exists(file.path(outdir, "cnSet.rda"))){
+	gtSet.assayData_matrix <- checkExists("gtSet.assayData_matrix",
+					   .path=outdir,
+					   .FUN=genotype,
+					   filenames=celFiles[1:20],
+					   cdfName=cdfName,
+					   batch=batch[1:20])
+	class(calls(gtSet.assayData_matrix))
 }
 @ 
+
+Next, we estimate copy number for the 20 CEL files.  The copy number
+estimation step requirees a minimum number of CEL files in each batch
+(we suggest 10).  While estimation can be performed using only the 20
+samples as we do here, it would be far preferable to process all of
+the files that were on the same chemistry plate.  The code chunk below
+will load \Robject{cnSet.assayData_matrix} from disk if this
+computation had already been performed as part of the batch job.
+
+<<copynumber>>=
+cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
+				      .path=outdir,
+				      .FUN=crlmmCopynumber,
+				      object=gtSet.assayData_matrix)
+if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
+	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
+@ 
+
 
 A more memory efficient approach to preprocessing and genotyping is
-implemented in the \R{} function \Rfunction{genotype2}.  The arguments
-to this function are similar to \Rfunction{genotype} but requires
-explicit loading of the \R{} package \Rpackage{ff} prior to calling
-the function. The functions \Rfunction{ocProbesets} and
+implemented in the \R{} function \Rfunction{genotypeLD} and requires
+the \Rpackage{ff} package.  The functions \Rfunction{ocProbesets} and
 \Rfunction{ocSamples} can be used to manage how many probesets and
-samples are to be loaded into memory and processed.  Using the default
-settings, the following code required 1.9Mb RAM to process 180 CEL
-files.
+samples are to processed at a time and can therefore be used to fine
+tune the required RAM.  The function \Rfunction{ldPath} indicates that
+\Robject{ff} objects will be stored in the directory \Robject{outdir}.
 
-<<genotype2>>=
+<<ff>>=
 library(ff)
-ld.path <- file.path(outdir, "ffobjs")
-if(!file.exists(ld.path)) dir.create(ld.path)
-ldPath(ld.path)
-if(!exists("cnSet2")){
-	if(!file.exists(file.path(outdir, "cnSet2.rda"))){
-		cnSet2 <- genotype2(celFiles, cdfName=cdfName, copynumber=TRUE, batch=batch)
-		save(cnSet2, file=file.path(outdir, "cnSet2.rda"))
-	} else load(file.path(outdir, "cnSet2.rda"))
+ldPath(outdir)
+ocProbesets(50000)
+ocSamples(200)
+@ 
+
+With LDS now enabled, we preprocess and genotype 180 samples from the
+CEPH and Yoruban populations using the \R{} function
+\Robject{genotypeLD}.  Users that only want the genotypes at
+polymorphic loci (and not the copy number estimates) should instead
+use the \R{} function \Rfunction{crlmm} or \Rfunction{crlmm2}. Again,
+we wrap the call to \Rfunction{genotypeLD} in \Rfunction{checkExists}
+so that subsequent calls to \verb@Sweave@ can be run interactively. 
+
+
+<<LDS_genotype>>=
+if(!file.exists(file.path(outdir, "cnSet.assayData_ff.rda"))){
+	gtSet.assayData_ff <- checkExists("gtSet.assayData_ff",
+					  .path=outdir,
+					  .FUN=genotypeLD,
+					  filenames=celFiles,
+					  cdfName=cdfName,
+					  batch=batch)
+	class(calls(gtSet.assayData_ff))
 }
 @ 
 
-The objects returned by the \Rfunction{genotype} and
-\Rfunction{genotype2} differ in size as the former returns an object
-with matrices in the assay data slot, whereas the latter return an
-object with pointers to files on disk.  The functions \Rfunction{open}
-and \Rfunction{close} can be used to open and close the connections
-stored in the assay data of the \Robject{cnSet2} object, respectively.
-Subsetting the \Robject{ff} object pulls the data from disk into
-memory.  As subsetting operations pull the data from disk to memory,
-these operations must be performed with care.  In particular,
-subsetting the \Robject{cnSet2} will subset each assay data element
-and this can be slow.  The preferred approach would be to extract the
-assay data element that is needed, and then subset this function
-object as illustrated below for the genotype calls.
+The analogous function for copy number estimation follows. In
+practice, once the object \Robject{cnSet.assayData_ff} is created the
+\Robject{gtSet.assayData_ff} is no longer needed and can be removed
+from the \Robject{outdir}.
+
+<<LDS_copynumber>>=
+cnSet.assayData_ff <- checkExists("cnSet.assayData_ff",
+				  .path=outdir,
+				  .FUN=crlmmCopynumberLD,
+				  filenames=celFiles,
+				  cdfName=cdfName,
+				  batch=batch)
+if(file.exists(file.path(outdir, "gtSet.assayData_ff.rda")))
+	unlink(file.path(outdir, "gtSet.assayData_ff.rda"))
+gc()
+@ 
+
+The objects returned by the \Rfunction{genotypeLD} and
+\Rfunction{crlmmCopynumberLD} have assay data elements that are
+pointers to \Robject{ff} objects stored in the directory
+\Robject{outdir}.  The functions \Rfunction{open} and
+\Rfunction{close} open and close the connections to the
+\Robject{assayData} elements. Subsetting an \Robject{ff} object pulls
+the data from disk into memory and should therefore be used with
+caution. In particular, subsetting the \Robject{gt.assayData_ff} would
+subset each elements in the \Robject{assayData} slot, returning an
+object of the same class but with \Robject{assayData} elements that
+are matrices.  Such an operation can be exceedingly slow and require
+subsantial RAM.  The preferred approach is to extract only the assay
+data element that is needed. In the example below, we extract the
+genotype calls for the the first 50 samples.
 
 <<check>>=
-class(calls(cnSet))
-dims(cnSet)
-class(calls(cnSet2))
-dims(cnSet2)
-print(object.size(cnSet), units="Mb")
-print(object.size(cnSet2), units="Mb")
+dims(cnSet.assayData_ff)
+dims(cnSet.assayData_matrix)
+print(object.size(cnSet.assayData_matrix), units="Mb")
+print(object.size(cnSet.assayData_ff), units="Mb")
 if(FALSE){
-	replicate(5, system.time(gt1 <- calls(cnSet)[, 1:50])[[1]])
+	replicate(5, system.time(gt1 <- calls(cnSet.assayData_matrix)[, 1:50])[[1]])
 	open(calls(cnSet2))
-	replicate(5, system.time(gt2 <- calls(cnSet2)[, 1:50])[[1]])
+	replicate(5, system.time(gt2 <- calls(cnSet.assayData_ff)[, 1:50])[[1]])
 }
-gt1 <- calls(cnSet)[, 1:50]
-gt2 <- calls(cnSet2)[, 1:50]
+gt1 <- calls(cnSet.assayData_matrix)[, 1:50]
+gt2 <- calls(cnSet.assayData_ff)[, 1:50]
 all.equal(gt1, gt2)
 @ 
 
-\noindent With \Robject{ff} objects the additional I/O time required
-for extracting data is substantial and will increase for larger
-datasets.  Patience is required.
-
 Note that for the Affymetrix 6.0 platform the assay data elements each
 have a row dimension corresponding to the total number of polymorphic
-and nonpolymorphic markers interrogated by the Affymetrix 6.0 platform.
-A consequence of keeping the rows of the assay data elements the same
-for all of the statistical summaries is that the matrix used to store
-genotype calls is larger than necessary.  Also, note the additional
-overhead of some operations when using \Robject{ff} objects.  For
-instance, the posterior probabilities for the CRLMM genotype calls are
-represented as integers. The accessor \Robject{snpCallProbability} can
-be used to access these confidence scores.  When stored as matrices,
-converting the integer representation back to the probability scale is
-straightforward as shown below.  However, for the \Robject{ff} objects
-we must first bring the data into memory. To bring all the scores into
-memory, one could use the function \Rfunction{[,]} but this could be
-slow and require a lot of RAM depending on the size of the dataset.
-Instead, we suggest pulling only the needed rows and columns from
-memory. In the following example, we convert the integer scores to
-probabilities for the CEPH samples.  As genotype confidence scores are
-not applicable to the nonpolymorphic markers, we extract only the
+and nonpolymorphic markers interrogated by the Affymetrix 6.0
+platform.  A consequence of keeping the rows of the assay data
+elements the same for all of the statistical summaries is that the
+matrix used to store genotype calls is larger than necessary.  Also,
+note the additional overhead of some operations when using
+\Robject{ff} objects.  For instance, the posterior probabilities for
+the CRLMM genotype calls are represented as integers. The accessor
+\Robject{snpCallProbability} can be used to access these confidence
+scores.  When stored as matrices, converting the integer
+representation back to the probability scale is straightforward as
+shown below.  However, for the \Robject{ff} objects we must first
+bring the data into memory. To bring all the scores into memory, one
+could use the function \Rfunction{[,]} but this could be slow and
+require a lot of RAM depending on the size of the dataset.  Instead,
+we suggest pulling only the needed rows and columns from memory. In
+the following example, we convert the integer scores to probabilities
+for the CEPH samples.  As genotype confidence scores are not
+applicable to the nonpolymorphic markers, we extract only the
 polymorphic markers using the \Rfunction{isSnp} function.
 
 <<assayData>>=
 rows <- which(isSnp(cnSet))
 cols <- which(batch == "C")
-posterior.prob <- tryCatch(integerScoreToProbability(snpCallProbability),
+posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet.assayData_ff)),
 			    error=function(e) print("This will not work for an ff object."))
-posterior.prob1 <- integerScoreToProbability(snpCallProbability(cnSet)[rows, cols])
-posterior.prob2 <- integerScoreToProbability(snpCallProbability(cnSet2)[rows, cols])
+posterior.prob1 <- i2p(snpCallProbability(cnSet.assayData_matrix)[rows, cols])
+posterior.prob2 <- i2p(snpCallProbability(cnSet.assayData_ff)[rows, cols])
 all.equal(posterior.prob1, posterior.prob2)
 @ 
 
@@ -203,15 +278,6 @@ the ff version in parallel and encourage users with large datasets to
 explore the latter. As with the preprocessing and genotyping, the
 following code should be submitted as part of the batch job as it is too
 slow for interactive analysis.
-
-<<cn, echo=FALSE, eval=FALSE>>=
-##Matrix format
-cnSet <- crlmmCopynumber(cnSet)
-@ 
-
-<<save.cnset, echo=FALSE, eval=FALSE>>=
-save(cnSet, file=file.path(outdir, "cnSet.rda"))
-@ 
 
 <<cn.ff, echo=FALSE, eval=FALSE>>=
 rm(cnSet); gc()
@@ -489,5 +555,6 @@ toLatex(sessionInfo())
   \bibliographystyle{plain}
   \bibliography{refs}
 %\end{bibliography}
+  
 
 \end{document}

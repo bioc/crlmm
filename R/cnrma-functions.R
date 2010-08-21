@@ -54,7 +54,7 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 }
 
 construct <- function(filenames, cdfName, copynumber=FALSE,
-		      sns, verbose=TRUE, batch){
+		      sns, verbose=TRUE, batch, fns){
 	if(verbose) message("Initializing container for assay data elements alleleA, alleleB, call, callProbability, CA, CB")
 	if(missing(sns)) sns <- basename(filenames)
 	protocolData <- getProtocolData.Affy(filenames)
@@ -67,6 +67,11 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 	}
 	rownames(pData(protocolData)) <- sns
 	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
+	if(!missing(fns)){
+		index <- match(fns, featureNames(featureData))
+		if(all(is.na(index))) stop("fns not in featureNames")
+		featureData <- featureData[index, ]
+	}
 	nr <- nrow(featureData); nc <- length(filenames)
 	ffObjects <- list(alleleA=initializeBigMatrix(name="A", nr, nc),
 			  alleleB=initializeBigMatrix(name="B", nr, nc),
@@ -1062,7 +1067,6 @@ crlmmCopynumberLD <- function(object,
 		save(snpflags, file=file.path(ldPath(), "snpflags.rda"))
 	} else{
 		load(file.path(ldPath(), "snpflags.rda"))
-				
 	} 
 	if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
 	snpBatches <- splitIndicesByLength(autosomeIndex.snps, ocProbesets())

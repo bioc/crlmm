@@ -49,13 +49,26 @@ options(continue=" ")
 library(ff)
 library(crlmm)
 crlmm:::validCdfNames()
-if(length(grep("development", sessionInfo()[[1]]$status)) == 1){
-	outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/devel/illumina"	
-} else outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/illumina"	
-dir.create(outdir, showWarnings=FALSE, recursive=TRUE)
+if(getRversion() < "2.12.0"){
+	rpath <- getRversion()
+} else rpath <- "trunk"
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")	
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @ 
 
+\paragraph{About this vignette.} This vignette was created using
+Illumina IDAT files that are located in a specific directory on my
+computer (\Robject{pathToCels}).  Long computations are saved in the
+output directory \Robject{outdir}.  Users should modify these
+variables as appropriate.  The following code chunk checks that that
+these directories exist.
+
+<<checkSetup>>=
+if(!file.exists(outdir)) stop("Please specify valid directory for storing output")
+if(!file.exists(pathToCels)) stop("Please specify the correct path to the CEL files")
+@ 
+
+\paragraph{Preprocessing Illumina IDAT files.}
 To perform copy number analysis on the Illumina platform, several
 steps are required.  The first step is to read in the IDAT files and
 create a container for storing the red and green intensities. These

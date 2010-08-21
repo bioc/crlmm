@@ -200,3 +200,89 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 }
 
 
+setMethod("nu", c("CNSetLM", "character"), function(object, allele){
+	getValue <- function(allele){
+		switch(allele,
+		       A="nuA",
+		       B="nuB",
+		       stop("allele must be 'A' or 'B'"))
+	}	
+	val <- getValue(allele)
+	class.lm <- class(lM(object)) 
+	if(class.lm == "ffdf"){
+		return(physical(lM(object))[[val]])
+	} else {
+		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
+		return(lM(object)[[val]])
+	}
+})
+
+setMethod("phi", c("CNSetLM", "character"), function(object, allele){
+	getValue <- function(allele){
+		switch(allele,
+		       A="phiA",
+		       B="phiB",
+		       stop("allele must be 'A' or 'B'"))
+	}
+	val <- getValue(allele)	
+	class.lm <- class(lM(object)) 
+	if(class.lm == "ffdf"){
+		return(physical(lM(object))[[val]])
+	} else {
+		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
+		return(lM(object)[[val]])
+	}
+})
+
+setMethod("sigma2", c("CNSetLM", "character"), function(object, allele){
+	getValue <- function(allele){
+		switch(allele,
+		       A="sig2A",
+		       B="sig2B",
+		       stop("allele must be 'A' or 'B'"))
+	}
+	val <- getValue(allele)	
+	class.lm <- class(lM(object)) 
+	if(class.lm == "ffdf"){
+		return(physical(lM(object))[[val]])
+	} else {
+		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
+		return(lM(object)[[val]])
+	}
+})
+
+setMethod("tau2", c("CNSetLM", "character"), function(object, allele){
+	getValue <- function(allele){
+		switch(allele,
+		       A="tau2A",
+		       B="tau2B",
+		       stop("allele must be 'A' or 'B'"))
+	}
+	val <- getValue(allele)
+	class.lm <- class(lM(object)) 
+	if(class.lm == "ffdf"){
+		return(physical(lM(object))[[val]])
+	} else {
+		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
+		return(lM(object)[[val]])
+	}
+})
+
+setMethod("corr", c("CNSetLM", "character"), function(object, allele){
+	getValue <- function(allele){
+		switch(allele,
+		       AA="corrAA",
+		       AB="corrAB",
+		       BB="corrBB",
+		       stop("must be AA, AB, or BB"))
+	}
+	val <- getValue(allele)
+	class.lm <- class(lM(object)) 
+	if(class.lm == "ffdf"){
+		return(physical(lM(object))[[val]])
+	} else {
+		if(class.lm != "matrix") stop("lM() must be matrix or ffdf")
+		return(lM(object)[[val]])
+	}
+})
+
