@@ -31,6 +31,6 @@
 }
 
 \seealso{
-  \code{\link{CNSet-class}}, \code{\link{copynumberAccessors}}
+  \code{\link{CNSet-class}}, \code{\link{CA}}, \code{\link{CB}}, \code{\link{totalCopynumber}}
 }
 \keyword{methods}

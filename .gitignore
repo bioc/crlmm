@@ -6,3 +6,5 @@ auto*
 sync
 illumina_copynumber-*
 Makefile2
+Rprof*
+testing*
