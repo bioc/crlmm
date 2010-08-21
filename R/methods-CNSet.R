@@ -243,17 +243,36 @@ setMethod("CB",
 		  ##assayDataElement(object, "CB")
 		  browser()
 	  })
+
 setMethod("CA",
 	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
 	  function(object, i, j) {
 		  browser()
+		  if(missing(i) & missing(j)){
+			  if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
+		  }
+		  if(missing(i) & !missing(j)){
+			  ## calculate ca only for batches indexed by j
+			  batches <- unique(batch(object))[j]
+			  for(k in seq_along(batches)){
+				  bb <- batches[k]
+			  }
+		  }
+		  if(!missing(i) & missing(j)){
+			  ## calculate ca, cb for all batches
+			  batches <- unique(batch(object))
+		  }
+		  if(!missing(i) & !missing(j)){
+
+		  }
+		  return(ca)
 	  })
 
 setMethod("totalCopyNumber",
 	  signature=signature(object="CNSet", i="integerOrMissing", j="integerOrMissing"),
 	  function(object, i, j, ...){
 	if(missing(i) & missing(j)){
-		if(inherits(CA(object), "ff") | inherits(CA(object), "ffdf")) stop("Must specify i and/or j for ff objects")
+		if(inherits(A(object), "ff") | inherits(A(object), "ffdf")) stop("Must specify i and/or j for ff objects")
 	}
 	if(missing(i) & !missing(j)){
 		snp.index <- which(isSnp(object))	

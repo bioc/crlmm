@@ -151,7 +151,7 @@ genotype <- function(filenames,
 		suppressWarnings(A(callSet)[snp.index, j] <- snprmaRes[["A"]])
 		suppressWarnings(B(callSet)[snp.index, j] <- snprmaRes[["B"]])
 		mixtureParams[, j] <- snprmaRes$mixtureParams
-		rm(snprmaRes); gc()
+		rm(snprmaRes); ##gc()
 		if(copynumber){
 			np.index <- which(isSnp(callSet) == 0)
 			cnrmaRes <- cnrma(filenames=filenames[j],
@@ -162,7 +162,7 @@ genotype <- function(filenames,
 					  verbose=verbose)
 			stopifnot(identical(featureNames(callSet)[np.index], rownames(cnrmaRes)))
 			A(callSet)[np.index, j] <- cnrmaRes
-			rm(cnrmaRes); gc()
+			rm(cnrmaRes); ##gc()
 		}
 		## as.matrix needed when ffdf is used
 		tmp <- crlmmGT(A=as.matrix(A(callSet)[snp.index, j]),
@@ -278,7 +278,7 @@ genotypeLD <- function(filenames,
 			   sns=sns,
 			   seed=seed,
 			   verbose=verbose)
-	rm(cnrmaRes); gc()
+	rm(cnrmaRes); ##gc()
 	## as.matrix needed when ffdf is used
 	tmp <- crlmmGT2(A=snprmaRes[["A"]],
 			B=snprmaRes[["B"]],
@@ -634,7 +634,7 @@ crlmmCopynumber <- function(object,
 					lM(object)[[k]][row.index, column] <- fData(tmp)[, k]
 				}
 			}			
-			rm(tmp); gc()
+			rm(tmp); ##gc()
 			ii <- ii+1
 		}
 	}
@@ -891,7 +891,7 @@ fit.lm1 <- function(idxBatch,
 			muB[index[[j]], -kk] <- mus[, 3:4]
 		}
 		rm(betahat, X, Y, mus, index, noAA, noAB, noBB, res)
-		gc()
+		##gc()
 		negA <- rowSums(muA < 0) > 0
 		negB <- rowSums(muB < 0) > 0
 		flags[, J] <- rowSums(Ns == 0) > 0
@@ -934,7 +934,7 @@ fit.lm1 <- function(idxBatch,
 ##		cA[, k] <- matrix((1/phiA[, J]*(A-nuA[, J])), nrow(A), ncol(A))
 ##		cB[, k] <- matrix((1/phiB[, J]*(B-nuB[, J])), nrow(B), ncol(B))
 		rm(G, A, B, NORM, wA, wB, YA,YB, res, negA, negB, Np, Ns)
-		gc()
+		##gc()
 	}
 ##	cA[cA < 0.05] <- 0.05
 ##	cB[cB < 0.05] <- 0.05
@@ -1276,7 +1276,7 @@ fit.lm3 <- function(idxBatch,
 ##		cA[, k] <- (A-nuA[, J]-phiA2[, J]*cB[, k])/phiA[, J]
 		##some of the snps are called for the men, but not the women
 		rm(YA, YB, wA, wB, res, tmp, phistar, A, B, G, index)
-		gc()
+		##gc()
 	}
 ##	cA[cA < 0.05] <- 0.05
 ##	cB[cB < 0.05] <- 0.05
@@ -1479,7 +1479,7 @@ fit.lm4 <- function(idxBatch,
 ##		tmp[, gend==2] <- CT2
 ##		cA[, k] <- tmp
 		rm(tmp, CT1, CT2, A.F, normal.f, G, AA, BB, Y, X, Ns)
-		gc()
+		##gc()
 	}
 ##	cA[cA < 0.05] <- 0.05
 ##	cA[cA > 5] <-  5
@@ -2096,7 +2096,7 @@ locationAndScale <- function(object, cnOptions, tmp.objects){
 	index.AA <- index[[1]]
 	index.AB <- index[[2]]
 	index.BB <- index[[3]]
-	rm(index); gc()
+	rm(index); ##gc()
 
 	GT.A <- tmp.objects[["GT.A"]]
 	GT.B <- tmp.objects[["GT.B"]]

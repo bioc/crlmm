@@ -145,7 +145,11 @@ computation had already been performed as part of the batch job.
 cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      .path=outdir,
 				      .FUN=crlmmCopynumber,
-				      object=gtSet.assayData_matrix)
+				      object=gtSet.assayData_matrix,
+				      chromosome=22)
+Rprof(interval=0.1)
+obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=22)
+Rprof(NULL)
 if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
 	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
 @ 
@@ -177,6 +181,7 @@ so that subsequent calls to \verb@Sweave@ can be run interactively.
 
 <<LDS_genotype>>=
 if(!file.exists(file.path(outdir, "cnSet.assayData_ff.rda"))){
+	library(ff)
 	gtSet.assayData_ff <- checkExists("gtSet.assayData_ff",
 					  .path=outdir,
 					  .FUN=genotypeLD,
