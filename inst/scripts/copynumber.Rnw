@@ -129,7 +129,8 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 					   batch=batch[1:20])
 	class(calls(gtSet.assayData_matrix))
 }
-q("no")
+##q("no")
+stop()
 @ 
 
 Next, we estimate copy number for the 20 CEL files.  The copy number

@@ -57,7 +57,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 		stopifnot(length(batch) == length(sns))
 	}
 	if(missing(sns) & missing(filenames)) stop("one of filenames or samplenames (sns) must be provided")
-	if(verbose) message("Initializing container for assay data elements alleleA, alleleB, call, callProbability, CA, CB")
+	if(verbose) message("Initializing container for assay data elements alleleA, alleleB, call, callProbability")
 	if(!missing(filenames)){
 		if(missing(sns)) sns <- basename(filenames)
 		protocolData <- getProtocolData.Affy(filenames)
@@ -605,15 +605,15 @@ crlmmCopynumber <- function(object,
 			if(verbose) message("Batch ", ii, " of ", length(which.batches))
 			row.index <- which(chromosome(object) == i)
 			##Note that ffdf assayDataElements are data.frames after subsetting(not matrices)
-			ca <- as.matrix(CA(object)[row.index, j])
-			cb <- as.matrix(CB(object)[row.index, j])
-			dimnames(ca) <- dimnames(cb) <- list(featureNames(object)[row.index], sampleNames(object)[j])
+##			ca <- as.matrix(CA(object)[row.index, j])
+##			cb <- as.matrix(CB(object)[row.index, j])
+##			dimnames(ca) <- dimnames(cb) <- list(featureNames(object)[row.index], sampleNames(object)[j])
 			tmp <- new("CNSet",
 				   call=as.matrix(calls(object)[row.index, j]),
 				   callProbability=as.matrix(snpCallProbability(object)[row.index, j]),
 				   alleleA=as.matrix(A(object)[row.index, j]),
 				   alleleB=as.matrix(B(object)[row.index, j]),
-				   CA=ca, CB=cb,
+##				   CA=ca, CB=cb,
 				   phenoData=phenoData(object)[j, ],
 				   annotation=annotation(object))
 			featureData(tmp) <- addFeatureAnnotation(tmp)
@@ -634,12 +634,12 @@ crlmmCopynumber <- function(object,
 						 THR.NU.PHI=THR.NU.PHI,
 						 thresholdCopynumber=thresholdCopynumber)
 			fData(tmp) <- fData(tmp)[, -(1:3)]
-			CA(tmp) <- matrix(as.integer(CA(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
-					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
-			CB(tmp) <- matrix(as.integer(CB(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
-					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
-			CA(object)[row.index, j] <- CA(tmp)
-			CB(object)[row.index, j] <- CB(tmp)
+##			CA(tmp) <- matrix(as.integer(CA(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
+##					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
+##			CB(tmp) <- matrix(as.integer(CB(tmp)*100), nrow=nrow(tmp), ncol=ncol(tmp),
+##					  dimnames=list(featureNames(tmp), sampleNames(tmp)))
+##			CA(object)[row.index, j] <- CA(tmp)
+##			CB(object)[row.index, j] <- CB(tmp)
 			##ad-hocery
 			batchName <- unique(batch(object)[j])
 			fvarLabels(tmp)[15:17] <- paste(c("corrAB", "corrBB", "corrAA"), batchName, sep=".")
@@ -1744,8 +1744,8 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 	muB <- tmp.objects[["muB"]]
 	A <- A(object)
 	B <- B(object)
-	CA <- CA(object)
-	CB <- CB(object)
+##	CA <- CA(object)
+##	CB <- CB(object)
 	if(CHR == 23){
 		phiAX <- getParam(object, "phiAX", batch)
 		phiBX <- getParam(object, "phiBX", batch)
@@ -1813,20 +1813,12 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 		if(any(pseudoAR)){
 			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
 		}
-		CT1 <- 1/phi1*(A.male-nu1)
-		CT2 <- 1/phi2*(A.female-nu2)
-		##CT2 <- 1/phi2*(NP[, gender=="female"]-nu2)
-		##CT1 <- matrix(as.integer(100*CT1), nrow(CT1), ncol(CT1))
-		##CT2 <- matrix(as.integer(100*CT2), nrow(CT2), ncol(CT2))
-		##CT <- envir[["CT"]]
-		CA <- CA(obj1)
-		CA[, gender==1] <- CT1
-		CA[, gender==2] <- CT2
-		CA(object)[!isSnp(object), ] <- CA
-		##CT[, plate==uplate[p] & gender=="male"] <- CT1
-		##CT[, plate==uplate[p] & gender=="female"] <- CT2
-		##envir[["CT"]] <- CT
-
+##		CT1 <- 1/phi1*(A.male-nu1)
+##		CT2 <- 1/phi2*(A.female-nu2)
+##		CA <- CA(obj1)
+##		CA[, gender==1] <- CT1
+##		CA[, gender==2] <- CT2
+##		CA(object)[!isSnp(object), ] <- CA
 		##only using females to compute the variance
 		##normalNP[, gender=="male"] <- NA
 		normal[, gender==1] <- NA
@@ -2287,13 +2279,13 @@ polymorphic <- function(object, cnOptions, tmp.objects){
 	
 	nuA <- getParam(object, "nuA", batch)
 	nuB <- getParam(object, "nuB", batch)
-	nuA.se <- getParam(object, "nuA.se", batch)
-	nuB.se <- getParam(object, "nuB.se", batch)
+##	nuA.se <- getParam(object, "nuA.se", batch)
+##	nuB.se <- getParam(object, "nuB.se", batch)
 
 	phiA <- getParam(object, "phiA", batch)
 	phiB <- getParam(object, "phiB", batch)
-	phiA.se <- getParam(object, "phiA.se", batch)
-	phiB.se <- getParam(object, "phiB.se", batch)
+##	phiA.se <- getParam(object, "phiA.se", batch)
+##	phiB.se <- getParam(object, "phiB.se", batch)
 	A <- A(object)
 	B <- B(object)
 
@@ -2305,14 +2297,14 @@ polymorphic <- function(object, cnOptions, tmp.objects){
 		phiAX <- getParam(object, "phiAX", batch)  ##nonspecific hybridization coef
 		phiBX <- getParam(object, "phiBX", batch)  ##nonspecific hybridization coef			
 		phistar <- phiBX/phiA  
-		tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
-		copyB <- tmp/(1-phistar*phiAX/phiB)
-		copyA <- (A-nuA-phiAX*copyB)/phiA
-		CB(object) <- copyB  ## multiplies by 100 and converts to integer 
-		CA(object) <- copyA
+##		tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
+##		copyB <- tmp/(1-phistar*phiAX/phiB)
+##		copyA <- (A-nuA-phiAX*copyB)/phiA
+##		CB(object) <- copyB  ## multiplies by 100 and converts to integer 
+##		CA(object) <- copyA
 	} else{
-		CA(object) <- matrix((1/phiA*(A-nuA)), nrow(A), ncol(A))
-		CB(object) <- matrix((1/phiB*(B-nuB)), nrow(B), ncol(B))
+##		CA(object) <- matrix((1/phiA*(A-nuA)), nrow(A), ncol(A))
+##		CB(object) <- matrix((1/phiB*(B-nuB)), nrow(B), ncol(B))
 
 	}
 	return(object)
@@ -2667,28 +2659,7 @@ thresholdModelParams <- function(object, cnOptions){
 	return(object)
 }
 
-##computeCopynumber.SnpSuperSet <- function(object, cnOptions){
-####	use.ff <- cnOptions[["use.ff"]]
-####	if(!use.ff){
-####		object <- as(object, "CrlmmSet")
-####	} else	object <- as(object, "CrlmmSetFF")
-##	bias.adj <- cnOptions[["bias.adj"]]
-##	##must be FALSE to initialize parameters
-##	cnOptions[["bias.adj"]] <- FALSE
-##	## Add linear model parameters to the CrlmmSet object
-##	featureData(object) <- lm.parameters(object, cnOptions)
-##	if(!isValidCdfName(annotation(object))) stop(annotation(object), " not supported.")
-##	object <- as(object, "CNSet")
-##	object <- computeCopynumber.CNSet(object, cnOptions)
-##	if(bias.adj==TRUE){## run a second time
-##		object <- computeCopynumber.CNSet(object, cnOptions)
-##	}
-##	return(object)
-##}
-
-
 computeCopynumber.CNSet <- function(object, cnOptions){
-	##PLATE <- unique(object$batch)
 	PLATE <- unique(batch(object))
 	verbose <- cnOptions$verbose
 	tmp.objects <- instantiateObjects(object, cnOptions)

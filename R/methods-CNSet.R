@@ -93,7 +93,7 @@ setMethod("computeCopynumber", "CNSet",
 				    THR.NU.PHI=THR.NU.PHI,
 				    thresholdCopynumber=thresholdCopynumber)
 	bias.adj <- cnOptions[["bias.adj"]]
-	if(bias.adj & all(is.na(CA(object)))){
+	if(bias.adj & all(is.na(nu(object, "A")[, 1])){
 		cnOptions[["bias.adj"]] <- FALSE
 	}
 	object <- computeCopynumber.CNSet(object, cnOptions)				
