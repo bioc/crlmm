@@ -1443,8 +1443,8 @@ fit.lm4 <- function(idxBatch,
 			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
 		}
 
-		normal.f <- NORM.np[, k]
-		A.F <- A.F*normal.f[, gend==2]
+##              normal.f <- NORM.np[, k]
+##		A.F <- A.F*normal.f[, gend==2]
 		A.F[A.F==0] <- NA
 		nuA[, J] <- nu2
 		phiA[, J] <- phi2
@@ -1459,13 +1459,9 @@ fit.lm4 <- function(idxBatch,
 ##		tmp[, gend==1] <- CT1
 ##		tmp[, gend==2] <- CT2
 ##		cA[, k] <- tmp
-		rm(A.F, normal.f, G, AA, BB, Y, X, Ns)
+		rm(A.F, G, AA, BB, Y, X, Ns)
 		##gc()
 	}
-##	cA[cA < 0.05] <- 0.05
-##	cA[cA > 5] <-  5
-##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
-##	CA(object)[snps, ] <- cA
 	open(lM(object))
 	tmp <- physical(lM(object))$nuA
 	tmp[snps, ] <- nuA
@@ -1476,9 +1472,6 @@ fit.lm4 <- function(idxBatch,
 	tmp <- physical(lM(object))$phiA
 	tmp[snps, ] <- phiA
 	lM(object)$sig2A <- tmp
-##	lM(object)$sig2A[snps, ] <- sig2A
-##	lM(object)$nuA[snps, ] <- nuA
-##	lM(object)$phiA[snps, ] <- phiA
 	lapply(assayData(object), close)
 	lapply(lM(object), close)
 	TRUE
