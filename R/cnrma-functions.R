@@ -190,7 +190,6 @@ genotype <- function(filenames,
 		       verbose=TRUE,
 		       seed=1,
 		       sns,
-		       copynumber=TRUE,
 		       probs=rep(1/3, 3),
 		       DF=6,
 		       SNRMin=5,
@@ -200,24 +199,6 @@ genotype <- function(filenames,
 		       returnParams=TRUE,
 		       badSNP=0.7){
 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-	if(!copynumber){
-		FUN <- ifelse(is.lds, "crlmm2", "crlmm")
-		callSet <- FUN(filenames=filenames,
-			       cdfName=cdfName,
-			       mixtureSampleSize=mixtureSampleSize,
-			       eps=eps,
-			       verbose=verbose,
-			       sns=sns,
-			       probs=probs,
-			       DF=DF,
-			       SNRMin=SNRMin,
-			       recallMin=recallMin,
-			       recallRegMin=recallRegMin,
-			       gender=gender,
-			       returnParams=returnParams,
-			       badSNP=badSNP)
-		return(callSet)
-	}
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	if(missing(sns)) sns <- basename(filenames)
@@ -308,6 +289,8 @@ genotype <- function(filenames,
 		open(tmp[["confs"]])
 		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
 		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
+		close(tmp[["calls"]])
+		close(tmp[["confs"]])
 	} else {
 		calls(callSet)[snp.index, ] <- tmp[["calls"]]
 		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
@@ -859,12 +842,12 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		shrink.corrAA[, k] <- shrink(cor.AA, NN[, 1], DF.PRIOR)
 		shrink.corrAB[, k] <- shrink(cor.AB, NN[, 2], DF.PRIOR)
 		shrink.corrBB[, k] <- shrink(cor.BB, NN[, 3], DF.PRIOR)
-
+		##
 		##---------------------------------------------------------------------------
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
 		index.complete <- indexComplete(NN, medianA[[k]], medianB[[k]], MIN.OBS)
-
+		##
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
 		##---------------------------------------------------------------------------
@@ -880,7 +863,7 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		medianB[[k]] <- res[[2]]
 		rm(res)
 		##the NA's in 'medianA' and 'medianB' are monomorphic if MIN.OBS = 1
-
+		##
 		## RS: For Monomorphic SNPs a mixture model may be better
 		## RS: Further, we can improve estimation by borrowing strength across batch
 		unobserved.index[[1]] <- which(unobservedAA & unobservedAB)
@@ -902,14 +885,14 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	medianB.AA(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 1]))
 	medianB.AB(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 2]))
 	medianB.BB(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 3]))
-
+	##
 	madA.AA(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 1]))
 	madA.AB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 2]))
 	madA.BB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 3]))
 	madB.AA(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 1]))
 	madB.AB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 2]))
 	madB.BB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 3]))
-
+	##
 	corrAA(object)[marker.index, ] <- shrink.corrAA
 	corrAB(object)[marker.index, ] <- shrink.corrAB
 	corrBB(object)[marker.index, ] <- shrink.corrBB
@@ -917,7 +900,7 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	tau2A.BB(object)[marker.index,] <- shrink.tau2A.BB
 	tau2B.AA(object)[marker.index,] <- shrink.tau2B.AA
 	tau2B.BB(object)[marker.index,] <- shrink.tau2B.BB
-	if(is.lds) return(TRUE) else retrun(object)
+	if(is.lds) return(TRUE) else return(object)
 }
 
 
@@ -925,11 +908,7 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 fit.lm1 <- function(strata,
 		    index.list,
 		    object,
-		    SNRMin,
 		    MIN.SAMPLES,
-		    MIN.OBS,
-		    DF.PRIOR,
-		    GT.CONF.THR,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
@@ -970,6 +949,7 @@ fit.lm1 <- function(strata,
 	flags <- as.matrix(flags(object)[snps, ])
 	for(k in seq(along=batches)){
 		B <- batches[[k]]
+		if(length(B) < MIN.SAMPLES) next()
 		this.batch <- unique(as.character(batch(object)[B]))
 		medianA <- cbind(medianA.AA[, k], medianA.AB[, k], medianA.BB[, k])
 		medianB <- cbind(medianB.AA[, k], medianB.AB[, k], medianB.BB[, k])
@@ -981,9 +961,6 @@ fit.lm1 <- function(strata,
 		nuA[, k] <- res[1, ]
 		phiA[, k] <- res[2, ]
 		rm(res)
-		##res <- fit.wls(allele="A", Ystar=YA, W=wA, Ns=Ns)
-		##nuA[, J] <- res[[1]]
-		##phiA[, J] <- res[[2]]
 		res <- fit.wls(NN=NN, sigma=madB, allele="B", Y=medianB, autosome=!CHR.X)##allele="B", Ystar=YB, W=wB, Ns=Ns)
 		nuB[, k] <- res[1, ]
 		phiB[, k] <- res[2, ]
@@ -996,14 +973,6 @@ fit.lm1 <- function(strata,
 		phiA[phiA < MIN.PHI] <- MIN.PHI
 		phiB[phiB < MIN.PHI] <- MIN.PHI
 	}
-##	cA[cA < 0.05] <- 0.05
-##	cB[cB < 0.05] <- 0.05
-##	cA[cA > 5] <-  5
-##	cB[cB > 5] <- 5
-##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
-##	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
-##	CA(object)[snps, ] <- cA
-##	CB(object)[snps, ] <- cB
 	nuA(object)[snps, ] <- nuA
 	nuB(object)[snps, ] <- nuB
 	phiA(object)[snps, ] <- phiA
@@ -1019,11 +988,7 @@ fit.lm1 <- function(strata,
 fit.lm2 <- function(strata,
 		    index.list,
 		    object,
-		    SNRMin,
 		    MIN.SAMPLES,
-		    MIN.OBS,
-		    DF.PRIOR,
-		    GT.CONF.THR,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
@@ -1034,24 +999,16 @@ fit.lm2 <- function(strata,
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 
-
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
 	flags <- as.matrix(flags(object)[ii, ])
 	fns <- featureNames(object)[ii]
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 5000)
 
-	##flags <- as.matrix(snpflags[,])
-	##noflags <- rowSums(flags, na.rm=TRUE) == 0  ##NA's for unevaluated batches
-
 	nuA.np <- as.matrix(nuA(object)[marker.index, ])
 	phiA.np <- as.matrix(phiA(object)[marker.index, ])
 	tau2A.AA <- as.matrix(tau2A.AA(object)[marker.index, ])
 
-	##nuA.np <- phiA.np <- sig2A.np <- matrix(NA, length(marker.index), length(unique(batch(object))))
-	## for imputation, we need the corresponding parameters of the snps
-	##NN <- min(10e3, length(which(ii & noflags)))
-	##snp.ind <- sample(which(ii & noflags), NN)
 	nuA.snp <- as.matrix(nuA(object)[snp.index, ])
 	nuB.snp <- as.matrix(nuB(object)[snp.index, ])
 	phiA.snp <- as.matrix(phiA(object)[snp.index, ])
@@ -1059,70 +1016,24 @@ fit.lm2 <- function(strata,
 	medianA.AA <- as.matrix(medianA.AA(object)[snp.index,])
 	medianB.BB <- as.matrix(medianB.BB(object)[snp.index,])
 
-
-
 	medianA.AA.np <- as.matrix(medianA.AA(object)[marker.index,])
-
-##	nnuA.snp <- as.matrix(physical(lM(object))$nuA[snp.ind,])
-##	pphiA.snp <- as.matrix(physical(lM(object))$phiA[snp.ind,])
-##	nnuB.snp <- as.matrix(physical(lM(object))$nuB[snp.ind,])
-##	pphiB.snp <- as.matrix(physical(lM(object))$phiB[snp.ind,])
-
-##	AA.snp <- as.matrix(A(object)[snp.ind, ])
-##	BB.snp <- as.matrix(B(object)[snp.ind, ])
-##	NNORM.snp <- as.matrix(normal[snp.ind, ])
-##	NORM.np <- as.matrix(normal[snps, ])
-##	AA.np <- as.matrix(A(object)[marker.index, ])
-##	GG <- as.matrix(calls(object)[snp.ind, ])
-##	CP <- as.matrix(snpCallProbability(object)[snp.ind, ])
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
-##		phiA.snp <- pphiA.snp[, J]
-##		phiB.snp <- pphiB.snp[, J]
-##		A.snp <- AA.snp[, k]
-##		B.snp <- BB.snp[, k]
-##		NORM.snp <- NNORM.snp[, k]
-##		G <- GG[, k]
-##		xx <- CP[, k]
-##		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
-##		G <- G*highConf*NORM.snp
-##		G[G==0] <- NA
-		##nonpolymorphic
-##		A.np <- AA.np[, k]
-##		Ns <- applyByGenotype(matrix(1, nrow(G), ncol(G)), rowSums, G)
-##		muA <- applyByGenotype(A.snp, rowMedians, G)
-##		muB <- applyByGenotype(B.snp, rowMedians, G)
-##		muA <- muA[, 1]
-##		muB <- muB[, 3]
-##		X <- cbind(1, log2(c(muA, muB)))
 		X <- cbind(1, log2(c(medianA.AA[, k], medianB.BB[, k])))
 		Y <- log2(c(phiA.snp, phiB.snp))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
-		##
-##		mus <- rowMedians(A.np * NORM.np[, k], na.rm=TRUE)
-##		averaging across markers, is there a difference in the
-##		typical AA intensity for SNPs and the AA intensity for
-##		nonpolymorphic loci
-##		crosshyb <- max(median(muA) - median(mus), 0)
 		crosshyb <- max(median(medianA.AA[, k]) - median(medianA.AA.np[, k]), 0)
-##		X <- cbind(1, log2(mus+crosshyb))
 		X <- cbind(1, log2(medianA.AA.np[, k] + crosshyb))
 		logPhiT <- X %*% betahat
 		phiA.np[, k] <- 2^(logPhiT)
 		nuA.np[, k] <- medianA.AA.np[,k]-2*phiA.np[, k]
 ##		cA[, k] <- 1/phiA.np[, J] * (A.np - nuA.np[, J])
-##		sig2A.np[, J] <- rowMAD(log2(A.np*NORM.np[, k]), na.rm=TRUE)
-##		rm(NORM.snp, highConf, xx, G, Ns, A.np, X, Y, betahat, mus, logPhiT)
-##		gc()
 	}
 	if(THR.NU.PHI){
 		nuA.np[nuA.np < MIN.NU] <- MIN.NU
 		phiA.np[phiA.np < MIN.PHI] <- MIN.PHI
 	}
-##	cA[cA < 0.05] <- 0.05
-##	cA[cA > 5] <-  5
-##	cA <- matrix(as.integer(cA*100), nrow(cA), ncol(cA))
 	nuA(object)[marker.index, ] <- nuA.np
 	phiA(object)[marker.index, ] <- phiA.np
 	if(is.lds) { close(object); return(TRUE)}
@@ -1409,17 +1320,13 @@ fit.lm3 <- function(strata,
 	phiB(object)[marker.index, ] <- phiB
 	phiPrimeA(object)[marker.index, ] <- phiA2
 	phiPrimeB(object)[marker.index, ] <- phiB2
-	TRUE
+	if(is.lds) {close(object); return(TRUE)} else return(object)
 }
 
 fit.lm4 <- function(strata,
 		    index.list,
 		    object,
-		    SNRMin,
 		    MIN.SAMPLES,
-		    MIN.OBS,
-		    DF.PRIOR,
-		    GT.CONF.THR,
 		    THR.NU.PHI,
 		    MIN.NU,
 		    MIN.PHI,
@@ -1606,379 +1513,6 @@ processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
 }
 
 
-# steps: quantile normalize hapmap: create 1m_reference_cn.rda object
-##cnrma <- function(filenames, cdfName, row.names, sns, seed=1, verbose=FALSE){
-##	if(missing(cdfName)) stop("must specify cdfName")
-##	pkgname <- getCrlmmAnnotationName(cdfName)
-##	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
-##	if (missing(sns)) sns <- basename(filenames)
-##        loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
-##	fid <- getVarInEnv("npProbesFid")
-##	fid <- fid[match(row.names, names(fid))]
-##	set.seed(seed)
-##	idx2 <- sample(length(fid), 10^5) ##for skewness. no need to do everything
-##	SKW <- vector("numeric", length(filenames))
-##	NP <- matrix(NA, length(fid), length(filenames))
-##	verbose <- TRUE
-##	if(verbose){
-##		message("Processing ", length(filenames), " files.")
-##		if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=length(filenames), style=3)
-##	}
-##	if(cdfName=="genomewidesnp6"){
-##		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
-##	}
-##	if(cdfName=="genomewidesnp5"){
-##		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
-##	}
-##	reference <- getVarInEnv("reference")
-##	##if(!is.matrix(reference)) stop("target distribution for quantile normalization not available.")
-##	for(i in seq(along=filenames)){
-##		y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
-##		x <- log2(y[idx2])
-##		SKW[i] <- mean((x-mean(x))^3)/(sd(x)^3)
-##		rm(x)
-##		NP[, i] <- as.integer(normalize.quantiles.use.target(y, target=reference))
-##		if (verbose)
-##			if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
-##			else cat(".")
-##	}
-##	dimnames(NP) <- list(names(fid), sns)
-##	##dimnames(NP) <- list(map[, "man_fsetid"], sns)
-##	##res3 <- list(NP=NP, SKW=SKW)
-##	cat("\n")
-##	return(NP)
-##}
-
-##getFlags <- function(object, PHI.THR){
-##	batch <- unique(object$batch)
-##	nuA <- getParam(object, "nuA", batch)
-##	nuB <- getParam(object, "nuB", batch)
-##	phiA <- getParam(object, "phiA", batch)
-##	phiB <- getParam(object, "phiB", batch)
-##	negativeNus <- nuA < 1 | nuB < 1
-##	negativePhis <- phiA < PHI.THR | phiB < PHI.THR
-##	negativeCoef <- negativeNus | negativePhis
-##	notfinitePhi <- !is.finite(phiA) | !is.finite(phiB)
-##	flags <- negativeCoef | notfinitePhi
-##	return(flags)
-##}
-
-
-##instantiateObjects <- function(object, cnOptions){
-##	Ns <- matrix(NA, nrow(object), 5)
-##	colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-##	vA <- vB <- muB <- muA <- Ns
-##	normal <- matrix(TRUE, nrow(object), ncol(object))
-##	dimnames(normal) <- list(featureNames(object), sampleNames(object))
-##	tmp.objects <- list(vA=vA,
-##			    vB=vB,
-##			    muB=muB,
-##			    muA=muA,
-##			    Ns=Ns,
-##			    normal=normal)
-##        return(tmp.objects)
-##}
-##
-##thresholdCopynumber <- function(object){
-##	ca <- CA(object)
-##	cb <- CB(object)
-##	ca[ca < 0.05] <- 0.05
-##	ca[ca > 5] <- 5
-##	cb[cb < 0.05] <- 0.05
-##	cb[cb > 5] <- 5
-##	CA(object) <- ca
-##	CB(object) <- cb
-##	return(object)
-##}
-##
-####linear model parameters
-##lm.parameters <- function(object, batch){##cnOptions){
-##	fD <- fData(object)
-##	##batch <- object$batch
-##	uplate <- unique(batch)
-##	parameterNames <- c(paste("tau2A", uplate, sep="_"),
-##			    paste("tau2B", uplate, sep="_"),
-##			    paste("sig2A", uplate, sep="_"),
-##			    paste("sig2B", uplate, sep="_"),
-##			    paste("nuA", uplate, sep="_"),
-##			    paste("nuA.se", uplate, sep="_"),
-##			    paste("nuB", uplate, sep="_"),
-##			    paste("nuB.se", uplate, sep="_"),
-##			    paste("phiA", uplate, sep="_"),
-##			    paste("phiA.se", uplate, sep="_"),
-##			    paste("phiB", uplate, sep="_"),
-##			    paste("phiB.se", uplate, sep="_"),
-##			    paste("phiAX", uplate, sep="_"),
-##			    paste("phiBX", uplate, sep="_"),
-##			    paste("corr", uplate, sep="_"),
-##			    paste("corrA.BB", uplate, sep="_"),
-##			    paste("corrB.AA", uplate, sep="_"))
-##	pMatrix <- data.frame(matrix(numeric(0),
-##				     nrow(object),
-##				     length(parameterNames)),
-##				     row.names=featureNames(object))
-##	colnames(pMatrix) <- parameterNames
-##	fD2 <- cbind(fD, pMatrix)
-##	new("AnnotatedDataFrame", data=fD2,
-##	    varMetadata=data.frame(labelDescription=colnames(fD2),
-##	    row.names=colnames(fD2)))
-##}
-##
-##nonpolymorphic <- function(object, cnOptions, tmp.objects){
-##	batch <- unique(object$batch)
-##	CHR <- unique(chromosome(object))
-##	goodSnps <- function(object, PHI.THR, tmp.objects, nAA.THR, nBB.THR){
-##		Ns <- tmp.objects[["Ns"]]
-##		##Ns <- get("Ns", envir)
-##		flags <- getFlags(object, PHI.THR)
-##		fewAA <- Ns[, "AA"] < nAA.THR
-##		fewBB <- Ns[, "BB"] < nBB.THR
-##		flagsA <- flags | fewAA
-##		flagsB <- flags | fewBB
-##		flags <- list(A=flagsA, B=flagsB)
-##		return(flags)
-##	}
-##	nAA.THR <- cnOptions$nHOM.THR
-##	nBB.THR <- cnOptions$nHOM.THR
-##	PHI.THR <- cnOptions$PHI.THR
-##	snpflags <- goodSnps(object, PHI.THR, tmp.objects, nAA.THR, nBB.THR)
-##	flagsA <- snpflags$A
-##	flagsB <- snpflags$B
-####	if(all(flagsA) | all(flagsB)) stop("all snps are flagged")
-##	nuA <- getParam(object, "nuA", batch)
-##	nuB <- getParam(object, "nuB", batch)
-##	phiA <- getParam(object, "phiA", batch)
-##	phiB <- getParam(object, "phiB", batch)
-##	sns <- sampleNames(object)
-##	muA <- tmp.objects[["muA"]]
-##	muB <- tmp.objects[["muB"]]
-##	A <- A(object)
-##	B <- B(object)
-####	CA <- CA(object)
-####	CB <- CB(object)
-##	if(CHR == 23){
-##		phiAX <- getParam(object, "phiAX", batch)
-##		phiBX <- getParam(object, "phiBX", batch)
-##	}
-##	##---------------------------------------------------------------------------
-##	## Train on unflagged SNPs
-##	##---------------------------------------------------------------------------
-##	##Might be best to train using the X chromosome, since for the
-##	##X phi and nu have been adjusted for cross-hybridization
-##	##plateInd <- plate == uplate[p]
-##	##muA <- muA[!flagsA, p, c("A", "AA")]
-##	##muB <- muB[!flagsB, p, c("B", "BB")]
-##	muA <- muA[!flagsA, "AA"]
-##	muB <- muB[!flagsB, "BB"]
-##	X <- cbind(1, log2(c(muA, muB)))
-##	Y <- log2(c(phiA[!flagsA], phiB[!flagsB]))
-##	if(nrow(X) > 5000){
-##		ix <- sample(1:nrow(X), 5000)
-##	} else {
-##		ix <- 1:nrow(X)
-##	}
-##	betahat <- solve(crossprod(X[ix, ]), crossprod(X[ix, ], Y[ix]))
-##	normal <- tmp.objects[["normal"]][!isSnp(object), ]
-##	if(CHR == 23){
-##		##normalNP <- envir[["normalNP"]]
-##		##normalNP <- normalNP[, plate==uplate[p]]
-##		##nuT <- envir[["nuT"]]
-##		##phiT <- envir[["phiT"]]
-##
-##		##cnvs <- envir[["cnvs"]]
-##                ##loader("cnProbes.rda", pkgname=pkgname, envir=.crlmmPkgEnv)
-##                ##cnProbes <- get("cnProbes", envir=.crlmmPkgEnv)
-##		##cnProbes <- cnProbes[match(cnvs, rownames(cnProbes)), ]
-##
-##		##For build Hg18
-##		##http://genome.ucsc.edu/cgi-bin/hgGateway
-##		##pseudo-autosomal regions on X
-##		##chrX:1-2,709,520 and chrX:154584237-154913754, respectively
-##		##par:pseudo-autosomal regions
-##		pseudoAR <- position(object) < 2709520 | (position(object) > 154584237 & position(object) < 154913754)
-##		##pseudoAR <- cnProbes[, "position"] < 2709520 | (cnProbes[, "position"] > 154584237 & cnProbes[, "position"] < 154913754)
-##		##in case some of the cnProbes are not annotated
-##		pseudoAR[is.na(pseudoAR)] <- FALSE
-##		pseudoAR <- pseudoAR[!isSnp(object)]
-##		##gender <- envir[["gender"]]
-##		gender <- object$gender
-##		obj1 <- object[!isSnp(object), ]
-##		A.male <- A(obj1[, gender==1])
-##		mu1 <- rowMedians(A.male, na.rm=TRUE)
-##		##mu1 <- rowMedians(NP[, gender=="male"], na.rm=TRUE)
-##		##mu2 <- rowMedians(NP[, gender=="female"], na.rm=TRUE)
-##		A.female <- A(obj1[, gender==2])
-##		mu2 <- rowMedians(A.female, na.rm=TRUE)
-##		mus <- log2(cbind(mu1, mu2))
-##		X.men <- cbind(1, mus[, 1])
-##		X.fem <- cbind(1, mus[, 2])
-##
-##		Yhat1 <- as.numeric(X.men %*% betahat)
-##		Yhat2 <- as.numeric(X.fem %*% betahat)
-##		phi1 <- 2^(Yhat1)
-##		phi2 <- 2^(Yhat2)
-##		nu1 <- 2^(mus[, 1]) - phi1
-##		nu2 <- 2^(mus[, 2]) - 2*phi2
-##
-##		if(any(pseudoAR)){
-##			nu1[pseudoAR] <- 2^(mus[pseudoAR, 1]) - 2*phi1[pseudoAR]
-##		}
-####		CT1 <- 1/phi1*(A.male-nu1)
-####		CT2 <- 1/phi2*(A.female-nu2)
-####		CA <- CA(obj1)
-####		CA[, gender==1] <- CT1
-####		CA[, gender==2] <- CT2
-####		CA(object)[!isSnp(object), ] <- CA
-##		##only using females to compute the variance
-##		##normalNP[, gender=="male"] <- NA
-##		normal[, gender==1] <- NA
-##		sig2A <- getParam(object, "sig2A", batch)
-##		normal.f <- normal[, object$gender==2]
-##		sig2A[!isSnp(object)] <- rowMAD(log2(A.female*normal.f), na.rm=TRUE)^2
-##		sig2A[!isSnp(object) & is.na(sig2A)] <- median(sig2A[!isSnp(object)], na.rm=TRUE)
-##		##sig2T[, p] <- rowMAD(log2(NP*normalNP), na.rm=TRUE)^2
-##		object <- pr(object, "sig2A", batch, sig2A)
-##
-##		nuA[!isSnp(object)] <- nu2
-##		phiA[!isSnp(object)] <- phi2
-##
-##		THR.NU.PHI <- cnOptions$THR.NU.PHI
-##		if(THR.NU.PHI){
-##			verbose <- cnOptions$verbose
-##			##Assign values to object
-##			object <- pr(object, "nuA", batch, nuA)
-##			object <- pr(object, "phiA", batch, phiA)
-##			##if(verbose) message("Thresholding nu and phi")
-##			object <- thresholdModelParams(object, cnOptions)
-##		} else {
-##			object <- pr(object, "nuA", batch, nuA)
-##			object <- pr(object, "phiA", batch, phiA)
-##		}
-##	} else {
-##		A <- A(object)[!isSnp(object), ]
-##		mus <- rowMedians(A * normal, na.rm=TRUE)
-##		crosshyb <- max(median(muA) - median(mus), 0)
-##		X <- cbind(1, log2(mus+crosshyb))
-##		logPhiT <- X %*% betahat
-##		phiA[!isSnp(object)] <- 2^(logPhiT)
-##		nuA[!isSnp(object)] <- mus-2*phiA[!isSnp(object)]
-##
-##		THR.NU.PHI <- cnOptions$THR.NU.PHI
-##		if(THR.NU.PHI){
-##			verbose <- cnOptions$verbose
-##			##Assign values to object
-##			object <- pr(object, "nuA", batch, nuA)
-##			object <- pr(object, "phiA", batch, phiA)
-##			##if(verbose) message("Thresholding nu and phi")
-##			object <- thresholdModelParams(object, cnOptions)
-##			##reassign values (now thresholded at MIN.NU and MIN.PHI
-##			nuA <- getParam(object, "nuA", batch)
-##			phiA <- getParam(object, "phiA", batch)
-##		}
-##		##CA(object)[!isSnp(object), ] <- 1/phiA[!isSnp(object)]*(A - nuA[!isSnp(object)])
-##		sig2A <- getParam(object, "sig2A", batch)
-##		sig2A[!isSnp(object)] <- rowMAD(log2(A*normal), na.rm=TRUE)^2
-##		object <- pr(object, "sig2A", batch, sig2A)
-##		##added
-##		object <- pr(object, "nuA", batch, nuA)
-##		object <- pr(object, "phiA", batch, phiA)
-##	}
-##	return(object)
-##}
-##
-##sufficient statistics on the intensity scale
-##withinGenotypeMoments <- function(object, cnOptions, tmp.objects){
-##	normal <- tmp.objects[["normal"]]
-##	## muA, muB: robust estimates of the within-genotype center (intensity scale)
-##	muA <- tmp.objects[["muA"]]
-##	muB <- tmp.objects[["muB"]]
-##	## vA, vB: robust estimates of the within-genotype variance (intensity scale)
-##	vA <- tmp.objects[["vA"]]
-##	vB <- tmp.objects[["vB"]]
-##	Ns <- tmp.objects[["Ns"]]
-##	G <- snpCall(object)
-##	GT.CONF.THR <- cnOptions$GT.CONF.THR
-##	CHR <- unique(chromosome(object))
-##	A <- A(object)
-##	B <- B(object)
-####	highConf <- (1-exp(-confs(object)/1000)) > GT.CONF.THR
-##	xx <- snpCallProbability(object)
-##	highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
-##	##highConf <- confs(object) > GT.CONF.THR
-##	##highConf <- highConf > GT.CONF.THR
-##	if(CHR == 23){
-##		gender <- object$gender
-####		gender <- envir[["gender"]]
-##		IX <- matrix(gender, nrow(G), ncol(G), byrow=TRUE)
-####		IX <- IX == "female"
-##		IX <- IX == 2  ##2=female, 1=male
-##	} else IX <- matrix(TRUE, nrow(G), ncol(G))
-##	index <- GT.B <- GT.A <- vector("list", 3)
-##	names(index) <- names(GT.B) <- names(GT.A) <- c("AA", "AB", "BB")
-##	##--------------------------------------------------
-##	##within-genotype sufficient statistics
-##	##--------------------------------------------------
-##	##GT.B <- GT.A <- list()
-##	snpIndicator <- matrix(isSnp(object), nrow(object), ncol(object)) ##RS: added
-##	for(j in 1:3){
-##		GT <- G==j & highConf & IX & snpIndicator
-##		GT <- GT * normal
-##		Ns[, j+2] <- rowSums(GT, na.rm=TRUE)
-##		GT[GT == FALSE] <- NA
-##		GT.A[[j]] <- GT*A
-##		GT.B[[j]] <- GT*B
-##		index[[j]] <- which(Ns[, j+2] > 0 & isSnp(object)) ##RS: added
-##		muA[, j+2] <- rowMedians(GT.A[[j]], na.rm=TRUE)
-##		muB[, j+2] <- rowMedians(GT.B[[j]], na.rm=TRUE)
-##		vA[, j+2] <- rowMAD(GT.A[[j]], na.rm=TRUE)
-##		vB[, j+2] <- rowMAD(GT.B[[j]], na.rm=TRUE)
-##
-##		##Shrink towards the typical variance
-##		DF <- Ns[, j+2]-1
-##		DF[DF < 1] <- 1
-##		v0A <- median(vA[, j+2], na.rm=TRUE)
-##		v0B <- median(vB[, j+2], na.rm=TRUE)
-##		if(v0A == 0) v0A <- NA
-##		if(v0B == 0) v0B <- NA
-##		DF.PRIOR <- cnOptions$DF.PRIOR
-##		vA[, j+2] <- (vA[, j+2]*DF + v0A*DF.PRIOR)/(DF.PRIOR+DF)
-##		vA[is.na(vA[, j+2]), j+2] <- v0A
-##		vB[, j+2] <- (vB[, j+2]*DF + v0B*DF.PRIOR)/(DF.PRIOR+DF)
-##		vB[is.na(vB[, j+2]), j+2] <- v0B
-##	}
-##	if(CHR == 23){
-##		k <- 1
-##		for(j in c(1,3)){
-##			GT <- G==j & highConf & !IX
-##			Ns[, k] <- rowSums(GT)
-##			GT[GT == FALSE] <- NA
-##			muA[, k] <- rowMedians(GT*A, na.rm=TRUE)
-##			muB[, k] <- rowMedians(GT*B, na.rm=TRUE)
-##			vA[, k] <- rowMAD(GT*A, na.rm=TRUE)
-##			vB[, k] <- rowMAD(GT*B, na.rm=TRUE)
-##
-##			DF <- Ns[, k]-1
-##			DF[DF < 1] <- 1
-##			v0A <- median(vA[, k], na.rm=TRUE)
-##			v0B <- median(vB[, k], na.rm=TRUE)
-##			vA[, k] <- (vA[, k]*DF + v0A*DF.PRIOR)/(DF.PRIOR+DF)
-##			vA[is.na(vA[, k]), k] <- v0A
-##			vB[, k] <- (vB[, k]*DF + v0B*DF.PRIOR)/(DF.PRIOR+DF)
-##			vB[is.na(vB[, k]), k] <- v0B
-##			k <- k+1
-##		}
-##	}
-##	tmp.objects[["Ns"]] <- Ns
-##	tmp.objects[["vA"]] <- vA
-##	tmp.objects[["vB"]] <- vB
-##	tmp.objects[["muA"]] <- muA
-##	tmp.objects[["muB"]] <- muB
-##	tmp.objects$index <- index
-##	tmp.objects$GT.A <- GT.A
-##	tmp.objects$GT.B <- GT.B
-##	return(tmp.objects)
-##}
-
 imputeCenter <- function(muA, muB, index.complete, index.missing){
 	index <- index.missing
 	mnA <- muA
@@ -2011,7 +1545,7 @@ indexComplete <- function(NN, medianA, medianB, MIN.OBS){
 imputeCentersForMonomorphicSnps <- function(medianA, medianB, index.complete, unobserved.index){
 	cols <- c(3, 1, 2)
 	for(j in 1:3){
-		if(sum(unobserved.index[[j]]) == 0) next()
+		if(length(unobserved.index[[j]]) == 0) next()
 		kk <- cols[j]
 		X <- cbind(1, medianA[index.complete, kk], medianB[index.complete, kk])
 		Y <- cbind(medianA[index.complete,  -kk],
@@ -2872,42 +2406,35 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 
 
 shrinkSummary <- function(object,
-			  type=c("SNP", "NP", "X.SNP", "X.NP"), ##"X.snps", "X.nps"),
+			  type=c("SNP", "X.SNP"), ##"X.snps", "X.nps"),
 			  MIN.OBS=1,
 			  MIN.SAMPLES=10,
 			  DF.PRIOR=50,
-			  verbose=TRUE){
-	if(type == "X.SNP" | type=="X.NP"){
+			  verbose=TRUE,
+			  marker.index,
+			  is.lds){
+	stopifnot(type %in% c("SNP", "X.SNP"))
+	if(type == "X.SNP"){
 		gender <- object$gender
 		if(sum(gender == 2) < 3) {
 			return("too few females to estimate within genotype summary statistics on CHR X")
 		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
-	batch <- batch(object)
-	is.snp <- isSnp(object)
-	is.autosome <- chromosome(object) < 23
-	is.annotated <- !is.na(chromosome(object))
-	is.X <- chromosome(object) == 23
-	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-	if(is.lds) require(ff)
-	whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
-		switch(type,
-		       SNP=which(is.snp & is.autosome & is.annotated),
-		       NP=which(!is.snp & is.autosome),
-		       X.SNP=which(is.snp & is.X),
-		       X.NP=which(!is.snp & is.X),
-		       stop("'type' must be one of 'SNP', 'NP', 'X.SNP', or 'X.NP'")
-	       )
+	if(missing(marker.index)){
+		batch <- batch(object)
+		is.snp <- isSnp(object)
+		is.autosome <- chromosome(object) < 23
+		is.annotated <- !is.na(chromosome(object))
+		is.X <- chromosome(object) == 23
+		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+		if(is.lds) require(ff)
+		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
-	marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	summaryFxn <- function(type){
 		switch(type,
 		       SNP="shrinkGenotypeSummaries",
 		       X.SNP="shrinkGenotypeSummaries", ## this shrinks for the females only
-##		       NP="summarizeNps",
-##		       X.SNP="summarizeSnps",
-##		       X.NP="summarizeNps")
 		       stop())
 	}
 	FUN <- summaryFxn(type[[1]])
@@ -2925,13 +2452,13 @@ shrinkSummary <- function(object,
 			 neededPkgs="crlmm")
 	} else {
 		FUN <- match.fun(FUN)
-		object <- FUN(strata.index=1,
+		object <- FUN(strata=1,
 			      index.list=list(marker.index),
 			      object=object,
+			      verbose=verbose,
 			      MIN.OBS=MIN.OBS,
 			      MIN.SAMPLES=MIN.SAMPLES,
 			      DF.PRIOR=DF.PRIOR,
-			      verbose=verbose,
 			      is.lds=is.lds)
 	}
 	return(object)
@@ -2940,7 +2467,9 @@ shrinkSummary <- function(object,
 genotypeSummary <- function(object,
 			    GT.CONF.THR=0.95,
 			    type=c("SNP", "NP", "X.SNP", "X.NP"), ##"X.snps", "X.nps"),
-			    verbose=TRUE){
+			    verbose=TRUE,
+			    marker.index,
+			    is.lds){
 	if(type == "X.SNP" | type=="X.NP"){
 		gender <- object$gender
 		if(sum(gender == 2) < 3) {
@@ -2948,23 +2477,16 @@ genotypeSummary <- function(object,
 		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
-	batch <- batch(object)
-	is.snp <- isSnp(object)
-	is.autosome <- chromosome(object) < 23
-	is.annotated <- !is.na(chromosome(object))
-	is.X <- chromosome(object) == 23
-	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-	if(is.lds) require(ff)
-	whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
-		switch(type,
-		       SNP=which(is.snp & is.autosome & is.annotated),
-		       NP=which(!is.snp & is.autosome),
-		       X.SNP=which(is.snp & is.X),
-		       X.NP=which(!is.snp & is.X),
-		       stop("'type' must be one of 'SNP', 'NP', 'X.SNP', or 'X.NP'")
-	       )
+	if(missing(marker.index)){
+		batch <- batch(object)
+		is.snp <- isSnp(object)
+		is.autosome <- chromosome(object) < 23
+		is.annotated <- !is.na(chromosome(object))
+		is.X <- chromosome(object) == 23
+		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+		if(is.lds) stopifnot(isPackagedLoaded("ff"))
+		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
-	marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	summaryFxn <- function(type){
 		switch(type,
 		       SNP="summarizeSnps",
@@ -2978,7 +2500,6 @@ genotypeSummary <- function(object,
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
-##			 marker.index=marker.index,
 			 object=object,
 			 batchSize=ocProbesets(),
 			 GT.CONF.THR=GT.CONF.THR,
@@ -2988,17 +2509,26 @@ genotypeSummary <- function(object,
 			 neededPkgs="crlmm")
 	} else {
 		FUN <- match.fun(FUN)
-		object <- FUN(strata.index=1,
+		object <- FUN(strata=1,
 			      index.list=list(marker.index),
-##			      marker.index=marker.index,
 			      object=object,
 			      batchSize=ocProbesets(),
 			      GT.CONF.THR=GT.CONF.THR,
 			      verbose=verbose,
-			      CHR.X=CHR.X,
-			      is.lds=is.lds)
+			      is.lds=is.lds,
+			      CHR.X=CHR.X)
 	}
 	return(object)
+}
+
+whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
+	switch(type,
+	       SNP=which(is.snp & is.autosome & is.annotated),
+	       NP=which(!is.snp & is.autosome),
+	       X.SNP=which(is.snp & is.X),
+	       X.NP=which(!is.snp & is.X),
+	       stop("'type' must be one of 'SNP', 'NP', 'X.SNP', or 'X.NP'")
+	       )
 }
 
 summarizeNps <- function(strata, index.list, object, batchSize,
@@ -3151,44 +2681,115 @@ crlmmCopynumber <- function(object,
 			    prior.prob=rep(1/4,4),
 			    seed=1,
 			    verbose=TRUE,
-			    GT.CONF.THR=0.99,
+			    GT.CONF.THR=0.95,
 			    PHI.THR=2^6,
 			    nHOM.THR=5,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
 			    type=c("SNP", "NP", "X.SNP", "X.NP")){
-	if(type == "X.SNP" | type=="X.NP"){
-		gender <- object$gender
-		if(sum(gender == 2) < 3) {
-			warning("too few females to estimate within genotype summary statistics on CHR X")
-			return(object)
-		}
-		CHR.X <- TRUE
-	} else CHR.X <- FALSE
+	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
 	batch <- batch(object)
 	is.snp <- isSnp(object)
 	is.autosome <- chromosome(object) < 23
 	is.annotated <- !is.na(chromosome(object))
 	is.X <- chromosome(object) == 23
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-	if(is.lds) require(ff)
+	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
 	if(any(samplesPerBatch < MIN.SAMPLES)){
 		warning("The following batches have fewer than ", MIN.SAMPLES, ":")
 		message(paste(samplesPerBatch[samplesPerBatch < MIN.SAMPLES], collapse=", "))
 		message("Not estimating copy number for the above batches")
 	}
-	whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
-		switch(type,
-		       SNP=which(is.snp & is.autosome & is.annotated),
-		       NP=which(!is.snp & is.autosome),
-		       X.SNP=which(is.snp & is.X),
-		       X.NP=which(!is.snp & is.X),
-		       stop("'type' must be one of 'SNP', 'NP', 'X.SNP', or 'X.NP'")
-	       )
+	mylabel <- function(marker.type){
+		switch(marker.type,
+		       SNP="autosomal SNPs",
+		       NP="autosomal nonpolymorphic markers",
+		       X.SNP="chromosome X SNPs",
+		       X.NP="chromosome X nonpolymorphic markers")
 	}
-	marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
+	if(verbose) message("Computing summary statistics for genotype clusters for each batch")
+	for(i in seq_along(type)){
+		## do all types
+		marker.type <- type[i]
+		if(verbose) message(paste("...", mylabel(marker.type)))
+		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
+		marker.index <- whichMarkers(marker.type, is.snp,
+					     is.autosome, is.annotated, is.X)
+		object <- genotypeSummary(object=object,
+					  GT.CONF.THR=GT.CONF.THR,
+					  type=marker.type,
+					  verbose=verbose,
+					  marker.index=marker.index,
+					  is.lds=is.lds)
+	}
+	if(verbose) message("Imputing unobserved cluster medians and shrinking the variances at polymorphic loci")##SNPs only
+	for(i in seq_along(type)){
+		marker.type <- type[i]
+		if(!marker.type %in% c("SNP", "X.SNP")) next()
+		message(paste("...", mylabel(marker.type)))
+		marker.index <- whichMarkers(marker.type, is.snp,
+					     is.autosome, is.annotated, is.X)
+		object <- shrinkSummary(object=object,
+					MIN.OBS=MIN.OBS,
+					MIN.SAMPLES=MIN.SAMPLES,
+					DF.PRIOR=DF.PRIOR,
+					type=marker.type,
+					verbose=verbose,
+					marker.index=marker.index,
+					is.lds=is.lds)
+	}
+	if(verbose) message("Estimating parameters for copy number")##SNPs only
+	for(i in seq_along(type)){
+		marker.type <- type[i]
+		message(paste("...", mylabel(marker.type)))
+		CHR.X <- ifelse(marker.type %in% c("X.SNP", "X.NP"), TRUE, FALSE)
+		marker.index <- whichMarkers(marker.type, is.snp,
+					     is.autosome, is.annotated, is.X)
+		object <- estimateCnParameters(object=object,
+					       type=marker.type,
+					       SNRMin=SNRMin,
+					       DF.PRIOR=DF.PRIOR,
+					       GT.CONF.THR=GT.CONF.THR,
+					       MIN.SAMPLES=MIN.SAMPLES,
+					       MIN.OBS=MIN.OBS,
+					       MIN.NU=MIN.NU,
+					       MIN.PHI=MIN.PHI,
+					       THR.NU.PHI=THR.NU.PHI,
+					       verbose=verbose,
+					       marker.index=marker.index,
+					       is.lds=is.lds,
+					       CHR.X=CHR.X)
+	}
+	return(object)
+}
+
+estimateCnParameters <- function(object,
+				 type=c("SNP", "NP", "X.SNP", "X.NP"),
+				 verbose=TRUE,
+				 SNRMin=5,
+				 DF.PRIOR=50,
+				 GT.CONF.THR=0.95,
+				 MIN.SAMPLES=10,
+				 MIN.OBS=1,
+				 MIN.NU=8,
+				 MIN.PHI=8,
+				 THR.NU.PHI=TRUE,
+				 marker.index,
+				 CHR.X,
+				 is.lds){
+	if(missing(marker.index)){
+		batch <- batch(object)
+		is.snp <- isSnp(object)
+		is.autosome <- chromosome(object) < 23
+		is.annotated <- !is.na(chromosome(object))
+		is.X <- chromosome(object) == 23
+		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+		if(is.lds) require(ff)
+		CHR.X <- ifelse(type[[1]] %in% c("X.SNP", "X.NP"), TRUE, FALSE)
+		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
+	}
 	lmFxn <- function(type){
 		switch(type,
 		       SNP="fit.lm1",

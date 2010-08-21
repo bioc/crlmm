@@ -1,8 +1,8 @@
-%added to prevent warnings
 \name{ffdf-class}
 \Rdversion{1.1}
 \docType{class}
 \alias{ffdf-class}
+\alias{annotatedDataFrameFrom,ff_matrix-method}
 \alias{list-class}
 \title{Class "ffdf"}
 \description{

@@ -38,9 +38,9 @@ options(continue=" ", width=70)
 
 \end{abstract}
 
-\section{Simple usage}
+\section{Copy number estimation}
 
-
+\subsection{Set up}
 
 <<cdfname>>=
 library(crlmm)
@@ -91,7 +91,7 @@ calls to \verb@Sweave@ will load the saved computations from disk. For
 additional information, see the examples in the help file for the
 \Rfunction{checkExists} function.
 
-\paragraph{Preprocessing and genotyping.}
+\subsection{Preprocessing and genotyping.}
 
 In the following code chunk, we provide the complete path to the
 Affymetrix CEL files and define a 'batch' variable. The
@@ -132,169 +132,34 @@ The function \Rfunction{genotype} checks to see whether the
 genotype are stored as \Robject{ff} objects on disk.  Otherwise, the
 genotypes and normalized intensities are stored in matrices.  A word
 of caution: the \Rfunction{genotype} function without \Rpackage{ff}
-requires a potentially large amount of RAM.  Therefore, we illustrate
-the \Robject{genotype} function using only the first 20 CEL files. We
-wrap the function \Rfunction{genotype} in the \Rfunction{checkExists}
-so that a user can load and inspect the saved object.  We first check
-that the file \Robject{cnSet.rda} does not exist. Existence of this
-file implies that we have already run the copy number estimation and,
-therefore, we do not need to preprocess and genotype the files a
-second time.
+requires a potentially large amount of RAM.  We illustrate the
+\Robject{genotype} function using only the first 5 CEL files (a number
+to small to be used for copy number estimation). We wrap the function
+\Rfunction{genotype} in the \Rfunction{checkExists} to speed up
+Sweaving after the initial batch job.
 
 <<genotype>>=
-tmpdir <- "~/tmp3"
-##stop()
-##if(FALSE){
-##if(file.exists(tmpdir)) unlink(tmpdir, recursive=TRUE)
-dir.create(tmpdir)
-##trace(genotype, browser)
-system.time(gtSet2 <- genotype(filenames=celFiles[1:75],
-			       cdfName=cdfName,
-			       batch=batch[1:75]))
-save(gtSet2, file=file.path(tmpdir, "gtSet2.rda"))
-library(ff)
-ldPath(tmpdir)
-system.time(gtSet <- genotype(filenames=celFiles[1:75],
-			      cdfName=cdfName,
-			      batch=batch[1:75]))
-save(gtSet, file=file.path(tmpdir, "gtSet.rda"))
-q("no")
-if(FALSE){
-	library(ff)
-	tmpdir <- "~/tmp"
-	dir.create("~/tmp2")
-	load(file.path(tmpdir, "gtSet.rda"))
-	ldPath("~/tmp2")
-	gtSet <- updateObject(gtSet) ## neeed to remove the old ff objects
-	save(gtSet, file=file.path(ldPath(), "gtSet.rda"))
+gtSet <- checkExists("gtSet.assayData_matrix",
+		     .path=outdir,
+		     .FUN=genotype,
+		     filenames=celFiles[1:5],
+		     cdfName=cdfName,
+		     batch=batch[1:5])
 }
-
-##trace(summarizeSnps, browser)
-ocProbesets(100e3)
-system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="SNP"))
-system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="NP"))
-system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="X.SNP"))
-system.time(gtSet <- genotypeSummary(gtSet, GT.CONF.THR=0.95, type="X.NP"))
-library(ff)
-load("~/tmp2/gtSet.rda")
-invisible(open(gtSet))
-ocProbesets(100e3)
-
-system.time(gtSet <- shrinkSummary(gtSet, type="SNP"))
-##system.time(gtSet <- shrinkSummary(gtSet, type="NP"))
-system.time(gtSet <- shrinkSummary(gtSet, type="X.SNP"))
-##system.time(gtSet <- shrinkSummary(gtSet, type="X.NP"))
-
-## test: try females only.  try males only
-
-## fit linear model
-##trace(crlmmCopynumber, browser)
-##trace(fit.wls, browser)
-trace(fit.lm1, browser)
-system.time(cnSet <- crlmmCopynumber(gtSet, type="SNP"))
-CA(cnSet)[1:5, 1:5]
-totalCopyNumber(cnSet, i=1:5, j=1:5)
-
-trace(fit.lm2, browser)
-system.time(cnSet <- crlmmCopynumber(gtSet, type="NP"))
-index <- which(!isSnp(cnSet))[1:10]
-totalCopyNumber(cnSet, i=index, j=1:5)
-
-##trace(fit.lm3, browser)
-##trace(summarizeMaleXGenotypes, browser)
-##trace(fit.wls, browser)
-system.time(cnSet <- crlmmCopynumber(gtSet, type="X.SNP"))
-
-trace(fit.lm4, browser)
-system.time(cnSet <- crlmmCopynumber(gtSet, type="X.NP"))
-
-
-Ns(gtSet, batchname="C")[1:5, ]
-medians(gtSet, "A")[1:5, ]
-mads(gtSet, "A")[1:5, ]
-##log scale
-tau2(gtSet, allele="A")[1:5, ]
-tau2(gtSet, allele="B")[1:5, ]
-corr(gtSet)[1:5, ]
-
-
-
-cnSet <- crlmmCopynumber(gtSet, type="autosome.snps")
-
-
-
-
-
-
-gtSet
-tmp=Ns(gtSet)
-
-
-
-NN <- N.AA(gtSet)[1:1000,]
-N.AA(gtSet)[1:1000,] <- NN##do.call(cbind, lapply(NN, function(x) x[, 1]))
-
-
-##tmp=Ns(gtSet)
-##tmp <- Ns(gtSet, genotype="AA")
-##tmp <- Ns(gtSet, genotype="AA", batchname="C")
-##tmp <- Ns(gtSet,  batchname="C")
-##Ns(gtSet, batchname="C") <- tmp
-
-load(file.path(tmpdir, "gtSet2.rda"))
-gtSet2.update <- updateObject(gtSet2)
-isCurrent(gtSet2)
-
-
-
-
-
-
-
-
-##using matrices
-if(!file.exists(file.path(outdir, "cnSet.assayData_matrix.rda"))){
-	gtSet <- checkExists("gtSet.assayData_matrix",
-			     .path=outdir,
-			     .FUN=genotype,
-			     filenames=celFiles[1:20],
-			     cdfName=cdfName,
-			     batch=batch[1:20])
-	class(calls(gtSet.assayData_matrix))
-}
-##q("no")
 @
-
-Next, we estimate copy number for the 20 CEL files.  The copy number
-estimation step requirees a minimum number of CEL files in each batch
-(we suggest 10).  While estimation can be performed using only the 20
-samples as we do here, it would be far preferable to process all of
-the files that were on the same chemistry plate.  The code chunk below
-will load \Robject{cnSet.assayData_matrix} from disk if this
-
-computation had already been performed as part of the batch job.
-
-<<copynumber, eval=FALSE>>=
-cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
-				      .path=outdir,
-				      .FUN=crlmmCopynumber,
-				      object=gtSet.assayData_matrix,
-				      chromosome=22)
-@
-
 
 A more memory efficient approach to preprocessing and genotyping is
-implemented in the \R{} function \Rfunction{genotypeLD} and requires
-the \Rpackage{ff} package.  The functions \Rfunction{ocProbesets} and
-\Rfunction{ocSamples} can be used to manage how many probesets and
-samples are to processed at a time and can therefore be used to fine
-tune the required RAM.  The function \Rfunction{ldPath} indicates that
-\Robject{ff} objects will be stored in the directory \Robject{outdir}.
+requires the \Rpackage{ff} package.  In particular, the functions
+\Rfunction{ocProbesets} and \Rfunction{ocSamples} can be used to
+manage how many probesets and samples are to processed at a time and
+can therefore be used to fine tune the required RAM.  The function
+\Rfunction{ldPath} indicates that \Robject{ff} objects will be stored
+in the directory \Robject{outdir}.
 
 <<ff>>=
 library(ff)
 ldPath(outdir)
-ocProbesets(50000)
+ocProbesets(100000)
 ocSamples(200)
 @
 
@@ -308,67 +173,129 @@ so that subsequent calls to \verb@Sweave@ can be run interactively.
 
 
 <<LDS_genotype>>=
-if(!file.exists(file.path(outdir, "cnSet.assayData_ff.rda"))){
-	Rprof(filename="Rprof_genotypeff.out", interval=0.1)
-	gtSet.assayData_ff <- checkExists("gtSet.assayData_ff",
-					  .path=outdir,
-					  .FUN=genotypeLD,
-					  filenames=celFiles,
-					  cdfName=cdfName,
-					  batch=batch)
-	Rprof(NULL)
-	class(calls(gtSet.assayData_ff))
+if(!file.exists(file.path(outdir, "cnSet.rda"))){
+	gtSet <- checkExists("gtSet",
+			     .path=outdir,
+			     .FUN=genotypeLD,
+			     filenames=celFiles,
+			     cdfName=cdfName,
+			     batch=batch)
+	class(calls(gtSet))
 }
 @
 
-The analogous function for copy number estimation follows. In
-practice, once the object \Robject{cnSet.assayData_ff} is created the
-\Robject{gtSet.assayData_ff} is no longer needed and can be removed
-from the \Robject{outdir}.
+\subsection{Copy number algorithm.}
+
+The \Rfunction{crlmmCopynumber} computes summary statistics for each
+genotype, imputes unobserved genotype centers, shrinks the
+within-genotype variances, and estimates parameters for
+allele-specific copy number. With \texttt{verbose=TRUE}, the above
+steps for CN estimation are displayed.
 
 <<LDS_copynumber>>=
-Rprof(filename="Rprof_cnff.out", interval=0.1)
-##trace(fit.wls, browser)
-cnSet.assayData_ff <- checkExists("cnSet.assayData_ff",
-				  .path=outdir,
-				  .FUN=crlmmCopynumberLD,
-				  object=gtSet.assayData_ff)
-Rprof(NULL)
-##if(file.exists(file.path(outdir, "gtSet.assayData_ff.rda")))
-##	unlink(file.path(outdir, "gtSet.assayData_ff.rda"))
-gc()
-q("no")
+cnSet <- checkExists("cnSet",
+		     .path=outdir,
+		     .FUN=crlmmCopynumber,
+		     object=gtSet)
 @
 
-The objects returned by the \Rfunction{genotypeLD} and
-\Rfunction{crlmmCopynumberLD} have assay data elements that are
-pointers to \Robject{ff} objects stored in the directory
-\Robject{outdir}.  The functions \Rfunction{open} and
-\Rfunction{close} open and close the connections to the
-\Robject{assayData} elements. Subsetting an \Robject{ff} object pulls
-the data from disk into memory and should therefore be used with
-caution. In particular, subsetting the \Robject{gt.assayData_ff} would
-subset each elements in the \Robject{assayData} slot, returning an
-object of the same class but with \Robject{assayData} elements that
-are matrices.  Such an operation can be exceedingly slow and require
+The \Rpackage{crlmmCopynumber} function no longer stores the
+allele-specific estimates of copy number.  Rather, several functions
+are available that will compute relatively quickly the allele-specific
+estimates from the stored normalized intensities and the linear model
+parameters.  For instance, for allele $k$, marker $i$, sample $j$, and
+batch $p$, the estimate of allele-specific copy number are updated by
+subtracting the estimated background from the observed intensity and
+scaling by the slope coefficient. Specifically,
+
+\newcommand{\A}{A}
+\newcommand{\B}{B}
+\begin{eqnarray}
+  \label{eq:cnK}
+{\hat c}_{k,ijp} &=& \mbox{max}\left\{\frac{1}{{\hat
+    \phi}_{k,ip}}\left(I_{k,ijp}-{\hat \nu}_{k,ip}\right), ~0\right\}
+\mbox{~for~} k \in \{\A, \B\}.
+%  \label{eq:cnB} {\hat c}_{\B,ijp} &=& \mbox{max}\left\{\frac{1}{{\hat
+%      \phi}_{\B,ip}}\left(I_{\B,ijp}-{\hat \nu}_{\B,ip}\right), ~0\right\}.
+\end{eqnarray}.
+\noindent See \cite{Scharpf2010} for details.
+
+The functions \Rfunction{CA}, \Rfunction{CB}, and
+\Rfunction{totalCopyNumber} can be used to extract CN estimates from
+the \Robject{CNSet} container.
+
+<<ca>>=
+##ca <- CA(x[snp.index, ])/100
+snp.index <- which(isSnp(cnSet))
+ca <- CA(cnSet, i=snp.index, j=1:5)
+cb <- CB(cnSet, i=snp.index, j=1:5)
+ct <- ca+cb
+##boxplot(data.frame(ct[, 1:5]), pch=".")
+@
+
+Alternatively, total copy number can be obtained by
+<<totalCopynumber.snps>>=
+ct2 <- totalCopyNumber(cnSet, i=snp.index, j=1:5)
+all.equal(ct, ct2)
+@
+
+At nonpolymorphic loci, either the 'CA' or totalCopynumber method can
+be used to obtain total copy number.
+
+<<ca>>=
+cn.nonpolymorphic <- CA(obj, i=which(!isSnp(obj)))
+@
+
+Total copy number at both polymorphic and nonpolymorphic loci:
+<<totalCopynumber>>=
+##cn <- copyNumber(x)
+cn <- totalCopyNumber(x, sample(1:nrow(x), 1e4), 1:5)
+apply(cn, 2, median, na.rm=TRUE)
+@
+
+The above estimates can be plotted versus physical position.
+
+
+\section{The CNSet container}
+
+The objects returned by the \Rfunction{genotype} and
+\Rfunction{crlmmCopynumber} have assay data elements that are pointers
+to \Robject{ff} objects stored in the directory \Robject{outdir}.  The
+functions \Rfunction{open} and \Rfunction{close} open and close the
+connections to the \Robject{assayData} elements. Subsetting an
+\Robject{ff} object pulls the data from disk into memory and should
+therefore be used with caution. In particular, subsetting the
+\Robject{gtSet} would subset each element in the \Robject{assayData}
+slot, returning an object of the same class but with
+\Robject{assayData} elements that are matrices.  Such an operation can
+be exceedingly slow when performed over a network and require
 subsantial RAM.  The preferred approach is to extract only the assay
 data element that is needed. In the example below, we extract the
 genotype calls for the the first 50 samples.
 
 <<check>>=
-dims(cnSet.assayData_ff)
-dims(cnSet.assayData_matrix)
-print(object.size(cnSet.assayData_matrix), units="Mb")
-print(object.size(cnSet.assayData_ff), units="Mb")
-if(FALSE){
-	replicate(5, system.time(gt1 <- calls(cnSet.assayData_matrix)[, 1:50])[[1]])
-	open(calls(cnSet2))
-	replicate(5, system.time(gt2 <- calls(cnSet.assayData_ff)[, 1:50])[[1]])
-}
-gt1 <- calls(cnSet.assayData_matrix)[, 1:50]
-gt2 <- calls(cnSet.assayData_ff)[, 1:50]
-all.equal(gt1, gt2)
+dims(cnSet)
+dims(cnSet)
+print(object.size(cnSet), units="Mb")
+gt <- calls(cnSet)[, 1:50]
 @
+
+The \Robject{CNSet} class also contains the slot
+\Robject{batchStatistics} that contains batch-specific summaries
+needed for copy number estimation. In particular, each element is a
+matrix (or an ff object) with R rows and C columns, correspoinding to
+R markers and C batches.  The summaries includes the within genotype
+cluster medians and median absolute deviations (mads), but also
+parameters estimated from the linear model.  (For unobserved
+genotypes, the medians are imputed and the variance is obtained the
+median variance (across markers) within a batch. ) The elements of the
+slot can be listed as follows.
+
+<<batchStatistics>>=
+assayDataElementNames(batchStatistics(cnSet))
+@
+
+
 
 Note that for the Affymetrix 6.0 platform the assay data elements each
 have a row dimension corresponding to the total number of polymorphic
@@ -383,39 +310,24 @@ the CRLMM genotype calls are represented as integers. The accessor
 scores.  When stored as matrices, converting the integer
 representation back to the probability scale is straightforward as
 shown below.  However, for the \Robject{ff} objects we must first
-bring the data into memory. To bring all the scores into memory, one
-could use the function \Rfunction{[,]} but this could be slow and
-require a lot of RAM depending on the size of the dataset.  Instead,
-we suggest pulling only the needed rows and columns from memory. In
-the following example, we convert the integer scores to probabilities
-for the CEPH samples.  As genotype confidence scores are not
-applicable to the nonpolymorphic markers, we extract only the
-polymorphic markers using the \Rfunction{isSnp} function.
+convert the ff object to a matrix. One could use the function
+\Rfunction{[,]} but this could be slow and require a lot of RAM
+depending on the size of the dataset. We suggest pulling only the
+needed rows and columns from memory. In the following example, we
+convert the integer scores to probabilities for the CEPH samples.  As
+genotype confidence scores are not applicable to the nonpolymorphic
+markers, we extract only the polymorphic markers using the
+\Rfunction{isSnp} function.
 
 <<assayData>>=
 rows <- which(isSnp(cnSet))
 cols <- which(batch == "C")
-posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet.assayData_ff)),
-			    error=function(e) print("This will not work for an ff object."))
-posterior.prob1 <- i2p(snpCallProbability(cnSet.assayData_matrix)[rows, cols])
-posterior.prob2 <- i2p(snpCallProbability(cnSet.assayData_ff)[rows, cols])
-all.equal(posterior.prob1, posterior.prob2)
+posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet)),
+			   error=function(e) print("This will not work for an ff object."))
+posterior.prob2 <- p2i(snpCallProbability(cnSet)[rows, cols])
 @
 
-Next, we obtain locus-level estimates of copy number by fitting a linear
-model to each SNP. A variable named 'batch' must be indicated in the
-\Robject{protocolData} of the \Robject{cnSet} object. As the inverse
-variance of the within-genotype normalized intensities are used as
-weights in the linear model (and hence the design matrix in the
-regression changes for each SNP), the time is linear with the number of
-markers on the array. Copy number estimation at nonpolymorphic markers
-and polymorphic markers with unobserved genotypes is more difficult. We
-refer the interested reader to the technical report \citep{Scharpf2009}.
-Again, we peform the copy number estimation using the matrix version and
-the ff version in parallel and encourage users with large datasets to
-explore the latter. As with the preprocessing and genotyping, the
-following code should be submitted as part of the batch job as it is too
-slow for interactive analysis.
+Next, we obtain locus-level estimates of copy number.
 
 <<cn.ff, echo=FALSE, eval=FALSE>>=
 rm(cnSet); gc()
@@ -502,28 +414,7 @@ genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10],
 
 \paragraph{\Robject{CopyNumberSet}: allele-specific copy number}
 
-Allele-specific copy number at polymorphic loci:
-<<ca>>=
-##ca <- CA(x[snp.index, ])/100
-snp.index <- which(isSnp(x))
-ca <- CA(x, i=snp.index)
-##or
-ca <- ACN(x, "A", i=snp.index)
-cb <- CB(x, i=snp.index)
-ct <- ca+cb
-@
 
-Total copy number at nonpolymorphic loci:
-<<ca>>=
-cn.nonpolymorphic <- CA(obj, i=which(!isSnp(obj)))
-@
-
-Total copy number at both polymorphic and nonpolymorphic loci:
-<<totalCopynumber>>=
-##cn <- copyNumber(x)
-cn <- totalCopyNumber(x, sample(1:nrow(x), 1e4), 1:5)
-apply(cn, 2, median, na.rm=TRUE)
-@
 
 \subsection{Other accessors}
 

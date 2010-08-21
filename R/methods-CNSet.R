@@ -359,12 +359,14 @@ ACN <- function(object, allele, i , j){
 		ii <- which(chromosome(object) < 23)
 		if(length(ii) > 0){
 			## calculate ca only for batches indexed by j
-			batches <- unique(batch(object)[j])
+			batches <- unique(as.character(batch(object))[j])
 			for(k in seq_along(batches)){
-				l <- match(batches[k], bns)
+				this.batch <- batches[k]
+				jj <- j[batch(object)[j] %in% this.batch]
+				l <- match(this.batch, bns)
 				bg <- nu(object, allele)[ii, l]
 				slope <- phi(object, allele)[ii, l]
-				I <- allele(object, allele)[ii, j]
+				I <- allele(object, allele)[ii, jj]
 				acn[[k]] <- 1/slope*(I - bg)
 			}
 		}
@@ -375,24 +377,27 @@ ACN <- function(object, allele, i , j){
 	}
 	if(!missing(i) & missing(j)){
 		## calculate ca, cb for all batches
-		batches <- unique(batch(object))
+		batches <- batchNames(object)
 		for(k in seq_along(batches)){
+			this.batch <- batches[k]
+			l <- match(this.batch, bns)
 			##bb <- batches[k]
-			bg <- nu(object, allele)[i, k]
-			slope <- phi(object, allele)[i, k]
-			I <- allele(object, allele)[i, j]
+			bg <- nu(object, allele)[i, l]
+			slope <- phi(object, allele)[i, l]
+			I <- allele(object, allele)[i, batch(object) == this.batch]
 			acn[[k]] <- 1/slope*(I - bg)
 		}
 	}
 	if(!missing(i) & !missing(j)){
-		ubatch <- unique(batch(object))
-		batches <- unique(batch(object)[j])
+		batches <- unique(as.character(batch(object)[j]))
 		acn <- list()
 		for(k in seq_along(batches)){
-			l <- match(batches[k], ubatch)
+			this.batch <- batches[k]
+			jj <- j[batch(object)[j] %in% this.batch]
+			l <- match(this.batch, bns)
 			bg <- nu(object, allele)[i, l]
 			slope <- phi(object, allele)[i, l]
-			I <- allele(object, allele)[i, j]
+			I <- allele(object, allele)[i, jj]
 			acn[[k]] <- 1/slope*(I - bg)
 		}
 	}
@@ -404,15 +409,20 @@ ACN <- function(object, allele, i , j){
 setMethod("CA", signature=signature(object="CNSet"),
 	  function(object, ...){
 		  ca <- ACN(object, allele="A", ...)
+		  ca[ca < 0.05] <- 0.05
+		  ca[ca > 5] <- 5
 		  return(ca)
 	  })
 setMethod("CB", signature=signature(object="CNSet"),
 	  function(object, ...) {
 		  cb <- ACN(object, allele="B", ...)
+		  cb[cb < 0.05] <- 0.05
+		  cb[cb > 5] <- 5
 		  return(cb)
 	  })
 
 totalCopyNumber <- function(object, ...){
+	message("copy number at nonpolymorphic probes is not currently available")
 	ca <- CA(object, ...)
 	cb <- CB(object, ...)
 	is.snp <- isSnp(object)
@@ -432,7 +442,7 @@ setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
                  function(object, ..., value){
 			 assayDataElementReplace(object, "call", value)
 		 })
-##setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
-##                 function(object, ..., value){
-##			 assayDataElementReplace(object, "callProbability", value)
-##		 })
+setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
+                 function(object, ..., value){
+			 assayDataElementReplace(object, "callProbability", value)
+		 })

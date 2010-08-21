@@ -29,7 +29,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
-		  "A<-", "B<-", open, close, lM, flags,
+		  "A<-", "B<-", open, close, flags,
 		  batchStatistics, "batchStatistics<-", updateObject)
 
 
