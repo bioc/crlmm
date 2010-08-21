@@ -4,7 +4,7 @@
 \alias{CA,CNSet-method}
 \alias{CB,CNSet-method}
 \alias{lines,CNSet-method}
-\alias{totalCopyNumber,CNSet-method}
+\alias{totalCopynumber,CNSet-method}
 
 \title{crlmm methods for class "CNSet"}
 \description{
@@ -26,7 +26,7 @@
     \item{CA}{\code{signature(object="CNSet")}: ...}
     \item{CB}{\code{signature(object="CNSet")}: ...}
     \item{lines}{\code{signature(x="CNSet")}: ...}
-    \item{totalCopyNumber}{\code{signature(object="CNSet")}: ...}
+    \item{totalCopynumber}{\code{signature(object="CNSet")}: ...}
 	 }
 }
 

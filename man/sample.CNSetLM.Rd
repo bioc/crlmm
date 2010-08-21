@@ -31,13 +31,13 @@ data(sample.CNSetLM)
 cnSet <- as(sample.CNSetLM, "CNSet")
 all(isCurrent(cnSet)) ## is the cnSet object current?
 
-library(crlmm)
+## updating class CNSetLM using ff objects
 library(ff)
-outdir <- "~/madman/Rpacks/crlmm/inst/extdata"
-ldPath(outdir)
+path <- system.file("extdata", package="crlmm")
+ldPath(path)
 data(sample.CNSetLMff)
-cnSetff <- as(sample.CNSetLMff, "CNSet")
-all(isCurrent(cnSetff))
+cnSet <- as(sample.CNSetLMff, "CNSet")
+all(isCurrent(cnSet))
 
 ## a bigger object with multiple batches
 \dontrun{

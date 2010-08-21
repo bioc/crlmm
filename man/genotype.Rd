@@ -9,12 +9,12 @@
 	Preprocessing and genotyping of Affymetrix arrays.	
 }
 \usage{
-genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =
-0.1, verbose = TRUE, seed = 1, sns, copynumber =TRUE, probs =
-rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
-gender = NULL, returnParams = TRUE, badSNP = 0.7)
+genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
+         verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3),
+         DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
+         gender = NULL, returnParams = TRUE, badSNP = 0.7)
 
-genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbose = TRUE, seed = 1, sns, copynumber = TRUE, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}
@@ -26,7 +26,6 @@ genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbo
   \item{verbose}{  Logical.  Whether to print descriptive messages during processing.}
   \item{seed}{ Seed to be used when sampling. Useful for reproducibility}
   \item{sns}{The sample identifiers.  If missing, the default sample names are \code{basename(filenames)}}
-  \item{copynumber}{ Whether to quantile normalize the nonpolymorphic probes.  If TRUE, the quantile normalized intensities for nonpolymorphic markers are included in the 'A' matrix.}
   \item{probs}{'numeric' vector with priors for AA, AB and BB.}
   \item{DF}{'integer' with number of degrees of freedom to use with t-distribution.}
   \item{SNRMin}{'numeric' scalar defining the minimum SNR used to filter
@@ -42,17 +41,12 @@ genotypeLD(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps = 0.1, verbo
 \details{
 
 	For large datasets it is important to utilize the large data
-	support by installing and loading the ff package before
-	calling the genotype or genotypeLD function.
-
-	Currently, two functions are provided for preprocessing and
-	genotyping Affymetrix platforms: genotype and genotypeLD. For
-	small datasets, genotype and genotypeLD are identical.  For
-	large datasets, genotypeLD provides large data support (via ff)
-	and permits the use of clusters or multiple cores (via snow
-	package) to speed up genotyping (similar to \code{crlmm2}).
-	The \code{genotype} function will be phased out in the future
-	and replaced by \code{genotypeLD}.
+	support by installing and loading the ff package before calling
+	the \code{genotype} function. In previous versions of the
+	\code{crlmm} package, we useed different functions for
+	genotyping depending on whether the ff package is loaded, namely
+	\code{genotype} and \code{genotype2}.  The \code{genotype}
+	function now handles both instances.
 
 }
 
@@ -89,19 +83,19 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
 
+  ## Note: one would need at least 10 CEL files for copy number estimation
   ## To use less RAM, specify a smaller argument to ocProbesets
   ocProbesets(50e3)
-  (cnSet <- genotypeLD(cels, cdfName="genomewidesnp6",
-  copynumber=TRUE))
+  batch <- as.factor(rep("A", length(cels)))
+  (cnSet <- genotype(cels, cdfName="genomewidesnp6"))
 
   dim(cnSet)
   table(isSnp(cnSet))
 
 ## The above is a trivial example.  Typically you may have a large
 ##    number of cel files, many of which were processed at different
-##    times. For such datasets, it is important to set a batch
-##    variable.  If not specified, the scan date of the file is used
-##    as the batch variable.  
+##    times. For such datasets, it is important to specify a batch
+##    variable.  
       batch(cnSet)
       protocolData(cnSet)$ScanDate
 }

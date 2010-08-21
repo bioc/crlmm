@@ -2428,7 +2428,7 @@ shrinkSummary <- function(object,
 		is.annotated <- !is.na(chromosome(object))
 		is.X <- chromosome(object) == 23
 		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-		if(is.lds) require(ff)
+		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	summaryFxn <- function(type){
@@ -2484,7 +2484,7 @@ genotypeSummary <- function(object,
 		is.annotated <- !is.na(chromosome(object))
 		is.X <- chromosome(object) == 23
 		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-		if(is.lds) stopifnot(isPackagedLoaded("ff"))
+		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	summaryFxn <- function(type){
@@ -2786,7 +2786,7 @@ estimateCnParameters <- function(object,
 		is.annotated <- !is.na(chromosome(object))
 		is.X <- chromosome(object) == 23
 		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-		if(is.lds) require(ff)
+		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		CHR.X <- ifelse(type[[1]] %in% c("X.SNP", "X.NP"), TRUE, FALSE)
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}

@@ -321,34 +321,34 @@ setReplaceMethod("flags", signature=signature(object="CNSet", value="ff_matrix")
 ##	ellipse.CNSet(x, copynumber, batch, ...)
 ##})
 
-ACN.X <- function(object, allele, i, j){
-	acn <- list()
-	batches <- unique(batch(object)[j])
-	for(k in seq_along(batches)){
-		l <- match(batches[k], bns)
-		nuA <- nuA(object)[ii, l]
-		nuB <- nuB(object)[ii, l]
-		phiA <- phiA(object)[ii, l]
-		phiB <- phiB(object)[ii, l]
-		phiPrimeA <- phiPrimeA(object)[ii, l]
-		phiPrimeB <- phiPrimeB(object)[ii, l]
-		if(all(is.na(phiPrimeA))){
-			I <- allele(object, allele)[ii, j]
-			if(allele=="A") acn[[k]] <- 1/phiA*(I - nuA)
-			if(allele=="B") acn[[k]] <- 1/phiB*(I - nuB)
-		} else {
-			A <- A(object)[ii, j]
-			B <- B(object)[ii, j]
-			phistar <- phiPrimeB/phiA
-			tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
-			cb <- tmp/(1-phistar*phiPrime/phiB)
-			ca <- A-nuA-phiPrimeA*cb/phiA
-			if(allele=="A") acn[[k]] <- ca
-			if(allele=="B") acn[[k]] <- cb
-		}
-	}
-	return(acn)
-}
+##ACN.X <- function(object, allele, i, j){
+##	acn <- list()
+##	batches <- unique(batch(object)[j])
+##	for(k in seq_along(batches)){
+##		l <- match(batches[k], bns)
+##		nuA <- nuA(object)[ii, l]
+##		nuB <- nuB(object)[ii, l]
+##		phiA <- phiA(object)[ii, l]
+##		phiB <- phiB(object)[ii, l]
+##		phiPrimeA <- phiPrimeA(object)[ii, l]
+##		phiPrimeB <- phiPrimeB(object)[ii, l]
+##		if(all(is.na(phiPrimeA))){
+##			I <- allele(object, allele)[ii, j]
+##			if(allele=="A") acn[[k]] <- 1/phiA*(I - nuA)
+##			if(allele=="B") acn[[k]] <- 1/phiB*(I - nuB)
+##		} else {
+##			A <- A(object)[ii, j]
+##			B <- B(object)[ii, j]
+##			phistar <- phiPrimeB/phiA
+##			tmp <- (B-nuB - phistar*A + phistar*nuA)/phiB
+##			cb <- tmp/(1-phistar*phiPrime/phiB)
+##			ca <- A-nuA-phiPrimeA*cb/phiA
+##			if(allele=="A") acn[[k]] <- ca
+##			if(allele=="B") acn[[k]] <- cb
+##		}
+##	}
+##	return(acn)
+##}
 
 
 ACN <- function(object, allele, i , j){
@@ -421,7 +421,7 @@ setMethod("CB", signature=signature(object="CNSet"),
 		  return(cb)
 	  })
 
-totalCopyNumber <- function(object, ...){
+totalCopynumber <- function(object, ...){
 	message("copy number at nonpolymorphic probes is not currently available")
 	ca <- CA(object, ...)
 	cb <- CB(object, ...)
