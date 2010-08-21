@@ -29,7 +29,7 @@ importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
-		  "A<-", "B<-", open, close, lM, "lM<-")
+		  "A<-", "B<-", open, close, lM, "lM<-", flags, "flags<-")
 
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)

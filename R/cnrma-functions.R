@@ -761,7 +761,7 @@ crlmmCopynumberLD <- function(object,
 		 neededPkgs="crlmm")
 	return(object)
 }
-yycrlmmCopynumber2 <- crlmmCopynumberLD
+crlmmCopynumber2 <- crlmmCopynumberLD
 
 fit.lm1 <- function(idxBatch,
 		    snpBatches,
