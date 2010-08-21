@@ -57,6 +57,7 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf)
 
 exportClasses(CNSetLM, ffdf, list)
 exportMethods(open, "[", show, lM, lines, nu, phi, corr, sigma2, tau2)
+exportMethods(CA, CB)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
@@ -73,8 +74,9 @@ export(crlmm,
        crlmmCopynumber2, crlmmCopynumberLD)
 export(constructIlluminaCNSet)
 export(linesCNSetLM)
-export(linearModel.noweights, computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
+export(computeCN, fit.lm1, fit.lm2, fit.lm3, fit.lm4, construct,
        dqrlsWrapper, nuphiAllele)
+export(computeCopynumber)
 
 
 

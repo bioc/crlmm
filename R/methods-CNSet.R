@@ -93,7 +93,7 @@ setMethod("computeCopynumber", "CNSet",
 				    THR.NU.PHI=THR.NU.PHI,
 				    thresholdCopynumber=thresholdCopynumber)
 	bias.adj <- cnOptions[["bias.adj"]]
-	if(bias.adj & all(is.na(nu(object, "A")[, 1])){
+	if(bias.adj & all(is.na(fData(object)$nuA_1))){
 		cnOptions[["bias.adj"]] <- FALSE
 	}
 	object <- computeCopynumber.CNSet(object, cnOptions)				
@@ -237,3 +237,11 @@ setMethod("corr", c("CNSetLM", "character"), function(object, allele){
 	return(res)
 })
 
+setMethod("CB", "CNSet", function(object){
+	##assayDataElement(object, "CB")
+	browser()
+})
+setMethod("CA", "CNSet", function(object) {
+	browser()
+	##assayDataElement(object, "CA")
+})

@@ -406,32 +406,6 @@ fit.wls <- function(allele, Ystar, W, Ns, autosome=TRUE){
 	return(betahat)
 }
 
-## linear regression without weights -- design matrix is same for all snps
-linearModel.noweights <- function(allele, Ystar, W, Ns){
-	complete <- rowSums(is.na(W)) == 0 
-	if(any(!is.finite(W))){## | any(!is.finite(V))){
-		i <- which(rowSums(!is.finite(W)) > 0)
-		stop("Possible zeros in the within-genotype estimates of the spread (vA, vB). ")
-	}
-	NOHET <- mean(Ns[, 2], na.rm=TRUE) < 0.05
-	if(missing(allele)) stop("must specify allele")
-	if(allele == "A") X <- cbind(1, 2:0) else X <- cbind(1, 0:2)
-	if(NOHET) X <- X[-2, ] ##more than 1 X chromosome, but all homozygous		
-	##How to quickly generate Xstar, Xstar = diag(W) %*% X
-	Xstar <- apply(W, 1, generateX, X)
-	IXTX <- apply(Xstar, 2, generateIXTX, nrow=nrow(X))
-	betahat <- matrix(NA, 2, nrow(Ystar))
-	ses <- matrix(NA, 2, nrow(Ystar))
-	for(i in 1:nrow(Ystar)){
-		betahat[, i] <- crossprod(matrix(IXTX[, i], ncol(X), ncol(X)), crossprod(matrix(Xstar[, i], nrow=nrow(X)), Ystar[i, ]))
-		ssr <- sum((Ystar[i, ] - matrix(Xstar[, i], nrow(X), ncol(X)) %*% matrix(betahat[, i], ncol(X), 1))^2)
-		ses[, i] <- sqrt(diag(matrix(IXTX[, i], ncol(X), ncol(X)) * ssr))
-	}
-	nu <- betahat[1, ]
-	phi <- betahat[2, ]
-	return(list(nu, phi))
-}
-
 ##nuphiAlleleX <- function(allele, Ystar, W, Ns, chrX=FALSE){
 ##	complete <- rowSums(is.na(W)) == 0 
 ##	if(any(!is.finite(W))){## | any(!is.finite(V))){
@@ -1865,7 +1839,7 @@ nonpolymorphic <- function(object, cnOptions, tmp.objects){
 			nuA <- getParam(object, "nuA", batch)
 			phiA <- getParam(object, "phiA", batch)
 		}
-		CA(object)[!isSnp(object), ] <- 1/phiA[!isSnp(object)]*(A - nuA[!isSnp(object)])
+		##CA(object)[!isSnp(object), ] <- 1/phiA[!isSnp(object)]*(A - nuA[!isSnp(object)])
 		sig2A <- getParam(object, "sig2A", batch)
 		sig2A[!isSnp(object)] <- rowMAD(log2(A*normal), na.rm=TRUE)^2
 		object <- pr(object, "sig2A", batch, sig2A)
