@@ -139,13 +139,13 @@ to small to be used for copy number estimation). We wrap the function
 Sweaving after the initial batch job.
 
 <<genotype>>=
-gtSet <- checkExists("gtSet.assayData_matrix",
+gtSet.tmp <- checkExists("gtSet.assayData_matrix",
 		     .path=outdir,
 		     .FUN=genotype,
 		     filenames=celFiles[1:5],
 		     cdfName=cdfName,
 		     batch=batch[1:5])
-}
+rm(gtSet.tmp); gc()
 @
 
 A more memory efficient approach to preprocessing and genotyping is
@@ -177,9 +177,9 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 	gtSet <- checkExists("gtSet",
 			     .path=outdir,
 			     .FUN=genotypeLD,
-			     filenames=celFiles,
+			     filenames=celFiles[1:200],
 			     cdfName=cdfName,
-			     batch=batch)
+			     batch=batch[1:200])
 	class(calls(gtSet))
 }
 @
@@ -243,35 +243,46 @@ At nonpolymorphic loci, either the 'CA' or totalCopynumber method can
 be used to obtain total copy number.
 
 <<ca>>=
-cn.nonpolymorphic <- CA(obj, i=which(!isSnp(obj)))
+cn.nonpolymorphic <- CA(cnSet, i=which(!isSnp(obj)))
 @
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
 ##cn <- copyNumber(x)
-cn <- totalCopyNumber(x, sample(1:nrow(x), 1e4), 1:5)
+cn <- totalCopyNumber(cnSet, sample(1:nrow(cnSet), 1e4), 1:5)
 apply(cn, 2, median, na.rm=TRUE)
 @
 
-The above estimates can be plotted versus physical position.
+The above estimates can be plotted versus physical position. Accessors
+for physical position and chromosome are also provided. In the
+following codechunk we extract the position and chromosome for the
+first 10 markers in the \Robject{cnSet} object.
+
+<<fdAccessors>>=
+position(cnSet)[1:10]
+chromosome(cnSet)[1:10]
+@
 
 
 \section{The CNSet container}
 
 The objects returned by the \Rfunction{genotype} and
 \Rfunction{crlmmCopynumber} have assay data elements that are pointers
-to \Robject{ff} objects stored in the directory \Robject{outdir}.  The
+to \Robject{ff} objects stored in the directory \Robject{outdir}.  Had
+we not loaded the \Rpackage{ff} prior to running these functions, the
+\Robject{AssayData} elements would be ordinary matrices, though the
+RAM required for running the algorithm would be substantial. The
 functions \Rfunction{open} and \Rfunction{close} open and close the
 connections to the \Robject{assayData} elements. Subsetting an
-\Robject{ff} object pulls the data from disk into memory and should
-therefore be used with caution. In particular, subsetting the
-\Robject{gtSet} would subset each element in the \Robject{assayData}
-slot, returning an object of the same class but with
-\Robject{assayData} elements that are matrices.  Such an operation can
-be exceedingly slow when performed over a network and require
-subsantial RAM.  The preferred approach is to extract only the assay
-data element that is needed. In the example below, we extract the
-genotype calls for the the first 50 samples.
+\Robject{ff} object pulls the data from disk into memory and should be
+used with caution. In particular, subsetting the \Robject{gtSet} would
+subset each element in the \Robject{assayData} slot, returning an
+object of the same class but with \Robject{assayData} elements that
+are matrices.  Such an operation can be exceedingly slow when
+performed over a network and require subsantial RAM.  The preferred
+approach is to extract only the assay data element that is needed. In
+the example below, we extract the genotype calls for the the first 50
+samples.
 
 <<check>>=
 dims(cnSet)
@@ -294,8 +305,6 @@ slot can be listed as follows.
 <<batchStatistics>>=
 assayDataElementNames(batchStatistics(cnSet))
 @
-
-
 
 Note that for the Affymetrix 6.0 platform the assay data elements each
 have a row dimension corresponding to the total number of polymorphic
@@ -327,74 +336,43 @@ posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet)),
 posterior.prob2 <- p2i(snpCallProbability(cnSet)[rows, cols])
 @
 
-Next, we obtain locus-level estimates of copy number.
-
-<<cn.ff, echo=FALSE, eval=FALSE>>=
-rm(cnSet); gc()
-ocProbesets(75e3)
-##ff objects
-system.time(cnSet2 <- crlmmCopynumber2(cnSet2))
-save(cnSet2, file=file.path(outdir, "cnSet2.rda"))
-@
-
-<<timings, eval=FALSE>>=
-tryCatch(print(paste("Time for matrix version:", time1)), error=function(e) print("timing for CN estimation not available"))
-tryCatch(print(paste("Time for ff version:", time2)), error=function(e) print("timing for CN estimation not available"))
-rm(cnSet2); gc()
-@
-
-
-\section{Accessors}
-
-For the remainder of this vignette, we illustrate accessors and
-visualizations using the sample object provided in the
-\Rpackage{crlmm} package.
-
-<<sampleset>>=
-data(sample.CNSetLM)
-x <- sample.CNSetLM
-@
-
-
-\subsection{Quantile-normalized intensities}
-
 Accessors for the quantile normalized intensities for the A allele at
 polymorphic loci:
 
 <<accessors>>=
-snp.index <- which(isSnp(x))
-np.index <- which(!isSnp(x))
-a <- (A(x))[snp.index, ]
+snp.index <- which(isSnp(cnSet))
+np.index <- which(!isSnp(cnSet))
+a <- (A(cnSet))[snp.index, ]
 dim(a)
 @
 
 The extra set of parentheses surrounding \Robject{A(cnSet2)} above is
 added to emphasize the appropriate order of operations. Subsetting the
-entire \Robject{x} object in the following code should be avoided for
-large datasets.
+entire \Robject{cnSet} object in the following, unevaluated codechunk
+should be avoided for large datasets.
 
 <<eval=FALSE>>=
-a <- A(x[snp.index, ])
+a <- A(cnSet[snp.index, ])
 @
 
-The quantile-normalized intensities for nonpolymorphic loci are obtained
-by:
+The quantile-normalized intensities for nonpolymorphic loci are
+obtained by:
 
 <<>>=
-npIntensities <- (A(x))[np.index, ]
+npIntensities <- (A(cnSet))[np.index, ]
 @
 
 Quantile normalized intensities for the B allele at polymorphic loci:
 
 <<B.polymorphic>>=
-b.snps <- (B(x))[snp.index, ]
+b.snps <- (B(cnSet))[snp.index, ]
 @
 
 Note that NAs are recorded in the 'B' assay data element for
 nonpolymorphic loci:
 
 <<B.NAs>>=
-all(is.na((B(x))[np.index, ]))
+all(is.na((B(cnSet))[np.index, ]))
 @
 
 <<clean, echo=FALSE>>=
@@ -405,11 +383,11 @@ rm(b.snps, a, npIntensities); gc()
 
 Genotype calls:
 <<genotypes>>=
-genotypes <- (snpCall(x))[snp.index, ]
+genotypes <- (snpCall(cnSet))[snp.index, ]
 @
 Confidence scores of the genotype calls:
 <<confidenceScores>>=
-genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10], ])
+genotypeConf <- integerScoreToProbability(snpCallProbability(cnSet)[snp.index[1:10], ])
 @
 
 \paragraph{\Robject{CopyNumberSet}: allele-specific copy number}
@@ -421,18 +399,18 @@ genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10],
 Information on physical position and chromosome can be accessed as follows:
 
 <<positionChromosome>>=
-xx <- position(x)
+xx <- position(cnSet)
 yy <- chromosome(x)
 @
 
 Parameters from the linear model used to estimate copy number are
-stored in the slot \Robject{lM}.
+stored in the slot \Robject{batchStatistics}.
 
 <<copynumberParameters>>=
-names(lM(x))
-dim(lM(x)[[1]])
+assayDataElementNames(batchStatistics(cnSet))
 @
 
+TODO: Describe accessors for batch-level summaries.
 
 
 \section{Suggested visualizations}
@@ -442,7 +420,7 @@ dim(lM(x)[[1]])
 A histogram of the signal to noise ratio for the HapMap samples:
 
 <<plotSnr, fig=TRUE, include=FALSE>>=
-hist(x$SNR, xlab="SNR", main="", breaks=25)
+hist(cnSet$SNR, xlab="SNR", main="", breaks=25)
 @
 
 \begin{figure}
@@ -463,13 +441,13 @@ area of research.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1, mar=c(4, 5, 4, 2))
-plot(position(x), copyNumber(x)[, 1], pch=".",
+plot(position(cnSet), copyNumber(cnSet)[, 1], pch=".",
      cex=2, xaxt="n", col="grey20", ylim=c(0,4),
      ylab="copy number", xlab="physical position (Mb)",
-     main=paste(sampleNames(x)[1], ", CHR:", unique(chromosome(x))))
-points(position(x)[!isSnp(x)], copyNumber(x)[!isSnp(x), 1],
+     main=paste(sampleNames(cnSet)[1], ", CHR:", unique(chromosome(cnSet))))
+points(position(cnSet)[!isSnp(cnSet)], copyNumber(cnSet)[!isSnp(cnSet), 1],
        pch=".", cex=2, col="lightblue")
-axis(1, at=pretty(range(position(x))), labels=pretty(range(position(x)))/1e6)
+axis(1, at=pretty(range(position(cnSet))), labels=pretty(range(position(cnSet)))/1e6)
 @
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
@@ -526,59 +504,6 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE)
 Scatterplots of the A and B allele intensities (log-scale) can be
 useful for assessing the biallelic genotype calls.  This section of
 the vignette is currently under development.
-% The following code chunk is
-%displayed in Figure \ref{fig:prediction}.
-
-<<predictionRegions, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE>>=
-i <- snp.index[1]
-#plotCNSetLM=crlmm:::plotCNSetLM
-##trace(plotCNSetLM, browser)
-plot(i, x, copynumber=2)
-##myScatter <- function(object, add=FALSE, ...){
-##	A <- log2(A(object))
-##	B <- log2(B(object))
-##	if(!add){
-##		plot(A, B, ...)
-##	} else{
-##		points(A, B, ...)
-##	}
-##}
-##index <- which(isSnp(cnSet))[1:9]
-##xlim <- ylim <- c(6.5,13)
-##par(mfrow=c(3,3), las=1, pty="s", ask=FALSE, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
-##for(i in index){
-##	gt <- calls(cnSet)[i, ]
-##	if(i != 89){
-##		myScatter(cnSet[i, ],
-##			  pch=pch,
-##			  col=colors[snpCall(cnSet)[i, ]],
-##			  bg=colors[snpCall(cnSet)[i, ]], cex=cex,
-##			  xlim=xlim, ylim=ylim)
-##		mtext("A", 1, outer=TRUE, line=1)
-##		mtext("B", 2, outer=TRUE, line=1)
-##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="C", lwd=2, col="black")
-##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="Y", lwd=2, col="grey50")
-##	} else {
-##		plot(0:1, xlim=c(0,1), ylim=c(0,1), type="n", xaxt="n", yaxt="n")
-##		legend("center",
-##		       legend=c("CN = 2, CEPH", "CN = 2, Yoruban"),
-##		       col=c("black", "grey50"), lwd=2, bty="n")
-##	}
-##}
-@
-
-%\begin{figure}
-%  \centering
-%  \includegraphics[width=0.8\textwidth]{copynumber-predictionRegions}
-%  \caption{\label{fig:prediction} Scatterplots of A versus B
-%    intensities.  Each panel displays a single SNP. The ellipses
-%    indicate the 95\% probability region for copy number 2 for the CEPH
-%    (black) and Yoruban subjects (grey).}
-%\end{figure}
-
-%\section{Details for the copy number estimation procedure}
-%
-%See the technical report \citep{Scharpf2009}.
 
 \section{Session information}
 <<sessionInfo, results=tex>>=

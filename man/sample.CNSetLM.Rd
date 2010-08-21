@@ -31,28 +31,23 @@ data(sample.CNSetLM)
 cnSet <- as(sample.CNSetLM, "CNSet")
 all(isCurrent(cnSet)) ## is the cnSet object current?
 
-## updating class CNSetLM using ff objects
-library(ff)
-path <- system.file("extdata", package="crlmm")
-ldPath(path)
-data(sample.CNSetLMff)
-cnSetff <- as(sample.CNSetLMff, "CNSet")
-all(isCurrent(cnSet))
-
-## a bigger object with multiple batches
 \dontrun{
-	outdir <- "/amber1/scratch/rscharpf/jss/hapmap2"
-	load(file.path(outdir, "container.rda"))
-	container <- object; rm(object); gc()
-	container2 <- as(container, "CNSet")
-	all(isCurrent(container2))
-	## test replacement methods, subset methods
-	table(batch(container2))
-	##generates warning ... would need open, close in the '[' method
-	invisible(open(nuA(container2)))
-	xx <- nu(container2, "A")[1:5, ]
-	nuA(container2)[1:5, ] <- xx
-	invisible(close(nuA(container2)))
+	## updating class CNSetLM using ff objects
+	## a bigger object with multiple batches
+	if(require(ff)){
+		outdir <- "/amber1/scratch/rscharpf/jss/hapmap2"
+		load(file.path(outdir, "container.rda"))
+		container <- object; rm(object); gc()
+		container2 <- as(container, "CNSet")
+		all(isCurrent(container2))
+		## test replacement methods, subset methods
+		table(batch(container2))
+		##generates warning ... would need open, close in the '[' method
+		invisible(open(nuA(container2)))
+		xx <- nu(container2, "A")[1:5, ]
+		nuA(container2)[1:5, ] <- xx
+		invisible(close(nuA(container2)))
+	}
 }
 ## --------------------------------------------------
 ## accessors for the feature-level info

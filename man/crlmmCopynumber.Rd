@@ -98,6 +98,11 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
     \code{MIN.NU} and \code{MIN.PHI} are ignored. When TRUE, background
     (nu) and slope (phi) coefficients below MIN.NU and MIN.PHI are set
     to MIN.NU and MIN.PHI, respectively.}
+
+  \item{type}{ Character string vector that must be one or more of
+    "SNP", "NP", "X.SNP", or "X.NP". Type refers to a set of
+    markers. See details below}
+    
  }
   
  \references{
@@ -132,6 +137,19 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
 	The functions \code{crlmmCopynumberLD} and
 	\code{crlmmCopynumber2} have been deprecated.
+
+	The argument \code{type} can be used to specify a subset of
+	markers for which the copy number estimation algorithm is run.
+	One or more of the following possible entries are valid: 'SNP',
+	'NP', 'X.SNP', and 'X.NP'.
+
+	'SNP' referers to autosomal SNPs.
+
+	'NP' refers to autosomal nonpolymorphic markers.
+
+	'X.SNP' refers to SNPs on chromosome X.
+
+	'X.NP' refers to autosomes on chromosome X.
 
 }
 \author{R. Scharpf}

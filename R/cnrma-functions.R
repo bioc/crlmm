@@ -208,7 +208,10 @@ genotype <- function(filenames,
 	close(callSet)
 	return(callSet)
 }
-genotypeLD <- genotype2 <- genotype
+genotype2 <- function(){
+	.Defunct(msg="The genotype2 function has been deprecated. The function genotype should be used instead.  genotype will support large data using ff provided that the ff package is loaded.")
+}
+genotypeLD <- genotype2
 
 rowCovs <- function(x, y, ...){
 	notna <- !is.na(x)
