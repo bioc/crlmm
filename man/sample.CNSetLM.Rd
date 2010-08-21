@@ -31,6 +31,45 @@ data(sample.CNSetLM)
 cnSet <- as(sample.CNSetLM, "CNSet")
 all(isCurrent(cnSet)) ## is the cnSet object current?
 
+library(crlmm)
+library(ff)
+outdir <- "~/madman/Rpacks/crlmm/inst/extdata"
+ldPath(outdir)
+data(sample.CNSetLMff)
+cnSetff <- as(sample.CNSetLMff, "CNSet")
+all(isCurrent(cnSetff))
+
+## a bigger object with multiple batches
+\dontrun{
+outdir <- "/amber1/scratch/rscharpf/jss/hapmap2"
+load(file.path(outdir, "container.rda"))
+container <- object; rm(object)
+container2 <- as(container, "CNSet")
+all(isCurrent(container2))
+## test replacement methods, subset methods
+table(batch(container2))
+##generates warning ... would need open, close in the '[' method
+invisible(open(nuA(container2)))
+xx <- nu(container2, "A")[1:5, ]
+nuA(container2)[1:5, ] <- xx
+invisible(close(nuA(container2)))
+}
+
+
+
+
+nms <- names(lM(sample.CNSetLMff))
+##names must be tau2A, tau2B, ...
+nms2 <- sapply(nms, function(x) strsplit(x, "\\.1")[[1]][[1]], USE.NAMES=FALSE)
+names(sample.CNSetLMff@lM) <- nms2
+cnSetff <- as(sample.CNSetLMff, "CNSet")
+## try replacement method without warning
+nuA(cnSetff)[1:10, ] <- matrix(1:10, 10, 1)
+
+## try subset method without warning
+
+
+
 ## information on the features
 fvarLabels(cnSet)
 ##

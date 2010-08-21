@@ -29,7 +29,6 @@ Collate: AllGenerics.R
 	 AllClasses.R
 	 methods-CNSet.R
 	 methods-eSet.R
-	 methods-LinearModelParameter.R
          methods-SnpSuperSet.R
          cnrma-functions.R
          crlmm-functions.R

@@ -16,7 +16,6 @@ linearParamElementReplace <- function(obj, elt, value) {
     obj
 }
 
-
 setMethod("nuA", signature=signature(object="CNSet"), function(object) nu(object, "A"))
 setMethod("nuB", signature=signature(object="CNSet"), function(object) nu(object, "B"))
 setMethod("phiA", signature=signature(object="CNSet"), function(object) phi(object, "A"))
@@ -29,60 +28,75 @@ setMethod("corrAA", signature=signature(object="CNSet"), function(object) corr(o
 setMethod("corrAB", signature=signature(object="CNSet"), function(object) corr(object, "AB"))
 setMethod("corrBB", signature=signature(object="CNSet"), function(object) corr(object, "BB"))
 
-setReplaceMethod("nuA", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("nuA", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "nuA", value)
 	  })
 
-setReplaceMethod("nuB", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("nuB", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "nuB", value)
 })
 
-setReplaceMethod("phiA", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("phiA", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "phiA", value)
 })
 
-setReplaceMethod("phiB", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("phiB", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "phiB", value)
 })
 
-setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "sig2A", value)
 })
 
-setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "sig2B", value)
 })
 
-setReplaceMethod("tau2A", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("tau2A", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "tau2A", value)
 })
 
-setReplaceMethod("tau2B", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("tau2B", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "tau2B", value)
 })
 
-setReplaceMethod("corrAA", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("corrAA", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "corrAA", value)
 })
 
-setReplaceMethod("corrAB", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("corrAB", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "corrAB", value)
 })
 
-setReplaceMethod("corrBB", signature=signature(object="CNSet", value="matrix"),
+setReplaceMethod("corrBB", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "corrBB", value)
 })
+
+setReplaceMethod("flags", signature=signature(object="CNSet", value="ff_or_matrix"),
+		 function(object, value){
+			 linearParamElementReplace(object, "flags", value)
+})
+##setReplaceMethod("flags", signature=signature(object="CNSet", value="ff_matrix"),
+##		 function(object, value){
+##			 linearParamElementReplace(object, "flags", value)
+##})
+
+ setReplaceMethod("numberGenotype",
+		  signature=signature(object="CNSet", value="ff_or_matrix"),
+		 function(object, value, batchname){
+			 assayDataElementReplace(object, batchname, value)
+		 })
 
 
 ##setMethod("ellipse", "CNSet", function(x, copynumber, batch, ...){

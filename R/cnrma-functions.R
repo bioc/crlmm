@@ -80,8 +80,9 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 		protocolData <- annotatedDataFrameFrom(A(cnSet), byrow=FALSE)
 	}
 	rownames(pData(protocolData)) <- sns
-	protocolData(callSet) <- protocolData
+	protocolData(cnSet) <- protocolData
 	featureData(cnSet) <- featureData
+	featureNames(cnSet) <- featureNames(featureData)
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
@@ -179,7 +180,7 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 
 
 ##genotypeLargeData
-genotypeLD <- function(filenames,
+genotype <- function(filenames,
 		       cdfName,
 		       batch,
 		       mixtureSampleSize=10^5,
@@ -196,109 +197,125 @@ genotypeLD <- function(filenames,
 		       gender=NULL,
 		       returnParams=TRUE,
 		       badSNP=0.7){
-	if(!isPackageLoaded("ff")) stop("Must load package 'ff'")
+	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(!copynumber){
-		callSet <- crlmm2(filenames=filenames,
-				  cdfName=cdfName,
-				  mixtureSampleSize=mixtureSampleSize,
-				  eps=eps,
-				  verbose=verbose,
-				  sns=sns,
-				  probs=probs,
-				  DF=DF,
-				  SNRMin=SNRMin,
-				  recallMin=recallMin,
-				  recallRegMin=recallRegMin,
-				  gender=gender,
-				  returnParams=returnParams,
-				  badSNP=badSNP)
+		FUN <- ifelse(is.lds, "crlmm2", "crlmm")
+		callSet <- FUN(filenames=filenames,
+			       cdfName=cdfName,
+			       mixtureSampleSize=mixtureSampleSize,
+			       eps=eps,
+			       verbose=verbose,
+			       sns=sns,
+			       probs=probs,
+			       DF=DF,
+			       SNRMin=SNRMin,
+			       recallMin=recallMin,
+			       recallRegMin=recallRegMin,
+			       gender=gender,
+			       returnParams=returnParams,
+			       badSNP=badSNP)
 		return(callSet)
 	}
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	if(missing(sns)) sns <- basename(filenames)
-	## callSet contains potentially very big matrices
 	callSet <- construct(filenames=filenames,
 			     cdfName=cdfName,
 			     copynumber=TRUE,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-
+	open(callSet)
 	mixtureParams <- matrix(NA, 4, length(filenames))
-	snp.index <- which(isSnp(callSet)==1)
-	snprmaRes <- snprma2(filenames=filenames,
-			     mixtureSampleSize=mixtureSampleSize,
-			     fitMixture=TRUE,
-			     eps=eps,
-			     verbose=verbose,
-			     seed=seed,
-			     cdfName=cdfName,
-			     sns=sns)
-	if(verbose) message("Finished preprocessing.")
-	open(snprmaRes[["A"]])
-	open(snprmaRes[["B"]])
-	open(snprmaRes[["SNR"]])
-	open(snprmaRes[["SKW"]])
-	open(snprmaRes[["mixtureParams"]])
-	if(verbose) message("Updating elements of callSet")
-##	bb = ocProbesets()*ncol(A)*8
-##	ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]], BATCHBYTES=bb)
-##	ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]], BATCHBYTES=bb)
-	##batches <- splitIndicesByLength(1:nrow(snprmaRes[["A"]]), ocProbesets())
-	AA <- A(callSet)
-	BB <- B(callSet)
-	for(j in 1:ncol(callSet)){
-		AA[snp.index, j] <- snprmaRes[["A"]][, j]
-		BB[snp.index, j] <- snprmaRes[["B"]][, j]
+	is.snp <- isSnp(callSet)
+	snp.index <- which(is.snp)
+	FUN <- ifelse(is.lds, "snprma2", "snprma")
+	snprmaFxn <- function(FUN,...){
+		switch(FUN,
+		       snprma=snprma(...),
+		       snprma2=snprma2(...))
 	}
-	if(verbose) message("Finished updating elements of callSet")
-	stopifnot(identical(featureNames(callSet)[snp.index], snprmaRes$gns))
+	snprmaRes <- snprmaFxn(FUN, filenames=filenames,
+			       mixtureSampleSize=mixtureSampleSize,
+			       fitMixture=TRUE,
+			       eps=eps,
+			       verbose=verbose,
+			       seed=seed,
+			       cdfName=cdfName,
+			       sns=sns)
+	if(verbose) message("Finished preprocessing.")
+	if(is.lds){
+		open(snprmaRes[["A"]])
+		open(snprmaRes[["B"]])
+		bb = ocProbesets()*ncol(A)*8
+		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]], BATCHBYTES=bb)
+		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]], BATCHBYTES=bb)
+	} else{
+		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
+		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
+	}
+##	stopifnot(identical(featureNames(callSet)[snp.index], snprmaRes$gns))
 	pData(callSet)$SKW <- snprmaRes$SKW
 	pData(callSet)$SNR <- snprmaRes$SNR
 	mixtureParams <- snprmaRes$mixtureParams
-	np.index <- which(isSnp(callSet) == 0)
-	cnrmaRes <- cnrma2(A=AA,
-			   filenames=filenames,
-			   row.names=featureNames(callSet)[np.index],
-			   cdfName=cdfName,
-			   sns=sns,
-			   seed=seed,
-			   verbose=verbose)
-	rm(cnrmaRes); ##gc()
-	## as.matrix needed when ffdf is used
-	tmp <- crlmmGT2(A=snprmaRes[["A"]],
-			B=snprmaRes[["B"]],
-			SNR=snprmaRes[["SNR"]],
-			mixtureParams=snprmaRes[["mixtureParams"]],
-			cdfName=cdfName,
-			row.names=NULL, ##featureNames(callSet),##[snp.index],
-			col.names=sampleNames(callSet),
-			probs=probs,
-			DF=DF,
-			SNRMin=SNRMin,
-			recallMin=recallMin,
-			recallRegMin=recallRegMin,
-			gender=gender,
-			verbose=verbose,
-			returnParams=returnParams,
-			badSNP=badSNP)
-	if(verbose) message("Leaving crlmmGT2")
-	open(tmp[["calls"]])
-	open(tmp[["confs"]])
-	##bb = ocProbesets()*ncol(A)*8
-	GT <- snpCall(callSet)
-	GTP <- snpCallProbability(callSet)
-	for(j in 1:ncol(callSet)){
-		GT[snp.index, j] <- tmp[["calls"]][, j]
-		GTP[snp.index, j] <- tmp[["confs"]][, j]
+	np.index <- which(!is.snp)
+	if(verbose) message("Normalizing nonpolymorphic markers")
+	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
+	## main purpose is to update 'alleleA'
+	cnrmaFxn <- function(FUN,...){
+		switch(FUN,
+		       cnrma=cnrma(...),
+		       cnrma2=cnrma2(...))
 	}
-##	ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
-##	ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
+	## consider passing only A for NPs.
+	AA <- cnrmaFxn(FUN, A=A(callSet),
+		       filenames=filenames,
+		       row.names=featureNames(callSet)[np.index],
+		       cdfName=cdfName,
+		       sns=sns,
+		       seed=seed,
+		       verbose=verbose)
+	if(!is.lds) A(callSet) <- AA
+	rm(AA)
+	FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
+	## genotyping
+	crlmmGTfxn <- function(FUN,...){
+		switch(FUN,
+		       crlmmGT2=crlmmGT2(...),
+		       crlmmGT=crlmmGT(...))
+	}
+	tmp <- crlmmGTfxn(FUN,
+			  A=snprmaRes[["A"]],
+			  B=snprmaRes[["B"]],
+			  SNR=snprmaRes[["SNR"]],
+			  mixtureParams=snprmaRes[["mixtureParams"]],
+			  cdfName=cdfName,
+			  row.names=NULL,
+			  col.names=sampleNames(callSet),
+			  probs=probs,
+			  DF=DF,
+			  SNRMin=SNRMin,
+			  recallMin=recallMin,
+			  recallRegMin=recallRegMin,
+			  gender=gender,
+			  verbose=verbose,
+			  returnParams=returnParams,
+			  badSNP=badSNP)
+	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
+	if(is.lds){
+		open(tmp[["calls"]])
+		open(tmp[["confs"]])
+		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
+		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
+	} else {
+		calls(callSet)[snp.index, ] <- tmp[["calls"]]
+		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
+	}
 	callSet$gender <- tmp$gender
+	close(callSet)
 	return(callSet)
 }
-genotype <- genotype2 <- genotypeLD
+genotypeLD <- genotype2 <- genotype
 
 rowCovs <- function(x, y, ...){
 	notna <- !is.na(x)
@@ -763,11 +780,10 @@ crlmmCopynumberLD <- function(object,
 }
 crlmmCopynumber2 <- crlmmCopynumberLD
 
-fit.lm1 <- function(idxBatch,
-		    snpBatches,
+fit.lm1 <- function(strata.index,
+		    index.list,
 		    marker.index,
 		    object,
-		    Ns,
 		    batchSize,
 		    SNRMin,
 		    MIN.SAMPLES,
@@ -779,25 +795,26 @@ fit.lm1 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose,...){
 	if(isPackageLoaded("ff")) physical <- get("physical")
-	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
-	snps <- snpBatches[[idxBatch]]
-	batches <- split(seq(along=batch(object)), batch(object))
+	is.lds <- ifelse(is(calls(object), "ffdf") | is(calls(object), "ff_matrix"), TRUE, FALSE)
+	if(verbose) message("Probe stratum ", strata.index, " of ", length(index.list))
+	snps <- index.list[[strata.index]]
+	batches <- split(seq_along(batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-
 	open(object)
-	open(snpflags)
-##	open(normal)
-
 	corrAB <- corrBB <- corrAA <- sig2B <- sig2A <- tau2B <- tau2A <- matrix(NA, length(snps), length(unique(batch(object))))
 	flags <- nuA <- nuB <- phiA <- phiB <- corrAB
+	## should the 'normal' indicator
+	NORM <- 1
 
-##	normal.snps <- normal[snps, ]
+	Ns.names <- ls(numberGenotype(object))
+	batchnames <- batchNames(object)
 	GG <- as.matrix(calls(object)[snps, ])
 	CP <- as.matrix(snpCallProbability(object)[snps, ])
 	AA <- as.matrix(A(object)[snps, ])
 	BB <- as.matrix(B(object)[snps, ])
 	zzzz <- 1
 	for(k in batches){
+		this.batch <- unique(as.character(batch(object)[k]))
 		zzzz <- zzzz+1
 		G <- GG[, k]
 		##NORM <- normal.snps[, k]
@@ -816,7 +833,7 @@ fit.lm1 <- function(idxBatch,
 		vA <- shrink(vA, Ns, DF.PRIOR)
 		vB <- shrink(vB, Ns, DF.PRIOR)
 		##location and scale
-		J <- match(unique(batch(object)[k]), unique(batch(object)))
+		J <- match(unique(batch(object)[k]), batchnames)##unique(batch(object)))
 		##background variance for alleleA
 		taus <- applyByGenotype(log2(A), rowMAD, G)^2
 		tau2A[, J] <- shrink(taus[, 3, drop=FALSE], Ns[, 3], DF.PRIOR)
@@ -877,7 +894,6 @@ fit.lm1 <- function(idxBatch,
 		negB <- rowSums(muB < 0) > 0
 		flags[, J] <- rowSums(Ns == 0) > 0
 		##flags[, J] <- index[[1]] | index[[2]] | index[[3]] | rowSums(
-
 		## we're regressing on the medians using the standard errors (hence the division by N) as weights
 		##formerly coefs()
 		Np <- Ns
@@ -904,16 +920,20 @@ fit.lm1 <- function(idxBatch,
 		nuB[, J] <- res[1, ]
 		##phiB[, J] <- res[[2]]
 		phiB[, J] <- res[2, ]
-		if(THR.NU.PHI){
-			nuA[nuA[, J] < MIN.NU, J] <- MIN.NU
-			nuB[nuB[, J] < MIN.NU, J] <- MIN.NU
-			phiA[phiA[, J] < MIN.PHI, J] <- MIN.PHI
-			phiB[phiB[, J] < MIN.PHI, J] <- MIN.PHI
-		}
 ##		cA[, k] <- matrix((1/phiA[, J]*(A-nuA[, J])), nrow(A), ncol(A))
 ##		cB[, k] <- matrix((1/phiB[, J]*(B-nuB[, J])), nrow(B), ncol(B))
-		rm(G, A, B, NORM, wA, wB, YA,YB, res, negA, negB, Np, Ns)
+		jj <- match(this.batch, Ns.names)
+		numberGenotype(object, this.batch)[snps, ] <- Ns
+		rm(G, A, B, wA, wB, YA,YB, res, negA, negB, Np, Ns)
 		##gc()
+	}
+	nGt <- lapply(nGt, function(x){ colnames(x) <- c("AA", "AB", "BB"); return(x)})
+
+	if(THR.NU.PHI){
+		nuA[nuA < MIN.NU] <- MIN.NU
+		nuB[nuB < MIN.NU] <- MIN.NU
+		phiA[phiA < MIN.PHI] <- MIN.PHI
+		phiB[phiB < MIN.PHI] <- MIN.PHI
 	}
 ##	cA[cA < 0.05] <- 0.05
 ##	cB[cB < 0.05] <- 0.05
@@ -923,54 +943,30 @@ fit.lm1 <- function(idxBatch,
 ##	cB <- matrix(as.integer(cB*100), nrow(cB), ncol(cB))
 ##	CA(object)[snps, ] <- cA
 ##	CB(object)[snps, ] <- cB
-
-	snpflags[snps, ] <- flags
-	lapply(lM(object), open)
-
-	tmp <- physical(lM(object))$tau2A
-	tmp[snps, ] <- tau2A
-	lM(object)$tau2A <- tmp
-	tmp <- physical(lM(object))$tau2B
-	tmp[snps, ] <- tau2B
-	lM(object)$tau2B <- tmp
-	tmp <- physical(lM(object))$tau2B
-	tmp[snps, ] <- tau2B
-	lM(object)$tau2B <- tmp
-	tmp <- physical(lM(object))$sig2A
-	tmp[snps, ] <- sig2A
-	lM(object)$sig2A <- tmp
-	tmp <- physical(lM(object))$sig2B
-	tmp[snps, ] <- sig2B
-	lM(object)$sig2B <- tmp
-	tmp <- physical(lM(object))$nuA
-	tmp[snps, ] <- nuA
-	lM(object)$nuA <- tmp
-	tmp <- physical(lM(object))$nuB
-	tmp[snps, ] <- nuB
-	lM(object)$nuB <- tmp
-	tmp <- physical(lM(object))$phiA
-	tmp[snps, ] <- phiA
-	lM(object)$phiA <- tmp
-	tmp <- physical(lM(object))$phiB
-	tmp[snps, ] <- phiB
-	lM(object)$phiB <- tmp
-	tmp <- physical(lM(object))$corrAB
-	tmp[snps, ] <- corrAB
-	lM(object)$corrAB <- tmp
-	tmp <- physical(lM(object))$corrAA
-	tmp[snps, ] <- corrAA
-	lM(object)$corrAA <- tmp
-	tmp <- physical(lM(object))$corrBB
-	tmp[snps, ] <- corrBB
-	lM(object)$corrBB <- tmp
-
-	lapply(assayData(object), close)
-	lapply(lM(object), close)
-	TRUE
+	if(is.lds) lapply(lM(object), open)
+	flags(object)[snps, ] <- flags
+	tau2A(object) <- tau2A
+	tau2B(object) <- tau2B
+	sigma2A(object) <- sig2A
+	sigma2B(object) <- sig2B
+	nuA(object) <- nuA
+	nuB(object) <- nuB
+	phiA(object) <- phiA
+	phiB(object) <- phiB
+	corrAA(object) <- corrAA
+	corrBB(object) <- corrBB
+	corrAB(object) <- corrAB
+	if(is.lds) {
+		lapply(assayData(object), close)
+		lapply(lM(object), close)
+		return(TRUE)
+	} else{
+		return(object)
+	}
 }
 
-fit.lm2 <- function(idxBatch,
-		    snpBatches,
+fit.lm2 <- function(strata.index,
+		    index.list,
 		    marker.index,
 		    object,
 		    Ns,
@@ -985,8 +981,8 @@ fit.lm2 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose,...){
 	physical <- get("physical")
-	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
-	snps <- snpBatches[[idxBatch]]
+	if(verbose) message("Probe stratum ", strata.index, " of ", length(index.list))
+	snps <- index.list[[strata.index]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 
@@ -1078,8 +1074,8 @@ fit.lm2 <- function(idxBatch,
 }
 
 
-fit.lm3 <- function(idxBatch,
-		    snpBatches,
+fit.lm3 <- function(strata.index,
+		    index.list,
 		    marker.index,
 		    object,
 		    Ns,
@@ -1094,8 +1090,8 @@ fit.lm3 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose, ...){
 	physical <- get("physical")
-	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
-		snps <- snpBatches[[idxBatch]]
+	if(verbose) message("Probe stratum ", strata.index, " of ", length(index.list))
+		snps <- index.list[[strata.index]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 
@@ -1315,8 +1311,8 @@ fit.lm3 <- function(idxBatch,
 	TRUE
 }
 
-fit.lm4 <- function(idxBatch,
-		    snpBatches,
+fit.lm4 <- function(strata.index,
+		    index.list,
 		    marker.index,
 		    object,
 		    Ns,
@@ -1331,11 +1327,11 @@ fit.lm4 <- function(idxBatch,
 		    MIN.PHI,
 		    verbose, ...){
 	physical <- get("physical")
-	if(verbose) message("Probe stratum ", idxBatch, " of ", length(snpBatches))
+	if(verbose) message("Probe stratum ", strata.index, " of ", length(index.list))
 	open(object)
 	open(normal)
 	open(snpflags)
-	snps <- snpBatches[[idxBatch]]
+	snps <- index.list[[strata.index]]
 	batches <- split(seq(along=batch(object)), batch(object))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 	nuA <- phiA <- sig2A <- tau2A <- matrix(NA, length(snps), length(unique(batch(object))))
@@ -1478,7 +1474,7 @@ whichPlatform <- function(cdfName){
 	return(platform)
 }
 
-cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
+cnrma <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	if(missing(cdfName)) stop("must specify cdfName")
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
@@ -1486,24 +1482,48 @@ cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	if(verbose) message("Loading annotations for nonpolymorphic probes")
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
 	fid <- getVarInEnv("npProbesFid")
-	SKW <- initializeBigVector("crlmmSKW.NP-", length(filenames), "double")
-  	##A <- initializeBigMatrix("crlmmNP-", length(fid), length(filenames), "integer")
+
+	if(cdfName=="genomewidesnp6"){
+		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
+	}
+	if(cdfName=="genomewidesnp5"){
+		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
+	}
+	reference <- getVarInEnv("reference")
+	fid <- fid[match(row.names, names(fid))]
+	np.index <- match(row.names, rownames(A))
+	gns <- names(fid)
+	set.seed(seed)
+	idx2 <- sample(length(fid), 10^5)
+	for (k in seq_along(filenames)){
+		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
+		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
+	}
+	return(A)
+}
+
+cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
+	if(missing(cdfName)) stop("must specify cdfName")
+	pkgname <- getCrlmmAnnotationName(cdfName)
+	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
+	if (missing(sns)) sns <- basename(filenames)
 	sampleBatches <- splitIndicesByNode(seq(along=filenames))
 	if(verbose) message("Processing nonpolymorphic probes for ", length(filenames), " files.")
+	## updates A
 	ocLapply(sampleBatches,
 		 processCEL2,
 		 row.names=row.names,
 		 filenames=filenames,
 		 A=A,
-		 SKW=SKW,
 		 seed=seed,
 		 pkgname=pkgname,
 		 cdfName=cdfName,
 		 neededPkgs=c("crlmm", pkgname))
-	list(sns=sns, gns=row.names, SKW=SKW, cdfName=cdfName)
+	##list(sns=sns, gns=row.names, SKW=SKW, cdfName=cdfName)
+	return(A)
 }
 
-processCEL2 <- function(i, filenames, row.names, A, SKW, seed, cdfName, pkgname){
+processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
 	if(cdfName=="genomewidesnp6"){
 		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
 	}
@@ -1518,19 +1538,11 @@ processCEL2 <- function(i, filenames, row.names, A, SKW, seed, cdfName, pkgname)
 	gns <- names(fid)
 	set.seed(seed)
 	idx2 <- sample(length(fid), 10^5)
-	open(A)
-	open(SKW)
 	for (k in i){
 		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
-		x <- log2(y[idx2])
-		SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
-		rm(x)
 		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
-		rm(y)
 	}
-	close(A)
-	close(SKW)
-	TRUE
+	return(TRUE)
 }
 
 
@@ -2364,7 +2376,7 @@ imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
 ##}
 ##
 
-##bias1 <- function(idxBatch,
+##bias1 <- function(strata.index,
 ##		  snpBatches,
 ##		  index,
 ##		  object,
@@ -2376,7 +2388,7 @@ imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
 ##
 ##}
 
-##bias2 <- function(idxBatch,
+##bias2 <- function(strata.index,
 ##		  snpBatches,
 ##		  index,
 ##		  object,
@@ -2387,7 +2399,7 @@ imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
 ##	open(object)
 ##	open(normal)
 ##
-##	nps <- snpBatches[[idxBatch]]
+##	nps <- snpBatches[[strata.index]]
 ##	nuA <- lM(object)$nuA[nps, , drop=FALSE]
 ##	phiA <- lM(object)$phiA[nps, , drop=FALSE]
 ##	sig2A <- lM(object)$sig2A[nps, , drop=FALSE]
@@ -2767,91 +2779,95 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 
 crlmmCopynumber <- function(object,
 			    filenames,
-			    which.batches,
-		      MIN.SAMPLES=10,
-		      SNRMin=5,
-		      MIN.OBS=1,
-		      DF.PRIOR=50,
-		      bias.adj=FALSE,
-		      prior.prob=rep(1/4,4),
-		      seed=1,
-		      verbose=TRUE,
-		      GT.CONF.THR=0.99,
-		      PHI.THR=2^6,
-		      nHOM.THR=5,
-		      MIN.NU=2^3,
-		      MIN.PHI=2^3,
-		      THR.NU.PHI=TRUE,
-		      thresholdCopynumber=TRUE,
-		      type=c("autosome.snps", "autosome.nps", "X.snps", "X.nps")){
-	stopifnot("batch" %in% varLabels(protocolData(object)))
-	stopifnot("chromosome" %in% fvarLabels(object))
-	stopifnot("position" %in% fvarLabels(object))
-	stopifnot("isSnp" %in% fvarLabels(object))
+			    MIN.SAMPLES=10,
+			    SNRMin=5,
+			    MIN.OBS=1,
+			    DF.PRIOR=50,
+			    bias.adj=FALSE,
+			    prior.prob=rep(1/4,4),
+			    seed=1,
+			    verbose=TRUE,
+			    GT.CONF.THR=0.99,
+			    PHI.THR=2^6,
+			    nHOM.THR=5,
+			    MIN.NU=2^3,
+			    MIN.PHI=2^3,
+			    THR.NU.PHI=TRUE,
+			    thresholdCopynumber=TRUE,
+			    type=c("autosome.snps", "autosome.nps", "X.snps", "X.nps")){
 	batch <- batch(object)
 	is.snp <- isSnp(object)
 	is.autosome <- chromosome(object) < 23
 	is.annotated <- !is.na(chromosome(object))
 	is.X <- chromosome(object) == 23
-	if(type=="autosome.snps"){
-		marker.index <- which(is.snp & is.autosome & is.annotated)
-		nr <- length(marker.index)
-		Ns <- initializeBigMatrix("Ns", nr, 5)
-		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
-		FUN <- fit.lm1
+	is.lds <- ifelse((is(calls(object), "ffdf") | is(calls(object), "ffdf")), TRUE, FALSE)
+
+	samplesPerBatch <- table(batch(object))
+	if(any(samplesPerBatch < MIN.SAMPLES)){
+		warning("The following batches have fewer than ", MIN.SAMPLES, ":")
+		message(paste(samplesPerBatch[samplesPerBatch < MIN.SAMPLES], collapse=", "))
+		message("Not estimating copy number for the above batches")
 	}
-	if(type=="autosome.nps"){
-		marker.index <- which(is.autosome & !is.snp & is.annotated)
-		nr <- length(marker.index)
-		Ns <- initializeBigMatrix("Ns", nr, 5)
-		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
-		FUN <- fit.lm2
+##	Ns <- initializeBigMatrix("Ns", nrow(object), 3)
+##	colnames(Ns) <- c("AA", "AB", "BB")
+	whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
+		switch(type,
+		       autosome.snps=which(is.snp & is.autosome & is.annotated),
+		       autosome.nps=which(!is.snp & is.autosome),
+		       X.snps=which(is.snp & is.X),
+		       X.nps=which(!is.snp & is.X),
+		       stop("'type' must be one of 'autosome.snps', 'autosome.nps', 'X.snps', or 'X.nps'")
+	       )
 	}
-	if(type=="X.snps"){
-		marker.index <- which(is.X & is.snp)
-		nr <- length(marker.index)
-		Ns <- initializeBigMatrix("Ns", nr, 5)
-		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
-		FUN <- fit.lm3
+	marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
+	lmFxn <- function(type){
+		switch(type,
+		       autosome.snps="fit.lm1",
+		       autosome.nps="fit.lm2",
+		       X.snps="fit.lm3",
+		       X.nps="fit.lm4")
 	}
-	if(type=="X.nps"){
-		marker.index <- which(is.X & !is.snp)
-		nr <- length(marker.index)
-		Ns <- initializeBigMatrix("Ns", nr, 5)
-		colnames(Ns) <- c("A", "B", "AA", "AB", "BB")
-		if(verbose) message("Estimating allele-specific copy number at autosomal SNPs")
-		FUN <- fit.lm4
-	}
-	index.strata <- splitIndicesByLength(marker.index, ocProbesets())
+	FUN <- lmFxn(type[[1]])
+	index.list <- splitIndicesByLength(marker.index, ocProbesets())
 	## create a separate object for each strata and combine() at the very end.
-	obj <- construct(filenames=filenames,
-			 cdfName=annotation(object),
-			 copynumber=TRUE,
-			 batch=batch(object),
-			 sns=sampleNames(object),
-			 fns=featureNames(object)[marker.index])
-	ocLapply(seq(along=index.strata),
-		 FUN,
-		 marker.index=marker.index,
-		 object=obj,
-		 Ns=Ns,
-		 ##normal=normal,
-		 ##snpflags=flags,
-		 snpBatches=index.strata,
-		 batchSize=ocProbesets(),
-		 SNRMin=SNRMin,
-		 MIN.SAMPLES=MIN.SAMPLES,
-		 MIN.OBS=MIN.OBS,
-		 DF=DF.PRIOR,
-		 GT.CONF.THR=GT.CONF.THR,
-		 THR.NU.PHI=THR.NU.PHI,
-		 MIN.NU=MIN.NU,
-		 MIN.PHI=MIN.PHI,
-		 verbose=verbose,
-		 neededPkgs="crlmm")
+	## would need to put calls, confs, A, and B in each object.
+	## can't assume that the dataset would be small enough to
+	## represent as matrices.  would have to read from the
+	## original matrix and reassign to a new matrix.  Probably not
+	## worth the effort.
+	if(is.lds){
+		ocLapply(seq(along=index.list),
+			 FUN,
+			 index.list=index.list,
+			 marker.index=marker.index,
+			 object=object,
+			 batchSize=ocProbesets(),
+			 SNRMin=SNRMin,
+			 MIN.SAMPLES=MIN.SAMPLES,
+			 MIN.OBS=MIN.OBS,
+			 DF=DF.PRIOR,
+			 GT.CONF.THR=GT.CONF.THR,
+			 THR.NU.PHI=THR.NU.PHI,
+			 MIN.NU=MIN.NU,
+			 MIN.PHI=MIN.PHI,
+			 verbose=verbose,
+			 neededPkgs="crlmm")
+	} else {
+		object <- fit.lm1(strata.index=1,
+				  index.list=list(marker.index),
+				  marker.index=marker.index,
+				  object=object,
+				  batchSize=batchSize,
+				  SNRMin=SNRMin,
+				  MIN.SAMPLES=MIN.SAMPLES,
+				  MIN.OBS=MIN.OBS,
+				  DF.PRIOR=DF.PRIOR,
+				  GT.CONF.THR=GT.CONF.THR,
+				  THR.NU.PHI=THR.NU.PHI,
+				  MIN.NU=MIN.NU,
+				  MIN.PHI=MIN.PHI,
+				  verbose=verbose, ...)
+	}
 	message("finished")
-	return(obj)
+	return(object)
 }

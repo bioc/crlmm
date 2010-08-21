@@ -107,7 +107,7 @@ batch variable.
 <<celfiles>>=
 celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
-batch <- substr(basename(celFiles), 13, 13)
+batch <- as.factor(substr(basename(celFiles), 13, 13))
 @
 
 The preprocessing steps for copy number estimation includes quantile
@@ -141,14 +141,38 @@ file implies that we have already run the copy number estimation and,
 therefore, we do not need to preprocess and genotype the files a
 second time.
 
-<<genotype, eval=FALSE>>=
+<<genotype>>=
+tmpdir <- "~/tmp"
+stop()
+if(FALSE){
+if(file.exists(tmpdir)) unlink(tmpdir, recursive=TRUE)
+dir.create(tmpdir)
+##trace(genotype, browser)
+system.time(gtSet2 <- genotype(filenames=celFiles[1:75],
+			       cdfName=cdfName,
+			       batch=batch[1:75]))
+save(gtSet2, file=file.path(tmpdir, "gtSet2.rda"))
+library(ff)
+ldPath(tmpdir)
+system.time(gtSet <- genotype(filenames=celFiles[1:75],
+			  cdfName=cdfName,
+			  batch=batch[1:75]))
+save(gtSet, file=file.path(tmpdir, "gtSet.rda"))
+q("no")
+}
+load(file.path(tmpdir, "gtSet.rda"))
+load(file.path(tmpdir, "gtSet2.rda"))
+
+
+
+##using matrices
 if(!file.exists(file.path(outdir, "cnSet.assayData_matrix.rda"))){
-	gtSet.assayData_matrix <- checkExists("gtSet.assayData_matrix",
-					   .path=outdir,
-					   .FUN=genotype,
-					   filenames=celFiles[1:20],
-					   cdfName=cdfName,
-					   batch=batch[1:20])
+	gtSet <- checkExists("gtSet.assayData_matrix",
+			     .path=outdir,
+			     .FUN=genotype,
+			     filenames=celFiles[1:20],
+			     cdfName=cdfName,
+			     batch=batch[1:20])
 	class(calls(gtSet.assayData_matrix))
 }
 ##q("no")

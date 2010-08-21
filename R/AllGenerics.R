@@ -36,5 +36,8 @@ setGeneric("tau2B<-", function(object, value) standardGeneric("tau2B<-"))
 setGeneric("corrAA<-", function(object, value) standardGeneric("corrAA<-"))
 setGeneric("corrAB<-", function(object, value) standardGeneric("corrAB<-"))
 setGeneric("corrBB<-", function(object, value) standardGeneric("corrBB<-"))
+setGeneric("flags<-", function(object, value) standardGeneric("flags<-"))
+
+setGeneric("numberGenotype<-", function(object, value, ...) standardGeneric("numberGenotype<-"))
 
 
