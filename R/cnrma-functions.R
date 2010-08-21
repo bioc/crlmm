@@ -79,9 +79,9 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 	ffObjects <- list(alleleA=initializeBigMatrix(name="A", nr, nc),
 			  alleleB=initializeBigMatrix(name="B", nr, nc),
 			  call=initializeBigMatrix(name="call", nr, nc),
-			  callProbability=initializeBigMatrix(name="callPr", nr,nc),
-			  CA=initializeBigMatrix(name="CA", nr, nc),
-			  CB=initializeBigMatrix(name="CB", nr, nc))
+			  callProbability=initializeBigMatrix(name="callPr", nr,nc))
+##			  CA=initializeBigMatrix(name="CA", nr, nc),
+##			  CB=initializeBigMatrix(name="CB", nr, nc))
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData <- new("AnnotatedDataFrame", data=pd)
@@ -91,8 +91,8 @@ construct <- function(filenames, cdfName, copynumber=FALSE,
 		       alleleB=ffObjects[["alleleB"]],
 		       call=ffObjects[["call"]],
 		       callProbability=ffObjects[["callProbability"]],
-		       CA=ffObjects[["CA"]],
-		       CB=ffObjects[["CB"]],
+##		       CA=ffObjects[["CA"]],
+##		       CB=ffObjects[["CB"]],
 		       protocolData=protocolData,
 		       phenoData=phenoData,
 		       featureData=featureData,
