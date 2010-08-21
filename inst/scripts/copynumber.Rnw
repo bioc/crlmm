@@ -148,7 +148,6 @@ cnSet.assayData_matrix <- checkExists("cnSet.assayData_matrix",
 				      chromosome=22)
 ##Rprof(interval=0.1)
 obj <- crlmmCopynumber(gtSet.assayData_matrix, chromosome=23)
-##Rprof(NULL)
 if(file.exists(file.path(outdir, "gtSet.assayData_matrix.rda")))
 	unlink(file.path(outdir, "gtSet.assayData_matrix.rda"))
 @ 
