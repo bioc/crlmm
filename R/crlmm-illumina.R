@@ -142,6 +142,11 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       protocolData(RG)[["ScanDate"]] = dates$scan
        }
        storageMode(RG) = "lockedEnvironment"
+       if(class(RG@assayData$R)[1]=="ff_matrix") {
+         close(RG@assayData$R)
+         close(RG@assayData$G)
+         close(RG@assayData$zero)         
+       }
        RG
 }
 
@@ -493,6 +498,12 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   XY@assayData$zero[infI,] = 0  
   gc()
 
+  if(class(XY@assayData$X)[1]=="ff_matrix") {
+    close(XY@assayData$X)
+    close(XY@assayData$Y)
+    close(XY@assayData$zero)
+  }
+  
 #  storageMode(XY) = "lockedEnvironment"
   XY
 }
@@ -518,7 +529,12 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
   if(verbose){
     message("Quantile normalizing ", ncol(XY), " arrays by ", max(stripnum), " strips.")
     if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=max(stripnum), style=3)
-  } 
+  }
+  
+  if(class(XY@assayData$X)[1]=="ff_matrix") {
+    open(XY@assayData$X)
+    open(XY@assayData$Y)
+  }
   for(s in 1:max(stripnum)) {
     if(verbose) {
       if (getRversion() > '2.7.0') setTxtProgressBar(pb, s)
@@ -538,6 +554,11 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
     rm(subX, subY, tmp, sel)
     gc()
   }
+  if(class(XY@assayData$X)[1]=="ff_matrix") {
+    close(XY@assayData$X)
+    close(XY@assayData$Y)
+  }
+  
   if(verbose)
     cat("\n")
   XY
@@ -673,12 +694,14 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     t0 <- proc.time()-t0
     if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
   }
-  close(A)
-  close(B)
-  close(zero)
-  close(SKW)
-  close(mixtureParams)
-  close(SNR)
+  if(class(A)[1]=="ff_matrix") {
+    close(A)
+    close(B)
+    close(zero)
+    close(SKW)
+    close(mixtureParams)
+    close(SNR)
+  }
   return(res)
 }
 
