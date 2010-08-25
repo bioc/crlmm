@@ -1,6 +1,5 @@
 \name{crlmmIllumina}
 \alias{crlmmIllumina}
-\alias{crlmmIllumina2}
 \title{Genotype Illumina Infinium II BeadChip data with CRLMM}
 \description{
   Implementation of the CRLMM algorithm for
@@ -9,14 +8,6 @@
 \usage{
 
 crlmmIllumina(RG, XY, stripNorm=TRUE, 
-      useTarget=TRUE, row.names=TRUE, col.names=TRUE,
-      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
-      gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
-      snpFile, cnFile, mixtureSampleSize=10^5,
-      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10,
-      recallRegMin=1000, returnParams=FALSE, badSNP=0.7)
-
-crlmmIllumina2(RG, XY, stripNorm=TRUE, 
       useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, seed=1, save.it=FALSE, load.it=FALSE,
@@ -54,7 +45,7 @@ crlmmIllumina2(RG, XY, stripNorm=TRUE,
   \item{cdfName}{'character' defining the chip annotation (manifest) to use
     ('human370v1c', human550v3b', 'human650v3a', 'human1mv1c',
     'human370quadv3c', 'human610quadv1b', 'human660quadv1a',
-    'human1mduov3b', 'humanomni1quadv1b')}
+    'human1mduov3b', 'humanomni1quadv1b', 'humanomniexpress12v1b')}
   \item{sns}{'character' vector with sample names to be used.}
   \item{recallMin}{'integer'. Minimum number of samples for recalibration.}
   \item{recallRegMin}{'integer'. Minimum number of SNP's for regression.}

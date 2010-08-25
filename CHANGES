@@ -542,3 +542,8 @@ function (which expects ff objects and supports parallel processing)
 
 2010-07-30 R. Scharpf 1.7.8
 ** edited construct function for CNSetLM
+
+2010-08-25 M. Ritchie 1.7.12
+** Renamed functions readIdatFiles2() -> readIdatFiles(), RGtoXY2() -> RGtoXY(), preprocessInfinium2v2() -> preprocessInfinium2(), crlmmIllumina2() -> crlmmIllumina().  These make use of ff objects to store data.
+** Exported crlmmIlluminaV2(), which combines reading in of idats and genotyping in one.  Also added a man page for this function
+** tidied up crlmm-illumina.R, removing commented out code.

@@ -63,11 +63,10 @@ exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
        crlmmIllumina,
-       crlmmIllumina2,
+       crlmmIlluminaV2,
        ellipseCenters,
        genotype,
        readIdatFiles,
-       readIdatFiles2,
        snprma,
        snprma2,
        crlmm2,
