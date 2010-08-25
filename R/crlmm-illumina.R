@@ -684,6 +684,16 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   }
   if (!fitMixture) SNR <- mixtureParams <- NA
   ## gns comes from preprocStuff.rda
+
+#  if(class(A)[1]=="ff_matrix") {
+    close(A)
+    close(B)
+    close(zero)
+    close(SKW)
+    close(mixtureParams)
+    close(SNR)
+#  }  
+  
   res = list(A=A, B=B,
              zero=zero, sns=sns, gns=names(snpIndex), SNR=SNR, SKW=SKW,
              mixtureParams=mixtureParams, cdfName=cdfName)
@@ -694,14 +704,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     t0 <- proc.time()-t0
     if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
   }
-#  if(class(A)[1]=="ff_matrix") {
-    close(A)
-    close(B)
-    close(zero)
-    close(SKW)
-    close(mixtureParams)
-    close(SNR)
-#  }
+
   return(res)
 }
 
@@ -735,6 +738,10 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
                         save.it=save.it, snpFile=snpFile, cnFile=cnFile)
+    open(res[["A"]])  # this should perhaps go below }else{ below
+    open(res[["B"]])
+    open(res[["SNR"]])
+    open(res[["mixtureParams"]])    
 
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
@@ -762,7 +769,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
           stop("Object in ", snpFile, " seems to be invalid.")
   }
 
- #   rm(phenD, protD , fD)
+#    rm(phenD, protD , fD)
 	
 #    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))                
 #    suppressWarnings(A(callSet) <- res[["A"]])
