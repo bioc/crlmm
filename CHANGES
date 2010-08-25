@@ -546,5 +546,5 @@ function (which expects ff objects and supports parallel processing)
 2010-08-25 M. Ritchie 1.7.12
 ** Renamed functions readIdatFiles2() -> readIdatFiles(), RGtoXY2() -> RGtoXY(), preprocessInfinium2v2() -> preprocessInfinium2(), crlmmIllumina2() -> crlmmIllumina().  These make use of ff objects to store data.
 ** Exported crlmmIlluminaV2(), which combines reading in of idats and genotyping in one.  Also added a man page for this function
-** Added a check for whether an object is an 'ff_matrix' before running open() or close() to several functions.  Added close() statements to readIdatFiles(), RGtoXY() and stripNormalize().  Added open() statement to stripNormalize().
+** Added close() statements to readIdatFiles(), RGtoXY() and stripNormalize().  Added open() statement to stripNormalize().
 ** tidied up crlmm-illumina.R, removing commented out code.
