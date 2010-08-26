@@ -693,6 +693,12 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     close(mixtureParams)
     close(SNR)
 #  }  
+
+  open(res[["A"]])
+  open(res[["B"]])
+  open(res[["zero"]])
+  open(res[["SNR"]])
+  open(res[["mixtureParams"]])
   
   res = list(A=A, B=B,
              zero=zero, sns=sns, gns=names(snpIndex), SNR=SNR, SKW=SKW,
@@ -704,6 +710,12 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     t0 <- proc.time()-t0
     if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
   }
+
+  close(res[["A"]])
+  close(res[["B"]])
+  close(res[["zero"]])
+  close(res[["SNR"]])
+  close(res[["mixtureParams"]])
 
   return(res)
 }
@@ -738,10 +750,6 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
                         save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-    open(res[["A"]])  # this should perhaps go below }else{ below
-    open(res[["B"]])
-    open(res[["SNR"]])
-    open(res[["mixtureParams"]])    
 
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
@@ -769,8 +777,13 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
           stop("Object in ", snpFile, " seems to be invalid.")
   }
 
+    open(res[["A"]])
+    open(res[["B"]])
+    open(res[["SNR"]])
+    open(res[["mixtureParams"]])
+
 #    rm(phenD, protD , fD)
-	
+
 #    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))                
 #    suppressWarnings(A(callSet) <- res[["A"]])
 #    suppressWarnings(B(callSet) <- res[["B"]])
@@ -873,6 +886,11 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget, #) # sns=subsns
                                save.it=save.it, snpFile=snpFile, cnFile=cnFile)
+    open(res[["A"]])
+    open(res[["B"]])
+    open(res[["SNR"]])
+    open(res[["mixtureParams"]])
+						   
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
 #    protD = XY@protocolData
