@@ -615,11 +615,19 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     npIndex = getVarInEnv("npProbesFid")
     nprobes = length(npIndex)
     if(length(nprobes)>0) {
+      open(XY@assayData$X)
+      open(XY@assayData$Y)
+      open(XY@assayData$zero)
+      
       A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
       B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
       # new lines below - useful to keep track of zeroed out probes
-      zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays) 
+      zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
+
+      close(XY@assayData$X)
+      close(XY@assayData$Y)
+      close(XY@assayData$zero)
 
       colnames(A) <- colnames(B) <- colnames(zero) <- sns
       rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
@@ -665,6 +673,10 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
      if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=narrays, style=3)
   }
 
+  open(XY@assayData$X)
+  open(XY@assayData$Y)
+  open(XY@assayData$zero)
+  
   for(i in 1:narrays){
      A[,i] = exprs(channel(XY, "X"))[snpIndex,i]
      B[,i] = exprs(channel(XY, "Y"))[snpIndex,i]
@@ -693,6 +705,10 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   if (!fitMixture) SNR <- mixtureParams <- NA
   ## gns comes from preprocStuff.rda
 
+  close(XY@assayData$X)
+  close(XY@assayData$Y)
+  close(XY@assayData$zero)  
+  
 #  if(class(A)[1]=="ff_matrix") {
     close(A)
     close(B)
@@ -892,7 +908,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     if (missing(sns)) { sns = sampleNames(XY) #subsns = sampleNames(XY)
     } # else subsns = sns[j]
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget, #) # sns=subsns
+                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
                                save.it=save.it, snpFile=snpFile, cnFile=cnFile)
     open(res[["A"]])
     open(res[["B"]])
