@@ -693,17 +693,17 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     close(mixtureParams)
     close(SNR)
 #  }  
-
-  open(res[["A"]])
-  open(res[["B"]])
-  open(res[["zero"]])
-  open(res[["SNR"]])
-  open(res[["mixtureParams"]])
   
   res = list(A=A, B=B,
              zero=zero, sns=sns, gns=names(snpIndex), SNR=SNR, SKW=SKW,
              mixtureParams=mixtureParams, cdfName=cdfName)
 
+  open(res[["A"]])
+  open(res[["B"]])
+  open(res[["zero"]])
+  open(res[["SNR"]])
+  open(res[["mixtureParams"]])  
+  
   if(save.it & !missing(snpFile)) {
     t0 <- proc.time() 
     save(res, file=snpFile) 
