@@ -472,11 +472,19 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   XY@assayData$Y[1:nsnps,] = 0
   XY@assayData$zero[1:nsnps,] = 0
   
+  open(RG@assayData$R)
+  open(RG@assayData$G)
+  open(RG@assayData$zero)
+  
   # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
   XY@assayData$X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
   XY@assayData$Y[!is.na(aord),] = exprs(channel(RG, "G"))[aord[!is.na(aord)],] # mostly green
   XY@assayData$zero[!is.na(aord),] = exprs(channel(RG, "zero"))[aord[!is.na(aord)],] # mostly green
   gc()
+  
+  close(RG@assayData$R)
+  close(RG@assayData$G)
+  close(RG@assayData$zero)
   
   ## Warning - not 100% sure that the code below is correct - could be more complicated than this
   
