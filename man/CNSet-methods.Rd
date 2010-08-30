@@ -5,6 +5,11 @@
 \alias{CB,CNSet-method}
 \alias{lines,CNSet-method}
 \alias{totalCopynumber,CNSet-method}
+\alias{Ns,CNSet-method}
+\alias{corr,CNSet-method}
+\alias{mads,CNSet-method}
+\alias{medians,CNSet-method}
+\alias{tau2,CNSet-method}
 
 \title{crlmm methods for class "CNSet"}
 \description{
@@ -27,6 +32,11 @@
     \item{CB}{\code{signature(object="CNSet")}: ...}
     \item{lines}{\code{signature(x="CNSet")}: ...}
     \item{totalCopynumber}{\code{signature(object="CNSet")}: ...}
+    \item{Ns}{\code{signature(object="CNSet")}: ...}
+    \item{corr}{\code{signature(object="CNSet")}: ...}
+    \item{mads}{\code{signature(x="CNSet")}: ...}
+    \item{medians}{\code{signature(object="CNSet")}: ...}
+    \item{tau2}{\code{signature(object="CNSet")}: ...}
 	 }
 }
 

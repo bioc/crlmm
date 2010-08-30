@@ -159,7 +159,7 @@ be run interactively.
 if(!file.exists(file.path(outdir, "cnSet.rda"))){
 	gtSet <- checkExists("gtSet",
 			     .path=outdir,
-			     .FUN=genotypeLD,
+			     .FUN=genotype,
 			     filenames=celFiles[1:200],
 			     cdfName=cdfName,
 			     batch=batch[1:200])
