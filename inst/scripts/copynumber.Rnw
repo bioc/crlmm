@@ -160,9 +160,9 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 	gtSet <- checkExists("gtSet",
 			     .path=outdir,
 			     .FUN=genotype,
-			     filenames=celFiles[1:200],
+			     filenames=celFiles,
 			     cdfName=cdfName,
-			     batch=batch[1:200])
+			     batch=batch)
 	class(calls(gtSet))
 }
 @
