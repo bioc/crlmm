@@ -56,23 +56,11 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-<<<<<<< HEAD
-importFrom(ff, ffdf, physical.ff, physical.ffdf)
-importClassesFrom(oligoClasses, ffdf, ff_matrix)
 
-exportMethods(lines)
-exportMethods(CA, CB)
-export(crlmm,
-       crlmmIllumina,
-       crlmmIlluminaV2,
-       ellipseCenters,
-       genotype,
-       readIdatFiles,
-=======
 importFrom(ff, ffdf)
 
 exportClasses(CNSetLM, ffdf, list)
-exportMethods(open, "[", show, lM)
+exportMethods(open, "[", show, lM, plot)
 export(crlmm, 
        crlmmCopynumber, 
        crlmmIllumina, 
@@ -80,22 +68,16 @@ export(crlmm,
        genotype, 
        readIdatFiles, 
        readIdatFiles2,
->>>>>>> Exporting list and ffdf classes so that lM<- assignment works
        snprma,
        snprma2,
        crlmm2,
-       genotype2, genotypeLD,
-       crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
-export(constructIlluminaCNSet)
-export(totalCopynumber)
-export(cnrma, cnrma2)
-exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
-export(genotypeSummary,
-       shrinkSummary,
-       estimateCnParameters)
+       genotype2,
+       batch,
+       crlmmCopynumber2,
+       constructCNSetForIllumina,
+       validCdfNames)
+##export(initializeParamObject, biasAdjNP2)
+##export(construct)
 
-## For debugging
-## exportPattern("^[^\\.]")
-
-
+export(plotCNSetLM)
 
