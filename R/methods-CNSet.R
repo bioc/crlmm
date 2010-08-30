@@ -447,32 +447,7 @@ setMethod("copyNumber", "CNSet", function(object){
 	CN
 })
 
-setMethod("totalCopyNumber", "CNSet", function(object, i, j){
-	if(missing(i) & missing(j)){
-		if(inherits(CA(object), "ff") | inherits(CA(object), "ffdf")) stop("Must specify i and/or j for ff objects")
-	}
-	if(missing(i) & !missing(j)){
-		snp.index <- which(isSnp(object))	
-		cn.total <- as.matrix(CA(cnSet)[, j])
-		cb <- as.matrix(CB(cnSet)[snp.index, j]	)
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb		
-	}
-	if(!missing(i) & missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)
-		cn.total <- as.matrix(CA(cnSet)[i, ])
-		cb <- as.matrix(CB(cnSet)[snp.index, ])	
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb				
-	}
-	if(!missing(i) & !missing(j)){
-		snp.index <- intersect(which(isSnp(object)), i)		
-		cn.total <- as.matrix(CA(cnSet)[i, j])	
-		cb <- as.matrix(CB(cnSet)[snp.index, j])
-		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
-	}
-	cn.total <- cn.total/100
-	dimnames(cn.total) <- NULL
-	return(cn.total)
-})
+
 
 ##setMethod("copyNumber", "CNSet", function(object){
 ##	I <- isSnp(object)
