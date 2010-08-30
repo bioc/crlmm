@@ -87,7 +87,7 @@ setMethod("computeCopynumber", "CNSet",
 	if(bias.adj & all(is.na(CA(object)))){
 		cnOptions[["bias.adj"]] <- FALSE
 	}
-	object <- computeCopynumber.CNSet(object, cnOptions)				
+	object <- computeCopynumber.CNSet(object, cnOptions)
 	if(bias.adj & !cnOptions[["bias.adj"]]){
 		## Do a second iteration with bias adjustment
 		cnOptions[["bias.adj"]] <- TRUE
@@ -156,3 +156,73 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 }
 
 
+setMethod("totalCopyNumber",
+	  signature=signature(object="CNSet", ...),
+	  function(object, ...){
+		  is.ff <- is(CA(object), "ff") | is(CA(object), "ffdf")
+		  dotArgs <- names(list(...))
+		  missing.i <- "i" %in% dotArgs
+		  missing.j <- "j" %in% dotArgs
+		  if(missing.i & missing.j){
+			  if(is.ff) stop("Must specify i and/or j for ff objects")
+		  }
+		  if(!missing.i) {
+			  i <- dotArgs[["i"]]
+			  snp.index <- intersect(i, which(isSnp(object)))
+			  ##which rows in the return matrix are snps
+			  snp.index2 <- which(isSnp(object)[i])
+		  } else {
+			  i <- 1:nrow(object)
+			  snp.index2 <- snp.index <- which(isSnp(object))
+		  }
+		  if(!missing.j){
+			  j <- dotArgs[["j"]]
+		  } else j <- 1:ncol(object)
+		  cn.total <- as.matrix(CA(object)[i, j])
+		  if(length(snp.index) > 0){
+			  cb <- as.matrix(CB(object)[snp.index, j])
+			  ##				 snps <- (1:nrow(cn.total))[i %in% snp.index]
+			  cn.total[snp.index2, ] <- cn.total[snp.index, ] + cb
+		  }
+		  cn.total <- cn.total/100
+		  return(cn.total)
+##		  if(missing.i){
+####		  if(missing.i & !missing.j){
+##			 snp.index <- which(isSnp(object))
+##			 cn.total <- as.matrix(CA(object)[, j])
+##			 if(length(snp.index) > 0){
+##				 cb <- as.matrix(CB(object)[snp.index, j])
+####				 snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				 cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
+##			 }
+##		 } else{
+##			 snp.index <- intersect(which(isSnp(object)), i)
+##			 cn.total <- as.matrix(CA(object)[i, ])
+##			 if(length(snp.index) > 0){
+##				 cb <- as.matrix(CB(object)[snp.index, ])
+##				 snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				 cn.total[snps, ] <- cn.total[snps, ] + cb
+##			 }
+##		 }
+##		 if(!missing(i) & missing(j)){
+##			 snp.index <- intersect(which(isSnp(object)), i)
+##			 cn.total <- as.matrix(CA(object)[i, ])
+##			 if(length(snp.index) > 0){
+##				 cb <- as.matrix(CB(object)[snp.index, ])
+##				 snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				 cn.total[snps, ] <- cn.total[snps, ] + cb
+##			 }
+##		 }
+##		 if(!missing(i) & !missing(j)){
+##			 snp.index <- intersect(which(isSnp(object)), i)
+##			 cn.total <- as.matrix(CA(object)[i, j])
+##			 if(length(snp.index) > 0){
+##				 cb <- as.matrix(CB(object)[snp.index, j])
+##				 snps <- (1:nrow(cn.total))[i %in% snp.index]
+##				 cn.total[snps, ] <- cn.total[snps, ] + cb
+##			 }
+##		 }
+##		 cn.total <- cn.total/100
+##		 dimnames(cn.total) <- NULL
+##		 return(cn.total)
+	 })
