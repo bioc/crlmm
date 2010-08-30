@@ -101,3 +101,4 @@ setGeneric("tau2B<-", function(object, value) standardGeneric("tau2B<-"))
 setGeneric("flags<-", function(object, value) standardGeneric("flags<-"))
 
 
+

@@ -12,7 +12,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 			  sep="_",
 			  fileExt=list(green="Grn.idat", red="Red.idat"),
 			  saveDate=FALSE) {
-			  
+
        if(!is.null(arrayNames)) {
                pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
@@ -22,7 +22,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 			       barcode = sampleSheet[,arrayInfoColNames$barcode]
 			       arrayNames=barcode
 		       }
-		       if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {  
+		       if(!is.null(arrayInfoColNames$position) && (arrayInfoColNames$position %in% colnames(sampleSheet))) {
 			       position = sampleSheet[,arrayInfoColNames$position]
 			       if(is.null(arrayNames))
 				       arrayNames=position
@@ -36,7 +36,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) <- basename(arrayNames)               
+	       sampleNames(pd) <- basename(arrayNames)
        }
        if(is.null(arrayNames)) {
                arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -46,7 +46,7 @@ readIdatFiles <- function(sampleSheet=NULL,
                }
                pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
-       
+
        narrays = length(arrayNames)
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
        redfiles = paste(arrayNames, fileExt$red, sep=sep)
@@ -63,7 +63,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       redidats <- redfiles
        }
        if(!all(file.exists(grnidats))) stop("Missing some of the *Grn.idat files")
-       if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")       
+       if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")
        headerInfo = list(nProbes = rep(NA, narrays),
                          Barcode = rep(NA, narrays),
                          ChipType = rep(NA, narrays),
@@ -119,12 +119,12 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       }
 	       rm(G)
 	       gc()
-         
+
 	       cat(paste(sep, fileExt$red, sep=""), "\n")
 	       R = readIDAT(redidats[i])
 	       idsR = rownames(R$Quants)
-         
-	       if(length(ids)==length(idsG)) {   
+
+	       if(length(ids)==length(idsG)) {
 		       if(sum(ids==idsR)==nprobes) {
 			       RG@assayData$R[,i] = R$Quants[ ,"Mean"]
 		           zeroR = R$Quants[ ,"NBeads"]==0
@@ -145,7 +145,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 #       if(class(RG@assayData$R)[1]=="ff_matrix") {
          close(RG@assayData$R)
          close(RG@assayData$G)
-         close(RG@assayData$zero)         
+         close(RG@assayData$zero)
 #       }
        RG
 }
@@ -161,27 +161,27 @@ readIDAT <- function(idatFile){
 
   }
 
-  versionNumber <- readBin(tempCon, "integer", n=1, size=8, 
+  versionNumber <- readBin(tempCon, "integer", n=1, size=8,
                            endian="little", signed=FALSE)
 
   if(versionNumber<3)
 	  stop("Older style IDAT files not supported:  consider updating your scanner settings")
-  
-  nFields <- readBin(tempCon, "integer", n=1, size=4, 
+
+  nFields <- readBin(tempCon, "integer", n=1, size=4,
                      endian="little", signed=FALSE)
 
   fields <- matrix(0,nFields,3);
   colnames(fields) <- c("Field Code", "Byte Offset", "Bytes")
   for(i1 in 1:nFields){
-    fields[i1,"Field Code"] <- 
+    fields[i1,"Field Code"] <-
       readBin(tempCon, "integer", n=1, size=2, endian="little", signed=FALSE)
-    fields[i1,"Byte Offset"] <- 
+    fields[i1,"Byte Offset"] <-
       readBin(tempCon, "integer", n=1, size=8, endian="little", signed=FALSE)
   }
 
   knownCodes <- c(1000, 102, 103, 104, 107, 200, 300, 400,
                   401, 402, 403, 404, 405, 406, 407, 408, 409)
-  names(knownCodes) <- 
+  names(knownCodes) <-
     c("nSNPsRead",  # 1000
       "IlluminaID", #  102
       "SD",         #  103
@@ -214,35 +214,35 @@ readIDAT <- function(idatFile){
   }
 
   seek(tempCon, fields["nSNPsRead", "Byte Offset"])
-  nSNPsRead <- readBin(tempCon, "integer", n=1, size=4, 
+  nSNPsRead <- readBin(tempCon, "integer", n=1, size=4,
                        endian="little", signed=FALSE)
 
   seek(tempCon, fields["IlluminaID", "Byte Offset"])
-  IlluminaID <- readBin(tempCon, "integer", n=nSNPsRead, size=4, 
+  IlluminaID <- readBin(tempCon, "integer", n=nSNPsRead, size=4,
                        endian="little", signed=FALSE)
 
   seek(tempCon, fields["SD", "Byte Offset"])
-  SD <- readBin(tempCon, "integer", n=nSNPsRead, size=2, 
+  SD <- readBin(tempCon, "integer", n=nSNPsRead, size=2,
                 endian="little", signed=FALSE)
 
   seek(tempCon, fields["Mean", "Byte Offset"])
-  Mean <- readBin(tempCon, "integer", n=nSNPsRead, size=2, 
+  Mean <- readBin(tempCon, "integer", n=nSNPsRead, size=2,
                   endian="little", signed=FALSE)
 
   seek(tempCon, fields["NBeads", "Byte Offset"])
   NBeads <- readBin(tempCon, "integer", n=nSNPsRead, size=1, signed=FALSE)
 
   seek(tempCon, fields["MidBlock", "Byte Offset"])
-  nMidBlockEntries <- readBin(tempCon, "integer", n=1, size=4, 
+  nMidBlockEntries <- readBin(tempCon, "integer", n=1, size=4,
                               endian="little", signed=FALSE)
-  MidBlock <- readBin(tempCon, "integer", n=nMidBlockEntries, size=4, 
+  MidBlock <- readBin(tempCon, "integer", n=nMidBlockEntries, size=4,
                       endian="little", signed=FALSE)
 
   seek(tempCon, fields["RunInfo", "Byte Offset"])
-  nRunInfoBlocks <- readBin(tempCon, "integer", n=1, size=4, 
+  nRunInfoBlocks <- readBin(tempCon, "integer", n=1, size=4,
                             endian="little", signed=FALSE)
   RunInfo <- matrix(NA, nRunInfoBlocks, 5)
-  colnames(RunInfo) <- c("RunTime", "BlockType", "BlockPars", 
+  colnames(RunInfo) <- c("RunTime", "BlockType", "BlockPars",
                          "BlockCode", "CodeVersion")
   for(i1 in 1:2) { #nRunInfoBlocks){  ## MR edit
     for(i2 in 1:5){
@@ -252,50 +252,50 @@ readIDAT <- function(idatFile){
   }
 
   seek(tempCon, fields["RedGreen", "Byte Offset"])
-  RedGreen <- readBin(tempCon, "numeric", n=1, size=4, 
+  RedGreen <- readBin(tempCon, "numeric", n=1, size=4,
                       endian="little", signed=FALSE)
-  #RedGreen <- readBin(tempCon, "integer", n=4, size=1, 
+  #RedGreen <- readBin(tempCon, "integer", n=4, size=1,
   #                    endian="little", signed=FALSE)
 
   seek(tempCon, fields["MostlyNull", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  MostlyNull <- readChar(tempCon, nChars) 
+  MostlyNull <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Barcode", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Barcode <- readChar(tempCon, nChars) 
+  Barcode <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["ChipType", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  ChipType <- readChar(tempCon, nChars) 
+  ChipType <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["MostlyA", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  MostlyA <- readChar(tempCon, nChars) 
+  MostlyA <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Unknown.1", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Unknown.1 <- readChar(tempCon, nChars) 
+  Unknown.1 <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Unknown.2", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Unknown.2 <- readChar(tempCon, nChars) 
+  Unknown.2 <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Unknown.3", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Unknown.3 <- readChar(tempCon, nChars) 
+  Unknown.3 <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Unknown.4", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Unknown.4 <- readChar(tempCon, nChars) 
+  Unknown.4 <- readChar(tempCon, nChars)
 
   seek(tempCon, fields["Unknown.5", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  Unknown.5 <- readChar(tempCon, nChars) 
+  Unknown.5 <- readChar(tempCon, nChars)
 
   close(tempCon)
 
-  Unknowns <- 
+  Unknowns <-
     list(MostlyNull=MostlyNull,
          MostlyA=MostlyA,
          Unknown.1=Unknown.1,
@@ -308,21 +308,21 @@ readIDAT <- function(idatFile){
   colnames(Quants) <- c("Mean", "SD", "NBeads")
   rownames(Quants) <- as.character(IlluminaID)
 
-  idatValues <- 
-    list(fileSize=fileSize, 
-         versionNumber=versionNumber, 
-         nFields=nFields, 
+  idatValues <-
+    list(fileSize=fileSize,
+         versionNumber=versionNumber,
+         nFields=nFields,
          fields=fields,
-         nSNPsRead=nSNPsRead, 
-         #IlluminaID=IlluminaID, 
-         #SD=SD, 
-         #Mean=Mean, 
+         nSNPsRead=nSNPsRead,
+         #IlluminaID=IlluminaID,
+         #SD=SD,
+         #Mean=Mean,
          #NBeads=NBeads,
          Quants=Quants,
-         MidBlock=MidBlock, 
-         RunInfo=RunInfo, 
-         RedGreen=RedGreen, 
-         Barcode=Barcode, 
+         MidBlock=MidBlock,
+         RunInfo=RunInfo,
+         RedGreen=RedGreen,
+         Barcode=Barcode,
          ChipType=ChipType,
          Unknowns=Unknowns)
 
@@ -333,20 +333,20 @@ readIDAT <- function(idatFile){
 readBPM <- function(bpmFile){
 
   ## Reads and parses Illumina BPM files
-  
+
   fileSize <- file.info(bpmFile)$size
 
   tempCon <- file(bpmFile,"rb")
 
   # The first few bytes of the egtFile are some type of
-  # header, but there's no related byte offset information. 
+  # header, but there's no related byte offset information.
 
   prefixCheck <- readChar(tempCon,3) ## should be "BPM"
 
   null.1 <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
-  ## should be 1  
-  
-  versionNumber <- 
+  ## should be 1
+
+  versionNumber <-
     readBin(tempCon, "integer", n=1, size=4, endian="little", signed=FALSE)
   ## should be 4
 
@@ -360,14 +360,14 @@ readBPM <- function(bpmFile){
   entriesByteOffset <- seek(tempCon);
   nEntries <- readBin(tempCon, "integer", n=1, size=4,
                       endian="little", signed=FALSE)
-    
+
   if(FALSE){
-    
+
     snpIndexByteOffset <- seek(tempCon)
     snpIndex <- readBin(tempCon, "integer", n=nEntries, size=4,
                         endian="little", signed=FALSE)
     ## for the 1M array, these are simply in order from 1 to 1072820.
-    
+
     snpNamesByteOffset <- seek(tempCon)
     snpNames <- rep("A", nEntries)
     for(i1 in 1:nEntries){
@@ -378,21 +378,21 @@ readBPM <- function(bpmFile){
   }
 
   seek(tempCon, 15278138)
-    
+
   normIDByteOffset <- seek(tempCon)
   normID <- readBin(tempCon, "integer", n=nEntries, size=1, signed=FALSE) + 1
-  
+
   newBlockByteOffset <- seek(tempCon)
   newBlock <- readBin(tempCon, "integer", n=10000, size=1, signed=FALSE)
-  
+
   close(tempCon)
 
   byteOffsets <- list(entriesByteOffset=entriesByteOffset,
-                      #snpIndexByteOffset=snpIndexByteOffset, 
+                      #snpIndexByteOffset=snpIndexByteOffset,
                       #snpNamesByteOffset=snpNamesByteOffset,
                       normIDByteOffset=normIDByteOffset,
                       newBlockByteOffset=newBlockByteOffset)
-  
+
   allStuff <- list(prefixCheck=prefixCheck,
                    null.1=null.1,
                    versionNumber=versionNumber,
@@ -406,7 +406,7 @@ readBPM <- function(bpmFile){
                    newBlock=newBlock,
                    byteOffsets=byteOffsets)
   allStuff
-  
+
 }
 
 
@@ -424,7 +424,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   if(missing(chipType)){
 	  chipType = match.arg(annotation(RG), chipList)
   } else chipType = match.arg(chipType, chipList)
-  
+
   pkgname <- getCrlmmAnnotationName(chipType)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
      suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -439,21 +439,21 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   bids <- getVarInEnv("addressB") # comes from AddressB_ID or Address2 column in manifest
   ids <- names(aids)
   snpbase <- getVarInEnv("base")
-  
+
   nsnps = length(aids)
   narrays = ncol(RG)
-  
+
 #  aidcol = match("AddressA_ID", colnames(annot))
 #  if(is.na(aidcol))
 #    aidcol = match("Address", colnames(annot))
 #  bidcol = match("AddressB_ID", colnames(annot))
-#  if(is.na(bidcol)) 
+#  if(is.na(bidcol))
 #    bidcol = match("Address2", colnames(annot))
 #  aids = annot[, aidcol]
 #  bids = annot[, bidcol]
 #  snpids = annot[,"Name"]
-#  snpbase = annot[,"SNP"] 
-  infI = !is.na(bids) & bids!=0  
+#  snpbase = annot[,"SNP"]
+  infI = !is.na(bids) & bids!=0
   aord = match(aids, featureNames(RG)) # NAs are possible here
   bord = match(bids, featureNames(RG)) # and here
 #  argrg = aids[rrgg]
@@ -463,7 +463,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	     X=initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer"),
 	     Y=initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer"),
 	     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer"),
-	     annotation=chipType, phenoData=RG@phenoData, 
+	     annotation=chipType, phenoData=RG@phenoData,
 	     protocolData=RG@protocolData, storage.mode="environment")
   featureNames(XY) = ids # featureNames(RG)
   gc()
@@ -471,39 +471,39 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   XY@assayData$X[1:nsnps,] = 0
   XY@assayData$Y[1:nsnps,] = 0
   XY@assayData$zero[1:nsnps,] = 0
-  
+
   open(RG@assayData$R)
   open(RG@assayData$G)
   open(RG@assayData$zero)
-  
+
   # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
   XY@assayData$X[!is.na(aord),] = exprs(channel(RG, "R"))[aord[!is.na(aord)],] # mostly red
   XY@assayData$Y[!is.na(aord),] = exprs(channel(RG, "G"))[aord[!is.na(aord)],] # mostly green
   XY@assayData$zero[!is.na(aord),] = exprs(channel(RG, "zero"))[aord[!is.na(aord)],] # mostly green
   gc()
-  
+
   close(RG@assayData$R)
   close(RG@assayData$G)
   close(RG@assayData$zero)
-  
+
   ## Warning - not 100% sure that the code below is correct - could be more complicated than this
-  
+
   # Next Infinium I where X -> R from allele A probe and Y -> R from allele B probe
 #  infIRR = infI & (snpbase=="[A/T]" | snpbase=="[T/A]" | snpbase=="[a/t]" | snpbase=="[t/a]")
-  
+
 #  X[infIRR,] = exprs(channel(RG, "R"))[aord[infIRR],] # mostly red
 #  Y[infIRR,] = exprs(channel(RG, "R"))[bord[infIRR],] # mostly green
-  
+
   # Finally Infinium I where X -> G from allele A probe and Y -> G from allele B probe
 #  infIGG = infI & (snpbase=="[C/G]" | snpbase=="[G/C]" | snpbase=="[g/c]" | snpbase=="[c/g]")
 
 #  X[infIGG,] = exprs(channel(RG, "G"))[aord[infIGG],] # mostly red
 #  Y[infIGG,] = exprs(channel(RG, "G"))[bord[infIGG],] # mostly green
-    
+
   #  For now zero out Infinium I probes
   XY@assayData$X[infI,] = 0
   XY@assayData$Y[infI,] = 0
-  XY@assayData$zero[infI,] = 0  
+  XY@assayData$zero[infI,] = 0
   gc()
 
 #  if(class(XY@assayData$X)[1]=="ff_matrix") {
@@ -511,7 +511,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
     close(XY@assayData$Y)
     close(XY@assayData$zero)
 #  }
-  
+
 #  storageMode(XY) = "lockedEnvironment"
   XY
 }
@@ -530,15 +530,15 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
   loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
 
   stripnum <- getVarInEnv("stripnum")
-  
+
   if(useTarget)
     targetdist = getVarInEnv("reference")
-  
+
   if(verbose){
     message("Quantile normalizing ", ncol(XY), " arrays by ", max(stripnum), " strips.")
     if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=max(stripnum), style=3)
   }
-  
+
 #  if(class(XY@assayData$X)[1]=="ff_matrix") {
     open(XY@assayData$X)
     open(XY@assayData$Y)
@@ -566,7 +566,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
     close(XY@assayData$X)
     close(XY@assayData$Y)
 #  }
-  
+
   if(verbose)
     cat("\n")
   XY
@@ -609,7 +609,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   SMEDIAN <- getVarInEnv("SMEDIAN")
   theKnots <- getVarInEnv("theKnots")
   narrays = ncol(XY)
-  
+
   if(save.it & !missing(cnFile)) {
     # separate out copy number probes
     npIndex = getVarInEnv("npProbesFid")
@@ -618,7 +618,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
       open(XY@assayData$X)
       open(XY@assayData$Y)
       open(XY@assayData$zero)
-      
+
       A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
       B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
@@ -631,26 +631,26 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 
       colnames(A) <- colnames(B) <- colnames(zero) <- sns
       rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
-  
+
       cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
-    
-      t0 <- proc.time() 
-      save(cnAB, file=cnFile) 
+
+      t0 <- proc.time()
+      save(cnAB, file=cnFile)
       t0 <- proc.time()-t0
       if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
        rm(cnAB, B, zero)
     }
   }
-  
+
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
   nprobes <- length(snpIndex)
-  
+
   ##We will read each cel file, summarize, and run EM one by one
   ##We will save parameters of EM to use later
   mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
   SNR <- initializeBigVector("crlmmSNR-", narrays, "double")
-  SKW <- initializeBigVector("crlmmSKW-", narrays, "double") 
+  SKW <- initializeBigVector("crlmmSKW-", narrays, "double")
 
   ## This is the sample for the fitting of splines
   ## BC: I like better the idea of the user passing the seed,
@@ -659,7 +659,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   set.seed(seed)
   idx <- sort(sample(autosomeIndex, mixtureSampleSize))
   idx2 <- sample(nprobes, 10^5)
-  
+
   ##S will hold (A+B)/2 and M will hold A-B
   ##NOTE: We actually dont need to save S. Only for pics etc...
   ##f is the correction. we save to avoid recomputing
@@ -667,7 +667,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   A <- initializeBigMatrix("crlmmA-", nprobes, narrays, "integer")
   B <- initializeBigMatrix("crlmmB-", nprobes, narrays, "integer")
   zero <- initializeBigMatrix("crlmmZero-", nprobes, narrays, "integer")
-  
+
   if(verbose){
      message("Calibrating ", narrays, " arrays.")
      if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=narrays, style=3)
@@ -676,11 +676,11 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   open(XY@assayData$X)
   open(XY@assayData$Y)
   open(XY@assayData$zero)
-  
+
   for(i in 1:narrays){
      A[,i] = exprs(channel(XY, "X"))[snpIndex,i]
      B[,i] = exprs(channel(XY, "Y"))[snpIndex,i]
-     zero[,i] = exprs(channel(XY, "zero"))[snpIndex,i] 
+     zero[,i] = exprs(channel(XY, "zero"))[snpIndex,i]
 #    SKW[i] = mean((A[snpIndex,i][idx2]-mean(A[snpIndex,i][idx2]))^3)/(sd(A[snpIndex,i][idx2])^3)
      SKW[i] = mean((A[idx2,i]-mean(A[idx2,i]))^3)/(sd(A[idx2,i])^3)
     if(fitMixture){
@@ -707,8 +707,8 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 
   close(XY@assayData$X)
   close(XY@assayData$Y)
-  close(XY@assayData$zero)  
-  
+  close(XY@assayData$zero)
+
 #  if(class(A)[1]=="ff_matrix") {
     close(A)
     close(B)
@@ -716,8 +716,8 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     close(SKW)
     close(mixtureParams)
     close(SNR)
-#  }  
-  
+#  }
+
   res = list(A=A, B=B,
              zero=zero, sns=sns, gns=names(snpIndex), SNR=SNR, SKW=SKW,
              mixtureParams=mixtureParams, cdfName=cdfName)
@@ -726,11 +726,11 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   open(res[["B"]])
   open(res[["zero"]])
   open(res[["SNR"]])
-  open(res[["mixtureParams"]])  
-  
+  open(res[["mixtureParams"]])
+
   if(save.it & !missing(snpFile)) {
-    t0 <- proc.time() 
-    save(res, file=snpFile) 
+    t0 <- proc.time()
+    save(res, file=snpFile)
     t0 <- proc.time()-t0
     if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
   }
@@ -770,7 +770,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
         stop("Both RG and XY specified - please use one or the other")
     }
     if (missing(sns)) sns <- sampleNames(XY) #$X
-    
+
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
                         save.it=save.it, snpFile=snpFile, cnFile=cnFile)
@@ -786,13 +786,13 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 #                    alleleB=initializeBigMatrix(name="B", nr=nrow(res[[1]]), nc=length(sns)),
 #                    call=initializeBigMatrix(name="call", nr=nrow(res[[1]]), nc=length(sns)),
 #                    callProbability=initializeBigMatrix(name="callPr", nr=nrow(res[[1]]), nc=length(sns)),
-#  	            annotation=cdfName, protocolData=protD, phenoData=phenD, featureData=fD) 
+#  	            annotation=cdfName, protocolData=protD, phenoData=phenD, featureData=fD)
 #    sampleNames(callSet) <- sns
 #    featureNames(callSet) <- res[["gns"]]
 #    pData(callSet)$SKW <- rep(NA, length(sns))
 #    pData(callSet)$SNR <- rep(NA, length(sns))
 #    pData(callSet)$gender <- rep(NA, length(sns))
-					  
+
   }else{
       if(verbose) message("Loading ", snpFile, ".")
         obj <- load(snpFile)
@@ -808,7 +808,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 
 #    rm(phenD, protD , fD)
 
-#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))                
+#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))
 #    suppressWarnings(A(callSet) <- res[["A"]])
 #    suppressWarnings(B(callSet) <- res[["B"]])
 #    pData(callSet)$SKW <- res$SKW
@@ -817,7 +817,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 #    rm(res); gc()
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
-  
+
   res2 <- crlmmGT2(A=res[["A"]], #as.matrix(A(callSet)[snp.index,]), # j]),
                   B=res[["B"]], # as.matrix(B(callSet)[snp.index,]),  # j]),
                   SNR=res[["SNR"]], # callSet$SNR, # [j],
@@ -834,7 +834,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   verbose=verbose,
                   returnParams=returnParams,
                   badSNP=badSNP)
-#    rm(res); gc()  
+#    rm(res); gc()
 #    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
 #    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
 #    callSet$gender[j] <- tmp$gender
@@ -851,8 +851,8 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 }
 
 
-## MR: Below is a more memory efficient version of crlmmIllumina() which 
-## reads in the .idats and genotypes in the one function and removes objects 
+## MR: Below is a more memory efficient version of crlmmIllumina() which
+## reads in the .idats and genotypes in the one function and removes objects
 ## after they have been used
 crlmmIlluminaV2 = function(sampleSheet=NULL,
 			  arrayNames=NULL,
@@ -867,7 +867,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #                          rgFile,
 			  stripNorm=TRUE,
 			  useTarget=TRUE,
-			  row.names=TRUE, 
+			  row.names=TRUE,
 			  col.names=TRUE,
 			  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
                           seed=1, save.it=FALSE, snpFile, cnFile,
@@ -878,7 +878,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
   if(missing(cdfName)) stop("must specify cdfName")
   if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 #  if(missing(sns)) sns <- basename(arrayNames)
-			  
+
 #  if (save.rg & missing(rgFile))
 #    stop("'rgFile' is missing, and you chose save.rg")
   if (save.it & (missing(snpFile) | missing(cnFile)))
@@ -914,7 +914,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     open(res[["B"]])
     open(res[["SNR"]])
     open(res[["mixtureParams"]])
-						   
+
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
 #    protD = XY@protocolData
@@ -938,7 +938,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #    featureNames(callSet) <- res[["gns"]]
 #    pData(callSet)$SKW <- rep(NA, length(sns))
 #    pData(callSet)$SNR <- rep(NA, length(sns))
-#    pData(callSet)$gender <- rep(NA, length(sns))			
+#    pData(callSet)$gender <- rep(NA, length(sns))
 #	}
 #	pData(callSet)[j,] <- phenD
 #	pData(protocolData(callSet))[j,] <- protD
@@ -946,7 +946,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #	pData(protocolData(callSet)) <- protD
 
 #    rm(phenD, protD, fD)
-	
+
 #    if(k > 1 & nrow(res[[1]]) != nrow(callSet)){
         ##RS: I don't understand why the IDATS for the
         ##same platform potentially have different lengths
@@ -954,7 +954,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #        res[["B"]] <- res[["B"]][res$gns %in% featureNames(callSet), ]
 #    }
 
-#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))                
+#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))
 #    suppressWarnings(A(callSet)[, j] <- res[["A"]])
 #    suppressWarnings(B(callSet)[, j] <- res[["B"]])
 #    suppressWarnings(A(callSet) <- res[["A"]])
@@ -966,7 +966,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #    mixtureParams <- res$mixtureParams
 #    rm(res); gc()
   if(row.names) row.names=res$gns else row.names=NULL
-  if(col.names) col.names=res$sns else col.names=NULL    
+  if(col.names) col.names=res$sns else col.names=NULL
   res2 <- crlmmGT2(A=res[["A"]], #as.matrix(A(callSet)[snp.index,]), # j]),
                   B=res[["B"]], # as.matrix(B(callSet)[snp.index,]),  # j]),
                   SNR=res[["SNR"]], # callSet$SNR, # [j],
@@ -983,7 +983,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
                   verbose=verbose,
                   returnParams=returnParams,
                   badSNP=badSNP)
-#    rm(res); gc()  
+#    rm(res); gc()
 #    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
 #    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
 #    callSet$gender[j] <- tmp$gender

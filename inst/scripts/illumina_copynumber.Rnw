@@ -18,9 +18,9 @@
 
 \begin{document}
 \title{Using \crlmm{} for copy number estimation and genotype calling
-  with Illumina platforms} 
+  with Illumina platforms}
 
-\date{\today} 
+\date{\today}
 
 \author{Rob Scharpf}
 \maketitle
@@ -40,10 +40,11 @@ which annotation packages are currently available. Next we create a
 directory where output files will be stored and indicate the directory
 that contains the IDAT files that will be used in our analysis.
 
+
 <<setup, echo=FALSE, results=hide>>=
 options(width=70)
 options(continue=" ")
-@ 
+@
 
 <<libraries>>=
 library(ff)
@@ -52,9 +53,9 @@ crlmm:::validCdfNames()
 if(getRversion() < "2.12.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")	
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
-@ 
+@
 
 \paragraph{About this vignette.} This vignette was created using
 Illumina IDAT files that are located in a specific directory on my
@@ -66,7 +67,7 @@ these directories exist.
 <<checkSetup>>=
 if(!file.exists(outdir)) stop("Please specify valid directory for storing output")
 if(!file.exists(pathToCels)) stop("Please specify the correct path to the CEL files")
-@ 
+@
 
 \paragraph{Preprocessing Illumina IDAT files.}
 To perform copy number analysis on the Illumina platform, several
@@ -95,50 +96,51 @@ from the RG object and added to the \Robject{SnpSet} returned by
 %(Users wanting the \Rpackage{ff} implementation should try
 %\Rfunction{crlmm:::crlmmIllumina2} with the same arguments.)
 
+
 <<samplesToProcess>>=
 samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
 samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
 arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
 grnfiles = all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
 redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
-@ 
+@
 
 <<samplesToProcess2, echo=FALSE>>=
-## To speed up repeated calls to Sweave 
+## To speed up repeated calls to Sweave
 RG <- checkExists("RG", .path=outdir,
 		  .FUN=readIdatFiles2,
 		  sampleSheet=samplesheet,
 		  path=dirname(arrayNames[1]),
-		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
+		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
 		  saveDate=TRUE)
 annotation(RG) <- "human370v1c"
 crlmmResult <- checkExists("crlmmResult",
 			   .path=outdir,
 			   .FUN=crlmmIllumina2,
 			   RG=RG,
-			   sns=pData(RG)$ID, 
+			   sns=pData(RG)$ID,
 			   returnParams=TRUE,
 			   cnFile=file.path(outdir, "cnFile.rda"),
 			   snpFile=file.path(outdir, "snpFile.rda"),
 			   save.it=TRUE)
 protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-@ 
+@
 
 <<samplesToProcess3, eval=FALSE>>=
-RG <- readIdatFiles2(samplesheet[1:10, ], 
-		    path=dirname(arrayNames[1]), 
-		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), 
+RG <- readIdatFiles2(samplesheet[1:10, ],
+		    path=dirname(arrayNames[1]),
+		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
 		    saveDate=TRUE)
 annotation(RG) <- "human370v1c"
-crlmmResult <- crlmmIllumina2(RG=RG, 
-			     cdfName="human370v1c", 
-			     sns=pData(RG)$ID, 
+crlmmResult <- crlmmIllumina2(RG=RG,
+			     cdfName="human370v1c",
+			     sns=pData(RG)$ID,
 			     returnParams=TRUE,
 			     cnFile=file.path(outdir, "cnFile.rda"),
 			     snpFile=file.path(outdir, "snpFile.rda"),
 			     save.it=TRUE)
 protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-@ 
+@
 
 %\noindent Finally, we load a few of the intermediate files that were
 %created during the preprocessing and genotyping.
@@ -147,13 +149,13 @@ protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
 %res <- get("res")
 %load(file.path(outdir, "cnFile.rda"))
 %cnAB <- get("cnAB")
-%@ 
+%@
 %
 %<<loadIntermediate, echo=FALSE>>=
 %trace(checkExists, browser)
 %res <- checkExists("snpFile", .path=outdir, .FUN=load, file=file.path(outdir, "snpFile.rda"))
 %cnAB <- checkExists("cnFile", .path=outdir, .FUN=load, file=file.path(outdir, "cnFile.rda"))
-%@ 
+%@
 
 After running the crlmm algorithm, we construct a container for
 storing the quantile normalized intensities, genotype calls, and
@@ -172,11 +174,11 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 				 snpFile=snpFile,
 				 cnFile=cnFile)
 }
-@ 
+@
 
 <<constructContainer2, eval=FALSE>>=
 container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=snpFile, cnFile=cnFile)
-@ 
+@
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
 for copy number estimation are available: \Rfunction{crlmmCopynumber}
@@ -194,11 +196,11 @@ the genotyping and copy number estimation steps.  Here, we use the
 cnSet <- checkExists("cnSet", .path=outdir,
 		     .FUN=crlmmCopynumber,
 		     object=container)
-@ 
+@
 
 <<estimateCopynumber, eval=FALSE>>=
 cnSet <- crlmmCopynumberLD(container)
-@ 
+@
 
 %In the following code, we define helper functions to construct a
 %\Robject{featureData} object that chromosome and physical position
@@ -230,12 +232,12 @@ cb <- CB(cnSet)[marker.index, ]/100
 missing.index <- which(rowSums(is.na(ca))==ncol(cnSet))
 ca <- ca[-missing.index, ]
 cb <- cb[-missing.index, ]
-@ 
+@
 \noindent Negating the \Robject{isSnp} function could be used to
 extract the estimates at nonpolymorphic markers. For instance,
 <<monomorphic-accessor>>=
 cn.monomorphic <- CA(cnSet)[which(chromosome(cnSet) == 21 & !isSnp(cnSet)), ]/100
-@ 
+@
 
 At polymorphic loci, the total copy number is the sum of the number of
 copies of the A allele and the number of copies for the B allele.  At
@@ -251,7 +253,7 @@ cn.total2 <- totalCopyNumber(cnSet, i=marker.index)
 cn.total2 <- cn.total2[-missing.index, ]
 dimnames(cn.total) <- NULL
 all.equal(cn.total2, cn.total)
-@ 
+@
 
 A few simple visualizations may be helpful at this point. The first
 plot is a histogram of the signal to noise ratio of the sample -- an
@@ -260,11 +262,11 @@ statistic tends to be much higher for Illumina than for the Affymetrix
 platforms.) The second is a visualization of the total copy number
 estimates plotted versus physical position on chromosome 1 for the two
 samples with the lowest (top) and highest (bottom) signal to noise
-ratios.  
+ratios.
 
 <<snr, fig=TRUE>>=
 hist(cnSet$SNR, breaks=15)
-@ 
+@
 
 <<firstSample, fig=TRUE>>=
 low.snr <- which(cnSet$SNR == min(cnSet$SNR))
@@ -281,7 +283,7 @@ for(j in c(low.snr, high.snr)){
 }
 axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
-@ 
+@
 
 Here's a very simple approach to handle outliers by applying a running
 median using a window of size 3.  Following outlier removal, we
@@ -303,12 +305,12 @@ for(j in c(low.snr, high.snr)){
 }
 axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
-@ 
+@
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
-@ 
+@
 
 
 \end{document}
