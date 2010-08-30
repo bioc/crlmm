@@ -2,7 +2,7 @@
 THISPKG <- "crlmm"
 
 .onLoad <- function(libname, pkgname) {
-  require("methods")
+	require("methods")
 }
 
 .onAttach <- function(libname, pkgname) {

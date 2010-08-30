@@ -1552,7 +1552,8 @@ genotypeSummary <- function(object,
 		       X.SNP="summarizeSnps",
 		       X.NP="summarizeNps")
 	}
-	FUN <- summaryFxn(type[[1]])
+	myf <- summaryFxn(type[[1]])
+	FUN <- get(myf)
 	if(is.lds){
 		index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
@@ -1565,8 +1566,7 @@ genotypeSummary <- function(object,
 			 is.lds=is.lds,
 			 CHR.X=CHR.X,
 			 neededPkgs="crlmm")
-	} else {
-		FUN <- match.fun(FUN)
+	} else{
 		object <- FUN(strata=1,
 			      index.list=list(marker.index),
 			      object=object,
@@ -1860,7 +1860,8 @@ estimateCnParameters <- function(object,
 		       X.SNP="fit.lm3",
 		       X.NP="fit.lm4")
 	}
-	FUN <- lmFxn(type[[1]])
+	myfun <- lmFxn(type[[1]])
+	FUN <- get(myfun)
 	if(is.lds){
 		index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
@@ -1882,7 +1883,7 @@ estimateCnParameters <- function(object,
 			 CHR.X=CHR.X,
 			 neededPkgs="crlmm")
 	} else {
-		FUN <- match.fun(FUN)
+		##FUN <- match.fun(FUN)
 		object <- FUN(strata=1,
 			      index.list=list(marker.index),
 			      marker.index=marker.index,
