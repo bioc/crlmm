@@ -24,18 +24,18 @@
 
 <<setup, echo=FALSE, results=hide>>=
 options(continue=" ", width=70)
-@ 
+@
 
 %\section{Estimating copy number}
 
 %At present, software for copy number estimation is provided only for the
-%Affymetrix 6.0 platform.  
+%Affymetrix 6.0 platform.
 
 \begin{abstract}
   This vignette estimates copy number for HapMap samples on the
   Affymetrix 6.0 platform.  See \citep{Scharpf2010} for the working
   paper.
-  
+
 \end{abstract}
 
 \section{Simple usage}
@@ -47,7 +47,7 @@ library(oligoClasses)
 library(crlmm)
 crlmm:::validCdfNames()
 cdfName <- "genomewidesnp6"
-@ 
+@
 
 \paragraph{Preprocess and genotype.}
 
@@ -57,7 +57,7 @@ intensities and genotype data, and define a 'batch' variable. The
 batch variable will later be useful when we estimate copy number.  We
 typically use the 96 well chemistry plate or the scan date of the
 array as a surrogate for batch. Adjusting by date or chemistry plate
-can be helpful for limiting the influence of batch effects.  
+can be helpful for limiting the influence of batch effects.
 
 <<celfiles>>=
 celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
@@ -68,7 +68,7 @@ batch <- substr(basename(celFiles), 13, 13)
 celFiles <- celFiles[batch %in% c("C", "Y")]
 batch <- batch[batch %in% c("C", "Y")]
 stopifnot(length(batch) == length(celFiles))
-@ 
+@
 
 The preprocessing steps for copy number estimation includes quantile
 normalization of the polymorphic and nonpolymorphic markers and a
@@ -95,9 +95,12 @@ if(!exists("cnSet")){
 	if(!file.exists(file.path(outdir, "cnSet.rda"))){
 		cnSet <- genotype(celFiles[1:50], cdfName=cdfName, copynumber=TRUE, batch=batch[1:50])
 		save(cnSet, file=file.path(outdir, "cnSet.rda"))
-	} else load(file.path(outdir, "cnSet.rda"))
+	} else{
+		message("Loading cnSet container")
+		load(file.path(outdir, "cnSet.rda"))
+	}
 }
-@ 
+@
 
 A more memory efficient approach to preprocessing and genotyping is
 implemented in the \R{} function \Rfunction{genotype2}.  The arguments
@@ -114,13 +117,18 @@ library(ff)
 ld.path <- file.path(outdir, "ffobjs")
 if(!file.exists(ld.path)) dir.create(ld.path)
 ldPath(ld.path)
+ocProbesets(100000)
+ocSamples(300)
 if(!exists("cnSet2")){
 	if(!file.exists(file.path(outdir, "cnSet2.rda"))){
 		cnSet2 <- genotype2(celFiles, cdfName=cdfName, copynumber=TRUE, batch=batch)
 		save(cnSet2, file=file.path(outdir, "cnSet2.rda"))
-	} else load(file.path(outdir, "cnSet2.rda"))
+	} else{
+		message("Loading cnSet2 container")
+		load(file.path(outdir, "cnSet2.rda"))
+	}
 }
-@ 
+@
 
 The objects returned by the \Rfunction{genotype} and
 \Rfunction{genotype2} differ in size as the former returns an object
@@ -151,7 +159,7 @@ if(FALSE){
 gt1 <- calls(cnSet)[, 1:50]
 gt2 <- calls(cnSet2)[, 1:50]
 all.equal(gt1, gt2)
-@ 
+@
 
 \noindent With \Robject{ff} objects the additional I/O time required
 for extracting data is substantial and will increase for larger
@@ -194,7 +202,7 @@ open(snpCallProbability(cnSet2))
 posterior.prob2 <- integerScoreToProbability(snpCallProbability(cnSet2)[rows, cols])
 close(snpCallProbability(cnSet2))
 all.equal(posterior.prob1, posterior.prob2)
-@ 
+@
 
 Next, we obtain locus-level estimates of copy number by fitting a
 linear model to each SNP. A variable named 'batch' must be indicated
@@ -212,14 +220,16 @@ latter. As with the preprocessing and genotyping, the following code
 should be submitted as part of the batch job as it is too slow for
 interactive analysis.
 
+
+
 <<cn, echo=FALSE, eval=FALSE>>=
 ##Matrix format
 cnSet <- crlmmCopynumber(cnSet)
-@ 
+@
 
 <<save.cnset, echo=FALSE, eval=FALSE>>=
 save(cnSet, file=file.path(outdir, "cnSet.rda"))
-@ 
+@
 
 <<cn.ff, echo=FALSE, eval=FALSE>>=
 rm(cnSet); gc()
@@ -227,13 +237,13 @@ ocProbesets(75e3)
 ##ff objects
 system.time(cnSet2 <- crlmmCopynumber2(cnSet2))
 save(cnSet2, file=file.path(outdir, "cnSet2.rda"))
-@ 
+@
 
 <<timings, eval=FALSE>>=
 tryCatch(print(paste("Time for matrix version:", time1)), error=function(e) print("timing for CN estimation not available"))
 tryCatch(print(paste("Time for ff version:", time2)), error=function(e) print("timing for CN estimation not available"))
 rm(cnSet2); gc()
-@ 
+@
 
 
 \section{Accessors}
@@ -245,7 +255,7 @@ visualizations using the sample object provided in the
 <<sampleset>>=
 data(sample.CNSetLM)
 x <- sample.CNSetLM
-@ 
+@
 
 
 \subsection{Quantile-normalized intensities}
@@ -258,7 +268,7 @@ snp.index <- which(isSnp(x))
 np.index <- which(!isSnp(x))
 a <- (A(x))[snp.index, ]
 dim(a)
-@ 
+@
 
 The extra set of parentheses surrounding \Robject{A(cnSet2)} above is
 added to emphasize the appropriate order of operations. Subsetting the
@@ -267,54 +277,54 @@ large datasets.
 
 <<eval=FALSE>>=
 a <- A(x[snp.index, ])
-@ 
+@
 
 The quantile-normalized intensities for nonpolymorphic loci are obtained
 by:
 
 <<>>=
 npIntensities <- (A(x))[np.index, ]
-@ 
+@
 
 Quantile normalized intensities for the B allele at polymorphic loci:
 
 <<B.polymorphic>>=
 b.snps <- (B(x))[snp.index, ]
-@ 
+@
 
 Note that NAs are recorded in the 'B' assay data element for
 nonpolymorphic loci:
 
 <<B.NAs>>=
 all(is.na((B(x))[np.index, ]))
-@ 
+@
 
 <<clean, echo=FALSE>>=
 rm(b.snps, a, npIntensities); gc()
-@ 
+@
 
 \paragraph{\Robject{SnpSet}: Genotype calls and confidence scores}
 
 Genotype calls:
 <<genotypes>>=
 genotypes <- (snpCall(x))[snp.index, ]
-@ 
+@
 Confidence scores of the genotype calls:
 <<confidenceScores>>=
 genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10], ])
-@ 
+@
 
 \paragraph{\Robject{CopyNumberSet}: allele-specific copy number}
 
 Allele-specific copy number at polymorphic loci:
 <<ca>>=
 ca <- CA(x[snp.index, ])/100
-@ 
+@
 
 Total copy number at nonpolymorphic loci:
 <<ca>>=
 cn.nonpolymorphic <- CA(x[np.index, ])/100
-@ 
+@
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
@@ -322,7 +332,7 @@ path <- system.file("scripts", package="crlmm")
 source(file.path(path, "helperFunctions.R"))
 cn <- totalCopyNumber(x, i=c(snp.index, np.index))
 apply(cn, 2, median, na.rm=TRUE)
-@ 
+@
 
 (Note: the accessor totalCopyNumber method is sourced from a few
 helper functions. Documentation will be available in the devel version
@@ -335,15 +345,15 @@ Information on physical position and chromosome can be accessed as follows:
 <<positionChromosome>>=
 xx <- position(x)
 yy <- chromosome(x)
-@ 
+@
 
 Parameters from the linear model used to estimate copy number are
-stored in the slot \Robject{lM}. 
+stored in the slot \Robject{lM}.
 
 <<copynumberParameters>>=
 names(lM(x))
 dim(lM(x)[[1]])
-@ 
+@
 
 
 
@@ -355,7 +365,7 @@ A histogram of the signal to noise ratio for the HapMap samples:
 
 <<plotSnr, fig=TRUE, include=FALSE>>=
 hist(x$SNR, xlab="SNR", main="", breaks=25)
-@ 
+@
 
 \begin{figure}
   \centering
@@ -371,24 +381,24 @@ Figure \ref{fig:oneSample} plots physical position (horizontal axis)
 versus copy number (vertical axis) for the first sample.  There is less
 information to estimate copy number at nonpolymorphic loci; improvements
 to the univariate prediction regions at nonpolymorphic loci are a future
-area of research.  
+area of research.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
 par(las=1, mar=c(4, 5, 4, 2))
-plot(position(x), copyNumber(x)[, 1]/100, pch=21, 
-     cex=0.4, xaxt="n", col="grey20", ylim=c(0,5), 
+plot(position(x), copyNumber(x)[, 1]/100, pch=21,
+     cex=0.4, xaxt="n", col="grey20", ylim=c(0,5),
      ylab="copy number", xlab="physical position (Mb)",
      main=paste(sampleNames(x)[1], ", CHR:", unique(chromosome(x))))
 points(position(x)[!isSnp(x)], copyNumber(x)[!isSnp(x), 1]/100,
        pch=21, cex=0.4, col="lightblue", bg="lightblue")
 axis(1, at=pretty(range(position(x))), labels=pretty(range(position(x)))/1e6)
 abline(h=2)
-@ 
+@
 
 <<idiogram, eval=FALSE, echo=FALSE>>=
 require(SNPchip)
 plotCytoband(22, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE)
-@ 
+@
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth]{copynumber-oneSample}
@@ -408,14 +418,14 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE)
 %xlim <- c(10*1e6, max(position(cnSet2)))
 %cols <- brewer.pal(8, "Dark2")[1:4]
 %for(j in 1:3){
-%	plot(position(cnSet2), cnState[, j], pch=".", col=cols[2], xaxt="n", 
+%	plot(position(cnSet2), cnState[, j], pch=".", col=cols[2], xaxt="n",
 %	     ylab="copy number", xlab="Physical position (Mb)", type="s", lwd=2,
 %	     ylim=c(0,6), xlim=xlim)
 %	points(position(cnSet2), cns[, j], pch=".", col=cols[3])
 %	lines(position(cnSet2), cnState[,j], lwd=2, col=cols[2])
-%	axis(1, at=pretty(position(cnSet)), 
+%	axis(1, at=pretty(position(cnSet)),
 %	     labels=pretty(position(cnSet))/1e6)
-%	abline(h=c(1,3), lty=2, col=cols[1])	
+%	abline(h=c(1,3), lty=2, col=cols[1])
 %	legend("topright", bty="n", legend=sampleNames(cnSet)[j])
 %	legend("topleft", lty=1, col=cols[2], legend="copy number state",
 %	       bty="n", lwd=2)
@@ -423,7 +433,7 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE)
 %		     label.cytoband=FALSE, xlim=xlim)
 %}
 %par(op)
-%@ 
+%@
 %
 %\begin{figure}
 %  \includegraphics[width=\textwidth]{copynumber-overlayHmmPredictions}
@@ -462,13 +472,13 @@ plot(i, x, copynumber=2)
 ##for(i in index){
 ##	gt <- calls(cnSet)[i, ]
 ##	if(i != 89){
-##		myScatter(cnSet[i, ], 
-##			  pch=pch, 
-##			  col=colors[snpCall(cnSet)[i, ]], 
+##		myScatter(cnSet[i, ],
+##			  pch=pch,
+##			  col=colors[snpCall(cnSet)[i, ]],
 ##			  bg=colors[snpCall(cnSet)[i, ]], cex=cex,
 ##			  xlim=xlim, ylim=ylim)
 ##		mtext("A", 1, outer=TRUE, line=1)
-##		mtext("B", 2, outer=TRUE, line=1)	
+##		mtext("B", 2, outer=TRUE, line=1)
 ##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="C", lwd=2, col="black")
 ##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="Y", lwd=2, col="grey50")
 ##	} else {
@@ -493,10 +503,87 @@ plot(i, x, copynumber=2)
 %
 %See the technical report \citep{Scharpf2009}.
 
+\section{Trouble shooting}
+
+Suppose that you are only interested in estimating copy number at
+autosomal markers and you encountered an error using the
+crlmmCopynumber2 function for estimating copy number at nonpolymorphic
+markers on chromosome X.
+
+Making a subset of a cnSet2 without pulling all the data from disk to
+memory.
+<<>>=
+cnSet <- cnSet2
+@
+
+<<>>=
+cnSet <- crlmmCopynumber2(cnSet)
+@
+
+
+<<>>=
+marker.index <- which(chromosome(cnSet) < 23)
+nr <- length(marker.index)
+nc <- ncol(cnSet)
+@
+
+Set up a new directory for storing ff objects so that we can
+completely remove all the ff objects in the old directory when we're
+finished.
+
+<<>>=
+library(ff)
+ldPath("newDirectory")
+dir.create("newDirectory")
+@
+
+Next, initialize the container using utilities from the oligoClasses package.
+
+<<>>=
+CA <- initializeBigMatrix("CA", nr, nc)
+CB <- initializeBigMatrix("CB", nr, nc)
+A <- initializeBigMatrix("A", nr, nc)
+B <- initializeBigMatrix("B", nr, nc)
+GT <- initializeBigMatrix("GT", nr, nc)
+PP <- initializeBigMatrix("confs", nr, nc)
+cnSet.autosomes <- new("CNSetLM",
+		       alleleA=A,
+		       alleleB=B,
+		       call=GT,
+		       callProbability=PP,
+		       CA=CA,
+		       CB=CB,
+		       protocolData=protocolData(cnSet),
+		       featureData=featureData(cnSet)[marker.index, ],
+		       phenoData=phenoData(cnSet),
+		       annotation=annotation(cnSet))
+@
+
+Next, we need to populate the ff objects with data. The easiest way to
+do this without requiring too much RAM is to loop through the
+samples. Lets do 5 samples at a time.
+
+<<populateWithData>>=
+sample.index <- splitIndicesByLength(1:ncol(cnSet), 5)
+for(j in sample.index){
+	A(cnSet.autosomes)[, j] <- A(cnSet)[marker.index, j]
+	B(cnSet.autosomes)[, j] <- B(cnSet)[marker.index, j]
+	calls(cnSet.autosomes)[, j] <- calls(cnSet)[marker.index, j]
+	snpCallProbability(cnSet.autosomes)[, j] <- snpCallProbability(cnSet)[marker.index, j]
+}
+@
+
+Check to see that the data is there.
+
+The subset operation would pull all the data from disk and create a
+cnSet object with matrices.  If the dataset is very large, the subset
+operation would be very slow and potentially create a large amount of
+RAM.
+
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
-@ 
+@
 
 \section*{References}
 
