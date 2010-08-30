@@ -946,9 +946,12 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 	  npIndex = getVarInEnv("npProbesFid")
 	  nprobes = length(npIndex)
 	  if(length(nprobes > 0)){
-		  open(XY@assayData$X)
-		  open(XY@assayData$Y)
-		  open(XY@assayData$zero)
+		  is.ff <- is(XY@assayData$X, "ff") | is(XY@assayData$X, "ffdf")
+		  if(is.ff){
+			  open(XY@assayData$X)
+			  open(XY@assayData$Y)
+			  open(XY@assayData$zero)
+		  }
 
 		  A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
 		  B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
