@@ -72,3 +72,4 @@ export(crlmm,
 ##export(initializeParamObject, biasAdjNP2)
 
 
+exportMethods(totalCopyNumber)

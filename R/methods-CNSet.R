@@ -157,12 +157,12 @@ ellipse.CNSet <- function(x, copynumber, batch, ...){
 
 
 setMethod("totalCopyNumber",
-	  signature=signature(object="CNSet", ...),
+	  signature=signature(object="CNSet"),
 	  function(object, ...){
 		  is.ff <- is(CA(object), "ff") | is(CA(object), "ffdf")
-		  dotArgs <- names(list(...))
-		  missing.i <- "i" %in% dotArgs
-		  missing.j <- "j" %in% dotArgs
+		  dotArgs <- list(...)
+		  missing.i <- !"i" %in% names(dotArgs)
+		  missing.j <- !"j" %in% names(dotArgs)
 		  if(missing.i & missing.j){
 			  if(is.ff) stop("Must specify i and/or j for ff objects")
 		  }
@@ -173,7 +173,8 @@ setMethod("totalCopyNumber",
 			  snp.index2 <- which(isSnp(object)[i])
 		  } else {
 			  i <- 1:nrow(object)
-			  snp.index2 <- snp.index <- which(isSnp(object))
+			  snp.index <- which(isSnp(object))
+			  snp.index2 <- snp.index
 		  }
 		  if(!missing.j){
 			  j <- dotArgs[["j"]]
@@ -181,8 +182,7 @@ setMethod("totalCopyNumber",
 		  cn.total <- as.matrix(CA(object)[i, j])
 		  if(length(snp.index) > 0){
 			  cb <- as.matrix(CB(object)[snp.index, j])
-			  ##				 snps <- (1:nrow(cn.total))[i %in% snp.index]
-			  cn.total[snp.index2, ] <- cn.total[snp.index, ] + cb
+			  cn.total[snp.index2, ] <- cn.total[snp.index2, ] + cb
 		  }
 		  cn.total <- cn.total/100
 		  return(cn.total)

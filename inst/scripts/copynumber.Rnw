@@ -319,6 +319,8 @@ genotypeConf <- integerScoreToProbability(snpCallProbability(x)[snp.index[1:10],
 Allele-specific copy number at polymorphic loci:
 <<ca>>=
 ca <- CA(x[snp.index, ])/100
+cb <- CB(x[snp.index, ])/100
+ct <- ca+cb
 @
 
 Total copy number at nonpolymorphic loci:
@@ -328,9 +330,9 @@ cn.nonpolymorphic <- CA(x[np.index, ])/100
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
-path <- system.file("scripts", package="crlmm")
-source(file.path(path, "helperFunctions.R"))
-cn <- totalCopyNumber(x, i=c(snp.index, np.index))
+##path <- system.file("scripts", package="crlmm")
+##source(file.path(path, "helperFunctions.R"))
+cn <- crlmm:::totalCopyNumber(x, i=c(snp.index, np.index))
 apply(cn, 2, median, na.rm=TRUE)
 @
 

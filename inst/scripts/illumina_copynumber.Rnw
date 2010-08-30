@@ -251,23 +251,27 @@ cb <- cb[-missing.index, ]
 \noindent Negating the \Robject{isSnp} function could be used to
 extract the estimates at nonpolymorphic markers. For instance,
 <<monomorphic-accessor>>=
-cn.monomorphic <- CA(cnSet)[which(chromosome(cnSet) == 21 & !isSnp(cnSet)), ]/100
+np.index <- which(chromosome(cnSet) == 21 & !isSnp(cnSet))
+cn.monomorphic <- CA(cnSet)[np.index, ]/100
 @
 
 At polymorphic loci, the total copy number is the sum of the number of
 copies of the A allele and the number of copies for the B allele.  At
 nonpolymorphic loci, the total copy number is the number of copies for
-the A allele.  The helper function totalCopyNumber can be used to
-extract the total copy number for all polymorphic and nonpolymorphic
-markers.  Documentation of the \Rfunction{totalCopyNumber} will be
-available in the devel version of the \Rpackage{oligoClasses}.
+the A allele.  The helper function \Rfunction{totalCopyNumber} can be
+used to extract the total copy number for all polymorphic and
+nonpolymorphic markers.  Documentation of the
+\Rfunction{totalCopyNumber} will be available in the devel version of
+the \Rpackage{oligoClasses}.
 
-<<copyNumberHelper>>=
+<<totalCopyNumber>>=
 cn.total <- ca+cb
-cn.total2 <- totalCopyNumber(cnSet, i=marker.index)
+cn.total2 <- crlmm:::totalCopyNumber(cnSet, i=marker.index)
 cn.total2 <- cn.total2[-missing.index, ]
-dimnames(cn.total) <- NULL
-all.equal(cn.total2, cn.total)
+stopifnot(all.equal(cn.total2, cn.total))
+
+cn.monomorphic2 <- totalCopyNumber(cnSet, i=np.index)
+stopifnot(all.equal(cn.monomorphic, cn.monomorphic2))
 @
 
 A few simple visualizations may be helpful at this point. The first
@@ -322,40 +326,6 @@ axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
 @
 
-%Next we remove some of the waves using \Rpackage{limma}'s function
-%\Rfunction{loessFit}.
-%<<wavecorrection, fig=TRUE>>=
-%require(limma)
-%par(mfrow=c(2,2), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
-%for(j in c(low.snr, high.snr)){
-%	y <- copyNumber(cnSet)[chromosome(cnSet) == 1, j]/100
-%	missing <- is.na(y)
-%	x <- x[!missing]
-%	y <- y[!missing]
-%	dist <- diff(x)
-%	index <- c(0, cumsum(log10(dist) > 6))
-%	x.split <- split(x, index)
-%	y <- as.numeric(runmed(y, k=3))
-%	y.split <- split(y, index)
-%	y.smooth <- vector("list", length(y.split))
-%	for(i in seq_along(y.smooth)){
-%		fit <- loessFit(y=y.split[[i]], x= x.split[[i]], span=0.3)
-%		y.smooth[[i]] <- 2+fit$residuals
-%	}
-%	plot(unlist(x.split),
-%	     unlist(y.split),
-%	     pch=".", ylab="copy number", xaxt="n", log="y", ylim=c(0.5,5))
-%	plot(unlist(x.split),
-%	     unlist(y.smooth),
-%	     pch=".", ylab="copy number", xaxt="n", log="y", ylim=c(0.5,5), yaxt="n")
-%	legend("topright", bty="n", legend=paste("SNR =", round(cnSet$SNR[j], 1)))
-%	abline(h=2, col="grey70")
-%	if(j == high.snr){
-%		axis(1, at=pretty(x), labels=pretty(x/1e6))
-%		mtext("Mb", 1, outer=TRUE, line=2)
-%	}
-%}
-%@
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
