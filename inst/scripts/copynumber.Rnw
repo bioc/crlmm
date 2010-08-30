@@ -155,40 +155,42 @@ class(calls(cnSet2))
 dims(cnSet2)
 print(object.size(cnSet), units="Mb")
 print(object.size(cnSet2), units="Mb")
+snp.index <- which(isSnp(cnSet))
 if(FALSE){
 	replicate(5, system.time(gt1 <- calls(cnSet)[, 1:50])[[1]])
 	open(calls(cnSet2))
 	replicate(5, system.time(gt2 <- calls(cnSet2)[, 1:50])[[1]])
 }
-gt1 <- calls(cnSet)[, 1:50]
-gt2 <- calls(cnSet2)[, 1:50]
+gt1 <- calls(cnSet)[snp.index, 1:50]
+gt2 <- calls(cnSet2)[snp.index, 1:50]
 all.equal(gt1, gt2)
 @
 
-\noindent With \Robject{ff} objects the additional I/O time required
+\noindent Note that the genotype calls and call probabilities may
+differ slightly as the two approaches used a different set of
+samples. With \Robject{ff} objects the additional I/O time required
 for extracting data is substantial and will increase for larger
 datasets.  Patience is required.
 
-Note that for the Affymetrix 6.0 platform the assay data elements each
-have a row dimension corresponding to the total number of polymorphic
-and nonpolymorphic markers interrogated by the Affymetrix 6.0
-platform.  A consequence of keeping the rows of the assay data
-elements the same for all of the statistical summaries is that the
-matrix used to store genotype calls is larger than necessary.  Also,
-note the additional overhead of some operations when using
-\Robject{ff} objects.  For instance, the posterior probabilities for
-the CRLMM genotype calls are represented as integers. The accessor
-\Robject{snpCallProbability} can be used to access these confidence
-scores.  When stored as matrices, converting the integer
-representation back to the probability scale is straightforward as
-shown below.  However, for the \Robject{ff} objects we must first
-bring the data into memory. To bring all the scores into memory, one
-could use the function \Rfunction{[,]} but this could be slow and
-require a lot of RAM depending on the size of the dataset.  Instead,
-we suggest pulling only the needed rows and columns from memory. In
-the following example, we convert the integer scores to probabilities
-for the CEPH samples.  As genotype confidence scores are not
-applicable to the nonpolymorphic markers, we extract only the
+For the Affymetrix 6.0 platform the assay data elements each have a
+row dimension corresponding to the total number of polymorphic and
+nonpolymorphic markers interrogated by the Affymetrix 6.0 platform.  A
+consequence of keeping the rows of the assay data elements the same
+for all of the statistical summaries is that the matrix used to store
+genotype calls is larger than necessary.  Also, note the additional
+overhead of some operations when using \Robject{ff} objects.  For
+instance, the posterior probabilities for the CRLMM genotype calls are
+represented as integers. The accessor \Robject{snpCallProbability} can
+be used to access these confidence scores.  When stored as matrices,
+converting the integer representation back to the probability scale is
+straightforward as shown below.  However, for the \Robject{ff} objects
+we must first bring the data into memory. To bring all the scores into
+memory, one could use the function \Rfunction{[,]} but this could be
+slow and require a lot of RAM depending on the size of the dataset.
+Instead, we suggest pulling only the needed rows and columns from
+memory. In the following example, we convert the integer scores to
+probabilities for the CEPH samples.  As genotype confidence scores are
+not applicable to the nonpolymorphic markers, we extract only the
 polymorphic markers using the \Rfunction{isSnp} function.  We observe
 a slight difference in the posterior probabilities.  The difference
 arises because \Robject{cnSet2} was processed with a larger number of
@@ -202,9 +204,9 @@ cols <- 1:50
 posterior.prob <- tryCatch(integerScoreToProbability(snpCallProbability),
 			    error=function(e) print("This will not work for an ff object."))
 posterior.prob1 <- integerScoreToProbability(snpCallProbability(cnSet)[rows, cols])
-open(snpCallProbability(cnSet2))
+invisible(open(snpCallProbability(cnSet2)))
 posterior.prob2 <- integerScoreToProbability(snpCallProbability(cnSet2)[rows, cols])
-close(snpCallProbability(cnSet2))
+invisible(close(snpCallProbability(cnSet2)))
 all.equal(posterior.prob1, posterior.prob2)
 @
 

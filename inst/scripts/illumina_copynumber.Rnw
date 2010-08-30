@@ -138,7 +138,7 @@ cnAB <- get("cnAB")
 load(file.path(outdir, "crlmmResult.rda"))
 @
 
-<<loadIntermediate, eval=TRUE, echo=FALSE>>=
+<<loadIntermediate, echo=FALSE>>=
 if(!exists("res")){
 	load(file.path(outdir, "snpFile.rda"))
 	res <- get("res")
@@ -150,30 +150,13 @@ if(!exists("res")){
 
 After running the crlmm algorithm, we construct a container for
 storing the quantile normalized intensities, genotype calls, and
-allele-specific copy number estimates.  A few helper functions for
-facilitating the construction of this container have been added to the
-inst/scripts directory of this package and can be sourced as follows.
-Documentation for these helper functions will be available in the
-devel version of this package.
+allele-specific copy number estimates.  As not all of these functions
+have been exported in this release, please use the \verb@:::@ operator
+as indicated.  Documentation of these functions will be available in
+future versions of \Rpackage{crlmm}.
 
-<<constructContainer, eval=FALSE>>=
-##path <- system.file("scripts", package="crlmm")
-##source(file.path(path, "helperFunctions.R"))
-fD <- crlmm:::constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
-new.order <- order(fD$chromosome, fD$position)
-fD <- fD[new.order, ]
-aD <- crlmm:::constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
-protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-container <- new("CNSetLM",
-		 assayData=aD,
-		 phenoData=phenoData(crlmmResult),
-		 protocolData=protocolData(crlmmResult),
-		 featureData=fD,
-		 annotation="human370v1c")
-@
-
-<<container2,echo=FALSE>>=
-if(!file.exists(file.path(outdir, "cnSet"))){
+<<constructContainer>>=
+if(!exists(file.path(outdir, "cnSet.rda"))){
 	##path <- system.file("scripts", package="crlmm")
 	##source(file.path(path, "helperFunctions.R"))
 	fD <- crlmm:::constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
@@ -189,7 +172,6 @@ if(!file.exists(file.path(outdir, "cnSet"))){
 			 annotation="human370v1c")
 }
 @
-
 
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
@@ -261,8 +243,8 @@ nonpolymorphic loci, the total copy number is the number of copies for
 the A allele.  The helper function \Rfunction{totalCopyNumber} can be
 used to extract the total copy number for all polymorphic and
 nonpolymorphic markers.  Documentation of the
-\Rfunction{totalCopyNumber} will be available in the devel version of
-the \Rpackage{oligoClasses}.
+\Rfunction{totalCopyNumber} will be available in a future version of
+\Rpackage{crlmm}.
 
 <<totalCopyNumber>>=
 cn.total <- ca+cb
@@ -287,6 +269,7 @@ ratios.
 hist(cnSet$SNR, breaks=15)
 @
 
+\begin{figure}[tbh]
 <<firstSample, fig=TRUE>>=
 low.snr <- which(cnSet$SNR == min(cnSet$SNR))
 high.snr <- which(cnSet$SNR == max(cnSet$SNR))
@@ -303,34 +286,25 @@ for(j in c(low.snr, high.snr)){
 axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
 @
+\caption{Copy number plotted against physical position for a sample
+  with high SNR (top) and a sample with low SNR (bottom).}
+\end{figure}
 
 Here's a very simple approach to handle outliers by applying a running
 median using a window of size 3.  Following outlier removal, we
 suggest applying a wave correction to adjust for more global waves
 followed by a segmentation or hidden markov model.
 
-<<removeOutliers, fig=TRUE>>=
-par(mfrow=c(2,1), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
-for(j in c(low.snr, high.snr)){
-	cn <- cn.total[, j]
-	x <- x[!is.na(cn)]
-	cn <- cn[!is.na(cn)]
-	y <- as.numeric(runmed(cn, k=3))
-	plot(x,
-	     y,
-	     pch=".", ylab="copy number", xaxt="n", log="y", ylim=c(0.5,5))
-	legend("topright", bty="n", legend=paste("SNR =", round(cnSet$SNR[j], 1)))
-	abline(h=2, col="grey70")
-}
-axis(1, at=pretty(x), labels=pretty(x/1e6))
-mtext("Mb", 1, outer=TRUE, line=2)
+<<removeOutliers>>=
+cn <- cn[!is.na(cn)]
+y <- as.numeric(runmed(cn, k=3))
 @
 
 \section{Session information}
+
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
 @
-
 
 \end{document}
 
