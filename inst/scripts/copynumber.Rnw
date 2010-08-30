@@ -43,7 +43,6 @@ options(continue=" ", width=70)
 CRLMM supports the following platforms:
 
 <<cdfname>>=
-library(oligoClasses)
 library(crlmm)
 crlmm:::validCdfNames()
 cdfName <- "genomewidesnp6"
@@ -60,8 +59,13 @@ array as a surrogate for batch. Adjusting by date or chemistry plate
 can be helpful for limiting the influence of batch effects.
 
 <<celfiles>>=
-celFiles <- list.celfiles("/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m", full.names=TRUE, pattern=".CEL")
-outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/affy"
+if(getRversion() < "2.12.0"){
+	rpath <- getRversion()
+} else rpath <- "trunk"
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/affy_vignette", sep="")
+datadir <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
+celFiles <- list.celfiles(datadir, full.names=TRUE, pattern=".CEL")
+##outdir <- "/thumper/ctsa/snpmicroarray/rs/data/hapmap/crlmmVignette/release/affy"
 dir.create(outdir, showWarnings=FALSE)
 ## CEPH and Yoruban
 batch <- substr(basename(celFiles), 13, 13)
