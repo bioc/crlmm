@@ -87,7 +87,12 @@ exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 export(genotypeSummary,
        shrinkSummary,
        estimateCnParameters,
-       shrinkGenotypeSummaries, indexComplete, summarizeSnps, constructIlluminaAssayData, crlmmIlluminaV2, ACN, C1, C2, C3, fit.lm3)
+       shrinkGenotypeSummaries,
+##       indexComplete,
+       summarizeSnps,
+       constructIlluminaAssayData,
+       ACN, C1, C2, C3, fit.lm3,
+       linesCNSet)
 
 exportMethods(N.AA, N.AB, N.BB, "N.AA<-", "N.AB<-", "N.BB<-", medianA.AA, "medianA.AA<-")
 

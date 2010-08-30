@@ -6,21 +6,28 @@ setMethod("lines", signature=signature(x="CNSet"),
 linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 	require(ellipse)
 	object <- x
-	I <- y
-	stopifnot(length(I) == 1)
-	column <- grep(batch, batchNames(object))
-	stopifnot(length(column) == 1)
-	nuA <- nu(object, "A")[I, column]
-	nuB <- nu(object, "B")[I, column]
-	phiA <- phi(object, "A")[I, column]
-	phiB <- phi(object, "B")[I, column]
-	tau2A <- tau2(object, "A")[I, column]
-	tau2B <- tau2(object, "B")[I, column]
-	sigma2A <- sigma2(object, "A")[I, column]
-	sigma2B <- sigma2(object, "B")[I, column]
-	corrAB <- corr(object, "AB")[I, column]
-	corrAA <- corr(object, "AA")[I, column]
-	corrBB <- corr(object, "BB")[I, column]
+	marker.index <- y
+	stopifnot(length(marker.index) == 1)
+	batch.index <- match(batch, batchNames(object))
+	stopifnot(length(batch.index) == 1)
+	nuA <- nu(object, "A")[marker.index, batch.index]
+	nuB <- nu(object, "B")[marker.index, batch.index]
+	phiA <- phi(object, "A")[marker.index, batch.index]
+	phiB <- phi(object, "B")[marker.index, batch.index]
+
+	taus <- tau2(object, i=marker.index, j=batch.index)
+	tau2A <- taus[, "A", "BB", ]
+	tau2B <- taus[, "B", "AA", ]
+	sigma2A <- taus[, "A", "AA", ]
+	sigma2B <- taus[, "B", "BB", ]
+##	tau2A <- tau2(object, "A")[marker.index, batch.index]
+##	tau2B <- tau2(object, "B")[marker.index, batch.index]
+##	sigma2A <- sigma2(object, "A")[marker.index, batch.index]
+##	sigma2B <- sigma2(object, "B")[marker.index, batch.index]
+	cors <- corr(object, i=marker.index, j=batch.index)[, , ]
+	corrAB <- cors[["AB"]]
+	corrAA <- cors[["AA"]]
+	corrBB <- cors[["BB"]]
 	if(all(is.na(nuA))) {
 		message("Parameter estimates for batch ", batch, " not available")
 		next()

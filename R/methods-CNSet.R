@@ -410,7 +410,6 @@ ACN <- function(object, allele, i , j){
 		is.X <- chromosome(object)[i]==23 & is.ann
 		is.auto <- chromosome(object)[i] < 23 & is.ann
 		is.snp <- isSnp(object)[i] & is.ann
-
 	} else{
 		is.ann <- !is.na(chromosome(object))
 		is.X <- chromosome(object)==23 & is.ann
@@ -509,8 +508,8 @@ ACN <- function(object, allele, i , j){
 			acn.index <- which(!is.snp)
 			marker.index <- i[!is.snp]
 			acn[acn.index, ] <- 0
-		} else{
-			## SNPs
+		}
+		if(any(is.snp)){
 			if(any(is.auto)){
 				## autosomal SNPs
 				acn.index <- which(is.auto & is.snp)

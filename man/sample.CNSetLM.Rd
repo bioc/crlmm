@@ -30,7 +30,9 @@ data(sample.CNSetLM)
 ## update to class CNSet
 cnSet <- as(sample.CNSetLM, "CNSet")
 all(isCurrent(cnSet)) ## is the cnSet object current?
-
+##subsetting
+cnSet2 <- cnSet[, 1:5]
+stopifnot(batchNames(cnSet2) == "C")
 \dontrun{
 	## updating class CNSetLM using ff objects
 	## a bigger object with multiple batches

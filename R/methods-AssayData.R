@@ -43,7 +43,7 @@ setMethod("Ns", signature(object="AssayData"),
 		  return(res)
 	  })
 setMethod("corr", signature(object="AssayData"),
-	  function(object, i, j, ...){
+	  function(object, ...){
 		  dotArgs <- names(list(...))
 		  missing.i <- !("i" %in% dotArgs)
 		  missing.j <- !("j" %in% dotArgs)

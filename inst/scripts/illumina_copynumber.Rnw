@@ -47,7 +47,7 @@ options(continue=" ")
 @
 
 <<libraries>>=
-library(ff)
+##library(ff)
 library(crlmm)
 crlmm:::validCdfNames()
 if(getRversion() < "2.12.0"){
@@ -57,7 +57,7 @@ outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @
 
-Options for controlling RAM with the \Rpackage{ff} package.
+%Options for controlling RAM with the \Rpackage{ff} package.
 
 <<ldOptions>>=
 ldPath(outdir)
@@ -114,18 +114,41 @@ grnfiles = all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
 redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
 @
 
-<<samplesToProcess2>>=
+<<eval=FALSE>>=
+RG <- checkExists("RG", .path=outdir,
+		  .FUN=readIdatFiles,
+		  sampleSheet=samplesheet,
+		  path=dirname(arrayNames[1]),
+		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+		  saveDate=TRUE)
+annotation(RG) <- "human370v1c"
 crlmmResult <- checkExists("crlmmResult",
 			   .path=outdir,
-			   .FUN=crlmm:::crlmmIlluminaV2,
+			   .FUN=crlmmIllumina,
+			   RG=RG,
+			   sns=pData(RG)$ID,
+			   returnParams=TRUE,
+			   cnFile=file.path(outdir, "cnFile.rda"),
+			   snpFile=file.path(outdir, "snpFile.rda"),
+			   save.it=TRUE)
+protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
+@
+
+<<samplesToProcess2, eval=TRUE, echo=FALSE>>=
+crlmmResult <- checkExists("crlmmResult",
+			   .path=outdir,
+			   .FUN=crlmmIlluminaV2,
 			   sampleSheet=samplesheet,
 			   path=dirname(arrayNames[1]),
 			   arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
 			   returnParams=TRUE,
 			   cnFile=file.path(outdir, "cnFile.rda"),
 			   snpFile=file.path(outdir, "snpFile.rda"),
-			   save.ab=TRUE,
+			   save.it=TRUE,
 			   cdfName="human370v1c", .load.it=FALSE)
+## MR: shouldn't this be intensities in the A element of res?
+load(file.path(outdir, "snpFile.rda"))
+res[["A"]][1:5, 1:5]
 stop()
 @
 
@@ -151,9 +174,10 @@ facilitating the construction of this container have been added to the
 inst/scripts directory of this package and can be sourced as follows.
 
 <<constructContainer2>>=
+load(file.path(outdir, "snpFile.rda"))
 batch <- as.factor(rep("1", ncol(crlmmResult)))
 container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=file.path(outdir, "snpFile.rda"), cnFile=file.path(outdir, "cnFile.rda"), batch=batch)
-stop()
+A(container)[1:5, 1:5]
 @
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
