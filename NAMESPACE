@@ -89,16 +89,8 @@ export(genotypeSummary,
        shrinkSummary,
        estimateCnParameters,
        shrinkGenotypeSummaries,
-##       indexComplete,
        summarizeSnps,
-       constructIlluminaAssayData,
-       ACN, C1, C2, C3, fit.lm3,
-       linesCNSet)
-
-exportMethods(N.AA, N.AB, N.BB, "N.AA<-", "N.AB<-", "N.BB<-", medianA.AA, "medianA.AA<-")
-
-## export(fit.lm1, fit.lm2, fit.lm3, fit.lm4)
-
+       constructIlluminaAssayData, ACN, C1, C2, C3)
 ## For debugging
 ## exportPattern("^[^\\.]")
 
