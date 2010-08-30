@@ -157,12 +157,12 @@ Documentation for these helper functions will be available in the
 devel version of this package.
 
 <<constructContainer, eval=FALSE>>=
-path <- system.file("scripts", package="crlmm")
-source(file.path(path, "helperFunctions.R"))
-fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
+##path <- system.file("scripts", package="crlmm")
+##source(file.path(path, "helperFunctions.R"))
+fD <- crlmm:::constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
 new.order <- order(fD$chromosome, fD$position)
 fD <- fD[new.order, ]
-aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
+aD <- crlmm:::constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
 protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
 container <- new("CNSetLM",
 		 assayData=aD,
@@ -174,12 +174,12 @@ container <- new("CNSetLM",
 
 <<container2,echo=FALSE>>=
 if(!file.exists(file.path(outdir, "cnSet"))){
-	path <- system.file("scripts", package="crlmm")
-	source(file.path(path, "helperFunctions.R"))
-	fD <- constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
+	##path <- system.file("scripts", package="crlmm")
+	##source(file.path(path, "helperFunctions.R"))
+	fD <- crlmm:::constructFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
 	new.order <- order(fD$chromosome, fD$position)
 	fD <- fD[new.order, ]
-	aD <- constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
+	aD <- crlmm:::constructAssayData(cnAB, res, crlmmResult, order.index=new.order)
 	protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
 	container <- new("CNSetLM",
 			 assayData=aD,
