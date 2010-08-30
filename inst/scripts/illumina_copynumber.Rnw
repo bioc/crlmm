@@ -270,7 +270,7 @@ cn.total2 <- crlmm:::totalCopyNumber(cnSet, i=marker.index)
 cn.total2 <- cn.total2[-missing.index, ]
 stopifnot(all.equal(cn.total2, cn.total))
 
-cn.monomorphic2 <- totalCopyNumber(cnSet, i=np.index)
+cn.monomorphic2 <- crlmm:::totalCopyNumber(cnSet, i=np.index)
 stopifnot(all.equal(cn.monomorphic, cn.monomorphic2))
 @
 
