@@ -56,7 +56,7 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
-importFrom(ff, ffdf, physical.ff, physical.ffdf)
+importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 
 ## It is important not to import these classes from oligoClasses
 ## Doing so causes the following errors:
@@ -66,7 +66,8 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf)
 ##importClassesFrom(oligoClasses, ffdf, ff_matrix)
 
 ## Important to export these classes
-exportClasses(ff_or_matrix, ff_matrix, ffdf)
+##exportClasses(ff_or_matrix, ff_matrix, ffdf)
+exportClasses(ff_or_matrix)
 exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
