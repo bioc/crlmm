@@ -7,9 +7,20 @@ setMethod("Ns", signature(object="AssayData"),
 		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  is.ff <- is(assayDataElement(object, "N.AA"), "ff")
+		  if(is.ff){
+			  open(assayDataElement(object, "N.AA"))
+			  open(assayDataElement(object, "N.AB"))
+			  open(assayDataElement(object, "N.BB"))
+		  }
 		  N.AA <- as.matrix(assayDataElement(object, "N.AA")[...])
 		  N.AB <- as.matrix(assayDataElement(object, "N.AB")[...])
 		  N.BB <- as.matrix(assayDataElement(object, "N.BB")[...])
+		  if(is.ff){
+			  close(assayDataElement(object, "N.AA"))
+			  close(assayDataElement(object, "N.AB"))
+			  close(assayDataElement(object, "N.BB"))
+		  }
 		  res <- array(NA, dim=c(nrow(N.AA), 3, ncol(N.AA)))
 		  dimnames(res)[[2]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[3]] <- batchnames
@@ -51,9 +62,20 @@ setMethod("corr", signature(object="AssayData"),
 		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  is.ff <- is(assayDataElement(object, "corrAA"), "ff")
+		  if(is.ff){
+			  open(assayDataElement(object, "corrAA"))
+			  open(assayDataElement(object, "corrAB"))
+			  open(assayDataElement(object, "corrBB"))
+		  }
 		  corrAA <- as.matrix(assayDataElement(object, "corrAA")[...])
 		  corrAB <- as.matrix(assayDataElement(object, "corrAB")[...])
 		  corrBB <- as.matrix(assayDataElement(object, "corrBB")[...])
+		  if(is.ff){
+			  close(assayDataElement(object, "corrAA"))
+			  close(assayDataElement(object, "corrAB"))
+			  close(assayDataElement(object, "corrBB"))
+		  }
 		  res <- array(NA, dim=c(nrow(corrAA), 3, ncol(corrAA)))
 		  dimnames(res)[[2]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[3]] <- batchnames
