@@ -3,7 +3,8 @@ setMethod("Ns", signature(object="AssayData"),
 		  dotArgs <- names(list(...))
 		  missing.i <- !("i" %in% dotArgs)
 		  missing.j <- !("j" %in% dotArgs)
-		  batchnames <- batchNames(object)
+		  if(!missing.j) j <- list(...)[["j"]]
+		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
 		  N.AA <- as.matrix(assayDataElement(object, "N.AA")[...])
@@ -46,7 +47,8 @@ setMethod("corr", signature(object="AssayData"),
 		  dotArgs <- names(list(...))
 		  missing.i <- !("i" %in% dotArgs)
 		  missing.j <- !("j" %in% dotArgs)
-		  batchnames <- batchNames(object)
+		  if(!missing.j) j <- list(...)[["j"]]
+		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
 		  corrAA <- as.matrix(assayDataElement(object, "corrAA")[...])
@@ -90,7 +92,8 @@ setMethod("medians", signature(object="AssayData"),
 		  dotArgs <- names(list(...))
 		  missing.i <- !("i" %in% dotArgs)
 		  missing.j <- !("j" %in% dotArgs)
-		  batchnames <- batchNames(object)
+		  if(!missing.j) j <- list(...)[["j"]]
+		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
 		  medianA.AA <- as.matrix(assayDataElement(object, "medianA.AA")[...])
@@ -154,7 +157,8 @@ setMethod("mads", signature(object="AssayData"),
 		  dotArgs <- names(list(...))
 		  missing.i <- !("i" %in% dotArgs)
 		  missing.j <- !("j" %in% dotArgs)
-		  batchnames <- batchNames(object)
+		  batchnames <- sampleNames(object)
+		  if(!missing.j) j <- list(...)[["j"]]
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
 		  madA.AA <- as.matrix(assayDataElement(object, "madA.AA")[...])
@@ -216,26 +220,27 @@ setMethod("mads", signature(object="AssayData"),
 
 
 setMethod("tau2", signature(object="AssayData"),
-	  function(object, allele, batchname){
-		  stopifnot(!missing(allele))
-		  if(missing(batchname) & length(sampleNames(object)) > 1)
-			  stop("must supply batchname")
-		  if(!missing(batchname)){
-			  stopifnot(batchname %in% batchNames(object))
-			  j <- match(batchname, sampleNames(object))
-		  } else j <- 1
-		  getTaus <- function(allele){
-			  switch(allele,
-				 A=cbind(assayDataElement(object, "tau2A.AA")[, j],
-				         assayDataElement(object, "tau2A.AB")[, j],
-         			         assayDataElement(object, "tau2A.BB")[, j]),
-				 B=cbind(assayDataElement(object, "tau2B.AA")[, j],
-				         assayDataElement(object, "tau2B.AB")[, j],
-				         assayDataElement(object, "tau2B.BB")[, j]),
-				 stop("allele must be 'A' or 'B'")
-				 )
-		  }
-		  getTaus(allele)
+	  function(object, ...){
+		  dotArgs <- names(list(...))
+		  missing.i <- !("i" %in% dotArgs)
+		  missing.j <- !("j" %in% dotArgs)
+		  batchnames <- sampleNames(object)
+		  if(!missing.j) j <- list(...)[["j"]]
+		  if(!missing.j) batchnames <- batchnames[j]
+		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  tau2A.AA <- as.matrix(assayDataElement(object, "tau2A.AA")[...])
+		  tau2A.BB <- as.matrix(assayDataElement(object, "tau2A.BB")[...])
+		  tau2B.AA <- as.matrix(assayDataElement(object, "tau2B.AA")[...])
+		  tau2B.BB <- as.matrix(assayDataElement(object, "tau2B.BB")[...])
+		  res <- array(NA, dim=c(nrow(tau2A.AA), 2, 2, ncol(tau2A.AA)))
+		  dimnames(res)[[2]] <- c("A", "B")
+		  dimnames(res)[[3]] <- c("AA", "BB")
+		  dimnames(res)[[4]] <- batchnames
+		  res[, "A", "AA", ] <- tau2A.AA
+		  res[, "A", "BB", ] <- tau2A.BB
+		  res[, "B", "AA", ] <- tau2B.AA
+		  res[, "B", "BB", ] <- tau2B.BB
+		  return(res)
 })
 
 

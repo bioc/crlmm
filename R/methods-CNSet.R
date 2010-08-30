@@ -64,6 +64,7 @@ setMethod("N.AB", signature=signature(object="CNSet"), function(object){
 setMethod("N.BB", signature=signature(object="CNSet"), function(object){
 	assayDataElement(batchStatistics(object), "N.BB")
 })
+
 setReplaceMethod("N.AA", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "N.AA", value)
@@ -460,73 +461,261 @@ setMethod("copyNumber", "CNSet", function(object){
 ##})
 >>>>>>> Exporting list and ffdf classes so that lM<- assignment works
 
+ACN.SNP.autosome <- function(object, allele, i, j){
+
+}
+
+ACN.NP.autosome <- function(object, allele, i, j){
+
+}
+
+ACN.SNP.X <- function(object, allele, i, j){
+
+}
+
+## allele A
+##   autosome SNPs
+##   autosome NPs
+##   chromosome X NPs for women
+C1 <- function(object, marker.index, batch.index, sample.index){
+	acn <- vector("list", length(batch.index))
+	for(k in seq_along(batch.index)){
+		l <- batch.index[k]
+		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
+		bg <- nuA(object)[marker.index, l]
+		slope <- phiA(object)[marker.index, l]
+		I <- A(object)[marker.index, jj]
+		acn[[k]] <- 1/slope * (I - bg)
+	}
+	if(length(acn) > 1){
+		acn <- do.call("cbind", acn)
+	} else acn <- acn[[1]]
+	return(acn)
+}
+
+## allele B  (allele 'A' for chromosome X NPs)
+##   autosome SNPs
+##   chromosome X for male nonpolymorphic markers
+C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
+	acn <- vector("list", length(batch.index))
+	for(k in seq_along(batch.index)){
+		l <- batch.index[k]
+		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
+		bg <- nuB(object)[marker.index, l]
+		slope <- phiB(object)[marker.index, l]
+		if(!NP.X){
+			I <- B(object)[marker.index, jj]
+		} else I <- A(object)[marker.index, jj]
+		acn[[k]] <- 1/slope * (I - bg)
+	}
+	if(length(acn) > 1){
+		acn <- do.call("cbind", acn)
+	} else acn <- acn[[1]]
+	return(acn)
+}
+
+## Chromosome X SNPs
+C3 <- function(object, allele, marker.index, batch.index, sample.index){
+	acn <- vector("list", length(batch.index))
+	for(k in seq_along(batch.index)){
+		l <- batch.index[k]
+		##j <- which(as.character(batch(object))[sample.index] == batchNames(object)[l])
+		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
+		phiA2 <- phiPrimeA(object)[marker.index, l]
+		phiB2 <- phiPrimeB(object)[marker.index, l]
+		phiA <- phiA(object)[marker.index, l]
+		phiB <- phiB(object)[marker.index, l]
+		nuB <- nuB(object)[marker.index, l]
+		phiB <- phiB(object)[marker.index, l]
+		nuA <- nuA(object)[marker.index, l]
+		phiA <- phiA(object)[marker.index, l]
+		IA <- A(object)[marker.index, jj]
+		IB <- B(object)[marker.index, jj]
+		phistar <- phiB2/phiA
+		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
+		CB <- tmp/(1-phistar*phiA2/phiB)
+		if(allele == "B"){
+			acn[[k]] <- CB
+		}
+		if(allele == "A"){
+			acn[[k]] <- (IA-nuA-phiA2*CB)/phiA
+		}
+		if(allele == "AandB"){
+			CA <- tmp/(1-phistar*phiA2/phiB)
+			CB <- (IA-nuA-phiA2*CB)/phiA
+			acn[[k]] <- CA+CB
+		}
+	}
+	if(length(acn) > 1){
+		acn <- do.call("cbind", acn)
+	} else acn <- acn[[1]]
+	return(acn)
+}
+
+#C4 <- function(object, marker.index, batch.index, sample.index){
+#	bg <- nuB(object)[marker.index, batch.index]
+#	slope <- phiB(object)[marker.index, batch.index]
+#	I <- allele(object, allele)[marker.index, sample.index]
+#}
+
 
 ACN <- function(object, allele, i , j){
 	if(missing(i) & missing(j)) stop("must specify rows (i) or columns (j)")
-	bns <- batchNames(object)
-	acn <- list()
-	if(missing(i) & !missing(j)){
-		ii <- which(chromosome(object) < 23)
-		if(length(ii) > 0){
-			## calculate ca only for batches indexed by j
-			batches <- unique(as.character(batch(object))[j])
-			for(k in seq_along(batches)){
-				this.batch <- batches[k]
-				jj <- j[batch(object)[j] %in% this.batch]
-				l <- match(this.batch, bns)
-				bg <- nu(object, allele)[ii, l]
-				slope <- phi(object, allele)[ii, l]
-				I <- allele(object, allele)[ii, jj]
-				acn[[k]] <- 1/slope*(I - bg)
+	is.ff <- is(calls(object), "ff")
+	missing.i <- missing(i)
+	missing.j <- missing(j)
+	if(!missing.i){
+		is.ann <- !is.na(chromosome(object)[i])
+		is.X <- chromosome(object)[i]==23 & is.ann
+		is.auto <- chromosome(object)[i] < 23 & is.ann
+		is.snp <- isSnp(object)[i] & is.ann
+
+	} else{
+		is.ann <- !is.na(chromosome(object))
+		is.X <- chromosome(object)==23 & is.ann
+		is.auto <- chromosome(object) < 23 & is.ann
+		is.snp <- isSnp(object) & is.ann
+		i <- 1:nrow(object)
+	}
+	## Define batch.index and sample.index
+	if(!missing.j) {
+		batches <- unique(as.character(batch(object))[j])
+		batch.index <- match(batches, batchNames(object))
+	} else {
+		batch.index <- seq_along(batchNames(object))
+		j <- 1:ncol(object)
+	}
+	nr <- length(i)
+	nc <- length(j)
+	acn <- matrix(NA, nr, nc)
+	if(allele == "A"){
+		if(is.ff){
+			open(nuA(object))
+			open(phiA(object))
+			open(A(object))
+		}
+		## --
+		## 4 types of markers for allele A
+		##--
+		## 1. autosomal SNPs or autosomal NPs
+		if(any(is.auto)){
+			auto.index <- which(is.auto)
+			marker.index <- i[is.auto]
+			acn[auto.index, ] <- C1(object, marker.index, batch.index, j)
+		}
+		if(any(is.X)){
+			##2. CHR X SNPs (men and women)
+			if(any(is.snp)){
+				if(is.ff) {
+					open(phiPrimeA(object))
+					open(phiPrimeB(object))
+					open(phiB(object))
+					open(nuB(object))
+					open(B(object))
+				}
+				marker.index <- i[is.X & is.snp]
+				acn.index <- which(is.X & is.snp)
+				acn[acn.index, ] <- C3(object, allele="A", marker.index, batch.index, j)
+				if(is.ff) {
+					close(phiPrimeA(object))
+					close(phiPrimeB(object))
+					close(phiB(object))
+					close(nuB(object))
+					close(B(object))
+				}
+			}
+			if(any(!is.snp)){  ## nonpolymorphic X needs to be fixed
+				marker.index <- i[is.X & !is.snp]
+				acn.index <- which(is.X & !is.snp)
+				acn[acn.index, ] <- NA
+##				female.index <- j[object$gender[j] == 2]
+##				## 3. CHR X NPs: women
+##				if(length(female.index) > 0){
+##					female.batch.index <- match(unique(as.character(batch(object))[female.index]), batchNames(object))
+##					jj <- which(object$gender[j] == 2)
+##					acn[acn.index, jj] <- C1(object, marker.index, female.batch.index, female.index)
+##				}
+##				## 4. CHR X NPs: men
+##				male.index <- j[object$gender[j] == 1]
+##				if(length(male.index) > 0){
+##					if(is.ff){
+##						open(nuB(object))
+##						open(phiB(object))
+##					}
+##					male.batch.index <- match(unique(as.character(batch(object))[male.index]), batchNames(object))
+##					jj <- which(object$gender[j] == 1)
+##					acn[acn.index, jj] <- C2(object, marker.index, male.batch.index, male.index, NP.X=TRUE)
+##					if(is.ff){
+##						close(nuB(object))
+##						close(phiB(object))
+##					}
+##				}
 			}
 		}
-		ii <- which(chromosome(object) == 23)
-		if(length(ii) > 0){
-			acn[[k]] <- ACN.X(object, allele, i, j)
+		if(is.ff){
+			close(nuA(object))
+			close(phiA(object))
+			close(A(object))
 		}
 	}
-	if(!missing(i) & missing(j)){
-		## calculate ca, cb for all batches
-		batches <- batchNames(object)
-		for(k in seq_along(batches)){
-			this.batch <- batches[k]
-			l <- match(this.batch, bns)
-			##bb <- batches[k]
-			bg <- nu(object, allele)[i, l]
-			slope <- phi(object, allele)[i, l]
-			I <- allele(object, allele)[i, batch(object) == this.batch]
-			acn[[k]] <- 1/slope*(I - bg)
+	if(allele == "B"){
+		if(is.ff){
+			open(nuB(object))
+			open(phiB(object))
+			open(B(object))
+		}
+		if(any(!is.snp)){
+			acn.index <- which(!is.snp)
+			marker.index <- i[!is.snp]
+			acn[acn.index, ] <- 0
+		} else{
+			## SNPs
+			if(any(is.auto)){
+				## autosomal SNPs
+				acn.index <- which(is.auto & is.snp)
+				marker.index <- i[is.auto & is.snp]
+				acn[acn.index, ] <- C2(object, marker.index, batch.index, j)
+			}
+			if(any(is.X)){
+				if(is.ff){
+					open(phiPrimeA(object))
+					open(phiPrimeB(object))
+					open(phiA(object))
+					open(nuA(object))
+					open(A(object))
+				}
+				marker.index <- i[is.X & is.snp]
+				acn.index <- which(is.X & is.snp)
+				acn[acn.index, ] <- C3(object, allele="B", marker.index, batch.index, j)
+				if(is.ff){
+					close(phiPrimeA(object))
+					close(phiPrimeB(object))
+					close(phiA(object))
+					close(nuA(object))
+					close(A(object))
+				}
+			}
+		}
+		if(is.ff){
+			close(nuB(object))
+			close(phiB(object))
+			close(B(object))
 		}
 	}
-	if(!missing(i) & !missing(j)){
-		batches <- unique(as.character(batch(object)[j]))
-		acn <- list()
-		for(k in seq_along(batches)){
-			this.batch <- batches[k]
-			jj <- j[batch(object)[j] %in% this.batch]
-			l <- match(this.batch, bns)
-			bg <- nu(object, allele)[i, l]
-			slope <- phi(object, allele)[i, l]
-			I <- allele(object, allele)[i, jj]
-			acn[[k]] <- 1/slope*(I - bg)
-		}
-	}
-	if(length(acn) > 1) acn <- do.call("cbind", acn)
-	if(length(acn) == 1) acn <- acn[[1]]
 	return(acn)
 }
 
 setMethod("CA", signature=signature(object="CNSet"),
 	  function(object, ...){
 		  ca <- ACN(object, allele="A", ...)
-		  ca[ca < 0.05] <- 0.05
+		  ca[ca < 0] <- 0
 		  ca[ca > 5] <- 5
 		  return(ca)
 	  })
 setMethod("CB", signature=signature(object="CNSet"),
 	  function(object, ...) {
 		  cb <- ACN(object, allele="B", ...)
-		  cb[cb < 0.05] <- 0.05
+		  cb[cb < 0] <- 0
 		  cb[cb > 5] <- 5
 		  return(cb)
 	  })
@@ -535,16 +724,16 @@ setMethod("totalCopynumber", signature=signature(object="CNSet"),
 	  function(object, ...){
 		  ca <- CA(object, ...)
 		  cb <- CB(object, ...)
-		  is.snp <- isSnp(object)
-		  dotArgs <- list(...)
-		  if("i" %in% names(dotArgs)){
-			  i <- dotArgs[["i"]]
-			  np.index <- which(!is.snp[i])
-			  if(length(np.index) > 0) cb[np.index, ] <- 0
-		  } else {
-			  np.index <- which(!is.snp)
-			  if(length(np.index) > 0) cb[np.index, ] <- 0
-		  }
+##		  is.snp <- isSnp(object)
+##		  dotArgs <- list(...)
+##		  if("i" %in% names(dotArgs)){
+##			  i <- dotArgs[["i"]]
+##			  np.index <- which(!is.snp[i])
+##			  if(length(np.index) > 0) cb[np.index, ] <- 0
+##		  } else {
+##			  np.index <- which(!is.snp)
+##			  if(length(np.index) > 0) cb[np.index, ] <- 0
+##		  }
 		  return(ca+cb)
 	  })
 

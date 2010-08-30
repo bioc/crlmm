@@ -125,8 +125,8 @@ crlmmResult <- checkExists("crlmmResult",
 			   cnFile=file.path(outdir, "cnFile.rda"),
 			   snpFile=file.path(outdir, "snpFile.rda"),
 			   save.ab=TRUE,
-			   cdfName="human370v1c")
-##protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
+			   cdfName="human370v1c", .load.it=FALSE)
+stop()
 @
 
 %\noindent Finally, we load a few of the intermediate files that were
@@ -152,9 +152,8 @@ inst/scripts directory of this package and can be sourced as follows.
 
 <<constructContainer2>>=
 batch <- as.factor(rep("1", ncol(crlmmResult)))
-##trace(constructIlluminaCNSet
-##trace(constructIlluminaAssayData, browser)
 container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=file.path(outdir, "snpFile.rda"), cnFile=file.path(outdir, "cnFile.rda"), batch=batch)
+stop()
 @
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
@@ -170,9 +169,10 @@ the genotyping and copy number estimation steps.  Here, we use the
 \Rfunction{crlmmCopynumber} to estimate copy number.
 
 <<crlmmCopynumber>>=
-stop()
-trace(shrinkGenotypeSummaries, browser)
-options(error=recover)
+##trace(indexComplete, browser)
+##marker.index <- which(isSnp(container) & chromosome(container) < 23)
+##shrinkGenotypeSummaries(container, index.list=list(marker.index), strata=1, is.lds=T, verbose=T, MIN.OBS=1, DF.PRIOR=50, MIN.SAMPLES=10)
+##summarizeSnps(strata=1, index.list=list(marker.index), object=container, GT.CONF.THR=0.95, verbose=T, is.lds=T, CHR.X=F)
 cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container)
 @
 

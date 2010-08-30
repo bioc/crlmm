@@ -56,18 +56,25 @@ importFrom(mvtnorm, dmvnorm)
 
 importFrom(ellipse, ellipse)
 
+importFrom(ff, ffdf, physical.ff, physical.ffdf)
 
-importFrom(ff, ffdf)
+## It is important not to import these classes from oligoClasses
+## Doing so causes the following errors:
+## N.AA(container)[index, ] <- someMatrix
+##Error in function (classes, fdef, mtable)  :
+##  unable to find an inherited method for function "medianA.AA<-", for signature "CNSet", "ff_matrix"
+##importClassesFrom(oligoClasses, ffdf, ff_matrix)
 
-exportClasses(CNSetLM, ffdf, list)
-exportMethods(open, "[", show, lM, plot)
-export(crlmm, 
-       crlmmCopynumber, 
-       crlmmIllumina, 
-##       ellipse, 
-       genotype, 
-       readIdatFiles, 
-       readIdatFiles2,
+## Important to export these classes
+exportClasses(ff_or_matrix, ff_matrix, ffdf)
+exportMethods(lines)
+exportMethods(CA, CB)
+export(crlmm,
+       crlmmIllumina,
+       crlmmIlluminaV2,
+       ellipseCenters,
+       genotype,
+       readIdatFiles,
        snprma,
        snprma2,
        crlmm2,
@@ -80,7 +87,10 @@ exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 export(genotypeSummary,
        shrinkSummary,
        estimateCnParameters,
-       shrinkGenotypeSummaries, indexComplete)
+       shrinkGenotypeSummaries, indexComplete, summarizeSnps, constructIlluminaAssayData, crlmmIlluminaV2, ACN, C1, C2, C3, fit.lm3)
+
+exportMethods(N.AA, N.AB, N.BB, "N.AA<-", "N.AB<-", "N.BB<-", medianA.AA, "medianA.AA<-")
+
 ## export(fit.lm1, fit.lm2, fit.lm3, fit.lm4)
 
 ## For debugging

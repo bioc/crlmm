@@ -1,10 +1,8 @@
 setOldClass("ellipse")
 setOldClass("ff_matrix")
 setOldClass("ffdf")
-setClassUnion("ff_or_matrix", c("ff_matrix", "matrix", "ffdf"))
-<<<<<<< HEAD
-
-=======
+##setClassUnion("ff_or_matrix", c("ff_matrix", "matrix", "ffdf"))
+setClassUnion("ff_or_matrix", c("ff_matrix", "matrix"))
 setClass("CNSetLM", contains="CNSet", representation(lM="list_or_ffdf"))
 setMethod("initialize", "CNSetLM", function(.Object, lM=new("list"), ...){
 	.Object@lM <- lM
@@ -22,4 +20,3 @@ setValidity("CNSetLM",
 			    return("'isSnp' not defined in featureData")
 		    return(TRUE)
 	    })
->>>>>>> Removed tryCatch() statements in readIdatFiles. Restored previous implementation.

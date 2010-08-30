@@ -1385,7 +1385,6 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
                           mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                           cdfName, sns, recallMin=10, recallRegMin=1000,
                           returnParams=FALSE, badSNP=.7) {
-
   if(missing(cdfName)) stop("must specify cdfName")
   if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 #  if(missing(sns)) sns <- basename(arrayNames)

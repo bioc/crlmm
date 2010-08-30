@@ -1368,7 +1368,7 @@ constructIlluminaFeatureData <- function(gns, cdfName){
 	    data=data.frame(mapping),
 	    varMetadata=data.frame(labelDescription=colnames(mapping)))
 }
-constructIlluminaAssayData <- function(np, snp, object, storage.mode="environment", order.index){
+constructIlluminaAssayData <- function(np, snp, object, storage.mode="environment", nr){
 	stopifnot(identical(snp$gns, featureNames(object)))
 	gns <- c(featureNames(object), np$gns)
 	sns <- np$sns
@@ -1392,7 +1392,6 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 	##Why is np not a ff object?
 	A.np <- np[[1]]
 	B.np <- np[[2]]
-	nr <- length(order.index)
 	nc <- ncol(object)
 	if(is(A.snp, "ff")){
 		NA.vec <- rep(NA, nrow(A.np))
@@ -1401,20 +1400,20 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 		GG <- initializeBigMatrix("calls", nr, nc, vmode="integer")
 		PP <- initializeBigMatrix("confs", nr, nc, vmode="integer")
 		for(j in 1:ncol(object)){
-			AA[, j] <- c(snp[[1]][, j], np[[1]][, j])[order.index]
-			BB[, j] <- c(snp[[2]][, j], np[[2]][, j])[order.index]
-			GG[, j] <- c(calls(object)[, j], NA.vec)[order.index]
-			PP[, j] <- c(snpCallProbability(object)[, j], NA.vec)[order.index]
+			AA[, j] <- c(snp[[1]][, j], np[[1]][, j])
+			BB[, j] <- c(snp[[2]][, j], np[[2]][, j])
+			GG[, j] <- c(calls(object)[, j], NA.vec)
+			PP[, j] <- c(snpCallProbability(object)[, j], NA.vec)
 
 		}
 	} else {
-		AA <- rbind(snp[[1]], np[[1]], deparse.level=0)[order.index, ]
-		BB <- rbind(snp[[2]], np[[2]], deparse.level=0)[order.index, ]
+		AA <- rbind(snp[[1]], np[[1]], deparse.level=0)
+		BB <- rbind(snp[[2]], np[[2]], deparse.level=0)
 		gt <- stripnames(calls(object))
 		emptyMatrix <- matrix(integer(), nrow(np[[1]]), ncol(A))
-		GG <- rbind(gt, emptyMatrix, deparse.level=0)[order.index,]
+		GG <- rbind(gt, emptyMatrix, deparse.level=0)
 		pr <- stripnames(snpCallProbability(object))
-		PP <- rbind(pr, emptyMatrix, deparse.level=0)[order.index, ]
+		PP <- rbind(pr, emptyMatrix, deparse.level=0)
 	}
 	assayDataNew(storage.mode,
 		     alleleA=AA,
@@ -1431,9 +1430,9 @@ constructIlluminaCNSet <- function(crlmmResult,
 	load(file.path(path, "cnFile.rda"))
 	cnAB <- get("cnAB")
 	fD <- constructIlluminaFeatureData(c(res$gns, cnAB$gns), cdfName="human370v1c")
-	new.order <- order(fD$chromosome, fD$position)
-	fD <- fD[new.order, ]
-	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, order.index=new.order)
+	##new.order <- order(fD$chromosome, fD$position)
+	##fD <- fD[new.order, ]
+	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, nr=nrow(fD))
 	##protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
 	new("CNSet",
 	    call=aD[["call"]],
@@ -1445,6 +1444,7 @@ constructIlluminaCNSet <- function(crlmmResult,
 	    featureData=fD,
 	    batch=batch,
 	    annotation="human370v1c")
+
 }
 
 
@@ -1628,7 +1628,6 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 summarizeSnps <- function(strata,
 			  index.list,
 			  object,
-			  batchSize,
 			  GT.CONF.THR,
 			  verbose, is.lds, CHR.X, ...){
 	if(is.lds) {
@@ -1649,10 +1648,12 @@ summarizeSnps <- function(strata,
 	statsA.AA <- statsA.AB <- statsA.BB <- statsB.AA <- statsB.AB <- statsB.BB <- vector("list", nc)
 	corrAA <- corrAB <- corrBB <- tau2A.AA <- tau2A.BB <- tau2B.AA <- tau2B.BB <- matrix(NA, nr, nc)
 	Ns.AA <- Ns.AB <- Ns.BB <- matrix(NA, nr, nc)
+	if(verbose) message("        Begin reading...")
 	GG <- as.matrix(calls(object)[index, ])
 	CP <- as.matrix(snpCallProbability(object)[index, ])
 	AA <- as.matrix(A(object)[index, ])
 	BB <- as.matrix(B(object)[index, ])
+	if(verbose) message("        Computing summaries...")
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
@@ -1700,6 +1701,7 @@ summarizeSnps <- function(strata,
 		corrAB[, k] <- rowCors(A*G.AB, B*G.AB, na.rm=TRUE)
 		corrBB[, k] <- rowCors(A*G.BB, B*G.BB, na.rm=TRUE)
 	}
+	if(verbose) message("        Begin writing...")
 	N.AA(object)[index,] <- Ns.AA
 	N.AB(object)[index,] <- Ns.AB
 	N.BB(object)[index,] <- Ns.BB
