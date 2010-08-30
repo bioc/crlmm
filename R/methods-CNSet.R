@@ -347,8 +347,143 @@ ACN.X <- function(object, allele, i, j){
 			if(allele=="B") acn[[k]] <- cb
 		}
 	}
+<<<<<<< HEAD
 	return(acn)
 }
+=======
+	x
+})
+
+
+setMethod("lM", "CNSetLM", function(object) object@lM)
+setReplaceMethod("lM", c("CNSetLM", "list_or_ffdf"), function(object, value){
+	object@lM <- value
+	object
+})
+
+
+
+setMethod("open", "CNSetLM", function(con,...){
+	callNextMethod(con,...)
+	lapply(physical(lM(con)), open)
+})
+
+setAs("SnpSuperSet", "CNSetLM", function(from, to){
+	stopifnot("batch" %in% varLabels(protocolData(from)))
+	cnSet <- new("CNSetLM",
+		     alleleA=A(from),
+		     alleleB=B(from),
+		     call=snpCall(from),
+		     callProbability=snpCallProbability(from),
+		     CA=initializeBigMatrix("CA", nrow(from), ncol(from)),
+		     CB=initializeBigMatrix("CB", nrow(from), ncol(from)),
+		     annotation=annotation(from),
+		     featureData=featureData(from),
+		     experimentData=experimentData(from),
+		     protocolData=protocolData(from),
+		     phenoData=phenoData(from))
+	lM(cnSet) <- initializeParamObject(list(featureNames(cnSet), unique(protocolData(from)$batch)))
+	return(cnSet)
+})
+
+setMethod("computeCopynumber", "CNSet",
+	  function(object,
+		   MIN.OBS,
+		   DF.PRIOR,
+		   bias.adj,
+		   prior.prob,
+		   seed,
+		   verbose,
+		   GT.CONF.THR,
+		   PHI.THR,
+		   nHOM.THR,
+		   MIN.NU,
+		   MIN.PHI,
+		   THR.NU.PHI,
+		   thresholdCopynumber){
+	## to do the bias adjustment, initial estimates of the parameters are needed
+	##  The initial estimates are gotten by running computeCopynumber with cnOptions[["bias.adj"]]=FALSE
+		  cnOptions <- list(
+				    MIN.OBS=MIN.OBS,
+				    DF.PRIOR=DF.PRIOR,
+				    bias.adj=bias.adj,
+				    prior.prob=prior.prob,
+				    seed=seed,
+				    verbose=verbose,
+				    GT.CONF.THR=GT.CONF.THR,
+				    PHI.THR=PHI.THR,
+				    nHOM.THR=nHOM.THR,
+				    MIN.NU=MIN.NU,
+				    MIN.PHI=MIN.PHI,
+				    THR.NU.PHI=THR.NU.PHI,
+				    thresholdCopynumber=thresholdCopynumber)
+	bias.adj <- cnOptions[["bias.adj"]]
+	if(bias.adj & all(is.na(CA(object)))){
+		cnOptions[["bias.adj"]] <- FALSE
+	}
+	object <- computeCopynumber.CNSet(object, cnOptions)				
+	if(bias.adj & !cnOptions[["bias.adj"]]){
+		## Do a second iteration with bias adjustment
+		cnOptions[["bias.adj"]] <- TRUE
+		object <- computeCopynumber.CNSet(object, cnOptions)
+	}
+	object
+})
+setMethod("copyNumber", "CNSet", function(object){
+	I <- isSnp(object)
+	ffIsLoaded <- class(calls(object))[[1]]=="ff"
+	CA <- CA(object)
+	CB <- CB(object)
+	if(ffIsLoaded){
+		open(CA)
+		open(CB)
+		CA <- as.matrix(CA[,])
+		CB <- as.matrix(CB[,])
+	}
+	CN <- CA + CB
+	##For nonpolymorphic probes, CA is the total copy number
+	CN[!I, ] <- CA(object)[!I, ]
+	CN <- CN/100
+	CN
+})
+
+setMethod("totalCopyNumber", "CNSet", function(object, i, j){
+	if(missing(i) & missing(j)){
+		if(inherits(CA(object), "ff") | inherits(CA(object), "ffdf")) stop("Must specify i and/or j for ff objects")
+	}
+	if(missing(i) & !missing(j)){
+		snp.index <- which(isSnp(object))	
+		cn.total <- as.matrix(CA(cnSet)[, j])
+		cb <- as.matrix(CB(cnSet)[snp.index, j]	)
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb		
+	}
+	if(!missing(i) & missing(j)){
+		snp.index <- intersect(which(isSnp(object)), i)
+		cn.total <- as.matrix(CA(cnSet)[i, ])
+		cb <- as.matrix(CB(cnSet)[snp.index, ])	
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb				
+	}
+	if(!missing(i) & !missing(j)){
+		snp.index <- intersect(which(isSnp(object)), i)		
+		cn.total <- as.matrix(CA(cnSet)[i, j])	
+		cb <- as.matrix(CB(cnSet)[snp.index, j])
+		cn.total[snp.index, ] <- cn.total[snp.index, ] + cb
+	}
+	cn.total <- cn.total/100
+	dimnames(cn.total) <- NULL
+	return(cn.total)
+})
+
+##setMethod("copyNumber", "CNSet", function(object){
+##	I <- isSnp(object)
+##	CA <- CA(object)
+##	CB <- CB(object)
+##	CN <- CA + CB
+##	##For nonpolymorphic probes, CA is the total copy number
+##	CN[!I, ] <- CA(object)[!I, ]
+##	CN
+##})
+>>>>>>> Exporting list and ffdf classes so that lM<- assignment works
 
 
 ACN <- function(object, allele, i , j){
