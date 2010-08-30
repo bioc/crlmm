@@ -27,8 +27,6 @@ setMethod("phiPrimeA", signature=signature(object="CNSet"), function(object) {
 setMethod("phiPrimeB", signature=signature(object="CNSet"), function(object) {
 	assayDataElement(batchStatistics(object), "phiPrimeB")
 })
-setMethod("sigma2A", signature=signature(object="CNSet"), function(object) sigma2(object, "A"))
-setMethod("sigma2B", signature=signature(object="CNSet"), function(object) sigma2(object, "B"))
 setMethod("tau2A", signature=signature(object="CNSet"), function(object) tau2(object, "A"))
 setMethod("tau2B", signature=signature(object="CNSet"), function(object) tau2(object, "B"))
 
@@ -284,16 +282,6 @@ setReplaceMethod("phiA", signature=signature(object="CNSet", value="ff_or_matrix
 setReplaceMethod("phiB", signature=signature(object="CNSet", value="ff_or_matrix"),
 	  function(object, value){
 		  linearParamElementReplace(object, "phiB", value)
-})
-
-setReplaceMethod("sigma2A", signature=signature(object="CNSet", value="ff_or_matrix"),
-	  function(object, value){
-		  linearParamElementReplace(object, "sig2A", value)
-})
-
-setReplaceMethod("sigma2B", signature=signature(object="CNSet", value="ff_or_matrix"),
-	  function(object, value){
-		  linearParamElementReplace(object, "sig2B", value)
 })
 
 setReplaceMethod("tau2A", signature=signature(object="CNSet", value="ff_or_matrix"),
