@@ -57,6 +57,15 @@ outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @
 
+Options for controlling RAM with the \Rpackage{ff} package.
+
+<<ldOptions>>=
+ldPath(outdir)
+ocProbesets(150e3)
+ocSamples(200)
+@
+
+
 \paragraph{About this vignette.} This vignette was created using
 Illumina IDAT files that are located in a specific directory on my
 computer (\Robject{pathToCels}).  Long computations are saved in the
@@ -105,41 +114,19 @@ grnfiles = all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
 redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
 @
 
-<<samplesToProcess2, echo=FALSE>>=
-## To speed up repeated calls to Sweave
-RG <- checkExists("RG", .path=outdir,
-		  .FUN=readIdatFiles2,
-		  sampleSheet=samplesheet,
-		  path=dirname(arrayNames[1]),
-		  arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-		  saveDate=TRUE)
-annotation(RG) <- "human370v1c"
+<<samplesToProcess2>>=
 crlmmResult <- checkExists("crlmmResult",
 			   .path=outdir,
-			   .FUN=crlmmIllumina2,
-			   RG=RG,
-			   sns=pData(RG)$ID,
+			   .FUN=crlmm:::crlmmIlluminaV2,
+			   sampleSheet=samplesheet,
+			   path=dirname(arrayNames[1]),
+			   arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
 			   returnParams=TRUE,
 			   cnFile=file.path(outdir, "cnFile.rda"),
 			   snpFile=file.path(outdir, "snpFile.rda"),
-			   save.it=TRUE)
-protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-@
-
-<<samplesToProcess3, eval=FALSE>>=
-RG <- readIdatFiles2(samplesheet[1:10, ],
-		    path=dirname(arrayNames[1]),
-		    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-		    saveDate=TRUE)
-annotation(RG) <- "human370v1c"
-crlmmResult <- crlmmIllumina2(RG=RG,
-			     cdfName="human370v1c",
-			     sns=pData(RG)$ID,
-			     returnParams=TRUE,
-			     cnFile=file.path(outdir, "cnFile.rda"),
-			     snpFile=file.path(outdir, "snpFile.rda"),
-			     save.it=TRUE)
-protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
+			   save.ab=TRUE,
+			   cdfName="human370v1c")
+##protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
 @
 
 %\noindent Finally, we load a few of the intermediate files that were
@@ -163,21 +150,11 @@ allele-specific copy number estimates.  A few helper functions for
 facilitating the construction of this container have been added to the
 inst/scripts directory of this package and can be sourced as follows.
 
-
-<<constructContainer1, echo=FALSE>>=
-##only load if cnSet object has not been created
-if(!file.exists(file.path(outdir, "cnSet.rda"))){
-	container <- checkExists("container",
-				 .path=outdir,
-				 .FUN=constructIlluminaCNSet,
-				 crlmmResult=crlmmResult,
-				 snpFile=snpFile,
-				 cnFile=cnFile)
-}
-@
-
-<<constructContainer2, eval=FALSE>>=
-container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=snpFile, cnFile=cnFile)
+<<constructContainer2>>=
+batch <- as.factor(rep("1", ncol(crlmmResult)))
+##trace(constructIlluminaCNSet
+##trace(constructIlluminaAssayData, browser)
+container <- constructIlluminaCNSet(crlmmResult=crlmmResult, snpFile=file.path(outdir, "snpFile.rda"), cnFile=file.path(outdir, "cnFile.rda"), batch=batch)
 @
 
 As described in the \texttt{copynumber} vignette, two \R{} functions
@@ -192,10 +169,11 @@ decided at the beginning of the analysis and then propogated to both
 the genotyping and copy number estimation steps.  Here, we use the
 \Rfunction{crlmmCopynumber} to estimate copy number.
 
-<<estimateCopynumber1, echo=FALSE>>=
-cnSet <- checkExists("cnSet", .path=outdir,
-		     .FUN=crlmmCopynumber,
-		     object=container)
+<<crlmmCopynumber>>=
+stop()
+trace(shrinkGenotypeSummaries, browser)
+options(error=recover)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container)
 @
 
 <<estimateCopynumber, eval=FALSE>>=

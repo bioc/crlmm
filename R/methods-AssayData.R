@@ -1,11 +1,15 @@
 setMethod("Ns", signature(object="AssayData"),
-	  function(object, i, j, ...){
-		  if(!missing(j)){
-			  batchnames <- unique(as.character(batch(object)[j]))
-		  } else batchnames <- batchNames(object)
-		  nc <- length(batchnames)
-		  if(!missing(i)) nr <- length(i) else nr <- nrow(object)
-		  res <- array(NA, dim=c(nr, 3, nc))
+	  function(object, ...){
+		  dotArgs <- names(list(...))
+		  missing.i <- !("i" %in% dotArgs)
+		  missing.j <- !("j" %in% dotArgs)
+		  batchnames <- batchNames(object)
+		  if(!missing.j) batchnames <- batchnames[j]
+		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  N.AA <- as.matrix(assayDataElement(object, "N.AA")[...])
+		  N.AB <- as.matrix(assayDataElement(object, "N.AB")[...])
+		  N.BB <- as.matrix(assayDataElement(object, "N.BB")[...])
+		  res <- array(NA, dim=c(nrow(N.AA), 3, ncol(N.AA)))
 		  dimnames(res)[[2]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[3]] <- batchnames
 		  if(missing(i) & missing(j)){
@@ -39,12 +43,16 @@ setMethod("Ns", signature(object="AssayData"),
 	  })
 setMethod("corr", signature(object="AssayData"),
 	  function(object, i, j, ...){
-		  if(!missing(j)){
-			  batchnames <- unique(as.character(batch(object)[j]))
-		  } else batchnames <- batchNames(object)
-		  nc <- length(batchnames)
-		  if(!missing(i)) nr <- length(i) else nr <- nrow(object)
-		  res <- array(NA, dim=c(nr, 3, nc))
+		  dotArgs <- names(list(...))
+		  missing.i <- !("i" %in% dotArgs)
+		  missing.j <- !("j" %in% dotArgs)
+		  batchnames <- batchNames(object)
+		  if(!missing.j) batchnames <- batchnames[j]
+		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  corrAA <- as.matrix(assayDataElement(object, "corrAA")[...])
+		  corrAB <- as.matrix(assayDataElement(object, "corrAB")[...])
+		  corrBB <- as.matrix(assayDataElement(object, "corrBB")[...])
+		  res <- array(NA, dim=c(nrow(corrAA), 3, ncol(corrAA)))
 		  dimnames(res)[[2]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[3]] <- batchnames
 		  if(missing(i) & missing(j)){
@@ -78,13 +86,20 @@ setMethod("corr", signature(object="AssayData"),
 	  })
 
 setMethod("medians", signature(object="AssayData"),
-	  function(object, i, j, ...){
-		  if(!missing(j)){
-			  batchnames <- unique(as.character(batch(object)[j]))
-		  } else batchnames <- batchNames(object)
-		  nc <- length(batchnames)
-		  if(!missing(i)) nr <- length(i) else nr <- nrow(object)
-		  res <- array(NA, dim=c(nr, 2, 3, nc))
+	  function(object, ...){
+		  dotArgs <- names(list(...))
+		  missing.i <- !("i" %in% dotArgs)
+		  missing.j <- !("j" %in% dotArgs)
+		  batchnames <- batchNames(object)
+		  if(!missing.j) batchnames <- batchnames[j]
+		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  medianA.AA <- as.matrix(assayDataElement(object, "medianA.AA")[...])
+		  medianA.AB <- as.matrix(assayDataElement(object, "medianA.AB")[...])
+		  medianA.BB <- as.matrix(assayDataElement(object, "medianA.BB")[...])
+		  medianB.AA <- as.matrix(assayDataElement(object, "medianB.AA")[...])
+		  medianB.AB <- as.matrix(assayDataElement(object, "medianB.AB")[...])
+		  medianB.BB <- as.matrix(assayDataElement(object, "medianB.BB")[...])
+		  res <- array(NA, dim=c(nrow(medianA.AA), 2, 3, ncol(medianA.AA)))
 		  dimnames(res)[[2]] <- c("A", "B")
 		  dimnames(res)[[3]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[4]] <- batchnames
@@ -134,14 +149,21 @@ setMethod("medians", signature(object="AssayData"),
 		  return(res)
 })
 
-setMethod("medians", signature(object="AssayData"),
-	  function(object, i, j, ...){
-		  if(!missing(j)){
-			  batchnames <- unique(as.character(batch(object)[j]))
-		  } else batchnames <- batchNames(object)
-		  nc <- length(batchnames)
-		  if(!missing(i)) nr <- length(i) else nr <- nrow(object)
-		  res <- array(NA, dim=c(nr, 2, 3, nc))
+setMethod("mads", signature(object="AssayData"),
+	  function(object, ...){
+		  dotArgs <- names(list(...))
+		  missing.i <- !("i" %in% dotArgs)
+		  missing.j <- !("j" %in% dotArgs)
+		  batchnames <- batchNames(object)
+		  if(!missing.j) batchnames <- batchnames[j]
+		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+		  madA.AA <- as.matrix(assayDataElement(object, "madA.AA")[...])
+		  madA.AB <- as.matrix(assayDataElement(object, "madA.AB")[...])
+		  madA.BB <- as.matrix(assayDataElement(object, "madA.BB")[...])
+		  madB.AA <- as.matrix(assayDataElement(object, "madB.AA")[...])
+		  madB.AB <- as.matrix(assayDataElement(object, "madB.AB")[...])
+		  madB.BB <- as.matrix(assayDataElement(object, "madB.BB")[...])
+		  res <- array(NA, dim=c(nrow(madA.AA), 2, 3, ncol(madA.AA)))
 		  dimnames(res)[[2]] <- c("A", "B")
 		  dimnames(res)[[3]] <- c("AA", "AB", "BB")
 		  dimnames(res)[[4]] <- batchnames

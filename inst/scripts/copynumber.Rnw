@@ -184,7 +184,7 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 }
 @
 
-\subsection{Copy number algorithm.}
+\subsection{Copy number estimation.}
 
 The \Rfunction{crlmmCopynumber} computes summary statistics for each
 genotype, imputes unobserved genotype centers, shrinks the
@@ -193,10 +193,14 @@ allele-specific copy number. With \texttt{verbose=TRUE}, the above
 steps for CN estimation are displayed.
 
 <<LDS_copynumber>>=
-cnSet <- checkExists("cnSet",
-		     .path=outdir,
-		     .FUN=crlmmCopynumber,
-		     object=gtSet)
+##trace(fit.lm4, browser)
+##estimateCnParameters(gtSet,type="X.NP")
+##estimateCnParameters(gtSet,type="X.SNP")
+##trace(fit.lm2, browser)
+##estimateCnParameters(gtSet,type="NP")
+##estimateCnParameters(gtSet,type="SNP")
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
+##cnSet <- crlmmCopynumber(gtSet)
 @
 
 The \Rpackage{crlmmCopynumber} function no longer stores the
@@ -221,7 +225,7 @@ scaling by the slope coefficient. Specifically,
 \noindent See \cite{Scharpf2010} for details.
 
 The functions \Rfunction{CA}, \Rfunction{CB}, and
-\Rfunction{totalCopyNumber} can be used to extract CN estimates from
+\Rfunction{totalCopynumber} can be used to extract CN estimates from
 the \Robject{CNSet} container.
 
 <<ca>>=
@@ -235,7 +239,7 @@ ct <- ca+cb
 
 Alternatively, total copy number can be obtained by
 <<totalCopynumber.snps>>=
-ct2 <- totalCopyNumber(cnSet, i=snp.index, j=1:5)
+ct2 <- totalCopynumber(cnSet, i=snp.index, j=1:5)
 all.equal(ct, ct2)
 @
 
@@ -243,13 +247,13 @@ At nonpolymorphic loci, either the 'CA' or totalCopynumber method can
 be used to obtain total copy number.
 
 <<ca>>=
-cn.nonpolymorphic <- CA(cnSet, i=which(!isSnp(obj)))
+cn.nonpolymorphic <- CA(cnSet, i=which(!isSnp(cnSet)))
 @
 
 Total copy number at both polymorphic and nonpolymorphic loci:
 <<totalCopynumber>>=
 ##cn <- copyNumber(x)
-cn <- totalCopyNumber(cnSet, sample(1:nrow(cnSet), 1e4), 1:5)
+cn <- totalCopynumber(cnSet, sample(1:nrow(cnSet), 1e4), 1:5)
 apply(cn, 2, median, na.rm=TRUE)
 @
 

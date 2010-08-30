@@ -522,7 +522,7 @@ fit.lm2 <- function(strata,
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
 		X <- cbind(1, log2(c(medianA.AA[, k], medianB.BB[, k])))
-		Y <- log2(c(phiA.snp, phiB.snp))
+		Y <- log2(c(phiA.snp[, k], phiB.snp[, k]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
 		crosshyb <- max(median(medianA.AA[, k]) - median(medianA.AA.np[, k]), 0)
 		X <- cbind(1, log2(medianA.AA.np[, k] + crosshyb))
@@ -833,7 +833,6 @@ fit.lm4 <- function(strata,
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
 	nc <- length(batchNames(object))
-
 	if(enough.males){
 		res <- summarizeMaleXNps(marker.index=marker.index,
 					 batches=batches,
@@ -851,7 +850,6 @@ fit.lm4 <- function(strata,
 	nuB <- as.matrix(nuB(object)[marker.index, ])
 	phiA <- as.matrix(phiA(object)[marker.index, ])
 	phiB <- as.matrix(phiB(object)[marker.index, ])
-
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
 	fns <- featureNames(object)[ii]
 	flags <- as.matrix(flags(object)[ii, ])
@@ -1382,18 +1380,47 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 	}
 	np <- lapply(np, stripnames)
 	snp <- lapply(snp, stripnames)
-	A <- rbind(snp[[1]], np[[1]], deparse.level=0)[order.index, ]
-	B <- rbind(snp[[2]], np[[2]], deparse.level=0)[order.index, ]
-	gt <- stripnames(calls(object))
-	emptyMatrix <- matrix(integer(), nrow(np[[1]]), ncol(A))
-	gt <- rbind(gt, emptyMatrix, deparse.level=0)[order.index,]
-	pr <- stripnames(snpCallProbability(object))
-	pr <- rbind(pr, emptyMatrix, deparse.level=0)[order.index, ]
-	aD <- assayDataNew(storage.mode,
-			   alleleA=A,
-			   alleleB=B,
-			   call=gt,
-			   callProbability=pr)
+	if(is(snp[[1]], "ff")){
+		lapply(snp, open)
+		open(calls(object))
+		open(snpCallProbability(object))
+##		lapply(np, open)
+	}
+	##tmp <- rbind(as.matrix(snp[[1]]), as.matrix(np[[1]]), deparse.level=0)
+	A.snp <- snp[[1]]
+	B.snp <- snp[[2]]
+	##Why is np not a ff object?
+	A.np <- np[[1]]
+	B.np <- np[[2]]
+	nr <- length(order.index)
+	nc <- ncol(object)
+	if(is(A.snp, "ff")){
+		NA.vec <- rep(NA, nrow(A.np))
+		AA <- initializeBigMatrix("A", nr, nc, vmode="integer")
+		BB <- initializeBigMatrix("B", nr, nc, vmode="integer")
+		GG <- initializeBigMatrix("calls", nr, nc, vmode="integer")
+		PP <- initializeBigMatrix("confs", nr, nc, vmode="integer")
+		for(j in 1:ncol(object)){
+			AA[, j] <- c(snp[[1]][, j], np[[1]][, j])[order.index]
+			BB[, j] <- c(snp[[2]][, j], np[[2]][, j])[order.index]
+			GG[, j] <- c(calls(object)[, j], NA.vec)[order.index]
+			PP[, j] <- c(snpCallProbability(object)[, j], NA.vec)[order.index]
+
+		}
+	} else {
+		AA <- rbind(snp[[1]], np[[1]], deparse.level=0)[order.index, ]
+		BB <- rbind(snp[[2]], np[[2]], deparse.level=0)[order.index, ]
+		gt <- stripnames(calls(object))
+		emptyMatrix <- matrix(integer(), nrow(np[[1]]), ncol(A))
+		GG <- rbind(gt, emptyMatrix, deparse.level=0)[order.index,]
+		pr <- stripnames(snpCallProbability(object))
+		PP <- rbind(pr, emptyMatrix, deparse.level=0)[order.index, ]
+	}
+	assayDataNew(storage.mode,
+		     alleleA=AA,
+		     alleleB=BB,
+		     call=GG,
+		     callProbability=PP)
 }
 constructIlluminaCNSet <- function(crlmmResult,
 				   path,
@@ -1408,20 +1435,16 @@ constructIlluminaCNSet <- function(crlmmResult,
 	fD <- fD[new.order, ]
 	aD <- constructIlluminaAssayData(cnAB, res, crlmmResult, order.index=new.order)
 	##protocolData(crlmmResult)$batch <- vector("integer", ncol(crlmmResult))
-	batch <- vector("integer", ncol(crlmmResult))
-	container <- new("CNSet",
-			 call=aD[["call"]],
-			 callProbability=aD[["callProbability"]],
-			 alleleA=aD[["alleleA"]],
-			 alleleB=aD[["alleleB"]],
-			 phenoData=phenoData(crlmmResult),
-			 protocolData=protocolData(crlmmResult),
-			 featureData=fD,
-			 batch=batch,
-			 annotation="human370v1c")
-##	lM(container) <- initializeParamObject(list(featureNames(container), unique(protocolData(container)$batch)))
-##	lM(container) <- initializeLmFrom(container)
-	container
+	new("CNSet",
+	    call=aD[["call"]],
+	    callProbability=aD[["callProbability"]],
+	    alleleA=aD[["alleleA"]],
+	    alleleB=aD[["alleleB"]],
+	    phenoData=phenoData(crlmmResult),
+	    protocolData=protocolData(crlmmResult),
+	    featureData=fD,
+	    batch=batch,
+	    annotation="human370v1c")
 }
 
 
@@ -1456,8 +1479,8 @@ shrinkSummary <- function(object,
 			  verbose=TRUE,
 			  marker.index,
 			  is.lds){
-	stopifnot(type %in% c("SNP", "X.SNP"))
-	if(type == "X.SNP"){
+	stopifnot(type[[1]] %in% c("SNP", "X.SNP"))
+	if(type[[1]] == "X.SNP"){
 		gender <- object$gender
 		if(sum(gender == 2) < 3) {
 			return("too few females to estimate within genotype summary statistics on CHR X")
@@ -1474,17 +1497,10 @@ shrinkSummary <- function(object,
 		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
-	summaryFxn <- function(type){
-		switch(type,
-		       SNP="shrinkGenotypeSummaries",
-		       X.SNP="shrinkGenotypeSummaries", ## this shrinks for the females only
-		       stop())
-	}
-	FUN <- summaryFxn(type[[1]])
 	if(is.lds){
 		index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
-			 FUN,
+			 shrinkGenotypeSummaries,
 			 index.list=index.list,
 			 object=object,
 			 verbose=verbose,
@@ -1494,8 +1510,7 @@ shrinkSummary <- function(object,
 			 is.lds=is.lds,
 			 neededPkgs="crlmm")
 	} else {
-		FUN <- match.fun(FUN)
-		object <- FUN(strata=1,
+		object <- shrinkGenotypeSummaries(strata=1,
 			      index.list=list(marker.index),
 			      object=object,
 			      verbose=verbose,
@@ -1750,7 +1765,7 @@ crlmmCopynumber <- function(object,
 		       X.SNP="chromosome X SNPs",
 		       X.NP="chromosome X nonpolymorphic markers")
 	}
-	if(verbose) message("Computing summary statistics for genotype clusters for each batch")
+	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
 	for(i in seq_along(type)){
 		## do all types
 		marker.type <- type[i]
@@ -1765,7 +1780,7 @@ crlmmCopynumber <- function(object,
 					  marker.index=marker.index,
 					  is.lds=is.lds)
 	}
-	if(verbose) message("Imputing unobserved cluster medians and shrinking the variances at polymorphic loci")##SNPs only
+	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
 	for(i in seq_along(type)){
 		marker.type <- type[i]
 		if(!marker.type %in% c("SNP", "X.SNP")) next()

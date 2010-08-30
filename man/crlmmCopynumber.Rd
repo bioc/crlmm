@@ -123,6 +123,10 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
 \details{
 
+    We suggest a minimum of 10 samples per batch for using
+    \code{crlmmCopynumber}.  50 or more samples per batch is preferred
+    and will improve the estimates.
+
 	The function crlmmCopynumber uses matrices instead of ff objects
 	if the ff library is not loaded. When the ff package is loaded,
 	large data support is enabled.  Normalized intensities

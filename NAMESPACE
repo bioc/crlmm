@@ -71,13 +71,20 @@ export(crlmm,
        snprma,
        snprma2,
        crlmm2,
-       genotype2,
-       batch,
-       crlmmCopynumber2,
-       constructCNSetForIllumina,
-       validCdfNames)
-##export(initializeParamObject, biasAdjNP2)
-##export(construct)
+       genotype2, genotypeLD,
+       crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
+export(constructIlluminaCNSet)
+export(totalCopynumber)
+export(cnrma, cnrma2)
+exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
+export(genotypeSummary,
+       shrinkSummary,
+       estimateCnParameters,
+       shrinkGenotypeSummaries, indexComplete)
+## export(fit.lm1, fit.lm2, fit.lm3, fit.lm4)
 
-export(plotCNSetLM)
+## For debugging
+## exportPattern("^[^\\.]")
+
+
 
