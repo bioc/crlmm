@@ -390,12 +390,13 @@ to the univariate prediction regions at nonpolymorphic loci are a future
 area of research.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
+cn <- crlmm:::totalCopyNumber(x, j=1)
 par(las=1, mar=c(4, 5, 4, 2))
-plot(position(x), copyNumber(x)[, 1]/100, pch=21,
+plot(position(x), cn, pch=21,
      cex=0.4, xaxt="n", col="grey20", ylim=c(0,5),
      ylab="copy number", xlab="physical position (Mb)",
      main=paste(sampleNames(x)[1], ", CHR:", unique(chromosome(x))))
-points(position(x)[!isSnp(x)], copyNumber(x)[!isSnp(x), 1]/100,
+points(position(x)[!isSnp(x)], cn[!isSnp(x)],
        pch=21, cex=0.4, col="lightblue", bg="lightblue")
 axis(1, at=pretty(range(position(x))), labels=pretty(range(position(x)))/1e6)
 abline(h=2)
@@ -414,40 +415,6 @@ plotCytoband(22, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE)
     blue.}
 \end{figure}
 
-%
-%<<overlayHmmPredictions, fig=TRUE, include=FALSE>>=
-%ask <- FALSE
-%op <- par(mfrow=c(3, 1), las=1, mar=c(1, 4, 1, 1), oma=c(3, 1, 1, 1), ask=ask)
-%##Put fit on the copy number scale
-%cns <- copyNumber(cnSet2)
-%cnState <- hmmPredictions - as.integer(1)
-%xlim <- c(10*1e6, max(position(cnSet2)))
-%cols <- brewer.pal(8, "Dark2")[1:4]
-%for(j in 1:3){
-%	plot(position(cnSet2), cnState[, j], pch=".", col=cols[2], xaxt="n",
-%	     ylab="copy number", xlab="Physical position (Mb)", type="s", lwd=2,
-%	     ylim=c(0,6), xlim=xlim)
-%	points(position(cnSet2), cns[, j], pch=".", col=cols[3])
-%	lines(position(cnSet2), cnState[,j], lwd=2, col=cols[2])
-%	axis(1, at=pretty(position(cnSet)),
-%	     labels=pretty(position(cnSet))/1e6)
-%	abline(h=c(1,3), lty=2, col=cols[1])
-%	legend("topright", bty="n", legend=sampleNames(cnSet)[j])
-%	legend("topleft", lty=1, col=cols[2], legend="copy number state",
-%	       bty="n", lwd=2)
-%	plotCytoband(CHR, cytoband.ycoords=c(5, 5.2), new=FALSE,
-%		     label.cytoband=FALSE, xlim=xlim)
-%}
-%par(op)
-%@
-%
-%\begin{figure}
-%  \includegraphics[width=\textwidth]{copynumber-overlayHmmPredictions}
-%  \caption{\label{fig:overlayHmmPredictions} Total copy number (y-axis)
-%    for chromosome 22 plotted against physical position (x-axis) for
-%    three samples.  Estimates at nonpolymorphic loci are plotted in
-%    light blue. }
-%\end{figure}
 
 \clearpage
 \paragraph{One SNP at a time}
@@ -460,131 +427,9 @@ the vignette is currently under development.
 
 <<predictionRegions, fig=TRUE, width=8, height=8, include=FALSE, eval=FALSE, echo=FALSE>>=
 i <- snp.index[1]
-#plotCNSetLM=crlmm:::plotCNSetLM
-##trace(plotCNSetLM, browser)
 plot(i, x, copynumber=2)
-##myScatter <- function(object, add=FALSE, ...){
-##	A <- log2(A(object))
-##	B <- log2(B(object))
-##	if(!add){
-##		plot(A, B, ...)
-##	} else{
-##		points(A, B, ...)
-##	}
-##}
-##index <- which(isSnp(cnSet))[1:9]
-##xlim <- ylim <- c(6.5,13)
-##par(mfrow=c(3,3), las=1, pty="s", ask=FALSE, mar=c(2, 2, 2, 2), oma=c(2, 2, 1, 1))
-##for(i in index){
-##	gt <- calls(cnSet)[i, ]
-##	if(i != 89){
-##		myScatter(cnSet[i, ],
-##			  pch=pch,
-##			  col=colors[snpCall(cnSet)[i, ]],
-##			  bg=colors[snpCall(cnSet)[i, ]], cex=cex,
-##			  xlim=xlim, ylim=ylim)
-##		mtext("A", 1, outer=TRUE, line=1)
-##		mtext("B", 2, outer=TRUE, line=1)
-##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="C", lwd=2, col="black")
-##		crlmm:::ellipse.CNSet(cnSet[i, ], copynumber=2, batch="Y", lwd=2, col="grey50")
-##	} else {
-##		plot(0:1, xlim=c(0,1), ylim=c(0,1), type="n", xaxt="n", yaxt="n")
-##		legend("center",
-##		       legend=c("CN = 2, CEPH", "CN = 2, Yoruban"),
-##		       col=c("black", "grey50"), lwd=2, bty="n")
-##	}
-##}
 @
 
-%\begin{figure}
-%  \centering
-%  \includegraphics[width=0.8\textwidth]{copynumber-predictionRegions}
-%  \caption{\label{fig:prediction} Scatterplots of A versus B
-%    intensities.  Each panel displays a single SNP. The ellipses
-%    indicate the 95\% probability region for copy number 2 for the CEPH
-%    (black) and Yoruban subjects (grey).}
-%\end{figure}
-
-%\section{Details for the copy number estimation procedure}
-%
-%See the technical report \citep{Scharpf2009}.
-
-\section{Trouble shooting}
-
-Suppose that you are only interested in estimating copy number at
-autosomal markers and you encountered an error using the
-crlmmCopynumber2 function for estimating copy number at nonpolymorphic
-markers on chromosome X.
-
-Making a subset of a cnSet2 without pulling all the data from disk to
-memory.
-<<>>=
-cnSet <- cnSet2
-@
-
-<<>>=
-cnSet <- crlmmCopynumber2(cnSet)
-@
-
-
-<<>>=
-marker.index <- which(chromosome(cnSet) < 23)
-nr <- length(marker.index)
-nc <- ncol(cnSet)
-@
-
-Set up a new directory for storing ff objects so that we can
-completely remove all the ff objects in the old directory when we're
-finished.
-
-<<>>=
-library(ff)
-ldPath("newDirectory")
-dir.create("newDirectory")
-@
-
-Next, initialize the container using utilities from the oligoClasses package.
-
-<<>>=
-CA <- initializeBigMatrix("CA", nr, nc)
-CB <- initializeBigMatrix("CB", nr, nc)
-A <- initializeBigMatrix("A", nr, nc)
-B <- initializeBigMatrix("B", nr, nc)
-GT <- initializeBigMatrix("GT", nr, nc)
-PP <- initializeBigMatrix("confs", nr, nc)
-cnSet.autosomes <- new("CNSetLM",
-		       alleleA=A,
-		       alleleB=B,
-		       call=GT,
-		       callProbability=PP,
-		       CA=CA,
-		       CB=CB,
-		       protocolData=protocolData(cnSet),
-		       featureData=featureData(cnSet)[marker.index, ],
-		       phenoData=phenoData(cnSet),
-		       annotation=annotation(cnSet))
-@
-
-Next, we need to populate the ff objects with data. The easiest way to
-do this without requiring too much RAM is to loop through the
-samples. Lets do 5 samples at a time.
-
-<<populateWithData>>=
-sample.index <- splitIndicesByLength(1:ncol(cnSet), 5)
-for(j in sample.index){
-	A(cnSet.autosomes)[, j] <- A(cnSet)[marker.index, j]
-	B(cnSet.autosomes)[, j] <- B(cnSet)[marker.index, j]
-	calls(cnSet.autosomes)[, j] <- calls(cnSet)[marker.index, j]
-	snpCallProbability(cnSet.autosomes)[, j] <- snpCallProbability(cnSet)[marker.index, j]
-}
-@
-
-Check to see that the data is there.
-
-The subset operation would pull all the data from disk and create a
-cnSet object with matrices.  If the dataset is very large, the subset
-operation would be very slow and potentially create a large amount of
-RAM.
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
@@ -593,9 +438,7 @@ toLatex(sessionInfo())
 
 \section*{References}
 
-%\begin{bibliography}
-  \bibliographystyle{plain}
+ \bibliographystyle{plain}
   \bibliography{refs}
-%\end{bibliography}
 
 \end{document}
