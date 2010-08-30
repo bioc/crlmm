@@ -10,5 +10,5 @@ Rprof*
 testing*
 sample.CNSetLMff.rda
 extdata*
-Makefile
-.Rhistory
+copynumber-*
+copynumber.log
