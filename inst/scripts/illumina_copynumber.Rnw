@@ -25,6 +25,11 @@
 \author{Rob Scharpf}
 \maketitle
 
+The vignette for copy number estimation for illumina platforms is
+under development.  Please use the latest stable release of crlmm.
+
+\end{document}
+
 Allele-specific copy number estimation in the crlmm package is
 available for several Illumina platforms.  As described in the
 \texttt{copynumber} vignette, copy number estimation in \crlmm{} works
