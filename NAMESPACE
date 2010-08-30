@@ -73,7 +73,7 @@ exportMethods(CA, CB)
 export(crlmm,
        crlmmIllumina,
        crlmmIlluminaV2,
-       ellipseCenters,
+##       ellipseCenters,
        genotype,
        readIdatFiles,
        snprma,
@@ -87,10 +87,11 @@ export(cnrma, cnrma2)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 export(genotypeSummary,
        shrinkSummary,
-       estimateCnParameters,
-       shrinkGenotypeSummaries,
-       summarizeSnps,
-       constructIlluminaAssayData, ACN, C1, C2, C3)
+##       estimateCnParameters,
+##       shrinkGenotypeSummaries,
+##       summarizeSnps,
+##       constructIlluminaAssayData,
+       ACN, C1, C2, C3)
 ## For debugging
 ## exportPattern("^[^\\.]")
 
