@@ -939,28 +939,35 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   SMEDIAN <- getVarInEnv("SMEDIAN")
   theKnots <- getVarInEnv("theKnots")
   gns <- getVarInEnv("gns")
-
-  # separate out copy number probes
-  npIndex = getVarInEnv("npProbesFid")
-  nprobes = length(npIndex)
   narrays = ncol(XY)
-  A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
-  B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
-  # new lines below - useful to keep track of zeroed out probes
-  zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
-
-  colnames(A) <- colnames(B) <- colnames(zero) <- sns
-  rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
-
-  cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
   if(save.it & !missing(cnFile)) {
-    t0 <- proc.time()
-    save(cnAB, file=cnFile)
-    t0 <- proc.time()-t0
-    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+	  ## separate out copy number probes
+	  npIndex = getVarInEnv("npProbesFid")
+	  nprobes = length(npIndex)
+	  if(length(nprobes > 0)){
+		  open(XY@assayData$X)
+		  open(XY@assayData$Y)
+		  open(XY@assayData$zero)
+
+		  A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
+		  B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
+
+		  ## new lines below - useful to keep track of zeroed out probes
+		  zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
+
+		  colnames(A) <- colnames(B) <- colnames(zero) <- sns
+		  rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
+
+		  cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
+
+		  t0 <- proc.time()
+		  save(cnAB, file=cnFile)
+		  t0 <- proc.time()-t0
+		  if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
+		  rm(cnAB, B, zero)
+	  }
   }
-  rm(cnAB, B, zero)
 
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
