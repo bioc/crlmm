@@ -323,7 +323,7 @@ C1 <- function(object, marker.index, batch.index, sample.index){
 	if(length(acn) > 1){
 		acn <- do.call("cbind", acn)
 	} else acn <- acn[[1]]
-	return(acn)
+	return(as.matrix(acn))
 }
 
 ## allele B  (allele 'A' for chromosome X NPs)
@@ -344,7 +344,7 @@ C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
 	if(length(acn) > 1){
 		acn <- do.call("cbind", acn)
 	} else acn <- acn[[1]]
-	return(acn)
+	return(as.matrix(acn))
 }
 
 ## Chromosome X SNPs
@@ -382,7 +382,7 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 	if(length(acn) > 1){
 		acn <- do.call("cbind", acn)
 	} else acn <- acn[[1]]
-	return(acn)
+	return(as.matrix(acn))
 }
 
 
@@ -390,7 +390,7 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 
 ACN <- function(object, allele, i , j){
 	if(missing(i) & missing(j)) stop("must specify rows (i) or columns (j)")
-	is.ff <- is(calls(object), "ff")
+	is.ff <- is(calls(object), "ff") | is(calls(object), "ffdf")
 	missing.i <- missing(i)
 	missing.j <- missing(j)
 	if(!missing.i){
