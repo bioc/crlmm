@@ -57,17 +57,17 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 
 importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
-
 ## It is important not to import these classes from oligoClasses
 ## Doing so causes the following errors:
 ## N.AA(container)[index, ] <- someMatrix
 ##Error in function (classes, fdef, mtable)  :
 ##  unable to find an inherited method for function "medianA.AA<-", for signature "CNSet", "ff_matrix"
 ##importClassesFrom(oligoClasses, ffdf, ff_matrix)
+importClassesFrom(oligoClasses, ff_matrix)
 
 ## Important to export these classes
 ##exportClasses(ff_or_matrix, ff_matrix, ffdf)
-exportClasses(ff_or_matrix)
+##exportClasses(ff_or_matrix)
 exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
@@ -85,13 +85,13 @@ export(constructIlluminaCNSet)
 export(totalCopynumber)
 export(cnrma, cnrma2)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
-export(genotypeSummary,
-       shrinkSummary,
+##export(genotypeSummary,
+##       shrinkSummary,
 ##       estimateCnParameters,
 ##       shrinkGenotypeSummaries,
 ##       summarizeSnps,
 ##       constructIlluminaAssayData,
-       ACN, C1, C2, C3)
+##       ACN, C1, C2, C3)
 ## For debugging
 ## exportPattern("^[^\\.]")
 
