@@ -419,7 +419,8 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
                "human550v3b",            # 550K
                "human1mduov3b",          # 1M Duo
                "humanomni1quadv1b",      # Omni1 quad
-	       "humanomniexpress12v1b")  # Omni express 12
+	       "humanomniexpress12v1b",  # Omni express 12
+               "humanimmuno12v1b")       # Immuno chip 12
   if(missing(chipType)){
 	  chipType = match.arg(annotation(RG), chipList)
   } else chipType = match.arg(chipType, chipList)
