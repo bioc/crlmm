@@ -1,10 +1,13 @@
-All: copynumber crlmmDownstream clean
+All: copynumber crlmmDownstream illumina_copynumber clean
 
 copynumber: copynumber.pdf
 	cp -p ../scripts/copynumber.pdf .
 
 crlmmDownstream: crlmmDownstream.pdf
 	cp -p ../scripts/crlmmDownstream.pdf .
+
+illumina_copynumber: illumina_copynumber.pdf
+	cp -p ../scripts/illumina_copynumber.pdf .
 
 clean:
 	-$(RM) -f *.out *.bbl *.log *.aux *.blg *.brf *.toc *.tex

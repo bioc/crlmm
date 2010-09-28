@@ -107,6 +107,9 @@ if(!exists("crlmmResult")){
 		range(protocolData(crlmmResult)$ScanDate)
 		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
 		rm(RG); gc()
+	} else{
+		message("Loading previously saved file...")
+		load(file.path(outdir, "crlmmResult.rda"))
 	}
 }
 @
@@ -269,7 +272,7 @@ ratios.
 hist(cnSet$SNR, breaks=15)
 @
 
-\begin{figure}[tbh]
+\begin{figure}[t!]
 <<firstSample, fig=TRUE>>=
 low.snr <- which(cnSet$SNR == min(cnSet$SNR))
 high.snr <- which(cnSet$SNR == max(cnSet$SNR))
@@ -300,7 +303,7 @@ cn <- cn[!is.na(cn)]
 y <- as.numeric(runmed(cn, k=3))
 @
 
-\section{Session information}
+\section*{Session information}
 
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
