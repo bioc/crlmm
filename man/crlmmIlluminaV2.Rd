@@ -12,8 +12,7 @@ crlmmIlluminaV2(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
       saveDate=FALSE, stripNorm=TRUE, useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-      seed=1, save.ab=FALSE, snpFile, cnFile,
-      mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
+      seed=1, mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
       cdfName, sns, recallMin=10, recallRegMin=1000,
       returnParams=FALSE, badSNP=.7)
 }
@@ -58,11 +57,6 @@ crlmmIlluminaV2(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     defining sex. (1 - male; 2 - female)}
   \item{seed}{'integer' scalar for random number generator (used to
     sample \code{mixtureSampleSize} SNPs for mixture model.}
-  \item{save.it}{'logical'. Save preprocessed SNP and copy number data?}
-  \item{snpFile}{'character' with filename of preprocessed SNP data to
-    be saved/loaded.}
-  \item{cnFile}{'character' with filename of preprocessed copy number 
-    data to be saved.}
   \item{mixtureSampleSize}{'integer'. The number of SNP's to be used
     when fitting the mixture model.}
   \item{eps}{Minimum change for mixture model.}
