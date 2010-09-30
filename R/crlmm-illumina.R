@@ -1292,6 +1292,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
         #                       save.it=save.it, snpFile=snpFile, cnFile=cnFile)
         rm(XY); gc()
 	if(verbose) message("Finished preprocessing.")
+	np.index <- which(!is.snp)        
 	if(is.lds){
                 open(res[["A"]])
                 open(res[["B"]])
@@ -1300,14 +1301,27 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		bb = ocProbesets()*ncol(A)*8
 		ffrowapply(A(callSet)[i1:i2, ] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
 		ffrowapply(B(callSet)[i1:i2, ] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
+        	if(length(np.index)>0) {
+        		for (j in 1:ncol(callSet)) {
+        			A(callSet)[np.index, j] <- res[["cnAB"]]$A[,j]
+        			B(callSet)[np.index, j] <- res[["cnAB"]]$B[,j]
+        		}
+                }        
+                
 	} else{
 		A(callSet)[snp.index, ] <- res[["A"]]
 		B(callSet)[snp.index, ] <- res[["B"]]
+        	if(length(np.index)>0) {
+        		for (j in 1:ncol(callSet)) {
+        			A(callSet)[np.index, ] <- res[["cnAB"]]$A
+        			B(callSet)[np.index, ] <- res[["cnAB"]]$B
+        		}
+                }
 	}
 	pData(callSet)$SKW <- res[["SKW"]]
 	pData(callSet)$SNR <- res[["SNR"]]
 	mixtureParams <- res[["mixtureParams"]]
-#	np.index <- which(!is.snp)
+
 #	if(verbose) message("Normalizing nonpolymorphic markers")
 #	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
 	## main purpose is to update 'alleleA'

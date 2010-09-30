@@ -556,3 +556,6 @@ function (which expects ff objects and supports parallel processing)
 ** added functions get.ProtocolData.Illumina(), construct.Illumina() and genotype.Illumina() to maintiain consistency with Rob's Affy functions
 ** removed 'save.it', 'load.it', 'snpFile', 'cnFile' arguments from crlmmIllumina(), crlmmIlluminaV2 and preprocessInfinium2().  Updated man pages to reflect these changes.
 ** added a switch so that both regular matrix/ff storage can be handled in each function, depending upon whether the ff package has been loaded.
+
+2010-09-30 M. Ritchie 1.7.16
+** copy number A and B intensities now stored in callSet from genotype.Illumina()
