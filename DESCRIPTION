@@ -29,6 +29,7 @@ Collate: AllGenerics.R
 	 AllClasses.R
 	 methods-AssayData.R
 	 methods-CNSet.R
+	 methods-CNSetLM.R
 	 methods-eSet.R
          methods-SnpSuperSet.R
          cnrma-functions.R
