@@ -171,7 +171,7 @@ genotype <- function(filenames,
 		       seed=seed,
 		       verbose=verbose)
 	if(verbose) message("Saving callSet.rda")
-	save(callSet, file=file.path(outdir, "callSet.rda"))
+	##save(callSet, file=file.path(outdir, "callSet.rda"))
 	if(!is.lds) A(callSet) <- AA
 	## otherwise, the normalized values were written to file... no need to do anything
 	rm(AA)
@@ -901,12 +901,13 @@ fit.lm4 <- function(strata,
 		X <- cbind(1, log2(c(tmp[, 1], tmp[, 2])))
 		Y <- log2(c(tmp[, 3], tmp[, 4]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
-		X.men <- cbind(1, medianA.AA.M[, k])
-		Yhat1 <- as.numeric(X.men %*% betahat)
-		## put intercept and slope for men in nuB and phiB
-		phiB[, k] <- 2^(Yhat1)
-		nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
-
+		if(enough.men){
+			X.men <- cbind(1, medianA.AA.M[, k])
+			Yhat1 <- as.numeric(X.men %*% betahat)
+			## put intercept and slope for men in nuB and phiB
+			phiB[, k] <- 2^(Yhat1)
+			nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
+		}
 		X.fem <- cbind(1, medianA.AA.F[, k])
 		Yhat2 <- as.numeric(X.fem %*% betahat)
 		phiA[, k] <- 2^(Yhat2)
@@ -1492,7 +1493,8 @@ shrinkSummary <- function(object,
 	if(type[[1]] == "X.SNP"){
 		gender <- object$gender
 		if(sum(gender == 2) < 3) {
-			return("too few females to estimate within genotype summary statistics on CHR X")
+			message("too few females to estimate within genotype summary statistics on CHR X")
+			return(object)
 		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
@@ -1540,7 +1542,8 @@ genotypeSummary <- function(object,
 	if(type == "X.SNP" | type=="X.NP"){
 		gender <- object$gender
 		if(sum(gender == 2) < 3) {
-			return("too few females to estimate within genotype summary statistics on CHR X")
+			message("too few females to estimate within genotype summary statistics on CHR X")
+			return(object)
 		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
