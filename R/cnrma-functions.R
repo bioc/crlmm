@@ -117,6 +117,7 @@ genotype <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
+	##save(callSet, file=file.path(outdir, "callSet.rda"))
 	open(callSet)
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	is.snp <- isSnp(callSet)
@@ -139,9 +140,9 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(snprmaRes[["A"]])
 		open(snprmaRes[["B"]])
-		bb = ocProbesets()*ncol(A)*8
-		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]], BATCHBYTES=bb)
-		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]], BATCHBYTES=bb)
+		##bb <- getOption("ffbatchbytes")
+		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
+		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
 	} else{
 		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
 		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
@@ -196,8 +197,8 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
-		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
+		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
+		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
 		close(tmp[["calls"]])
 		close(tmp[["confs"]])
 	} else {
@@ -1380,7 +1381,8 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 	}
 	np <- lapply(np, stripnames)
 	snp <- lapply(snp, stripnames)
-	if(is(snp[[1]], "ff")){
+	is.ff <- is(snp[[1]], "ff") | is(snp[[1]], "ffdf")
+	if(is.ff){
 		lapply(snp, open)
 		open(calls(object))
 		open(snpCallProbability(object))
@@ -1393,7 +1395,7 @@ constructIlluminaAssayData <- function(np, snp, object, storage.mode="environmen
 	A.np <- np[[1]]
 	B.np <- np[[2]]
 	nc <- ncol(object)
-	if(is(A.snp, "ff")){
+	if(is.ff){
 		NA.vec <- rep(NA, nrow(A.np))
 		AA <- initializeBigMatrix("A", nr, nc, vmode="integer")
 		BB <- initializeBigMatrix("B", nr, nc, vmode="integer")

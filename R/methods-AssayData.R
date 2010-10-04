@@ -7,7 +7,7 @@ setMethod("Ns", signature(object="AssayData"),
 		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
-		  is.ff <- is(assayDataElement(object, "N.AA"), "ff")
+		  is.ff <- is(assayDataElement(object, "N.AA"), "ff") | is(assayDataElement(object, "N.AA"), "ffdf")
 		  if(is.ff){
 			  open(assayDataElement(object, "N.AA"))
 			  open(assayDataElement(object, "N.AB"))
@@ -38,7 +38,7 @@ setMethod("corr", signature(object="AssayData"),
 		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
 		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
-		  is.ff <- is(assayDataElement(object, "corrAA"), "ff")
+		  is.ff <- is(assayDataElement(object, "corrAA"), "ff") | is(assayDataElement(object, "corrAA"), "ffdf")
 		  if(is.ff){
 			  open(assayDataElement(object, "corrAA"))
 			  open(assayDataElement(object, "corrAB"))
