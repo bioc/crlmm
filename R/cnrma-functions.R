@@ -9,7 +9,7 @@ getProtocolData.Affy <- function(filenames){
 			                           row.names=colnames(scanDates)))
 	return(protocoldata)
 }
-getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
+getFeatureData <- function(cdfName, copynumber=FALSE){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	if(!require(pkgname, character.only=TRUE)){
 		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -36,20 +36,22 @@ getFeatureData.Affy <- function(cdfName, copynumber=FALSE){
 	M <- matrix(NA, length(featurenames), 3, dimnames=list(featurenames, fvarlabels))
 	index <- match(rownames(snpProbes), rownames(M)) #only snp probes in M get assigned position
 	M[index, "position"] <- snpProbes[, grep("pos", colnames(snpProbes))]
-	M[index, "chromosome"] <- snpProbes[, grep("chr", colnames(snpProbes))]
+	M[index, "chromosome"] <- chromosome2integer(snpProbes[, grep("chr", colnames(snpProbes))])
 	M[index, "isSnp"] <- 1L
 	index <- which(is.na(M[, "isSnp"]))
 	M[index, "isSnp"] <- 1L
 	if(copynumber){
 		index <- match(rownames(cnProbes), rownames(M)) #only snp probes in M get assigned position
 		M[index, "position"] <- cnProbes[, grep("pos", colnames(cnProbes))]
-		M[index, "chromosome"] <- cnProbes[, grep("chr", colnames(cnProbes))]
+		M[index, "chromosome"] <- chromosome2integer(cnProbes[, grep("chr", colnames(cnProbes))])
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
 	M[is.na(M[, "isSnp"]), "isSnp"] <- 1L
-	return(new("AnnotatedDataFrame", data=data.frame(M)))
+	M <- data.frame(M)
+	return(new("AnnotatedDataFrame", data=M))
 }
+getFeatureData.Affy <- getFeatureData
 
 construct <- function(filenames,
 		      cdfName,
@@ -60,7 +62,7 @@ construct <- function(filenames,
 	}
 	if(missing(sns) & missing(filenames)) stop("one of filenames or samplenames (sns) must be provided")
 	if(verbose) message("Initializing container for copy number estimation")
-	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
+	featureData <- getFeatureData(cdfName, copynumber=copynumber)
 	if(!missing(fns)){
 		index <- match(fns, featureNames(featureData))
 		if(all(is.na(index))) stop("fns not in featureNames")
@@ -118,7 +120,7 @@ genotype <- function(filenames,
 			     verbose=verbose,
 			     batch=batch)
 	##save(callSet, file=file.path(outdir, "callSet.rda"))
-	open(callSet)
+	if(is.lds) open(callSet)
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	is.snp <- isSnp(callSet)
 	snp.index <- which(is.snp)
@@ -160,6 +162,7 @@ genotype <- function(filenames,
 		       cnrma2=cnrma2(...))
 	}
 	## consider passing only A for NPs.
+	if(verbose) message("Quantile normalizing nonpolymorphic markers")
 	AA <- cnrmaFxn(FUN, A=A(callSet),
 		       filenames=filenames,
 		       row.names=featureNames(callSet)[np.index],
@@ -167,7 +170,10 @@ genotype <- function(filenames,
 		       sns=sns,
 		       seed=seed,
 		       verbose=verbose)
+	if(verbose) message("Saving callSet.rda")
+	save(callSet, file=file.path(outdir, "callSet.rda"))
 	if(!is.lds) A(callSet) <- AA
+	## otherwise, the normalized values were written to file... no need to do anything
 	rm(AA)
 	FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
 	## genotyping
@@ -176,6 +182,7 @@ genotype <- function(filenames,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
 	}
+	if(verbose) message("Call genotypes at polymorphic markers")
 	tmp <- crlmmGTfxn(FUN,
 			  A=snprmaRes[["A"]],
 			  B=snprmaRes[["B"]],
@@ -1731,8 +1738,6 @@ summarizeSnps <- function(strata,
 	tau2B.BB(object)[index, ] <- tau2B.BB
 	if(is.lds) return(TRUE) else return(object)
 }
-
-
 
 crlmmCopynumber <- function(object,
 			    MIN.SAMPLES=10,

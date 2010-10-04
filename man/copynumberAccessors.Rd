@@ -1,6 +1,10 @@
 \name{copynumberAccessors}
 \alias{CA}
 \alias{CB}
+\alias{nuA}
+\alias{nuB}
+\alias{phiA}
+\alias{phiB}
 \alias{totalCopynumber}
 
 \title{
@@ -51,8 +55,10 @@ totalCopynumber(object,...)
 }
 
 \examples{
+## Version 1.6* of crlmm used CNSetLM objects.
 data(sample.CNSetLM)
-## update to class CNSet
+
+## To update to class CNSet, use
 cnSet <- as(sample.CNSetLM, "CNSet")
 all(isCurrent(cnSet)) ## is the cnSet object current?
 

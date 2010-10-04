@@ -1,13 +1,13 @@
 useDynLib("crlmm", .registration=TRUE)
-
 ## this is temporary
 ## exportPattern("^[^\\.]")
 
+##---------------------------------------------------------------------------
 ## Biobase
+##---------------------------------------------------------------------------
 importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
 		  NChannelSet, MIAME, Versioned, VersionedBiobase,
 		  Versions)
-
 importMethodsFrom(Biobase, annotation, "annotation<-",
                   annotatedDataFrameFrom, assayData, "assayData<-",
                   combine, dims, experimentData, "experimentData<-",
@@ -18,21 +18,19 @@ importMethodsFrom(Biobase, annotation, "annotation<-",
                   snpCallProbability,
 		  "snpCall<-", "snpCallProbability<-", storageMode,
                   "storageMode<-", updateObject, varLabels)
-
 importFrom(Biobase, assayDataElement, assayDataElementNames,
            assayDataElementReplace, assayDataNew, classVersion,
            validMsg)
 
+##---------------------------------------------------------------------------
 ## oligoClasses
+##---------------------------------------------------------------------------
 importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
-
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
 		  "A<-", "B<-", open, close, flags,
 		  batchStatistics, "batchStatistics<-", updateObject)
-
-
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector)
 
@@ -41,21 +39,13 @@ importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot, lines)
 
 importFrom(grDevices, grey)
-
 importFrom(affyio, read.celfile.header, read.celfile)
-
 importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
-
 importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
-
 importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, update)
-
 importFrom(genefilter, rowSds)
-
 importFrom(mvtnorm, dmvnorm)
-
 importFrom(ellipse, ellipse)
-
 importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 ## It is important not to import these classes from oligoClasses
 ## Doing so causes the following errors:
@@ -64,7 +54,6 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 ##  unable to find an inherited method for function "medianA.AA<-", for signature "CNSet", "ff_matrix"
 ##importClassesFrom(oligoClasses, ffdf, ff_matrix)
 importClassesFrom(oligoClasses, ff_matrix)
-
 ## Important to export these classes
 ##exportClasses(ff_or_matrix, ff_matrix, ffdf)
 ##exportClasses(ff_or_matrix)
@@ -73,7 +62,6 @@ exportMethods(CA, CB)
 export(crlmm,
        crlmmIllumina,
        crlmmIlluminaV2,
-##       ellipseCenters,
        genotype,
        readIdatFiles,
        snprma,
@@ -83,17 +71,7 @@ export(crlmm,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(constructIlluminaCNSet)
 export(totalCopynumber)
-export(cnrma, cnrma2)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
-##export(genotypeSummary,
-##       shrinkSummary,
-##       estimateCnParameters,
-##       shrinkGenotypeSummaries,
-##       summarizeSnps,
-##       constructIlluminaAssayData,
-##       ACN, C1, C2, C3)
-## For debugging
-## exportPattern("^[^\\.]")
 
 
 
