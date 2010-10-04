@@ -178,11 +178,11 @@ for copy number are all NA's.
 
 The \Rfunction{crlmmCopynumber} performs the following steps:
 \begin{itemize}
-  \item computes summary statistics for each batch
-  \item imputes unobserved genotype centers (for each batch)
-  \item shrinks the within-genotype variances
-  \item estimates parameters for allele-specific copy number
-  \end{itemize}
+\item computes summary statistics for each batch
+\item imputes unobserved genotype centers (for each batch)
+\item shrinks the within-genotype variances
+\item estimates parameters for allele-specific copy number
+\end{itemize}
 
   With \texttt{verbose=TRUE}, the above steps for CN estimation are
   displayed during the processing.
