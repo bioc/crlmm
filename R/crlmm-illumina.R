@@ -510,6 +510,9 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
   if(is.lds) {
+    close(RG@assayData$G)
+    close(RG@assayData$R)
+    close(RG@assayData$zero)    
     close(XY@assayData$X)
     close(XY@assayData$Y)
     close(XY@assayData$zero)
@@ -722,6 +725,9 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 #    if(verbose) message("Used ", round(t0[3],1), " seconds to save ", snpFile, ".")
 #  }
   if(is.lds) {
+    close(XY@assayData$X)
+    close(XY@assayData$Y)
+    close(XY@assayData$zero)    
     close(A)
     close(B)
     close(zero)
@@ -888,6 +894,12 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
+#  if(is.lds) {
+#    delete(res[["A"]])
+#    delete(res[["B"]])
+#    delete(res[["SNR"]])
+#    delete(res[["mixtureParams"]])
+#  }
   rm(res); gc()
   return(list2SnpSet(res2, returnParams=returnParams))
 }
@@ -917,6 +929,9 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 
   if(missing(cdfName)) stop("must specify cdfName")
   if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
+  
+  is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+
 #  if(missing(sns)) sns <- basename(arrayNames)
 
 #  if (save.rg & missing(rgFile))
@@ -944,25 +959,33 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #	save(RG, file=rgFile)
 
     XY = RGtoXY(RG, chipType=cdfName)
+    if(is.lds) {
+      open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
+      delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero)
+    }
     rm(RG); gc()
+  
     if (missing(sns)) { sns = sampleNames(XY) #subsns = sampleNames(XY)
     } # else subsns = sns[j]
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #,
 #                               save.it=save.it, snpFile=snpFile, cnFile=cnFile)
 
-    is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-
-    if(is.lds) {
-      open(res[["A"]])
-      open(res[["B"]])
-      open(res[["SNR"]])
-      open(res[["mixtureParams"]])
-    }
+#    if(is.lds) {
+#      open(res[["A"]])
+#      open(res[["B"]])
+#      open(res[["SNR"]])
+#      open(res[["mixtureParams"]])
+#    }
   
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
 #    protD = XY@protocolData
+
+    if(is.lds) {
+      open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
+      delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero)
+    }
     rm(XY); gc()
 #    if(k == 1){
 #    if(verbose) message("Initializing container for alleleA, alleleB, call, callProbability")
@@ -1063,9 +1086,16 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #    callSet$gender <- tmp$gender
 #    rm(tmp); gc()
 #    return(callSet)
+  if(is.lds) {
+     open(res[["SNR"]]); open(res[["SKW"]])
 
+  }
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
+#  if(is.lds) {
+#    delete(res[["A"]]); delete(res[["B"]])
+#    delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
+#  }
   rm(res); gc()
   return(list2SnpSet(res2, returnParams=returnParams))
 #    tmp <- crlmmGT(A=as.matrix(A(callSet)[snp.index,]), # j]),
@@ -1353,6 +1383,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
           bb = ocProbesets()*length(sns)*8
 	  ffrowapply(tmpA[i1:i2, ] <- A(callSet)[snp.index,][i1:i2, ], X=A(callSet)[snp.index,], BATCHBYTES=bb)
 	  ffrowapply(tmpB[i1:i2, ] <- B(callSet)[snp.index,][i1:i2, ], X=B(callSet)[snp.index,], BATCHBYTES=bb)
+          close(A(callSet))
+          close(B(callSet))
           close(tmpA)
           close(tmpB)
         } else {

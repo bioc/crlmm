@@ -45,11 +45,11 @@ which have been analyzed using Illumina's 370k Duo BeadChips.
 This data is available in the \Rpackage{hapmap370k} package.  
 Additional chip-specific model parameters and basic SNP annotation 
 information used by CRLMM is stored in the \Rpackage{human370v1cCrlmm} package.
-These packages can be installed in the usual way using the \Rfunction{biocLite} function.
+The required packages can be installed in the usual way using the \Rfunction{biocLite} function.
 
 <<<echo=TRUE, results=hide, eval=FALSE>>=
 source("http://www.bioconductor.org/biocLite.R")
-biocLite(c("hapmap370k", "human370v1cCrlmm"))
+biocLite(c("crlmm", "hapmap370k", "human370v1cCrlmm"))
 @ 
 
 \section{Reading in data} 
@@ -80,6 +80,8 @@ RG = readIdatFiles(samples, path=data.dir, arrayInfoColNames=list(barcode=NULL, 
 
 Reading in this data takes approximately 90 seconds and peak memory usage 
 was 1.2 GB of RAM on our linux system.
+If memory is limiting, load the \Rpackage{ff} package and run the same command.
+When this package is available, the objects are stored using disk rather then RAM.
 The \Robject{RG} object is an \Rclass{NChannelSet} which stores the 
 Red and Green intensities, the number of beads and standard errors for 
 each bead-type.  

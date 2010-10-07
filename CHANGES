@@ -561,6 +561,7 @@ function (which expects ff objects and supports parallel processing)
 ** copy number A and B intensities now stored in callSet from genotype.Illumina()
 
 
-2010-10-06 M. Ritchie 1.7.18
+2010-10-06 M. Ritchie 1.7.19
 ** new internal function processIDAT which uses ocLapply() to parallelize pre-processing of Illumina data
 ** changes to genotype.Illumina()
+** updated vignettes - crlmmIllumina.Rnw and crlmmIllumina.pdf
