@@ -78,8 +78,8 @@ samples[1:5,]
 RG = readIdatFiles(samples, path=data.dir, arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"), saveDate=TRUE)
 @
 
-Reading in this data takes approximately 90 seconds and peak memory usage 
-was 1.2 GB of RAM on our linux system.
+Reading in this data takes approximately 100 seconds and peak memory usage 
+was 0.8 GB of RAM on our linux system.
 If memory is limiting, load the \Rpackage{ff} package and run the same command.
 When this package is available, the objects are stored using disk rather then RAM.
 The \Robject{RG} object is an \Rclass{NChannelSet} which stores the 
@@ -123,7 +123,7 @@ Next we use the function \Rfunction{crlmmIllumina} which performs preprocessing 
 crlmmResult = crlmmIllumina(RG=RG, cdfName="human370v1c", sns=pData(RG)$ID, returnParams=TRUE)
 @ 
 
-This analysis took 470 seconds to complete and peak memory usage was 3.3 GB on our system.
+This analysis took 18 minutes to complete and peak memory usage was 2.5 GB on our system.
 The output stored in \Robject{crlmmResult} is a \Rclass{SnpSet} object.                                                                                                                                                         
 <<explore2>>=
   class(crlmmResult)

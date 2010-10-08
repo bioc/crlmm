@@ -3,7 +3,7 @@
 # or to use the optional 'Path' column in sampleSheet
 # - there is a lot of header information that is currently discarded - could try and store this somewhere in the resulting NChannelSet
 
-readIdatFiles <- function(sampleSheet=NULL,
+readIdatFiles = function(sampleSheet=NULL,
 			  arrayNames=NULL,
 			  ids=NULL,
 			  path=".",
@@ -35,7 +35,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) <- basename(arrayNames)
+	       sampleNames(pd) = basename(arrayNames)
        }
        if(is.null(arrayNames)) {
                arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -58,8 +58,8 @@ readIdatFiles <- function(sampleSheet=NULL,
 	       redidats = file.path(path, redfiles)
        }  else {
 	       message("path arg not set.  Assuming files are in local directory, or that complete path is provided")
-	       grnidats <- grnfiles
-	       redidats <- redfiles
+	       grnidats = grnfiles
+	       redidats = redfiles
        }
        if(!all(file.exists(grnidats))) stop("Missing some of the *Grn.idat files")
        if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")
@@ -94,7 +94,7 @@ readIdatFiles <- function(sampleSheet=NULL,
 		       } else stop("Could not find probe IDs")
 		       nprobes = length(ids)
 		       narrays = length(arrayNames)
-		       RG <- new("NChannelSet",
+		       RG = new("NChannelSet",
 		                 R=initializeBigMatrix(name="R", nr=nprobes, nc=narrays, vmode="integer"),
 		                 G=initializeBigMatrix(name="G", nr=nprobes, nc=narrays, vmode="integer"),
 		                 zero=initializeBigMatrix(name="zero", nr=nprobes, nc=narrays, vmode="integer"),
@@ -426,20 +426,20 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	  chipType = match.arg(annotation(RG), chipList)
   } else chipType = match.arg(chipType, chipList)
 
-  pkgname <- getCrlmmAnnotationName(chipType)
+  pkgname = getCrlmmAnnotationName(chipType)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-     suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-     msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+     suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
+     msg = paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
      message(strwrap(msg))
      stop("Package ", pkgname, " could not be found.")
      rm(suggCall, msg)
   }
   if(verbose) message("Loading chip annotation information.")
     loader("address.rda", .crlmmPkgEnv, pkgname)
-  aids <- getVarInEnv("addressA") # comes from AddressA_ID or Address column in manifest
-  bids <- getVarInEnv("addressB") # comes from AddressB_ID or Address2 column in manifest
-  ids <- names(aids)
-  snpbase <- getVarInEnv("base")
+  aids = getVarInEnv("addressA") # comes from AddressA_ID or Address column in manifest
+  bids = getVarInEnv("addressB") # comes from AddressB_ID or Address2 column in manifest
+  ids = names(aids)
+  snpbase = getVarInEnv("base")
 
   nsnps = length(aids)
   narrays = ncol(RG)
@@ -460,13 +460,13 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 #  argrg = aids[rrgg]
 #  brgrg = bids[rrgg]
 
-  XY <- new("NChannelSet",
+  XY = new("NChannelSet",
 	     X=initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer"),
 	     Y=initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer"),
 	     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer"),
 	     annotation=chipType, phenoData=RG@phenoData,
 	     protocolData=RG@protocolData, storage.mode="environment")
-  featureNames(XY) = ids # featureNames(RG)
+  featureNames(XY) = ids 
   sampleNames(XY) = sampleNames(RG)
   gc()
   # Need to initialize - matrices filled with NAs to begin with
@@ -517,17 +517,15 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
     close(XY@assayData$Y)
     close(XY@assayData$zero)
   }
-
-#  storageMode(XY) = "lockedEnvironment"
   XY
 }
 
 
 stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
-  pkgname <- getCrlmmAnnotationName(annotation(XY))
+  pkgname = getCrlmmAnnotationName(annotation(XY))
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-    suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-    msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+    suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
+    msg = paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
     message(strwrap(msg))
     stop("Package ", pkgname, " could not be found.")
     rm(suggCall, msg)
@@ -535,14 +533,14 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
   if(verbose) message("Loading strip and reference normalization information.")
   loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
 
-  stripnum <- getVarInEnv("stripnum")
+  stripnum = getVarInEnv("stripnum")
 
   if(useTarget)
     targetdist = getVarInEnv("reference")
 
   if(verbose){
     message("Quantile normalizing ", ncol(XY), " arrays by ", max(stripnum), " strips.")
-    if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=max(stripnum), style=3)
+    if (getRversion() > '2.7.0') pb = txtProgressBar(min=0, max=max(stripnum), style=3)
   }
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
   
@@ -564,8 +562,6 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
       tmp = normalize.quantiles(as.matrix(cbind(subX, subY)))
     XY@assayData$X[sel,] = matrix(as.integer(tmp[,1:(ncol(tmp)/2)]+16), nrow(tmp), ncol(tmp)/2)
     XY@assayData$Y[sel,] = matrix(as.integer(tmp[,(ncol(tmp)/2+1):ncol(tmp)]+16), nrow(tmp), ncol(tmp)/2)
-#    Xqws[sel,] = tmp[,1:(ncol(tmp)/2)]
-#    Yqws[sel,] = tmp[,(ncol(tmp)/2+1):ncol(tmp)]
     rm(subX, subY, tmp, sel)
     gc()
   }
@@ -580,7 +576,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
 }
 
 
-preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
+preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 				fitMixture=TRUE,
 				eps=0.1,
 				verbose=TRUE,
@@ -596,13 +592,13 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
     XY = stripNormalize(XY, useTarget=useTarget, verbose=verbose)
 
 ## MR: the code below is mostly straight from snprma.R
-  if (missing(sns)) sns <- sampleNames(XY) #$X
+  if (missing(sns)) sns = sampleNames(XY) #$X
   if(missing(cdfName))
-    cdfName <- annotation(XY)
-  pkgname <- getCrlmmAnnotationName(cdfName)
+    cdfName = annotation(XY)
+  pkgname = getCrlmmAnnotationName(cdfName)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-    suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-    msg <- paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
+    suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
+    msg = paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
     message(strwrap(msg))
     stop("Package ", pkgname, " could not be found.")
     rm(suggCall, msg)
@@ -612,9 +608,9 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
   loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
   loader("snpProbesFid.rda", .crlmmPkgEnv, pkgname)
   loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
-  autosomeIndex <- getVarInEnv("autosomeIndex")
-  SMEDIAN <- getVarInEnv("SMEDIAN")
-  theKnots <- getVarInEnv("theKnots")
+  autosomeIndex = getVarInEnv("autosomeIndex")
+  SMEDIAN = getVarInEnv("SMEDIAN")
+  theKnots = getVarInEnv("theKnots")
   narrays = ncol(XY)
 
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)    
@@ -629,14 +625,14 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
         open(XY@assayData$Y)
         open(XY@assayData$zero)
       }
-      A <- matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
-      B <- matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
+      A = matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
+      B = matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
       # new lines below - useful to keep track of zeroed out probes
-      zero <- matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
+      zero = matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
 
-      colnames(A) <- colnames(B) <- colnames(zero) <- sns
-      rownames(A) <- rownames(B) <- rownames(zero) <- names(npIndex)
+      colnames(A) = colnames(B) = colnames(zero) = sns
+      rownames(A) = rownames(B) = rownames(zero) = names(npIndex)
 
       cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
 
@@ -655,33 +651,33 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 
   # next process snp probes
   snpIndex = getVarInEnv("snpProbesFid")
-  nprobes <- length(snpIndex)
+  nprobes = length(snpIndex)
 
   ##We will read each cel file, summarize, and run EM one by one
   ##We will save parameters of EM to use later
-  mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
-  SNR <- initializeBigVector("crlmmSNR-", narrays, "double")
-  SKW <- initializeBigVector("crlmmSKW-", narrays, "double")
+  mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
+  SNR = initializeBigVector("crlmmSNR-", narrays, "double")
+  SKW = initializeBigVector("crlmmSKW-", narrays, "double")
 
   ## This is the sample for the fitting of splines
   ## BC: I like better the idea of the user passing the seed,
   ##     because this might intefere with other analyses
   ##     (like what happened to GCRMA)
   set.seed(seed)
-  idx <- sort(sample(autosomeIndex, mixtureSampleSize))
-  idx2 <- sample(nprobes, 10^5)
+  idx = sort(sample(autosomeIndex, mixtureSampleSize))
+  idx2 = sample(nprobes, 10^5)
 
   ##S will hold (A+B)/2 and M will hold A-B
   ##NOTE: We actually dont need to save S. Only for pics etc...
   ##f is the correction. we save to avoid recomputing
 
-  A <- initializeBigMatrix("crlmmA-", nprobes, narrays, "integer")
-  B <- initializeBigMatrix("crlmmB-", nprobes, narrays, "integer")
-  zero <- initializeBigMatrix("crlmmZero-", nprobes, narrays, "integer")
+  A = initializeBigMatrix("crlmmA-", nprobes, narrays, "integer")
+  B = initializeBigMatrix("crlmmB-", nprobes, narrays, "integer")
+  zero = initializeBigMatrix("crlmmZero-", nprobes, narrays, "integer")
 
   if(verbose){
      message("Calibrating ", narrays, " arrays.")
-     if (getRversion() > '2.7.0') pb <- txtProgressBar(min=0, max=narrays, style=3)
+     if (getRversion() > '2.7.0') pb = txtProgressBar(min=0, max=narrays, style=3)
   }
 
   if(is.lds) {
@@ -694,28 +690,27 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
      A[,i] = as.integer(exprs(channel(XY, "X"))[snpIndex,i])
      B[,i] = as.integer(exprs(channel(XY, "Y"))[snpIndex,i])
      zero[,i] = as.integer(exprs(channel(XY, "zero"))[snpIndex,i])
-#    SKW[i] = mean((A[snpIndex,i][idx2]-mean(A[snpIndex,i][idx2]))^3)/(sd(A[snpIndex,i][idx2])^3)
      SKW[i] = mean((A[idx2,i]-mean(A[idx2,i]))^3)/(sd(A[idx2,i])^3)
-    if(fitMixture){
-      S <- (log2(A[idx,i])+log2(B[idx,i]))/2 - SMEDIAN
-      M <- log2(A[idx,i])-log2(B[idx,i])
+     if(fitMixture){
+        S = (log2(A[idx,i])+log2(B[idx,i]))/2 - SMEDIAN
+        M = log2(A[idx,i])-log2(B[idx,i])
 
-      ##we need to test the choice of eps.. it is not the max diff between funcs
-      tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
+        ##we need to test the choice of eps.. it is not the max diff between funcs
+        tmp = fitAffySnpMixture56(S, M, theKnots, eps=eps)
 
-      mixtureParams[, i] <- tmp[["coef"]]
-      SNR[i] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
-    }
-    if(verbose) {
-       if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
-       else cat(".")
-    }
+        mixtureParams[, i] = tmp[["coef"]]
+        SNR[i] = tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
+      }
+      if(verbose) {
+        if (getRversion() > '2.7.0') setTxtProgressBar(pb, i)
+        else cat(".")
+      }
   }
   if (verbose) {
     if (getRversion() > '2.7.0') close(pb)
     else cat("\n")
   }
-  if (!fitMixture) SNR <- mixtureParams <- NA
+  if (!fitMixture) SNR = mixtureParams = NA
   ## gns comes from preprocStuff.rda
 
 #  if(save.it & !missing(snpFile)) {
@@ -763,7 +758,7 @@ preprocessInfinium2 <- function(XY, mixtureSampleSize=10^5,
 }
 
 
-crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
+crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   row.names=TRUE, col.names=TRUE,
                   probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
                   seed=1, # save.it=FALSE, load.it=FALSE, snpFile, cnFile,
@@ -787,9 +782,7 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
       else
         stop("Both RG and XY specified - please use one or the other")
     }
-    if (missing(sns)) {
-      sns = sampleNames(XY) #$X
-    }
+    if (missing(sns)) sns = sampleNames(XY)
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                         seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #,
 #                        save.it=save.it, snpFile=snpFile, cnFile=cnFile)
@@ -841,14 +834,14 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
 
-  FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
+  FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
   ## genotyping
-  crlmmGTfxn <- function(FUN,...){
+  crlmmGTfxn = function(FUN,...){
 		switch(FUN,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
               }
-  res2 <- crlmmGTfxn(FUN,
+  res2 = crlmmGTfxn(FUN,
                      A=res[["A"]],
                      B=res[["B"]],
                      SNR=res[["SNR"]],
@@ -892,8 +885,8 @@ crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
 #    rm(tmp); gc()
 #    return(callSet)
 
-  res2[["SNR"]] <- res[["SNR"]]
-  res2[["SKW"]] <- res[["SKW"]]
+  res2[["SNR"]] = res[["SNR"]]
+  res2[["SKW"]] = res[["SKW"]]
 #  if(is.lds) {
 #    delete(res[["A"]])
 #    delete(res[["B"]])
@@ -927,36 +920,15 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
                           cdfName, sns, recallMin=10, recallRegMin=1000,
                           returnParams=FALSE, badSNP=.7) {
 
-  if(missing(cdfName)) stop("must specify cdfName")
-  if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
+    if(missing(cdfName)) stop("must specify cdfName")
+    if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
   
-  is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+    is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 
-#  if(missing(sns)) sns <- basename(arrayNames)
-
-#  if (save.rg & missing(rgFile))
-#    stop("'rgFile' is missing, and you chose save.rg")
-#  if (save.it & (missing(snpFile) | missing(cnFile)))
-#    stop("'snpFile' or 'cnFile' is missing and you chose save.it")
-#  batches = NULL
-#  if(!is.null(arrayNames))
-#    batches <- rep(1, length(arrayNames)) # problem here if arrayNames not specified! # splitIndicesByLength(seq(along=arrayNames), ocSamples())
-#  if(!is.null(sampleSheet))
-#    batches <- rep(1, nrow(sampleSheet))
-#  if(is.null(batches))
-#    batches=1
-#  k <- 1
-#  for(j in batches){
-#     if(verbose) message("Batch ", k, " of ", length(batches))
-#     RG = readIdatFiles(sampleSheet=sampleSheet[j,], arrayNames=arrayNames[j],
-#                       ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-#                       highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate)
-     RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
+    RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate)
 
-#  if(save.rg)
-#	save(RG, file=rgFile)
 
     XY = RGtoXY(RG, chipType=cdfName)
     if(is.lds) {
@@ -965,85 +937,29 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     }
     rm(RG); gc()
   
-    if (missing(sns)) { sns = sampleNames(XY) #subsns = sampleNames(XY)
-    } # else subsns = sns[j]
+    if (missing(sns)) { sns = sampleNames(XY)
+    } 
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #,
 #                               save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-
-#    if(is.lds) {
-#      open(res[["A"]])
-#      open(res[["B"]])
-#      open(res[["SNR"]])
-#      open(res[["mixtureParams"]])
-#    }
-  
-#    fD = featureData(XY)
-#    phenD = XY@phenoData
-#    protD = XY@protocolData
 
     if(is.lds) {
       open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
       delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero)
     }
     rm(XY); gc()
-#    if(k == 1){
-#    if(verbose) message("Initializing container for alleleA, alleleB, call, callProbability")
-#    callSet <- new("SnpSuperSet",
-#                    alleleA=initializeBigMatrix(name="A", nr=nrow(res[[1]]), nc=length(sns)),
-#                    alleleB=initializeBigMatrix(name="B", nr=nrow(res[[1]]), nc=length(sns)),
-#                    call=initializeBigMatrix(name="call", nr=nrow(res[[1]]), nc=length(sns)),
-#                    callProbability=initializeBigMatrix(name="callPr", nr=nrow(res[[1]]), nc=length(sns)),
-# 		    annotation=cdfName, protocolData=protD, phenoData=phenD, featureData=fD)
-#    sampleNames(callSet) <- sns
-#            phenoData(callSet) <- getPhenoData(sampleSheet=sampleSheet,
-#                                    arrayNames=sns,
-#								    arrayInfoColNames=arrayInfoColNames)
-#            pD <- data.frame(matrix(NA, length(sns), 1), row.names=sns)
-#            colnames(pD) <- "ScanDate"
-#            protocolData(callSet) <- pData(protD) # new("AnnotatedDataFrame", data=pD)
-#            pData(protocolData(callSet))[j, ] <- pData(protocolData)
-#    featureNames(callSet) <- res[["gns"]]
-#    pData(callSet)$SKW <- rep(NA, length(sns))
-#    pData(callSet)$SNR <- rep(NA, length(sns))
-#    pData(callSet)$gender <- rep(NA, length(sns))
-#	}
-#	pData(callSet)[j,] <- phenD
-#	pData(protocolData(callSet))[j,] <- protD
-#	pData(callSet) <- phenD
-#	pData(protocolData(callSet)) <- protD
 
-#    rm(phenD, protD, fD)
-
-#    if(k > 1 & nrow(res[[1]]) != nrow(callSet)){
-        ##RS: I don't understand why the IDATS for the
-        ##same platform potentially have different lengths
-#        res[["A"]] <- res[["A"]][res$gns %in% featureNames(callSet), ]
-#        res[["B"]] <- res[["B"]][res$gns %in% featureNames(callSet), ]
-#    }
-
-#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))
-#    suppressWarnings(A(callSet)[, j] <- res[["A"]])
-#    suppressWarnings(B(callSet)[, j] <- res[["B"]])
-#    suppressWarnings(A(callSet) <- res[["A"]])
-#    suppressWarnings(B(callSet) <- res[["B"]])
-#    pData(callSet)$SKW[j] <- res$SKW
-#    pData(callSet)$SNR[j] <- res$SNR
-#    pData(callSet)$SKW <- res$SKW
-#    pData(callSet)$SNR <- res$SNR
-#    mixtureParams <- res$mixtureParams
-#    rm(res); gc()
-  if(row.names) row.names=res$gns else row.names=NULL
-  if(col.names) col.names=res$sns else col.names=NULL
+    if(row.names) row.names=res$gns else row.names=NULL
+    if(col.names) col.names=res$sns else col.names=NULL
   
-  FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
-  ## genotyping
-  crlmmGTfxn <- function(FUN,...){
+    FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
+    ## genotyping
+    crlmmGTfxn = function(FUN,...){
 		switch(FUN,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
               }
-  res2 <- crlmmGTfxn(FUN,
+    res2 = crlmmGTfxn(FUN,
                      A=res[["A"]],
                      B=res[["B"]],
                      SNR=res[["SNR"]],
@@ -1061,80 +977,28 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
                      returnParams=returnParams,
                      badSNP=badSNP)
   
-#  res2 <- crlmmGT2(A=res[["A"]], #as.matrix(A(callSet)[snp.index,]), # j]),
-#                  B=res[["B"]], # as.matrix(B(callSet)[snp.index,]),  # j]),
-#                  SNR=res[["SNR"]], # callSet$SNR, # [j],
-#                  mixtureParams=res[["mixtureParams"]], #,
-#                  cdfName=res[["cdfName"]], # annotation(callSet),
-#                  row.names=row.names, # featureNames(callSet)[snp.index],
-#                  col.names=col.names, # sampleNames(callSet), #[j],
-#                  probs=probs,
-#                  DF=DF,
-#                  SNRMin=SNRMin,
-#                  recallMin=recallMin,
-#                  recallRegMin=recallRegMin,
-#                  gender=gender,
-#                  verbose=verbose,
-#                  returnParams=returnParams,
-#                  badSNP=badSNP)
-#    rm(res); gc()
-#    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
-#    callSet$gender[j] <- tmp$gender
-#    suppressWarnings(snpCall(callSet)[snp.index,] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index,] <- tmp[["confs"]])
-#    callSet$gender <- tmp$gender
-#    rm(tmp); gc()
-#    return(callSet)
-  if(is.lds) {
-     open(res[["SNR"]]); open(res[["SKW"]])
-
-  }
-  res2[["SNR"]] <- res[["SNR"]]
-  res2[["SKW"]] <- res[["SKW"]]
-#  if(is.lds) {
-#    delete(res[["A"]]); delete(res[["B"]])
-#    delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
-#  }
-  rm(res); gc()
-  return(list2SnpSet(res2, returnParams=returnParams))
-#    tmp <- crlmmGT(A=as.matrix(A(callSet)[snp.index,]), # j]),
-#                  B=as.matrix(B(callSet)[snp.index,]),  # j]),
-#                  SNR=callSet$SNR, # [j],
-#                  mixtureParams=mixtureParams,
-#                  cdfName=annotation(callSet),
-#                  row.names=featureNames(callSet)[snp.index],
-#                  col.names=sampleNames(callSet), #[j],
-#                  probs=probs,
-#                  DF=DF,
-#                  SNRMin=SNRMin,
-#                  recallMin=recallMin,
-#                  recallRegMin=recallRegMin,
-#                  gender=gender,
-#                  verbose=verbose,
-#                  returnParams=returnParams,
-#                  badSNP=badSNP)
-#    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
-#    callSet$gender[j] <- tmp$gender
-#    suppressWarnings(snpCall(callSet)[snp.index,] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index,] <- tmp[["confs"]])
-#    callSet$gender <- tmp$gender
-#    rm(tmp); gc()
-#    k <- k+1
-#  }
-#    return(callSet)
+    if(is.lds) {
+      open(res[["SNR"]]); open(res[["SKW"]])
+    }
+    res2[["SNR"]] = res[["SNR"]]
+    res2[["SKW"]] = res[["SKW"]]
+ #  if(is.lds) {
+ #    delete(res[["A"]]); delete(res[["B"]])
+ #    delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
+ #  }
+    rm(res); gc()
+    return(list2SnpSet(res2, returnParams=returnParams))
 }
 
-# Add function analogous to Rob's Affy functions to set up container
+# Functions analogous to Rob's Affy functions to set up container
 getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat") {
        narrays = length(filenames)
 
        headerInfo = list(nProbes = rep(NA, narrays),
                          Barcode = rep(NA, narrays),
                          ChipType = rep(NA, narrays),
-                         Manifest = rep(NA, narrays), # not sure about this one - sometimes blank
-                         Position = rep(NA, narrays)) # this may also vary a bit
+                         Manifest = rep(NA, narrays),
+                         Position = rep(NA, narrays))
 
        scanDates = data.frame(ScanDate=rep(NA, narrays), DecodeDate=rep(NA, narrays))
        rownames(scanDates) = gsub(paste(sep, fileExt, sep=""), "", filenames)
@@ -1166,7 +1030,7 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat") {
 }
 
 
-construct.Illumina <- function(sampleSheet=NULL,
+construct.Illumina = function(sampleSheet=NULL,
 			  arrayNames=NULL,
 			  ids=NULL,
 			  path=".",
@@ -1201,7 +1065,7 @@ construct.Illumina <- function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) <- basename(arrayNames)
+	       sampleNames(pd) = basename(arrayNames)
        }
        if(is.null(arrayNames)) {
                arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -1239,14 +1103,14 @@ construct.Illumina <- function(sampleSheet=NULL,
        if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")
 
 	if(verbose) message("Initializing container for genotyping and copy number estimation")
-	featureData <- getFeatureData.Affy(cdfName, copynumber=copynumber)
+	featureData = getFeatureData.Affy(cdfName, copynumber=copynumber)
 	if(!missing(fns)){
-		index <- match(fns, featureNames(featureData))
+		index = match(fns, featureNames(featureData))
 		if(all(is.na(index))) stop("fns not in featureNames")
-		featureData <- featureData[index, ]
+		featureData = featureData[index, ]
 	}
-	nr <- nrow(featureData); nc <- narrays
-	cnSet <- new("CNSet",
+	nr = nrow(featureData); nc = narrays
+	cnSet = new("CNSet",
 		     alleleA=initializeBigMatrix(name="A", nr, nc),
 		     alleleB=initializeBigMatrix(name="B", nr, nc),
 		     call=initializeBigMatrix(name="call", nr, nc),
@@ -1259,22 +1123,22 @@ construct.Illumina <- function(sampleSheet=NULL,
         else sampleNames(cnSet) = arrayNames
 
 	if(saveDate){
-		protocolData <- getProtocolData.Illumina(grnidats, sep=sep, fileExt=fileExt$green)
+		protocolData = getProtocolData.Illumina(grnidats, sep=sep, fileExt=fileExt$green)
 	} else{
-		protocolData <- annotatedDataFrameFrom(A(cnSet), byrow=FALSE)
+		protocolData = annotatedDataFrameFrom(A(cnSet), byrow=FALSE)
 	}
-	rownames(pData(protocolData)) <- sampleNames(cnSet) # sns
-	protocolData(cnSet) <- protocolData
-	featureData(cnSet) <- featureData
-	featureNames(cnSet) <- featureNames(featureData)
-	pd <- data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet)) #  sns)
+	rownames(pData(protocolData)) = sampleNames(cnSet)
+	protocolData(cnSet) = protocolData
+	featureData(cnSet) = featureData
+	featureNames(cnSet) = featureNames(featureData)
+	pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet)) 
 	colnames(pd)=c("SKW", "SNR", "gender")
-	phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
+	phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
 	return(cnSet)
 }
 
 
-genotype.Illumina <- function(sampleSheet=NULL,
+genotype.Illumina = function(sampleSheet=NULL,
 			  arrayNames=NULL,
 			  ids=NULL,
 			  path=".",
@@ -1304,26 +1168,26 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		          gender=NULL,
 		          returnParams=TRUE,
 		          badSNP=0.7) {
-	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
-	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
+	callSet = construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 			     ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                              highDensity=highDensity, sep=sep, fileExt=fileExt, 
 			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch,
                              fns=fns, saveDate=saveDate)
         if(missing(sns)) sns = sampleNames(callSet)
 	open(callSet)
-	is.snp <- isSnp(callSet)
-	snp.index <- which(is.snp)
+	is.snp = isSnp(callSet)
+	snp.index = which(is.snp)
         narrays = ncol(callSet)
 
         if(is.lds) {
-          sampleBatches <- splitIndicesByNode(seq(along=sampleNames(callSet)))
+          sampleBatches = splitIndicesByNode(seq(along=sampleNames(callSet)))
 
-          mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
-          SNR <- initializeBigVector("crlmmSNR-", narrays, "double")
-          SKW <- initializeBigVector("crlmmSKW-", narrays, "double")
+          mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
+          SNR = initializeBigVector("crlmmSNR-", narrays, "double")
+          SKW = initializeBigVector("crlmmSKW-", narrays, "double")
           
           ocLapply(sampleBatches, processIDAT, sampleSheet=sampleSheet, arrayNames=arrayNames,
                  ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
@@ -1334,12 +1198,12 @@ genotype.Illumina <- function(sampleSheet=NULL,
 
           open(SKW)
           open(SNR)
-          pData(callSet)$SKW <- SKW
-          pData(callSet)$SNR <- SNR
+          pData(callSet)$SKW = SKW
+          pData(callSet)$SNR = SNR
           close(SNR)
           close(SKW)
         } else {
-          mixtureParams <- matrix(NA, 4, nrow(callSet))
+          mixtureParams = matrix(NA, 4, nrow(callSet))
 
           RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
@@ -1352,24 +1216,24 @@ genotype.Illumina <- function(sampleSheet=NULL,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
           rm(XY); gc()
           if(verbose) message("Finished preprocessing.")
-          np.index <- which(!is.snp)        
-          A(callSet)[snp.index, ] <- res[["A"]]
-          B(callSet)[snp.index, ] <- res[["B"]]
+          np.index = which(!is.snp)        
+          A(callSet)[snp.index, ] = res[["A"]]
+          B(callSet)[snp.index, ] = res[["B"]]
           if(length(np.index)>0) {
             for (j in 1:ncol(callSet)) {
-        	A(callSet)[np.index, ] <- res[["cnAB"]]$A
-        	B(callSet)[np.index, ] <- res[["cnAB"]]$B
+        	A(callSet)[np.index, ] = res[["cnAB"]]$A
+        	B(callSet)[np.index, ] = res[["cnAB"]]$B
         	}
           }
-	  SKW = pData(callSet)$SKW <- res[["SKW"]]
-	  SNR = pData(callSet)$SNR <- res[["SNR"]]
-	  mixtureParams <- res[["mixtureParams"]]
+	  SKW = pData(callSet)$SKW = res[["SKW"]]
+	  SNR = pData(callSet)$SNR = res[["SNR"]]
+	  mixtureParams = res[["mixtureParams"]]
           rm(res)
         }
 
-	FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
+	FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
 	## genotyping
-	crlmmGTfxn <- function(FUN,...){
+	crlmmGTfxn = function(FUN,...){
 		switch(FUN,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
@@ -1392,7 +1256,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
           tmpB = B(callSet)[snp.index,]
         }
         
-	tmp <- crlmmGTfxn(FUN,
+	tmp = crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
 			  SNR=SNR,
@@ -1409,14 +1273,13 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			  verbose=verbose,
 			  returnParams=returnParams,
 			  badSNP=badSNP)
-#        rm(res); gc()
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	if(is.lds){
 		bb = ocProbesets()*ncol(callSet)*8
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
-		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
+		ffrowapply(snpCall(callSet)[snp.index,][i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
+		ffrowapply(snpCallProbability(callSet)[snp.index,][i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]], BATCHBYTES=bb)
 #		close(tmp[["calls"]])
 #		close(tmp[["confs"]])
 #                open(tmpA); open(tmpB)
@@ -1424,11 +1287,11 @@ genotype.Illumina <- function(sampleSheet=NULL,
                 delete(tmp[["calls"]]); delete(tmp[["confs"]])
                 rm(tmpA, tmpB)
 	} else {
-		calls(callSet)[snp.index, ] <- tmp[["calls"]]
-		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
+		calls(callSet)[snp.index, ] = tmp[["calls"]]
+		snpCallProbability(callSet)[snp.index, ] = tmp[["confs"]]
                 rm(tmpA, tmpB)
 	}
-	callSet$gender <- tmp$gender
+	callSet$gender = tmp$gender
         rm(tmp)
 	close(callSet)
 	return(callSet)
@@ -1454,75 +1317,52 @@ processIDAT =  function(sel, sampleSheet=NULL,
 			  stripNorm=TRUE,
 			  useTarget=TRUE,
                           A, B, SKW, SNR, mixtureParams, is.snp) {
-# 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-
+  
         if(length(path)>= length(sel)) path = path[sel]
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate)
 
         XY = RGtoXY(RG, chipType=cdfName)
- #       if(is.lds) {
-          open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
-          delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero); rm(RG)
-#        } else {
-#          rm(RG)
-#        }
+        open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
+        delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero); rm(RG)
         gc()
-        if (missing(sns)) { sns = sampleNames(XY) #subsns = sampleNames(XY)
-        } # else subsns = sns[j]
+        if (missing(sns)) sns = sampleNames(XY)
         
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
         #                       save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-#        if(is.lds) {
-          open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
-          delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero); rm(XY)
-#        } else {
-#          rm(XY)
-#        }
+        open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
+        delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero); rm(XY)
         gc()
 	if(verbose) message("Finished preprocessing.")
         snp.index = which(is.snp)
-	np.index <- which(!is.snp)      
-#	if(is.lds){
-                open(res[["A"]])
-                open(res[["B"]])
-                open(res[["SKW"]])
-                open(res[["SNR"]])
-                open(res[["mixtureParams"]])
-		bb = ocProbesets()*length(sns)*8
-		ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, sel], X=res[["A"]], BATCHBYTES=bb)
-		ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, sel], X=res[["B"]], BATCHBYTES=bb)
-        	if(length(np.index)>0) {
-        		for (j in sel) {
-        			A[np.index, j] <- res[["cnAB"]]$A[,j]
-        			B[np.index, j] <- res[["cnAB"]]$B[,j]
-        		}
-                }
-                delete(res[["A"]]); delete(res[["B"]])
-#	} else {
-#		A[snp.index, ] <- res[["A"]]
-#		B[snp.index, ] <- res[["B"]]
-#        	if(length(np.index)>0) {
-#        		A[np.index, ] <- res[["cnAB"]]$A
-#        		B[np.index, ] <- res[["cnAB"]]$B
-#                }
-#	}
-#        open(res[["SKW"]])
-#        open(res[["SNR"]])
-#        open(res[["mixtureParams"]])
-	SKW[sel] <- res[["SKW"]][]
-	SNR[sel] <- res[["SNR"]][]
-	mixtureParams[,sel] <- res[["mixtureParams"]][]
+	np.index = which(!is.snp)      
+
+        open(res[["A"]])
+        open(res[["B"]])
+        open(res[["SKW"]])
+        open(res[["SNR"]])
+        open(res[["mixtureParams"]])
+	bb = ocProbesets()*length(sns)*8
+        ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, sel], X=res[["A"]], BATCHBYTES=bb)
+	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, sel], X=res[["B"]], BATCHBYTES=bb)
+	if(length(np.index)>0) {
+          for (j in sel) {
+            A[np.index, j] = res[["cnAB"]]$A[,j]
+            B[np.index, j] = res[["cnAB"]]$B[,j]
+          }
+        }
+        delete(res[["A"]]); delete(res[["B"]])
+	SKW[sel] = res[["SKW"]][]
+	SNR[sel] = res[["SNR"]][]
+	mixtureParams[,sel] = res[["mixtureParams"]][]
         close(A)
         close(B)
         close(SNR)
         close(SKW)
         close(mixtureParams)
-#       	if(is.lds){
-          delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
-#        }
+        delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
         rm(res)
         TRUE
       }

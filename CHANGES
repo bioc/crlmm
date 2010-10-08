@@ -565,3 +565,7 @@ function (which expects ff objects and supports parallel processing)
 ** new internal function processIDAT which uses ocLapply() to parallelize pre-processing of Illumina data
 ** changes to genotype.Illumina()
 ** updated vignettes - crlmmIllumina.Rnw and crlmmIllumina.pdf
+
+2010-10-07 M. Ritchie 1.7.20
+** updated vignettes - crlmmIllumina.Rnw and crlmmIllumina.pdf
+** tidied code and added snp.index to ffrowapply() in genotype.Illumina() when calls and confidence values are being updated in callSet.
