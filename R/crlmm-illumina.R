@@ -82,7 +82,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       headerInfo$ChipType[i] = G$ChipType
 	       headerInfo$Manifest[i] = G$Unknown$MostlyNull
 	       headerInfo$Position[i] = G$Unknowns$MostlyA
-           if(headerInfo$nProbes[i]>(headerInfo$nProbes[1]+10000) || headerInfo$nProbes[i]<(headerInfo$nProbes[1]-10000)) {
+               if(headerInfo$nProbes[i]>(headerInfo$nProbes[1]+10000) || headerInfo$nProbes[i]<(headerInfo$nProbes[1]-10000)) {
 		       warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
 		       next()
 	       }
@@ -1171,6 +1171,7 @@ genotype.Illumina = function(sampleSheet=NULL,
 	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
+        pkgname = getCrlmmAnnotationName(cdfName)
 	callSet = construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 			     ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                              highDensity=highDensity, sep=sep, fileExt=fileExt, 
@@ -1181,7 +1182,7 @@ genotype.Illumina = function(sampleSheet=NULL,
 	is.snp = isSnp(callSet)
 	snp.index = which(is.snp)
         narrays = ncol(callSet)
-
+        
         if(is.lds) {
           sampleBatches = splitIndicesByNode(seq(along=sampleNames(callSet)))
 
@@ -1194,7 +1195,7 @@ genotype.Illumina = function(sampleSheet=NULL,
                  sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
                  fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
                  useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
-                 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", cdfName))
+                 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname))
 
           open(SKW)
           open(SNR)
