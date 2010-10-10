@@ -1349,9 +1349,9 @@ processIDAT =  function(sel, sampleSheet=NULL,
         ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
 	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
 	if(length(np.index)>0) {
-          for (j in sel) {
-            A[np.index, j] = res[["cnAB"]]$A[,j]
-            B[np.index, j] = res[["cnAB"]]$B[,j]
+          for (j in 1:length(sel)) {
+            A[np.index, sel[j]] = res[["cnAB"]]$A[,j]
+            B[np.index, sel[j]] = res[["cnAB"]]$B[,j]
           }
         }
         delete(res[["A"]]); delete(res[["B"]])
