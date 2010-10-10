@@ -1328,7 +1328,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
         delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero); rm(RG)
         gc()
-        if (missing(sns)) sns = sampleNames(XY)
+        if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
         
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
