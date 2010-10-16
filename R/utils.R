@@ -168,6 +168,7 @@ validCdfNames <- function(){
 	  "human1mduov3b",
 	  "humanomni1quadv1b",
           "humanomniexpress12v1b",
+	  "humanomni25quadv1b",
           "humanimmuno12v1b")
 }
 isValidCdfName <- function(cdfName){

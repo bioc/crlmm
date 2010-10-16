@@ -573,3 +573,6 @@ function (which expects ff objects and supports parallel processing)
 2010-10-11 M. Ritchie 1.7.21
 ** fixed bug with indexes for ffrowapply() in genotype.Illumina()
 
+2010-10-17 M. Ritchie 1.7.22
+**  added "humanomni25quadv1b" to validCdfName() in utils.R and RGtoXY() in crlmm-illumina.R
+
