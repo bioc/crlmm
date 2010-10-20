@@ -53,7 +53,7 @@ importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 ##Error in function (classes, fdef, mtable)  :
 ##  unable to find an inherited method for function "medianA.AA<-", for signature "CNSet", "ff_matrix"
 ##importClassesFrom(oligoClasses, ffdf, ff_matrix)
-importClassesFrom(oligoClasses, ff_matrix)
+importClassesFrom(oligoClasses, ff_matrix, ffdf)
 ## Important to export these classes
 ##exportClasses(ff_or_matrix, ff_matrix, ffdf)
 ##exportClasses(ff_or_matrix)
