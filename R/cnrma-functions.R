@@ -119,7 +119,6 @@ genotype <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-	##save(callSet, file=file.path(outdir, "callSet.rda"))
 	if(is.lds) open(callSet)
 	mixtureParams <- matrix(NA, 4, length(filenames))
 	is.snp <- isSnp(callSet)
@@ -130,7 +129,8 @@ genotype <- function(filenames,
 		       snprma=snprma(...),
 		       snprma2=snprma2(...))
 	}
-	snprmaRes <- snprmaFxn(FUN, filenames=filenames,
+	snprmaRes <- snprmaFxn(FUN,
+			       filenames=filenames,
 			       mixtureSampleSize=mixtureSampleSize,
 			       fitMixture=TRUE,
 			       eps=eps,
@@ -138,22 +138,27 @@ genotype <- function(filenames,
 			       seed=seed,
 			       cdfName=cdfName,
 			       sns=sns)
+	##message("Saving snprmaRes file")
+	##save(snprmaRes, file=file.path(outdir, "snprmaRes.rda"))
 	if(verbose) message("Finished preprocessing.")
 	if(is.lds){
 		open(snprmaRes[["A"]])
 		open(snprmaRes[["B"]])
+		open(snprmaRes[["SNR"]])
+		open(snprmaRes[["mixtureParams"]])
 		##bb <- getOption("ffbatchbytes")
+		message("Writing normalized intensities to callSet")
 		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
 		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
+		pData(callSet)$SKW <- snprmaRes[["SKW"]]
+		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	} else{
 		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
 		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
+		pData(callSet)$SKW <- snprmaRes[["SKW"]]
+		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	}
-	pData(callSet)$SKW <- snprmaRes[["SKW"]]
-	pData(callSet)$SNR <- snprmaRes[["SNR"]]
-	mixtureParams <- snprmaRes$mixtureParams
 	np.index <- which(!is.snp)
-	if(verbose) message("Normalizing nonpolymorphic markers")
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
 	## main purpose is to update 'alleleA'
 	cnrmaFxn <- function(FUN,...){
@@ -170,10 +175,7 @@ genotype <- function(filenames,
 		       sns=sns,
 		       seed=seed,
 		       verbose=verbose)
-	if(verbose) message("Saving callSet.rda")
-	##save(callSet, file=file.path(outdir, "callSet.rda"))
 	if(!is.lds) A(callSet) <- AA
-	## otherwise, the normalized values were written to file... no need to do anything
 	rm(AA)
 	FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
 	## genotyping
@@ -182,7 +184,7 @@ genotype <- function(filenames,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
 	}
-	if(verbose) message("Call genotypes at polymorphic markers")
+	if(verbose) message("Running crlmmGT2")
 	tmp <- crlmmGTfxn(FUN,
 			  A=snprmaRes[["A"]],
 			  B=snprmaRes[["B"]],
@@ -191,8 +193,6 @@ genotype <- function(filenames,
 			  cdfName=cdfName,
 			  row.names=NULL,
 			  col.names=sampleNames(callSet),
-			  probs=probs,
-			  DF=DF,
 			  SNRMin=SNRMin,
 			  recallMin=recallMin,
 			  recallRegMin=recallRegMin,
@@ -206,16 +206,24 @@ genotype <- function(filenames,
 		open(tmp[["confs"]])
 		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
 		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
-		close(tmp[["calls"]])
-		close(tmp[["confs"]])
 	} else {
 		calls(callSet)[snp.index, ] <- tmp[["calls"]]
 		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
 	}
+	message("Finished updating.  Cleaning up.")
 	callSet$gender <- tmp$gender
 	close(callSet)
+	if(is.lds){
+		delete(snprmaRes[["A"]])
+		delete(snprmaRes[["B"]])
+		##delete(snprmaRes[["SNR"]]) -- would need to do something like callSet$SNR <- snprmaRes[["SNR"]][,]
+		##delete(snprmaRes[["SKW"]])
+		delete(snprmaRes[["mixtureParams"]])
+		rm(snprmaRes)
+	}
 	return(callSet)
 }
+
 genotype2 <- function(){
 	.Defunct(msg="The genotype2 function has been deprecated. The function genotype should be used instead.  genotype will support large data using ff provided that the ff package is loaded.")
 }
@@ -494,6 +502,7 @@ fit.lm1 <- function(strata,
 	}
 }
 
+## nonpolymorphic markers
 fit.lm2 <- function(strata,
 		    index.list,
 		    object,
@@ -532,7 +541,8 @@ fit.lm2 <- function(strata,
 		X <- cbind(1, log2(c(medianA.AA[, k], medianB.BB[, k])))
 		Y <- log2(c(phiA.snp[, k], phiB.snp[, k]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
-		crosshyb <- max(median(medianA.AA[, k]) - median(medianA.AA.np[, k]), 0)
+		##crosshyb <- max(median(medianA.AA[, k]) - median(medianA.AA.np[, k]), 0)
+		crosshyb <- 0
 		X <- cbind(1, log2(medianA.AA.np[, k] + crosshyb))
 		logPhiT <- X %*% betahat
 		phiA.np[, k] <- 2^(logPhiT)
@@ -1616,19 +1626,30 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 	nr <- length(index)
 	nc <- length(batchnames)
 	N.AA <- medianA.AA <- madA.AA <- tau2A.AA <- matrix(NA, nr, nc)
+	is.illumina <- whichPlatform(annotation(object)) == "illumina"
 	AA <- as.matrix(A(object)[index, ])
+	if(is.illumina){
+		BB <- as.matrix(B(object)[index, ])
+		AVG <- (AA+BB)/2
+		A(object)[index, ] <- AVG
+		AA <- AVG
+		rm(AVG, BB)
+	}
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
 		N.AA[, k] <- length(B)
 		this.batch <- unique(as.character(batch(object)[B]))
 		j <- match(this.batch, batchnames)
-		##NORM <- normal.index[, k]
-		A <- AA[, B]
-		medianA.AA[, k] <- rowMedians(A, na.rm=TRUE)
-		madA.AA[, k] <- rowMAD(A, na.rm=TRUE)
+		I.A <- AA[, B]
+##		if(is.illumina){
+##			I.B <- BB[, B]
+##			I.A <- I.A + I.B
+##		}
+		medianA.AA[, k] <- rowMedians(I.A, na.rm=TRUE)
+		madA.AA[, k] <- rowMAD(I.A, na.rm=TRUE)
 		## log2 Transform Intensities
-		A <- log2(A)
-		tau2A.AA[, k] <- rowMAD(A, na.rm=TRUE)^2
+		I.A <- log2(I.A)
+		tau2A.AA[, k] <- rowMAD(I.A, na.rm=TRUE)^2
 	}
 	N.AA(object)[index,] <- N.AA
 	medianA.AA(object)[index,] <- medianA.AA
@@ -1674,8 +1695,8 @@ summarizeSnps <- function(strata,
 		##NORM <- normal.index[, k]
 		xx <- CP[, B]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
-		##G <- G*highConf*NORM
 		G <- G*highConf
+		##G <- G*highConf*NORM
 		A <- AA[, B]
 		B <- BB[, B]
 		## this can be time consuming...do only once

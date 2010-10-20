@@ -139,8 +139,9 @@ container <- checkExists("container", .path=outdir,
 cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it)
 @
 
+
 <<copynumberObject>>=
-marker.index <- which(chromosome(cnSet) <= 22 & isSnp(cnSet))
+marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
 sample.index <- 1:5 ## first five samples
 invisible(open(cnSet))
 copynumberSet <- as(cnSet[marker.index, 1:5], "CopyNumberSet")

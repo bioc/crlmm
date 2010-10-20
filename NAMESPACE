@@ -74,4 +74,4 @@ export(totalCopynumber)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 
 
-
+##export(summarizeNps, genotypeSummary, fit.lm2)

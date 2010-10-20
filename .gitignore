@@ -13,3 +13,6 @@ extdata*
 copynumber-*
 copynumber.log
 *.log
+*.png
+*~
+relocating*
