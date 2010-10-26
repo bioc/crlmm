@@ -6,7 +6,7 @@
 	Preprocessing and genotyping of Affymetrix arrays.
 }
 \description{
-	Preprocessing and genotyping of Affymetrix arrays.	
+	Preprocessing and genotyping of Affymetrix arrays.
 }
 \usage{
 genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
@@ -48,6 +48,15 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
 	\code{genotype} and \code{genotype2}.  The \code{genotype}
 	function now handles both instances.
 
+	\code{genotype} is essentially a wrapper of the \code{crlmm}
+	function for genotyping.  Differences include (1) that the copy
+	number probes (if present) are also quantile-normalized and (2)
+	the class of object returned by this function, \code{CNSet}, is
+	needed for subsequent copy number estimation.  Note that the
+	batch variable that must be passed to this function has no
+	effect on the normalization or genotyping steps.  Rather,
+	\code{batch} is required in order to initialize a \code{CNSet}
+	container with the appropriate dimensions.
 }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -58,7 +67,7 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
   array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
   22. PMID: 17189563.
 
-  Carvalho BS, Louis TA, Irizarry RA. 
+  Carvalho BS, Louis TA, Irizarry RA.
   Quantifying uncertainty in genotype calls.
   Bioinformatics. 2010 Jan 15;26(2):242-9.
 
@@ -87,17 +96,23 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## To use less RAM, specify a smaller argument to ocProbesets
   ocProbesets(50e3)
   batch <- as.factor(rep("A", length(cels)))
-  (cnSet <- genotype(cels, cdfName="genomewidesnp6"))
+  (cnSet <- genotype(cels, cdfName="genomewidesnp6", batch=batch))
 
+  ## when gender is not specified (as in the above example), crlmm tries
+  ## to predict the gender from SNPs on chromosome X
+  cnSet$gender
+
+  ## If gender is known, one should check that the assigned gender is
+  ## correct. Alternatively, one can pass gender as an argument to the
+  ## genotype function.
+  gender <- c("female", "female", "male")
+  gender[gender == "female"] <- 2
+  gender[gender == "male"] <- 1
+\dontrun{
+  cnSet2 <- (cnSet <- genotype(cels, cdfName="genomewidesnp6", batch=batch, gender=as.integer(gender)))
+}
   dim(cnSet)
   table(isSnp(cnSet))
-
-## The above is a trivial example.  Typically you may have a large
-##    number of cel files, many of which were processed at different
-##    times. For such datasets, it is important to specify a batch
-##    variable.  
-      batch(cnSet)
-      protocolData(cnSet)$ScanDate
 }
 }
 \keyword{ classif }
