@@ -23,6 +23,8 @@ B Carvalho
 
 - crlmm should return results in CHP files
 
+- crlmm2() with save.it=TRUE must save the original preprocessed intensities
+
   ***********************************************************
   *                                                         *       
   *                FOR CNRMA                                *
