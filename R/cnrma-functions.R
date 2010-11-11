@@ -124,7 +124,6 @@ genotype <- function(filenames,
 		       snprma=snprma(...),
 		       snprma2=snprma2(...))
 	}
-
 	snprmaRes <- snprmaFxn(FUN,
 			       filenames=filenames,
 			       mixtureSampleSize=mixtureSampleSize,
@@ -151,12 +150,18 @@ genotype <- function(filenames,
 		open(snprmaRes[["B"]])
 		open(snprmaRes[["SNR"]])
 		open(snprmaRes[["mixtureParams"]])
-		##bb <- getOption("ffbatchbytes")
-		message("Writing normalized intensities to callSet")
-		for(j in 1:ncol(callSet)){
-			A(callSet)[is.snp, j] <- snprmaRes[["A"]][snp.index, j]
-			B(callSet)[is.snp, j] <- snprmaRes[["B"]][snp.index, j]
-		}
+		bb <- getOption("ffbatchbytes")
+		ffcolapply(A(callSet)[is.snp, i1:i2] <- snprmaRes[["A"]][snp.index, i1:i2], X=snprmaRes[["A"]],
+			   BATCHBYTES=bb)
+		ffcolapply(B(callSet)[is.snp, i1:i2] <- snprmaRes[["B"]][snp.index, i1:i2], X=snprmaRes[["B"]],
+			   BATCHBYTES=bb)
+##		##bb <- getOption("ffbatchbytes")
+##		message("Writing normalized intensities to callSet")
+##		system.time(
+##		for(j in 1:ncol(callSet)){
+##			A(callSet)[is.snp, j] <- snprmaRes[["A"]][snp.index, j]
+##			B(callSet)[is.snp, j] <- snprmaRes[["B"]][snp.index, j]
+##		})
 		##ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
 		##ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
 		pData(callSet)$SKW <- snprmaRes[["SKW"]]
@@ -213,15 +218,19 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		for(j in 1:ncol(callSet)){
-			snpCall(callSet)[is.snp, j] <- tmp[["calls"]][snp.index, j]
-			snpCallProbability(callSet)[is.snp, j] <- tmp[["confs"]][snp.index, j]
-		}
+		ffcolapply(snpCall(callSet)[is.snp, i1:i2] <- tmp[["A"]][snp.index, i1:i2], X=tmp[["A"]],
+			   BATCHBYTES=bb)
+		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["B"]][snp.index, i1:i2], X=tmp[["B"]],
+			   BATCHBYTES=bb)
+##		for(j in 1:ncol(callSet)){
+##			snpCall(callSet)[is.snp, j] <- tmp[["calls"]][snp.index, j]
+##			snpCallProbability(callSet)[is.snp, j] <- tmp[["confs"]][snp.index, j]
+##		}
 		##		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
 		##		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
 	} else {
-		calls(callSet)[snp.index, ] <- tmp[["calls"]][snp.index, ]
-		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]][snp.index, ]
+		calls(callSet)[is.snp, ] <- tmp[["calls"]][snp.index, ]
+		snpCallProbability(callSet)[is.snp, ] <- tmp[["confs"]][snp.index, ]
 	}
 	message("Finished updating.  Cleaning up.")
 	callSet$gender <- tmp$gender

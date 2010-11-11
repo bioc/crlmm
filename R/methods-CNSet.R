@@ -358,28 +358,26 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		phiB2 <- phiPrimeB(object)[marker.index, l]
 		phiA <- phiA(object)[marker.index, l]
 		phiB <- phiB(object)[marker.index, l]
-		nuB <- nuB(object)[marker.index, l]
-		phiB <- phiB(object)[marker.index, l]
 		nuA <- nuA(object)[marker.index, l]
-		phiA <- phiA(object)[marker.index, l]
+		nuB <- nuB(object)[marker.index, l]
 		IA <- A(object)[marker.index, jj]
 		IB <- B(object)[marker.index, jj]
-		##phistar <- phiB2/phiA
-		##tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
-		CB <- 1/(1-phiA2*phiB2/(phiA*phiB)) * 1/phiB * (IA-nuB-phiB2/phiA*(IA-nuA))
-		##CB <- tmp/(1-phistar*phiA2/phiB)
+		phistar <- phiB2/phiA
+		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
+		CB <- tmp/(1-phistar*phiA2/phiB)
+		##CB <- 1/(1-phiA2*phiB2/(phiA*phiB)) * 1/phiB * (IA-nuB-phiB2/phiA*(IA-nuA))
+		CA <- (IA-nuA-phiA2*CB)/phiA
 		if(allele == "B"){
 			acn[[k]] <- CB
 		}
 		if(allele == "A"){
-			ca <- (IA-nuA-phiA2*CB)/phiA
-			acn[[k]] <- ca
+			acn[[k]] <- CA
 		}
-		if(allele == "AandB"){
-			CA <- tmp/(1-phistar*phiA2/phiB)
-			CB <- (IA-nuA-phiA2*CB)/phiA
-			acn[[k]] <- CA+CB
-		}
+##		if(allele=="AandB")
+##			CA <- tmp/(1-phistar*phiA2/phiB)
+##			CB <- (IA-nuA-phiA2*CB)/phiA
+##			acn[[k]] <- CA+CB
+##		}
 	}
 	if(length(acn) > 1){
 		acn <- do.call("cbind", acn)
@@ -494,20 +492,15 @@ ACN <- function(object, allele, i , j){
 			open(phiB(object))
 			open(B(object))
 		}
-		if(any(!is.snp)){
-			acn.index <- which(!is.snp)
-			marker.index <- i[!is.snp]
-			acn[acn.index, ] <- 0
+		if(any(is.auto)){
+			auto.index <- which(is.auto)
+			marker.index <- i[is.auto]
+			acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
 		}
-		if(any(is.snp)){
-			if(any(is.auto)){
-				## autosomal SNPs
-				acn.index <- which(is.auto & is.snp)
-				marker.index <- i[is.auto & is.snp]
-				acn[acn.index, ] <- C2(object, marker.index, batch.index, j)
-			}
-			if(any(is.X)){
-				if(is.ff){
+		if(any(is.X)){
+			##Chr X SNPs
+			if(any(is.snp)){
+				if(is.ff) {
 					open(phiPrimeA(object))
 					open(phiPrimeB(object))
 					open(phiA(object))
@@ -517,13 +510,18 @@ ACN <- function(object, allele, i , j){
 				marker.index <- i[is.X & is.snp]
 				acn.index <- which(is.X & is.snp)
 				acn[acn.index, ] <- C3(object, allele="B", marker.index, batch.index, j)
-				if(is.ff){
+				if(is.ff) {
 					close(phiPrimeA(object))
 					close(phiPrimeB(object))
 					close(phiA(object))
 					close(nuA(object))
 					close(A(object))
 				}
+			}
+			if(any(!is.snp)){
+				acn.index <- which(!is.snp)
+				marker.index <- i[!is.snp]
+				acn[acn.index, ] <- 0
 			}
 		}
 		if(is.ff){
