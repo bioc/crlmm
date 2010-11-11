@@ -1,6 +1,6 @@
 useDynLib("crlmm", .registration=TRUE)
 ## this is temporary
-## exportPattern("^[^\\.]")
+exportPattern("^[^\\.]")
 
 ##---------------------------------------------------------------------------
 ## Biobase

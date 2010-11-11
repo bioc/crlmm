@@ -141,7 +141,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       protocolData(RG)[["ScanDate"]] = dates$scan
        }
        storageMode(RG) = "lockedEnvironment"
-       is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)       
+       is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
        if(is.lds) {
          close(RG@assayData$R)
          close(RG@assayData$G)
@@ -467,7 +467,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer"),
 	     annotation=chipType, phenoData=RG@phenoData,
 	     protocolData=RG@protocolData, storage.mode="environment")
-  featureNames(XY) = ids 
+  featureNames(XY) = ids
   sampleNames(XY) = sampleNames(RG)
   gc()
   # Need to initialize - matrices filled with NAs to begin with
@@ -476,7 +476,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   XY@assayData$zero[1:nsnps,] = 0
 
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-  
+
   if(is.lds) {
     open(RG@assayData$G)
     open(RG@assayData$R)
@@ -513,7 +513,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   if(is.lds) {
     close(RG@assayData$G)
     close(RG@assayData$R)
-    close(RG@assayData$zero)    
+    close(RG@assayData$zero)
     close(XY@assayData$X)
     close(XY@assayData$Y)
     close(XY@assayData$zero)
@@ -544,7 +544,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
     if (getRversion() > '2.7.0') pb = txtProgressBar(min=0, max=max(stripnum), style=3)
   }
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-  
+
   if(is.lds) {
     open(XY@assayData$X)
     open(XY@assayData$Y)
@@ -585,7 +585,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 				cdfName,
 				sns,
 				stripNorm=TRUE,
-				useTarget=TRUE) { 
+				useTarget=TRUE) {
 #				save.it=FALSE,
 #				snpFile,
 #				cnFile) {
@@ -614,14 +614,14 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   theKnots = getVarInEnv("theKnots")
   narrays = ncol(XY)
 
-  is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)    
-  
+  is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+
 #  if(save.it & !missing(cnFile)) {
     # separate out copy number probes
     npIndex = getVarInEnv("npProbesFid")
     nprobes = length(npIndex)
     if(length(nprobes)>0) {
-      if(is.lds) {    
+      if(is.lds) {
         open(XY@assayData$X)
         open(XY@assayData$Y)
         open(XY@assayData$zero)
@@ -642,7 +642,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 #      t0 <- proc.time()-t0
 #      if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
        rm(A, B, zero)
-      if(is.lds) {    
+      if(is.lds) {
         close(XY@assayData$X)
         close(XY@assayData$Y)
         close(XY@assayData$zero)
@@ -686,7 +686,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
     open(XY@assayData$Y)
     open(XY@assayData$zero)
   }
-  
+
   for(i in 1:narrays){
      A[,i] = as.integer(exprs(channel(XY, "X"))[snpIndex,i])
      B[,i] = as.integer(exprs(channel(XY, "Y"))[snpIndex,i])
@@ -723,7 +723,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   if(is.lds) {
     close(XY@assayData$X)
     close(XY@assayData$Y)
-    close(XY@assayData$zero)    
+    close(XY@assayData$zero)
     close(A)
     close(B)
     close(zero)
@@ -735,7 +735,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   res = list(A=A, B=B,
              zero=zero, sns=sns, gns=names(snpIndex), SNR=SNR, SKW=SKW,
              mixtureParams=mixtureParams, cdfName=cdfName, cnAB=cnAB)
-  
+
 #  open(res[["A"]])
 #  open(res[["B"]])
 #  open(res[["zero"]])
@@ -796,7 +796,7 @@ crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
       open(res[["SNR"]])
       open(res[["mixtureParams"]])
     }
-    
+
 #    fD = featureData(XY)
 #    phenD = XY@phenoData
 #    protD = XY@protocolData
@@ -859,7 +859,7 @@ crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                      verbose=verbose,
                      returnParams=returnParams,
                      badSNP=badSNP)
-    
+
 #  res2 <- crlmmGT2(A=res[["A"]], #as.matrix(A(callSet)[snp.index,]), # j]),
 #                  B=res[["B"]], # as.matrix(B(callSet)[snp.index,]),  # j]),
 #                  SNR=res[["SNR"]], # callSet$SNR, # [j],
@@ -923,7 +923,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 
     if(missing(cdfName)) stop("must specify cdfName")
     if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
-  
+
     is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 
     RG = readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
@@ -937,9 +937,9 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
       delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero)
     }
     rm(RG); gc()
-  
+
     if (missing(sns)) { sns = sampleNames(XY)
-    } 
+    }
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #,
 #                               save.it=save.it, snpFile=snpFile, cnFile=cnFile)
@@ -952,7 +952,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 
     if(row.names) row.names=res$gns else row.names=NULL
     if(col.names) col.names=res$sns else col.names=NULL
-  
+
     FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
     ## genotyping
     crlmmGTfxn = function(FUN,...){
@@ -977,7 +977,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
                      verbose=verbose,
                      returnParams=returnParams,
                      badSNP=badSNP)
-  
+
     if(is.lds) {
       open(res[["SNR"]]); open(res[["SKW"]])
     }
@@ -1078,7 +1078,7 @@ construct.Illumina = function(sampleSheet=NULL,
        }
 
        narrays = length(arrayNames)
-          
+
        if(!missing(batch)) {
 		stopifnot(length(batch) == narrays)
        }
@@ -1132,7 +1132,7 @@ construct.Illumina = function(sampleSheet=NULL,
 	protocolData(cnSet) = protocolData
 	featureData(cnSet) = featureData
 	featureNames(cnSet) = featureNames(featureData)
-	pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet)) 
+	pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet))
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
 	return(cnSet)
@@ -1175,7 +1175,7 @@ genotype.Illumina = function(sampleSheet=NULL,
         pkgname = getCrlmmAnnotationName(cdfName)
 	callSet = construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 			     ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-                             highDensity=highDensity, sep=sep, fileExt=fileExt, 
+                             highDensity=highDensity, sep=sep, fileExt=fileExt,
 			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch,
                              fns=fns, saveDate=saveDate)
         if(missing(sns)) sns = sampleNames(callSet)
@@ -1183,14 +1183,13 @@ genotype.Illumina = function(sampleSheet=NULL,
 	is.snp = isSnp(callSet)
 	snp.index = which(is.snp)
         narrays = ncol(callSet)
-        
         if(is.lds) {
           sampleBatches = splitIndicesByNode(seq(along=sampleNames(callSet)))
 
           mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
           SNR = initializeBigVector("crlmmSNR-", narrays, "double")
           SKW = initializeBigVector("crlmmSKW-", narrays, "double")
-          
+
           ocLapply(sampleBatches, processIDAT, sampleSheet=sampleSheet, arrayNames=arrayNames,
                  ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
                  sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
@@ -1213,12 +1212,12 @@ genotype.Illumina = function(sampleSheet=NULL,
 
           XY = RGtoXY(RG, chipType=cdfName)
           rm(RG); gc()
-        
+
           res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
           rm(XY); gc()
           if(verbose) message("Finished preprocessing.")
-          np.index = which(!is.snp)        
+          np.index = which(!is.snp)
           A(callSet)[snp.index, ] = res[["A"]]
           B(callSet)[snp.index, ] = res[["B"]]
           if(length(np.index)>0) {
@@ -1257,7 +1256,7 @@ genotype.Illumina = function(sampleSheet=NULL,
           tmpA = A(callSet)[snp.index,]
           tmpB = B(callSet)[snp.index,]
         }
-        
+
 	tmp = crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
@@ -1308,7 +1307,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
 			  highDensity=FALSE,
 			  sep="_",
 			  fileExt=list(green="Grn.idat", red="Red.idat"),
-			  saveDate=FALSE, 
+			  saveDate=FALSE,
                           verbose=TRUE,
                           mixtureSampleSize=10^5,
 			  fitMixture=TRUE,
@@ -1319,7 +1318,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
 			  stripNorm=TRUE,
 			  useTarget=TRUE,
                           A, B, SKW, SNR, mixtureParams, is.snp) {
-  
+
         if(length(path)>= length(sel)) path = path[sel]
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
@@ -1330,7 +1329,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero); rm(RG)
         gc()
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
-        
+
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
         #                       save.it=save.it, snpFile=snpFile, cnFile=cnFile)
@@ -1339,7 +1338,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         gc()
 	if(verbose) message("Finished preprocessing.")
         snp.index = which(is.snp)
-	np.index = which(!is.snp)      
+	np.index = which(!is.snp)
 
         open(res[["A"]])
         open(res[["B"]])
