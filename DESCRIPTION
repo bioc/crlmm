@@ -22,7 +22,7 @@ Imports: affyio (>= 1.15.2),
          SNPchip,
          utils
 Suggests: hapmapsnp6,
-          genomewidesnp6Crlmm (>= 1.0.2),
+          genomewidesnp6Crlmm (>= 1.0.4),
           snpMatrix,
 	  ellipse
 Collate: AllGenerics.R
