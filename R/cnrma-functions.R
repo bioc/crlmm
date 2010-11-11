@@ -906,21 +906,25 @@ fit.lm4 <- function(strata,
 		}
 		tmp <- cbind(medianA.AA.snp[, k], medianB.BB.snp[,k], phiA.snp[, k], phiB.snp[, k])
 		tmp <- tmp[rowSums(is.na(tmp) == 0) & rowSums(tmp < 20) == 0, ]
-		stopifnot(nrow(tmp) > 100)
+		if(nrow(tmp) < 100){
+			stop("too few markers for estimating nonpolymorphic CN on chromosome X")
+		}
 		X <- cbind(1, log2(c(tmp[, 1], tmp[, 2])))
 		Y <- log2(c(tmp[, 3], tmp[, 4]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
 		if(enough.men){
-			X.men <- cbind(1, medianA.AA.M[, k])
+			##X.men <- cbind(1, medianA.AA.M[, k])
+			X.men <- cbind(1, log2(medianA.AA.M[, k]))
 			Yhat1 <- as.numeric(X.men %*% betahat)
 			## put intercept and slope for men in nuB and phiB
 			phiB[, k] <- 2^(Yhat1)
-			nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
+			##nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
+			nuB[, k] <- medianA.AA.M[, k] - 1*phiB[, k] ## male has 1 copy
 		}
-		X.fem <- cbind(1, medianA.AA.F[, k])
+		X.fem <- cbind(1, log2(medianA.AA.F[, k]))
 		Yhat2 <- as.numeric(X.fem %*% betahat)
 		phiA[, k] <- 2^(Yhat2)
-		nuA[, k] <- 2^(medianA.AA.F[, k]) - 2*phiA[, k]
+		nuA[, k] <- medianA.AA.F[, k] - 2*phiA[, k]
 	}
 	if(THR.NU.PHI){
 		nuA[nuA < MIN.NU] <- MIN.NU
@@ -1685,6 +1689,7 @@ summarizeSnps <- function(strata,
 	CP <- as.matrix(snpCallProbability(object)[index, ])
 	AA <- as.matrix(A(object)[index, ])
 	BB <- as.matrix(B(object)[index, ])
+	FL <- as.matrix(flags(object)[index, ])
 	if(verbose) message("        Computing summaries...")
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
@@ -1695,6 +1700,12 @@ summarizeSnps <- function(strata,
 		xx <- CP[, B]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		G <- G*highConf
+		## Some markers may have genotype confidences scores that are ALL below the threshold
+		## For these markers, provide statistical summaries based on all the samples and flag
+		## Provide summaries for these markers and flag to indicate the problem
+		ii <- which(rowSums(G) == 0)
+		G[ii, ] <- GG[ii, B]
+		## table(rowSums(G==0))
 		##G <- G*highConf*NORM
 		A <- AA[, B]
 		B <- BB[, B]
@@ -1771,7 +1782,7 @@ crlmmCopynumber <- function(object,
 			    prior.prob=rep(1/4,4),
 			    seed=1,
 			    verbose=TRUE,
-			    GT.CONF.THR=0.95,
+			    GT.CONF.THR=0.80,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
@@ -1797,14 +1808,20 @@ crlmmCopynumber <- function(object,
 		       X.SNP="chromosome X SNPs",
 		       X.NP="chromosome X nonpolymorphic markers")
 	}
-	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
+	if(verbose & is.lds) {
+		message("Large data support with ff package is enabled.")
+		message("To reduce RAM, the markers are divided into several strata (see ?ocProbesets for details) and summary statistics are computed on each stratum")
+	}
 	for(i in seq_along(type)){
 		## do all types
 		marker.type <- type[i]
 		if(verbose) message(paste("...", mylabel(marker.type)))
 		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
-		marker.index <- whichMarkers(marker.type, is.snp,
-					     is.autosome, is.annotated, is.X)
+		marker.index <- whichMarkers(marker.type,
+					     is.snp,
+					     is.autosome,
+					     is.annotated,
+					     is.X)
 		object <- genotypeSummary(object=object,
 					  GT.CONF.THR=GT.CONF.THR,
 					  type=marker.type,

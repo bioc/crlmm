@@ -51,19 +51,19 @@ platforms must have a corresponding annotation package (installed
 separately) that are listed below.
 
 <<annotationPackages>>=
-annotationPackages()
+pkgs <- annotationPackages()
+pkgs <- pgks[grep("Crlmm", pkgs)]
+pkgs
 @
 
-Only the annotation package that end with the 'Crlmm' postfix are
-supported for copy number estimation. For instance,
-'pd.genomewidesnp6' and 'genomewidesnp6Crlmm' are both annotation
-packages for the Affymetrix 6.0 platform, but the
-'genomewidesnp6Crlmm' annotation package must be used for copy number
-estimation.  The annotation package is specified through the 'cdfName'
--- the identifier without the 'Crlmm' postfix.  In the following code,
-we specify the cdf name for Affymetrix 6.0, provide the complete path
-to the CEL files, and indicate where intermediate files from the copy
-number estimation are to be saved.
+Note that 'pd.genomewidesnp6' and 'genomewidesnp6Crlmm' are both
+annotation packages for the Affymetrix 6.0 platform available on
+Bioconductor, but the 'genomewidesnp6Crlmm' annotation package must be
+used for copy number estimation.  The annotation package is specified
+through the 'cdfName' -- the identifier without the 'Crlmm' postfix.
+In the following code, we specify the cdf name for Affymetrix 6.0,
+provide the complete path to the CEL files, and indicate where
+intermediate files from the copy number estimation are to be saved.
 
 <<setup>>=
 cdfName <- "genomewidesnp6"
@@ -188,10 +188,11 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
   displayed during the processing.
 
 <<LDS_copynumber>>=
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
+GT.CONF.THR <- 0.90
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR)
 @
 
-In an effort to reduct I/O, the \Rpackage{crlmmCopynumber} function no
+In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
 longer stores the allele-specific estimates of copy number as part of
 the object.  Rather, several functions are available that will compute
 relatively quickly the allele-specific estimates from the stored
@@ -475,6 +476,118 @@ invisible(plotCytoband(1, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=
 Scatterplots of the A and B allele intensities (log-scale) can be
 useful for assessing the biallelic genotype calls.  This section of
 the vignette is currently under development.
+
+\section{Reasons for missing values}
+
+There are several reasons for estimates of the allele-specific copy
+number to have missing values (\texttt{NA}'s). This section briefly
+elaborates on the source of missing values in the HapMap analysis and
+discusses possible alternatives to reduce the number of missing
+values.  Note that allele-specific copy number, 'CA' and 'CB', is not
+saved in the \Robject{cnSet} object.  Rather, the respective accessors
+calculate 'CA' and 'CB' on the fly from the normalized intensities and
+from the marker-specific parameter estimates in the linear model.  In
+general, a missing value arises when the background or slope parameter
+was not estimated in the linear model. Most often, missing values
+occur when the genotype confidence scores for a SNP were below the
+threshold used by the \Robject{crlmmCopynumber} function. For the
+HapMap analysis, we used a confidence threshold of
+\Sexpr{GT.CONF.THR}.
+
+<<NA>>=
+autosome.index <- which(isSnp(cnSet) & chromosome(cnSet) < 23)
+sample.index <- which(batch(cnSet) == "C")
+ca <- CA(cnSet, i=autosome.index, j=sample.index)
+missing.ca <- is.na(ca)
+(nmissing.ca <- sum(missing.ca))
+@
+
+If \Robject{nmissing.ca} is nonzero, then one could check the genotype
+confidence scores provided by the crlmm genotyping algorithm against
+the threshold specified in \Robject{crlmmCopynumber}.
+
+<<NAconfidenceScores>>=
+if(nmissing.ca > 0){
+	gt.conf <- i2p(snpCallProbability(cnSet)[autosome.index, sample.index])
+	below.thr <- gt.conf < GT.CONF.THR
+	index.allbelow <- as.integer(which(rowSums(below.thr) == length(sample.index)))
+	all.equal(index, index.allbelow)
+	## or calculate the proportion of missing effected by low crlmm confidence
+	sum(index.allbelow %in% index)/length(index)
+}
+@
+
+We repeat the above check for missing values at polymorphic loci on
+chromosome X.  In this case, we compare the \Robject{rowSums} of the
+missing values to the number of samples to check whether all of the
+estimates are missing for a given SNP.
+
+<<NAchromosomeX>>=
+X.index <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
+ca.X <- CA(cnSet, i=X.index, j=sample.index)
+missing.caX <- is.na(ca.X)
+nmissing.caX <- sum(missing.caX)
+missing.snp.index <- which(rowSums(missing.caX) == length(sample.index))
+index <- which(rowSums(missing.caX) == length(sample.index))
+length(index)*length(sample.index)/nmissing.caX
+@
+
+From the above codechunk, we see that \Sexpr{length(index)} SNPs have
+NAs for all the samples. Next, we tally the number of NAs for
+polymorphic markers on chromosome X that are below the confidence
+threshold.  For the HapMap analysis, all of the missing values arose
+from SNPs in which either the men or the women had confidence scores
+that were all below the threshold.
+
+<<NAcrlmmConfidenceScore>>=
+if(nmissing.caX > 0){
+	gt.conf <- i2p(snpCallProbability(cnSet)[X.index, sample.index])
+	below.thr <- gt.conf < GT.CONF.THR
+	F <- which(cnSet$gender[sample.index] == 2)
+	M <- which(cnSet$gender[sample.index] == 1)
+	index.allbelowF <- as.integer(which(rowSums(below.thr[, F]) == length(F)))
+	index.allbelowM <- as.integer(which(rowSums(below.thr[, M]) == length(M)))
+	index.allbelow <- as.integer(unique(c(index.allbelowF, index.allbelowM)))
+	all.equal(index, index.allbelow)
+	## or calculate the proportion of missing effected by low crlmm confidence
+	sum(index.allbelow %in% index)/length(index)
+}
+@
+
+Next, we verify that the number of missing values is the same for the
+'B' allele at autosomal polymorphic loci
+
+<<NAmissingForBallele>>=
+cb <- CB(cnSet, i=autosome.index, j=sample.index)
+missing.cb <- is.na(cb)
+nmissing.cb <- sum(missing.cb)
+@
+
+For nonpolymorphic loci, the genotype confidence score is irrelevant
+and estimates should be available at all markers.
+
+<<NAnonpolymorphic.autosome>>=
+np.index <- which(!isSnp(cnSet) & chromosome(cnSet)==23)
+cb <- CB(cnSet, i=np.index, j=sample.index)
+stopifnot(sum(is.na(cb)) == 0)
+ca.F <- CA(cnSet, i=np.index, j=F)
+ca.M <- CA(cnSet, i=np.index, j=M)
+sum(is.na(ca.F))
+sum(is.na(ca.M))
+@
+
+In total, there were \Sexpr{length(missing.snp.index)} polymorphic
+markers on chromosome X for which copy number estimates are not
+available.  Lowering the confidence threshold would permit estimation
+of copy number at most of these loci.  A confidence threshold is
+included as a parameter for the copy number estimation as an approach
+to reduce the sensitivity of genotype-specific summary statistics,
+such as the within-genotype median, to intensities from samples that
+do not clearly fall into one of the biallelic genotype clusters. There
+are drawbacks to this approach, including variance estimates that are
+overly optimistic.  More direct approaches for outlier detection and
+removal may be explored in the future.
+
 
 \section{Session information}
 <<sessionInfo, results=tex>>=

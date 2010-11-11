@@ -456,28 +456,28 @@ ACN <- function(object, allele, i , j){
 				marker.index <- i[is.X & !is.snp]
 				acn.index <- which(is.X & !is.snp)
 				acn[acn.index, ] <- NA
-##				female.index <- j[object$gender[j] == 2]
-##				## 3. CHR X NPs: women
-##				if(length(female.index) > 0){
-##					female.batch.index <- match(unique(as.character(batch(object))[female.index]), batchNames(object))
-##					jj <- which(object$gender[j] == 2)
-##					acn[acn.index, jj] <- C1(object, marker.index, female.batch.index, female.index)
-##				}
+				female.index <- j[object$gender[j] == 2]
+				## 3. CHR X NPs: women
+				if(length(female.index) > 0){
+					female.batch.index <- match(unique(as.character(batch(object))[female.index]), batchNames(object))
+					jj <- which(object$gender[j] == 2)
+					acn[acn.index, jj] <- C1(object, marker.index, female.batch.index, female.index)
+				}
 ##				## 4. CHR X NPs: men
-##				male.index <- j[object$gender[j] == 1]
-##				if(length(male.index) > 0){
-##					if(is.ff){
-##						open(nuB(object))
-##						open(phiB(object))
-##					}
-##					male.batch.index <- match(unique(as.character(batch(object))[male.index]), batchNames(object))
-##					jj <- which(object$gender[j] == 1)
-##					acn[acn.index, jj] <- C2(object, marker.index, male.batch.index, male.index, NP.X=TRUE)
-##					if(is.ff){
-##						close(nuB(object))
-##						close(phiB(object))
-##					}
-##				}
+				male.index <- j[object$gender[j] == 1]
+				if(length(male.index) > 0){
+					if(is.ff){
+						open(nuB(object))
+						open(phiB(object))
+					}
+					male.batch.index <- match(unique(as.character(batch(object))[male.index]), batchNames(object))
+					jj <- which(object$gender[j] == 1)
+					acn[acn.index, jj] <- C2(object, marker.index, male.batch.index, male.index, NP.X=TRUE)
+					if(is.ff){
+						close(nuB(object))
+						close(phiB(object))
+					}
+				}
 			}
 		}
 		if(is.ff){
