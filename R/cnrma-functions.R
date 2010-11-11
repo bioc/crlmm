@@ -118,16 +118,13 @@ genotype <- function(filenames,
 			     sns=sns,
 			     verbose=verbose,
 			     batch=batch)
-	if(is.lds) open(callSet)
-	mixtureParams <- matrix(NA, 4, length(filenames))
-	is.snp <- isSnp(callSet)
-	snp.index <- which(is.snp)
 	FUN <- ifelse(is.lds, "snprma2", "snprma")
 	snprmaFxn <- function(FUN,...){
 		switch(FUN,
 		       snprma=snprma(...),
 		       snprma2=snprma2(...))
 	}
+
 	snprmaRes <- snprmaFxn(FUN,
 			       filenames=filenames,
 			       mixtureSampleSize=mixtureSampleSize,
@@ -137,6 +134,15 @@ genotype <- function(filenames,
 			       seed=seed,
 			       cdfName=cdfName,
 			       sns=sns)
+	gns <- snprmaRes[["gns"]]
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	snp.index <- match(featureNames(callSet)[is.snp], gns)
+	stopifnot(identical(featureNames(callSet)[is.snp], gns[snp.index]))
+##	is.snp <- isSnp(callSet)
+##	snp.index <- which(is.snp)
+	if(is.lds) open(callSet)
+	mixtureParams <- matrix(NA, 4, length(filenames))
 	##message("Saving snprmaRes file")
 	##save(snprmaRes, file=file.path(outdir, "snprmaRes.rda"))
 	if(verbose) message("Finished preprocessing.")
@@ -147,17 +153,21 @@ genotype <- function(filenames,
 		open(snprmaRes[["mixtureParams"]])
 		##bb <- getOption("ffbatchbytes")
 		message("Writing normalized intensities to callSet")
-		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
-		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
+		for(j in 1:ncol(callSet)){
+			A(callSet)[is.snp, j] <- snprmaRes[["A"]][snp.index, j]
+			B(callSet)[is.snp, j] <- snprmaRes[["B"]][snp.index, j]
+		}
+		##ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
+		##ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
 		pData(callSet)$SKW <- snprmaRes[["SKW"]]
 		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	} else{
-		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
-		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
+		A(callSet)[is.snp, ] <- snprmaRes[["A"]][snp.index, ]
+		B(callSet)[is.snp, ] <- snprmaRes[["B"]][snp.index, ]
 		pData(callSet)$SKW <- snprmaRes[["SKW"]]
 		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	}
-	np.index <- which(!is.snp)
+	np.index <- which(!snp.I)
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
 	## main purpose is to update 'alleleA'
 	cnrmaFxn <- function(FUN,...){
@@ -203,11 +213,15 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
-		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
+		for(j in 1:ncol(callSet)){
+			snpCall(callSet)[is.snp, j] <- tmp[["calls"]][snp.index, j]
+			snpCallProbability(callSet)[is.snp, j] <- tmp[["confs"]][snp.index, j]
+		}
+		##		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
+		##		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
 	} else {
-		calls(callSet)[snp.index, ] <- tmp[["calls"]]
-		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
+		calls(callSet)[snp.index, ] <- tmp[["calls"]][snp.index, ]
+		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]][snp.index, ]
 	}
 	message("Finished updating.  Cleaning up.")
 	callSet$gender <- tmp$gender
@@ -816,9 +830,9 @@ fit.lm3 <- function(strata,
 		nuA[nuA < MIN.NU] <- MIN.NU
 		nuB[nuB < MIN.NU] <- MIN.NU
 		phiA[phiA < MIN.PHI] <- MIN.PHI
-		phiA2[phiA2 < MIN.PHI] <- MIN.PHI
+		phiA2[phiA2 < 1] <- 1
 		phiB[phiB < MIN.PHI] <- MIN.PHI
-		phiB2[phiB2 < MIN.PHI] <- MIN.PHI
+		phiB2[phiB2 < 1] <- 1
 	}
 	nuA(object)[marker.index, ] <- nuA
 	nuB(object)[marker.index, ] <- nuB
@@ -958,7 +972,6 @@ cnrma <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	if(verbose) message("Loading annotations for nonpolymorphic probes")
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
 	fid <- getVarInEnv("npProbesFid")
-
 	if(cdfName=="genomewidesnp6"){
 		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
 	}
@@ -1798,7 +1811,7 @@ crlmmCopynumber <- function(object,
 	samplesPerBatch <- table(as.character(batch(object)))
 	if(any(samplesPerBatch < MIN.SAMPLES)){
 		warning("The following batches have fewer than ", MIN.SAMPLES, ":")
-		message(paste(samplesPerBatch[samplesPerBatch < MIN.SAMPLES], collapse=", "))
+		message(paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", "))
 		message("Not estimating copy number for the above batches")
 	}
 	mylabel <- function(marker.type){

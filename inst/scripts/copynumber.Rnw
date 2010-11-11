@@ -52,7 +52,7 @@ separately) that are listed below.
 
 <<annotationPackages>>=
 pkgs <- annotationPackages()
-pkgs <- pgks[grep("Crlmm", pkgs)]
+pkgs <- pkgs[grep("Crlmm", pkgs)]
 pkgs
 @
 
@@ -157,6 +157,7 @@ be run interactively.
 
 <<LDS_genotype>>=
 if(!file.exists(file.path(outdir, "cnSet.rda"))){
+	##trace(genotype, browser)
 	gtSet <- checkExists("gtSet",
 			     .path=outdir,
 			     .FUN=genotype,
@@ -190,6 +191,9 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
 <<LDS_copynumber>>=
 GT.CONF.THR <- 0.90
 cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR)
+invisible(open(cnSet))
+q("no")
+stop("here")
 @
 
 In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
@@ -243,15 +247,21 @@ ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
 stopifnot(all.equal(ct, ct2))
 @
 
-TODO: FIX estimation for nonpolymorphic markers on X
+Nonpolymorphic markers on X:
 
-<<nonpolymorphicX, eval=FALSE>>=
+<<nonpolymorphicX>>=
 ## nu and phi are not estimated appropriately for nonpolymorphic X markers.
-X.markers <- which(!isSnp(cnSet) & chromosome(cnSet) == 23)
-cn.M <- CA(cnSet, i=X.markers, j=which(cnSet$gender==1))
-cn.F <- CA(cnSet, i=X.markers, j=which(cnSet$gender==2))
-phi(cnSet, "A")[X.markers[1:10]]
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
+library(RColorBrewer)
+cols <- brewer.pal(8, "Paired")[3:4]
+cols <- rep(cols, each=5)
+##set.seed(123)
+X.markers <- sample(which(!isSnp(cnSet) & chromosome(cnSet) == 23), 20e3)
+cn.M <- CA(cnSet, i=X.markers, j=sample(which(cnSet$gender==1), 5))
+cn.F <- CA(cnSet, i=X.markers, j=sample(which(cnSet$gender==2), 5))
+##phi(cnSet, "A")[X.markers[1:10]]
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", xaxt="n", main="nonpolymorphic markers on X",
+	col=cols)
+legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
 @
 
 
@@ -261,17 +271,94 @@ Polymorphic markers, X chromosome:
   \centering
 <<polymorphicX, fig=TRUE, width=8, height=4>>=
 ## copy number estimates on X for SNPs are biased towards small values.
-X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
-ca.M <- CA(cnSet, i=X.markers, j=which(cnSet$gender==1))
-cb.M <- CB(cnSet, i=X.markers, j=which(cnSet$gender==1))
-ca.F <- CA(cnSet, i=X.markers, j=which(cnSet$gender==2))
-cb.F <- CB(cnSet, i=X.markers, j=which(cnSet$gender==2))
+X.markers <- sample(which(isSnp(cnSet) & chromosome(cnSet) == 23), 25e3)
+
+##genomewidesnp6Crlmm is correct.  FeatureData is incorrect.
+index <- match(featureNames(cnSet), rownames(snpProbes))
+sum(snpProbes[index, "chrom"] != chromosome(cnSet))
+
+M <- sample(which(cnSet$gender==1), 5)
+F <- sample(which(cnSet$gender==2), 5)
+
+fns <- list.files("~/hapmap_metadata", full.names=T)
+dat <- read.delim(fns[2])
+sns <- substr(sampleNames(cnSet), 1, 7)
+dat <- dat[match(sns, dat$IID), ]
+stopifnot(all.equal(as.character(dat$IID), sns))
+identical(cnSet$gender, dat$sex)
+
+cols <- brewer.pal(8, "Paired")[3:4]
+cols <- cols[cnSet$gender]
+ia <- A(cnSet)[X.markers, ]##c(M, F)]
+ib <- B(cnSet)[X.markers, ]##c(M, F)]
+i.total <- ia+ib
+boxplot(data.frame(log2(i.total)), pch=".", col=cols)
+legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
+
+nus <- nuA(cnSet)[X.markers, ]
+phiss <- phiA(cnSet)[X.markers, ]
+
+
+xSet <- cnSet[X.markers, ]
+a <- as.matrix(A(xSet))
+b <- as.matrix(B(xSet))
+gt <- as.matrix(calls(xSet))
+nuA <- nu(xSet, "A")
+phA <- phi(xSet, "A")
+col <- brewer.pal(7, "Accent")[c(1, 4, 7)]
+fns.xset <- featureNames(xSet)
+
+path <- system.file("extdata", package="genomewidesnp6Crlmm")
+load(file.path(path, "snpProbes.rda"))
+index <- match(fns.xset, rownames(snpProbes))
+all(snpProbes[index, "chrom"]==23)
+
+pkg <- "pd.genomewidesnp.6"
+library(pd.genomewidesnp.6)
+conn <- db(get(pkg))
+sql <- "SELECT man_fsetid, chrom, physical_pos FROM featureSet"
+snps <- dbGetQuery(conn, sql)
+index <- match(fns.xset, snps$man_fsetid)
+all(snps$chrom[index] == "X")
+
+## are we writing intensities to the wrong location??
+
+
+
+###################################################
+### chunk number 25: ABscatterplots
+###################################################
+#line 599 "manuscript.Rnw"
+lA <- log2(a)
+lB <- log2(b)
+cols <- c("blue", "black", "red")
+par(las=1, mfrow=c(4,4), mar=rep(0.5,4), oma=c(4,4, 4,4))
+for(i in 1:16){
+	plot(lB[i, ], lA[i, ], col="grey50", bg=col[gt[i, ]], xaxt="n", yaxt="n", pch=21, cex=0.8,
+	     xlim=c(6.5, 12.5), ylim=c(6.5, 12.5), xlab="", ylab="")
+	for(CN in 1:3) 	lines(xSet, i, "GIGAS", CN, col=cols[CN], lwd=2, x.axis="B")
+}
+mtext(expression(log[2](I[B])), 1, outer=TRUE)
+par(las=3)
+mtext(expression(log[2](I[A])), 2, outer=TRUE)
+
+
+
+boxplot(data.frame(ia+ib), pch=".", col=cols)
+trace(ACN, browser)
+trace(C3, browser)
+ca.M <- CA(cnSet, i=X.markers, j=M)
+cb.M <- CB(cnSet, i=X.markers, j=M)
+ca.F <- CA(cnSet, i=X.markers, j=F)
+cb.F <- CB(cnSet, i=X.markers, j=F)
 cn.M <- ca.M+cb.M
 cn.F <- ca.F+cb.F
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col="grey60")
+tmp <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col=cols, xaxt="n")
+boxplot(data.frame(tmp), pch=".", outline=FALSE, col=cols, xaxt="n")
 abline(h=c(1,2))
 ## alternatively
-cn.F2 <- totalCopynumber(cnSet, i=X.markers, j=which(cnSet$gender==2))
+cn.F2 <- totalCopynumber(cnSet, i=X.markers, j=F)
 stopifnot(all.equal(cn.F, cn.F2))
 @
 \caption{Copy number estimates for polymorphic markers on chromosome X}
@@ -587,6 +674,13 @@ do not clearly fall into one of the biallelic genotype clusters. There
 are drawbacks to this approach, including variance estimates that are
 overly optimistic.  More direct approaches for outlier detection and
 removal may be explored in the future.
+
+Copy number estimates for other chromosomes, such as mitochondrial and
+chromosome Y, are not currently available in \crlmm{}.
+
+<<echo=FALSE>>=
+invisible(close(cnSet))
+@
 
 
 \section{Session information}

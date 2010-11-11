@@ -25,7 +25,7 @@ testingFF: testingFF.Rnw
 	qsub -m e -r y -cwd -l mem_free=12G,h_vmem=16G testingFF.R.sh
 
 affy:	copynumber.Rnw
-	echo "Stangle(\"copynumber.Rnw\")" | R --no-save --no-restore;	
+	echo "Stangle(\"copynumber.Rnw\")" | R-devel --no-save --no-restore;	
 	cat ~/bin/cluster.template | perl -pe "s/Rprog/copynumber.R/" > copynumber.R.sh
 	qsub -m e -r y -cwd -l mem_free=12G,h_vmem=16G copynumber.R.sh
 

@@ -364,14 +364,16 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		phiA <- phiA(object)[marker.index, l]
 		IA <- A(object)[marker.index, jj]
 		IB <- B(object)[marker.index, jj]
-		phistar <- phiB2/phiA
-		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
-		CB <- tmp/(1-phistar*phiA2/phiB)
+		##phistar <- phiB2/phiA
+		##tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
+		CB <- 1/(1-phiA2*phiB2/(phiA*phiB)) * 1/phiB * (IA-nuB-phiB2/phiA*(IA-nuA))
+		##CB <- tmp/(1-phistar*phiA2/phiB)
 		if(allele == "B"){
 			acn[[k]] <- CB
 		}
 		if(allele == "A"){
-			acn[[k]] <- (IA-nuA-phiA2*CB)/phiA
+			ca <- (IA-nuA-phiA2*CB)/phiA
+			acn[[k]] <- ca
 		}
 		if(allele == "AandB"){
 			CA <- tmp/(1-phistar*phiA2/phiB)
