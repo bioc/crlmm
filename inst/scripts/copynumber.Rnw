@@ -164,12 +164,6 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 			     filenames=celFiles,
 			     cdfName=cdfName,
 			     batch=batch)
-	## try normalizing np probes on chr X
-##	callSet <- gtSet
-##	filenames <- celFiles
-##	snp.I <- isSnp(callSet)
-##	is.snp <- which(snp.I)
-##	np.index <- which(!is.snp)
 }
 @
 
@@ -195,7 +189,6 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
 
 <<LDS_copynumber>>=
 cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
-##trace(fit.lm4, browser)
 @
 
 In an effort to reduct I/O, the \Rpackage{crlmmCopynumber} function no
@@ -249,28 +242,28 @@ ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
 stopifnot(all.equal(ct, ct2))
 @
 
-Nonpolymorphic markers on chromosome X:
 
-\begin{figure}
+\begin{figure}[t!]
+  Nonpolymorphic markers on chromosome X:
   \centering
-<<nonpolymorphicX, fig=TRUE>>=
+<<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
 M <- sample(which(cnSet$gender==1), 5)
 F <- sample(which(cnSet$gender==2), 5)
-##a <- A(cnSet)[npx.index, M]
-##nus <- nuA(cnSet)[npx.index, ]
-## nu and phi are not estimated
 cn.M <- CA(cnSet, i=npx.index, j=M)
 cn.F <- CA(cnSet, i=npx.index, j=F)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
 @
+\caption{Copy number estimates for nonpolymorphic loci on chromosome
+  X (5 men, 5 women).  crlmm assumes that the median copy number
+  across samples at a given marker on X is 1 for men and 2 for women.}
 \end{figure}
 
 
-Polymorphic markers, X chromosome:
 
-\begin{figure}
-  \centering
+
+\begin{figure}[t!]
+ \centering
 <<polymorphicX, fig=TRUE, width=8, height=4>>=
 ## copy number estimates on X for SNPs are biased towards small values.
 X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
@@ -282,12 +275,12 @@ cn.M <- ca.M+cb.M
 cn.F <- ca.F+cb.F
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col="grey60")
 abline(h=c(1,2))
-## alternatively
-cn.MF1 <- cbind(cn.M, cn.F)
-cn.MF2 <- totalCopynumber(cnSet, i=X.markers, j=c(M,F))
-##stopifnot(all.equal(cn.MF1[!is.na(cn.MF1)], cn.MF2[!is.na(cn.MF2)]))
+cn2 <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
+stopifnot(all.equal(cbind(cn.M, cn.F), cn2))
 @
-\caption{Copy number estimates for polymorphic markers on chromosome X}
+\caption{Copy number estimates for polymorphic markers on chromosome
+  X. crlmm assumes that the median copy number across samples at a
+  given marker on X is 1 for men and 2 for women.}
 \end{figure}
 
 Accessors for physical position and chromosome are also provided. In
@@ -377,6 +370,7 @@ polymorphic loci:
 <<accessors>>=
 snp.index <- which(isSnp(cnSet))
 np.index <- which(!isSnp(cnSet))
+invisible(open(A(cnSet)))
 a <- (A(cnSet))[snp.index, ]
 dim(a)
 @
@@ -400,14 +394,15 @@ npIntensities <- (A(cnSet))[np.index, ]
 Quantile normalized intensities for the B allele at polymorphic loci:
 
 <<B.polymorphic>>=
+invisible(open(B(cnSet)))
 b.snps <- (B(cnSet))[snp.index, ]
 @
 
-Note that NAs are recorded in the 'B' assay data element for
-nonpolymorphic loci:
+Note that NA's are stored in the slot for normalized 'B' allele
+intensities:
 
 <<B.NAs>>=
-all(is.na((B(cnSet))[np.index, ]))
+all(is.na(B(cnSet)[np.index, ]))
 @
 
 <<clean, echo=FALSE>>=
@@ -465,15 +460,12 @@ cn <- totalCopynumber(cnSet, i=marker.index, j=1)
 x <- position(cnSet)[marker.index]
 par(las=1, mar=c(4, 5, 4, 2))
 plot(x, cn, pch=".",
-     cex=2, xaxt="n", col="grey60", ylim=c(0,4),
+     cex=2, xaxt="n", col="grey60", ylim=c(0,6),
      ylab="copy number", xlab="physical position (Mb)",
      main=paste(sampleNames(cnSet)[1], ", CHR: 1"))
-##np.index <- which(!isSnp(cnSet)[marker.index])
-##points(x[np.index], cn[np.index],
-##       pch=".", cex=2, col="lightblue")
 axis(1, at=pretty(x), labels=pretty(x)/1e6)
 require(SNPchip)
-invisible(plotCytoband(1, new=FALSE, cytoband.ycoords=c(3.8, 4), label.cytoband=FALSE))
+invisible(plotCytoband(1, new=FALSE, cytoband.ycoords=c(5.5, 6), label.cytoband=FALSE))
 @
 
 \begin{figure}

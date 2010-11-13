@@ -311,18 +311,19 @@ setReplaceMethod("flags", signature=signature(object="CNSet", value="ff_matrix")
 ##   autosome NPs
 ##   chromosome X NPs for women
 C1 <- function(object, marker.index, batch.index, sample.index){
-	acn <- vector("list", length(batch.index))
+##	acn <- vector("list", length(batch.index))
+	acn <- matrix(NA, nrow=length(marker.index), ncol=length(sample.index))
 	for(k in seq_along(batch.index)){
 		l <- batch.index[k]
 		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
 		bg <- nuA(object)[marker.index, l]
 		slope <- phiA(object)[marker.index, l]
 		I <- A(object)[marker.index, jj]
-		acn[[k]] <- 1/slope * (I - bg)
+		acn[, match(jj, sample.index)] <- 1/slope * (I - bg)
 	}
-	if(length(acn) > 1){
-		acn <- do.call("cbind", acn)
-	} else acn <- acn[[1]]
+##	if(length(acn) > 1){
+##		acn <- do.call("cbind", acn)
+##	} else acn <- acn[[1]]
 	return(as.matrix(acn))
 }
 
@@ -330,7 +331,7 @@ C1 <- function(object, marker.index, batch.index, sample.index){
 ##   autosome SNPs
 ##   chromosome X for male nonpolymorphic markers
 C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
-	acn <- vector("list", length(batch.index))
+	acn <- matrix(NA, nrow=length(marker.index), ncol=length(sample.index))
 	for(k in seq_along(batch.index)){
 		l <- batch.index[k]
 		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
@@ -339,17 +340,18 @@ C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
 		if(!NP.X){
 			I <- B(object)[marker.index, jj]
 		} else I <- A(object)[marker.index, jj]
-		acn[[k]] <- 1/slope * (I - bg)
+		acn[, match(jj, sample.index)] <- 1/slope * (I - bg)
 	}
-	if(length(acn) > 1){
-		acn <- do.call("cbind", acn)
-	} else acn <- acn[[1]]
+##	if(length(acn) > 1){
+##		acn <- do.call("cbind", acn)
+##	} else acn <- acn[[1]]
 	return(as.matrix(acn))
 }
 
 ## Chromosome X SNPs
 C3 <- function(object, allele, marker.index, batch.index, sample.index){
-	acn <- vector("list", length(batch.index))
+##	acn <- vector("list", length(batch.index))
+	acn <- matrix(NA, nrow=length(marker.index), ncol=length(sample.index))
 	for(k in seq_along(batch.index)){
 		l <- batch.index[k]
 		##j <- which(as.character(batch(object))[sample.index] == batchNames(object)[l])
@@ -368,20 +370,21 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
 		CB <- tmp/(1-phistar*phiA2/phiB)
 		if(allele == "B"){
-			acn[[k]] <- CB
+			acn[, match(jj, sample.index)] <- CB
+			##acn[[k]] <- CB
 		}
 		if(allele == "A"){
-			acn[[k]] <- (IA-nuA-phiA2*CB)/phiA
+			acn[, match(jj, sample.index)] <- (IA-nuA-phiA2*CB)/phiA
 		}
 		if(allele == "AandB"){
 			CA <- tmp/(1-phistar*phiA2/phiB)
 			CB <- (IA-nuA-phiA2*CB)/phiA
-			acn[[k]] <- CA+CB
+			acn[, match(jj, sample.index)] <- (IA-nuA-phiA2*CB)/phiA
 		}
 	}
-	if(length(acn) > 1){
-		acn <- do.call("cbind", acn)
-	} else acn <- acn[[1]]
+##	if(length(acn) > 1){
+##		acn <- do.call("cbind", acn)
+##	} else acn <- acn[[1]]
 	return(as.matrix(acn))
 }
 
@@ -408,6 +411,7 @@ ACN <- function(object, allele, i , j){
 	## Define batch.index and sample.index
 	if(!missing.j) {
 		batches <- unique(as.character(batch(object))[j])
+		##batches <- as.character(batch(object)[j])
 		batch.index <- match(batches, batchNames(object))
 	} else {
 		batch.index <- seq_along(batchNames(object))
@@ -416,6 +420,8 @@ ACN <- function(object, allele, i , j){
 	nr <- length(i)
 	nc <- length(j)
 	acn <- matrix(NA, nr, nc)
+	dimnames(acn) <- list(featureNames(object)[i],
+			      sampleNames(object)[j])
 	if(allele == "A"){
 		if(is.ff){
 			open(nuA(object))
@@ -452,7 +458,7 @@ ACN <- function(object, allele, i , j){
 					close(B(object))
 				}
 			}
-			if(any(!is.snp)){  ## nonpolymorphic X needs to be fixed
+			if(any(!is.snp)){
 				marker.index <- i[is.X & !is.snp]
 				acn.index <- which(is.X & !is.snp)
 				acn[acn.index, ] <- NA
@@ -493,13 +499,12 @@ ACN <- function(object, allele, i , j){
 		}
 		if(any(!is.snp)){
 			acn.index <- which(!is.snp)
-			marker.index <- i[!is.snp]
 			acn[acn.index, ] <- 0
 		}
 		if(any(is.auto)){
 			auto.index <- which(is.auto & is.snp)
 			if(length(auto.index) > 0){
-				marker.index <- i[is.auto]
+				marker.index <- i[auto.index]
 				acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
 			}
 		}
@@ -550,16 +555,6 @@ setMethod("totalCopynumber", signature=signature(object="CNSet"),
 	  function(object, ...){
 		  ca <- CA(object, ...)
 		  cb <- CB(object, ...)
-##		  is.snp <- isSnp(object)
-##		  dotArgs <- list(...)
-##		  if("i" %in% names(dotArgs)){
-##			  i <- dotArgs[["i"]]
-##			  np.index <- which(!is.snp[i])
-##			  if(length(np.index) > 0) cb[np.index, ] <- 0
-##		  } else {
-##			  np.index <- which(!is.snp)
-##			  if(length(np.index) > 0) cb[np.index, ] <- 0
-##		  }
 		  return(ca+cb)
 	  })
 
