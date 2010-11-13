@@ -47,7 +47,7 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
-	M[is.na(M[, "isSnp"]), "isSnp"] <- 1L
+	M <- M[!is.na(M[, "chromosome"]), ]
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
 }
@@ -139,15 +139,26 @@ genotype <- function(filenames,
 			       cdfName=cdfName,
 			       sns=sns)
 	if(verbose) message("Finished preprocessing.")
+	gns <- snprmaRes[["gns"]]
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	snp.index <- match(featureNames(callSet)[is.snp], gns)
+	stopifnot(identical(featureNames(callSet)[is.snp], gns[snp.index]))
+	if(is.lds) open(callSet)
+	mixtureParams <- matrix(NA, 4, length(filenames))
 	if(is.lds){
 		open(snprmaRes[["A"]])
 		open(snprmaRes[["B"]])
-		##bb <- getOption("ffbatchbytes")
-		ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
-		ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
+		open(snprmaRes[["SNR"]])
+		open(snprmaRes[["mixtureParams"]])
+		bb <- getOption("ffbatchbytes")
+		ffcolapply(A(callSet)[is.snp, i1:i2] <- snprmaRes[["A"]][snp.index, i1:i2], X=snprmaRes[["A"]],
+			   BATCHBYTES=bb)
+		ffcolapply(B(callSet)[is.snp, i1:i2] <- snprmaRes[["B"]][snp.index, i1:i2], X=snprmaRes[["B"]],
+			   BATCHBYTES=bb)
 	} else{
-		A(callSet)[snp.index, ] <- snprmaRes[["A"]]
-		B(callSet)[snp.index, ] <- snprmaRes[["B"]]
+		A(callSet)[is.snp, ] <- snprmaRes[["A"]][snp.index, ]
+		B(callSet)[is.snp, ] <- snprmaRes[["B"]][snp.index, ]
 	}
 	pData(callSet)$SKW <- snprmaRes[["SKW"]]
 	pData(callSet)$SNR <- snprmaRes[["SNR"]]
@@ -204,18 +215,27 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
-		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
+		ffcolapply(snpCall(callSet)[is.snp, i1:i2] <- tmp[["A"]][snp.index, i1:i2], X=tmp[["A"]],
+			   BATCHBYTES=bb)
+		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["B"]][snp.index, i1:i2], X=tmp[["B"]],
+			   BATCHBYTES=bb)
 		close(tmp[["calls"]])
 		close(tmp[["confs"]])
 	} else {
-		calls(callSet)[snp.index, ] <- tmp[["calls"]]
-		snpCallProbability(callSet)[snp.index, ] <- tmp[["confs"]]
+		calls(callSet)[is.snp, ] <- tmp[["calls"]][snp.index, ]
+		snpCallProbability(callSet)[is.snp, ] <- tmp[["confs"]][snp.index, ]
 	}
 	callSet$gender <- tmp$gender
+	if(is.lds){
+		delete(snprmaRes[["A"]])
+		delete(snprmaRes[["B"]])
+		delete(snprmaRes[["mixtureParams"]])
+		rm(snprmaRes)
+	}
 	close(callSet)
 	return(callSet)
 }
+
 genotype2 <- function(){
 	.Defunct(msg="The genotype2 function has been deprecated. The function genotype should be used instead.  genotype will support large data using ff provided that the ff package is loaded.")
 }
@@ -902,16 +922,16 @@ fit.lm4 <- function(strata,
 		Y <- log2(c(tmp[, 3], tmp[, 4]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
 		if(enough.men){
-			X.men <- cbind(1, medianA.AA.M[, k])
+			X.men <- cbind(1, log2(medianA.AA.M[, k]))
 			Yhat1 <- as.numeric(X.men %*% betahat)
 			## put intercept and slope for men in nuB and phiB
 			phiB[, k] <- 2^(Yhat1)
-			nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
+			nuB[, k] <- medianA.AA.M[, k] - 1*phiB[, k]
 		}
-		X.fem <- cbind(1, medianA.AA.F[, k])
+		X.fem <- cbind(1, log2(medianA.AA.F[, k]))
 		Yhat2 <- as.numeric(X.fem %*% betahat)
 		phiA[, k] <- 2^(Yhat2)
-		nuA[, k] <- 2^(medianA.AA.F[, k]) - 2*phiA[, k]
+		nuA[, k] <- medianA.AA.F[, k] - 2*phiA[, k]
 	}
 	if(THR.NU.PHI){
 		nuA[nuA < MIN.NU] <- MIN.NU
