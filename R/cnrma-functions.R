@@ -215,9 +215,9 @@ genotype <- function(filenames,
 	if(is.lds){
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
-		ffcolapply(snpCall(callSet)[is.snp, i1:i2] <- tmp[["A"]][snp.index, i1:i2], X=tmp[["A"]],
+		ffcolapply(snpCall(callSet)[is.snp, i1:i2] <- tmp[["calls"]][snp.index, i1:i2], X=tmp[["calls"]],
 			   BATCHBYTES=bb)
-		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["B"]][snp.index, i1:i2], X=tmp[["B"]],
+		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["confs"]][snp.index, i1:i2], X=tmp[["confs"]],
 			   BATCHBYTES=bb)
 		close(tmp[["calls"]])
 		close(tmp[["confs"]])
