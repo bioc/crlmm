@@ -977,7 +977,7 @@ cnrma <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	np.index <- match(row.names, rownames(A))
 	gns <- names(fid)
 	set.seed(seed)
-	idx2 <- sample(length(fid), 10^5)
+	##idx2 <- sample(length(fid), 10^5)
 	for (k in seq_along(filenames)){
 		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
@@ -1022,7 +1022,7 @@ processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
 	np.index <- match(row.names, rownames(A))
 	gns <- names(fid)
 	set.seed(seed)
-	idx2 <- sample(length(fid), 10^5)
+	##idx2 <- sample(length(fid), 10^5)
 	for (k in i){
 		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
