@@ -105,7 +105,7 @@ we extract the population identifier from the CEL file names and
 assign these identifiers to the variable \Robject{batch}.
 
 <<celfiles>>=
-celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
+celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")[1:10]
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 batch <- as.factor(substr(basename(celFiles), 13, 13))
 @
@@ -157,15 +157,15 @@ be run interactively.
 
 
 <<LDS_genotype>>=
-if(!file.exists(file.path(outdir, "cnSet.rda"))){
+##if(!file.exists(file.path(outdir, "cnSet.rda"))){
 	gtSet <- checkExists("gtSet",
 			     .path=outdir,
 			     .FUN=genotype,
 			     filenames=celFiles,
 			     cdfName=cdfName,
-			     batch=batch)
+			     batch=batch, .load.it=FALSE)
 	class(calls(gtSet))
-}
+##}
 @
 
 The value returned by genotype is an instance of the class
