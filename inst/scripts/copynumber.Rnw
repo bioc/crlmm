@@ -163,8 +163,16 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 			     .FUN=genotype,
 			     filenames=celFiles,
 			     cdfName=cdfName,
-			     batch=batch, .load.it=FALSE)
-	class(calls(gtSet))
+			     batch=batch)
+	## try normalizing np probes on chr X
+	callSet <- gtSet
+	filenames <- celFiles
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	np.index <- which(!is.snp)
+
+
+
 }
 @
 
@@ -189,7 +197,10 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
   displayed during the processing.
 
 <<LDS_copynumber>>=
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, .load.it=FALSE)
+
+trace(fit.lm4, browser)
+
 @
 
 In an effort to reduct I/O, the \Rpackage{crlmmCopynumber} function no
@@ -218,7 +229,7 @@ the useful accessors for extracting which markers are SNPs, which are
 chromosomes, etc.
 
 <<ca>>=
-snp.index <- which(isSnp(cnSet))
+snp.index <- which(isSnp(cnSet) & !is.na(chromosome(cnSet)))
 ca <- CA(cnSet, i=snp.index, j=1:5)
 cb <- CB(cnSet, i=snp.index, j=1:5)
 ct <- ca+cb
@@ -245,12 +256,18 @@ stopifnot(all.equal(ct, ct2))
 
 TODO: FIX estimation for nonpolymorphic markers on X
 
-<<nonpolymorphicX, eval=FALSE>>=
-## nu and phi are not estimated appropriately for nonpolymorphic X markers.
+<<nonpolymorphicX>>=
+npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
+a <- A(cnSet)[npx.index, M]
+nus <- nuA(cnSet)[npx.index, ]
+## nu and phi are not estimated
+M <- sample(which(cnSet$gender==1), 5)
+F <- sample(which(cnSet$gender==2), 5)
 X.markers <- which(!isSnp(cnSet) & chromosome(cnSet) == 23)
-cn.M <- CA(cnSet, i=X.markers, j=which(cnSet$gender==1))
-cn.F <- CA(cnSet, i=X.markers, j=which(cnSet$gender==2))
-phi(cnSet, "A")[X.markers[1:10]]
+cn.M <- CA(cnSet, i=X.markers, j=M)
+cn.F <- CA(cnSet, i=X.markers, j=F)
+##phi(cnSet, "A")[X.markers[1:10]]
+index <- which(is.na(nuA(cnSet)[X.markers, 1]))
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
 @
 
@@ -309,6 +326,7 @@ samples.
 <<check>>=
 dims(cnSet)
 print(object.size(cnSet), units="Mb")
+invisible(open(calls(cnSet)))
 gt <- calls(cnSet)[, 1:50]
 @
 
@@ -352,9 +370,9 @@ markers, we extract only the polymorphic markers using the
 <<assayData>>=
 rows <- which(isSnp(cnSet))
 cols <- which(batch == "C")
+invisible(open(snpCallProbability(cnSet)))
 posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet)),
 			   error=function(e) print("This will not work for an ff object."))
-posterior.prob2 <- p2i(snpCallProbability(cnSet)[rows, cols])
 @
 
 Accessors for the quantile normalized intensities for the A allele at

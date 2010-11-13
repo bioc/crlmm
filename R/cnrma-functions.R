@@ -38,8 +38,8 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 	M[index, "position"] <- snpProbes[, grep("pos", colnames(snpProbes))]
 	M[index, "chromosome"] <- chromosome2integer(snpProbes[, grep("chr", colnames(snpProbes))])
 	M[index, "isSnp"] <- 1L
-	index <- which(is.na(M[, "isSnp"]))
-	M[index, "isSnp"] <- 1L
+	##index <- which(is.na(M[, "isSnp"]))
+	##M[index, "isSnp"] <- 1L
 	if(copynumber){
 		index <- match(rownames(cnProbes), rownames(M)) #only snp probes in M get assigned position
 		M[index, "position"] <- cnProbes[, grep("pos", colnames(cnProbes))]
@@ -47,7 +47,7 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
-	M <- M[!is.na(M[, "chromosome"]), ]
+	M[is.na(M[, "isSnp"]), "isSnp"] <- 1L
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
 }
@@ -64,6 +64,7 @@ construct <- function(filenames,
 	if(verbose) message("Initializing container for copy number estimation")
 	featureData <- getFeatureData(cdfName, copynumber=copynumber)
 	if(!missing(fns)){
+		warning("subsetting the featureData can cause the snprma object and CNSet object to be misaligned. This problem is fixed in devel as we match the names prior to assigning values from snprma")
 		index <- match(fns, featureNames(featureData))
 		if(all(is.na(index))) stop("fns not in featureNames")
 		featureData <- featureData[index, ]
@@ -90,6 +91,8 @@ construct <- function(filenames,
 	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
 	colnames(pd)=c("SKW", "SNR", "gender")
 	phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
+	gns <- getVarInEnv("gns")
+	stopifnot(identical(gns, featureNames(cnSet)[1:length(gns)]))
 	return(cnSet)
 }
 
@@ -163,7 +166,7 @@ genotype <- function(filenames,
 	pData(callSet)$SKW <- snprmaRes[["SKW"]]
 	pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	mixtureParams <- snprmaRes$mixtureParams
-	np.index <- which(!is.snp)
+	np.index <- which(!snp.I)
 	if(verbose) message("Normalizing nonpolymorphic markers")
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
 	## main purpose is to update 'alleleA'
