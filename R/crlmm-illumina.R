@@ -1245,7 +1245,8 @@ genotype.Illumina = function(sampleSheet=NULL,
           open(B(callSet))
           tmpA = initializeBigMatrix(name="A", length(snp.index), narrays)
           tmpB = initializeBigMatrix(name="B", length(snp.index), narrays)
-          bb = ocProbesets()*length(sns)*8
+          ##bb = ocProbesets()*length(sns)*8
+	  bb <- getOption("ffbatchbytes")
 	  ffrowapply(tmpA[i1:i2, ] <- A(callSet)[snp.index,][i1:i2, ], X=A(callSet)[snp.index,], BATCHBYTES=bb)
 	  ffrowapply(tmpB[i1:i2, ] <- B(callSet)[snp.index,][i1:i2, ], X=B(callSet)[snp.index,], BATCHBYTES=bb)
           close(A(callSet))
@@ -1276,7 +1277,8 @@ genotype.Illumina = function(sampleSheet=NULL,
 			  badSNP=badSNP)
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	if(is.lds){
-		bb = ocProbesets()*ncol(callSet)*8
+		##bb = ocProbesets()*ncol(callSet)*8
+		bb <- getOption("ffbatchbytes")
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
 		ffrowapply(snpCall(callSet)[snp.index,][i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
