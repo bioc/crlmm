@@ -390,6 +390,9 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
 		index.complete <- indexComplete(NN, medianA[[k]], medianB[[k]], MIN.OBS)
+		if(length(index.complete) == 1){
+			if(index.complete == FALSE) return()
+		}
 		##
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
@@ -684,6 +687,9 @@ summarizeMaleXGenotypes <- function(marker.index,
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
 		index.complete <- indexComplete(NN.M[, -2], medianA, medianB, MIN.OBS)
+		if(length(index.complete) == 1){
+			if(index.complete == FALSE) return()
+		}
 
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
