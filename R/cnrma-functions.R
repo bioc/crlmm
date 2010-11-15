@@ -46,6 +46,7 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "chromosome"] <- chromosome2integer(cnProbes[, grep("chr", colnames(cnProbes))])
 		M[index, "isSnp"] <- 0L
 	}
+	##A few of the snpProbes do not match -- I think it is chromosome Y.
 	M <- M[!is.na(M[, "chromosome"]), ]
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
@@ -145,6 +146,13 @@ genotype <- function(filenames,
 	##message("Saving snprmaRes file")
 	##save(snprmaRes, file=file.path(outdir, "snprmaRes.rda"))
 	if(verbose) message("Finished preprocessing.")
+	gns <- snprmaRes[["gns"]]
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	snp.index <- match(featureNames(callSet)[is.snp], gns)
+	stopifnot(identical(featureNames(callSet)[is.snp], gns[snp.index]))
+	if(is.lds) open(callSet)
+	mixtureParams <- matrix(NA, 4, length(filenames))
 	if(is.lds){
 		open(snprmaRes[["A"]])
 		open(snprmaRes[["B"]])
@@ -155,24 +163,15 @@ genotype <- function(filenames,
 			   BATCHBYTES=bb)
 		ffcolapply(B(callSet)[is.snp, i1:i2] <- snprmaRes[["B"]][snp.index, i1:i2], X=snprmaRes[["B"]],
 			   BATCHBYTES=bb)
-##		##bb <- getOption("ffbatchbytes")
-##		message("Writing normalized intensities to callSet")
-##		system.time(
-##		for(j in 1:ncol(callSet)){
-##			A(callSet)[is.snp, j] <- snprmaRes[["A"]][snp.index, j]
-##			B(callSet)[is.snp, j] <- snprmaRes[["B"]][snp.index, j]
-##		})
-		##ffrowapply(A(callSet)[i1:i2, ] <- snprmaRes[["A"]][i1:i2, ], X=snprmaRes[["A"]])##, BATCHBYTES=bb)
-		##ffrowapply(B(callSet)[i1:i2, ] <- snprmaRes[["B"]][i1:i2, ], X=snprmaRes[["B"]])##, BATCHBYTES=bb)
-		pData(callSet)$SKW <- snprmaRes[["SKW"]]
-		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	} else{
 		A(callSet)[is.snp, ] <- snprmaRes[["A"]][snp.index, ]
 		B(callSet)[is.snp, ] <- snprmaRes[["B"]][snp.index, ]
-		pData(callSet)$SKW <- snprmaRes[["SKW"]]
-		pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	}
-	np.index <- which(!snp.I)
+	pData(callSet)$SKW <- snprmaRes[["SKW"]]
+	pData(callSet)$SNR <- snprmaRes[["SNR"]]
+	mixtureParams <- snprmaRes$mixtureParams
+	np.index <- which(!is.snp)
+	if(verbose) message("Normalizing nonpolymorphic markers")
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
 	## main purpose is to update 'alleleA'
 	cnrmaFxn <- function(FUN,...){
@@ -222,18 +221,20 @@ genotype <- function(filenames,
 			   BATCHBYTES=bb)
 		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["B"]][snp.index, i1:i2], X=tmp[["B"]],
 			   BATCHBYTES=bb)
-##		for(j in 1:ncol(callSet)){
-##			snpCall(callSet)[is.snp, j] <- tmp[["calls"]][snp.index, j]
-##			snpCallProbability(callSet)[is.snp, j] <- tmp[["confs"]][snp.index, j]
-##		}
-		##		ffrowapply(snpCall(callSet)[i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]])#, BATCHBYTES=bb)
-		##		ffrowapply(snpCallProbability(callSet)[i1:i2, ] <- tmp[["confs"]][i1:i2, ], X=tmp[["confs"]])#, BATCHBYTES=bb)
+		close(tmp[["calls"]])
+		close(tmp[["confs"]])
 	} else {
 		calls(callSet)[is.snp, ] <- tmp[["calls"]][snp.index, ]
 		snpCallProbability(callSet)[is.snp, ] <- tmp[["confs"]][snp.index, ]
 	}
 	message("Finished updating.  Cleaning up.")
 	callSet$gender <- tmp$gender
+	if(is.lds){
+		delete(snprmaRes[["A"]])
+		delete(snprmaRes[["B"]])
+		delete(snprmaRes[["mixtureParams"]])
+		rm(snprmaRes)
+	}
 	close(callSet)
 	if(is.lds){
 		delete(snprmaRes[["A"]])
@@ -936,13 +937,11 @@ fit.lm4 <- function(strata,
 		Y <- log2(c(tmp[, 3], tmp[, 4]))
 		betahat <- solve(crossprod(X), crossprod(X, Y))
 		if(enough.men){
-			##X.men <- cbind(1, medianA.AA.M[, k])
 			X.men <- cbind(1, log2(medianA.AA.M[, k]))
 			Yhat1 <- as.numeric(X.men %*% betahat)
 			## put intercept and slope for men in nuB and phiB
 			phiB[, k] <- 2^(Yhat1)
-			##nuB[, k] <- 2^(medianA.AA.M[, k]) - phiB[, k]
-			nuB[, k] <- medianA.AA.M[, k] - 1*phiB[, k] ## male has 1 copy
+			nuB[, k] <- medianA.AA.M[, k] - 1*phiB[, k]
 		}
 		X.fem <- cbind(1, log2(medianA.AA.F[, k]))
 		Yhat2 <- as.numeric(X.fem %*% betahat)
