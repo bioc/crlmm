@@ -1178,6 +1178,7 @@ genotype.Illumina = function(sampleSheet=NULL,
                              highDensity=highDensity, sep=sep, fileExt=fileExt,
 			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch,
                              fns=fns, saveDate=saveDate)
+	save(callSet, file=file.path(ldPath(), "callSet.rda"))
         if(missing(sns)) sns = sampleNames(callSet)
 	open(callSet)
 	is.snp = isSnp(callSet)
@@ -1347,7 +1348,8 @@ processIDAT =  function(sel, sampleSheet=NULL,
         open(res[["SKW"]])
         open(res[["SNR"]])
         open(res[["mixtureParams"]])
-	bb = ocProbesets()*length(sns)*8
+	##bb = ocProbesets()*length(sns)*8
+	bb <- getOption("ffbatchbytes")
         ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
 	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
 	if(length(np.index)>0) {
