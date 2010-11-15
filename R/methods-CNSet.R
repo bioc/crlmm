@@ -326,7 +326,7 @@ C1 <- function(object, marker.index, batch.index, sample.index){
 	return(as.matrix(acn))
 }
 
-## allele B  (allele 'A' for chromosome X NPs)
+## allele B  (treated allele 'A' for chromosome X NPs)
 ##   autosome SNPs
 ##   chromosome X for male nonpolymorphic markers
 C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
@@ -493,9 +493,11 @@ ACN <- function(object, allele, i , j){
 			open(B(object))
 		}
 		if(any(is.auto)){
-			auto.index <- which(is.auto)
-			marker.index <- i[is.auto]
-			acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
+			auto.index <- which(is.auto & is.snp)
+			if(length(auto.index) > 0){
+				marker.index <- i[is.auto]
+				acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
+			}
 		}
 		if(any(is.X)){
 			##Chr X SNPs

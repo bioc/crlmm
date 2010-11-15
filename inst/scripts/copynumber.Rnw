@@ -165,14 +165,11 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 			     cdfName=cdfName,
 			     batch=batch)
 	## try normalizing np probes on chr X
-	callSet <- gtSet
-	filenames <- celFiles
-	snp.I <- isSnp(callSet)
-	is.snp <- which(snp.I)
-	np.index <- which(!is.snp)
-
-
-
+##	callSet <- gtSet
+##	filenames <- celFiles
+##	snp.I <- isSnp(callSet)
+##	is.snp <- which(snp.I)
+##	np.index <- which(!is.snp)
 }
 @
 
@@ -253,22 +250,20 @@ ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
 stopifnot(all.equal(ct, ct2))
 @
 
-Nonpolymorphic markers on X:
 
-\begin{figure}[!t]
-\centering
-<<nonpolymorphicX>>=
+Nonpolymorphic markers on chromosome X:
+
+\begin{figure}
+  \centering
+<<nonpolymorphicX, fig=TRUE>>=
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
-a <- A(cnSet)[npx.index, M]
-nus <- nuA(cnSet)[npx.index, ]
-## nu and phi are not estimated
 M <- sample(which(cnSet$gender==1), 5)
 F <- sample(which(cnSet$gender==2), 5)
-X.markers <- which(!isSnp(cnSet) & chromosome(cnSet) == 23)
-cn.M <- CA(cnSet, i=X.markers, j=M)
-cn.F <- CA(cnSet, i=X.markers, j=F)
-##phi(cnSet, "A")[X.markers[1:10]]
-index <- which(is.na(nuA(cnSet)[X.markers, 1]))
+##a <- A(cnSet)[npx.index, M]
+##nus <- nuA(cnSet)[npx.index, ]
+## nu and phi are not estimated
+cn.M <- CA(cnSet, i=npx.index, j=M)
+cn.F <- CA(cnSet, i=npx.index, j=F)
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
 @
 \caption{Copy number estimates for nonpolymorphic markers on
@@ -277,13 +272,13 @@ boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
   males and 2 for females.}
 \end{figure}
 
-
 Polymorphic markers, X chromosome:
 
 \begin{figure}
   \centering
 <<polymorphicX, fig=TRUE, width=8, height=4>>=
-X.markers <- sample(which(isSnp(cnSet) & chromosome(cnSet) == 23), 25e3)
+## copy number estimates on X for SNPs are biased towards small values.
+X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
 ca.M <- CA(cnSet, i=X.markers, j=M)
 cb.M <- CB(cnSet, i=X.markers, j=M)
 ca.F <- CA(cnSet, i=X.markers, j=F)
@@ -294,8 +289,9 @@ boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col=cols, xaxt="n
 legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
 abline(h=c(1,2))
 ## alternatively
-cn.F2 <- totalCopynumber(cnSet, i=X.markers, j=F)
-stopifnot(all.equal(cn.F, cn.F2))
+cn.MF1 <- cbind(cn.M, cn.F)
+cn.MF2 <- totalCopynumber(cnSet, i=X.markers, j=c(M,F))
+##stopifnot(all.equal(cn.MF1[!is.na(cn.MF1)], cn.MF2[!is.na(cn.MF2)]))
 @
 \caption{Copy number estimates for polymorphic markers on chromosome
   X.  We assume that the median copy number (across samples) at any
