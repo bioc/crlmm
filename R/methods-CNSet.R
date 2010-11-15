@@ -524,11 +524,11 @@ ACN <- function(object, allele, i , j){
 				acn[acn.index, ] <- 0
 			}
 		}
-		if(is.ff){
-			close(nuB(object))
-			close(phiB(object))
-			close(B(object))
-		}
+	}
+	if(is.ff){
+		close(nuB(object))
+		close(phiB(object))
+		close(B(object))
 	}
 	return(acn)
 }
