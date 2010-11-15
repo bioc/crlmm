@@ -139,14 +139,20 @@ if(!load.it){
 	rmFiles <- list.files(outdir, pattern=".ff", full.names=TRUE)
 	unlink(rmFiles)
 }
+plate <- samplesheet$Plate
+table(plate)
+## too few samples to run the plates as separate batches
+batch <- as.factor(rep("1", nrow(samplesheet)))
 container <- checkExists("container", .path=outdir,
 			 .FUN=crlmm:::genotype.Illumina,
 			 sampleSheet=samplesheet,
 			 path=dirname(arrayNames[1]),
 			 arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
 			 cdfName="human370v1c",
+			 batch=batch,
 			 .load.it=load.it)
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it="FALSE",
+		     GT.CONF.THR=0.8)
 @
 
 The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
@@ -164,6 +170,22 @@ markers and 'CA' at nonpolymorphic markers.
 
 
 <<copynumberObject>>=
+snp.index <- which(isSnp(cnSet))
+cn <- totalCopynumber(cnSet, i=snp.index, j=1:10)
+missing.snp <- which(rowSums(is.na(cn)) == 10) ##snps with no confidence
+table(chromosome(cnSet)[missing.snp])
+hist(i2p(snpCallProbability(cnSet)[missing.snp, 1:10]), breaks=100)
+
+np.index <- which(!isSnp(cnSet))
+ca <- CA(cnSet, i=np.index, j=1:10)
+cb <- CB(cnSet, i=np.index, j=1:10) ## most are missing
+
+cn <- totalCopynumber(cnSet, i=np.index, j=1:10)
+missing.np <- which(rowSums(is.na(cn)) == 10)
+table(chromosome(cnSet)[missing.np])
+table(chromosome(cnSet)[np.index])
+
+
 marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
 sample.index <- 1:5 ## first five samples
 invisible(open(cnSet))
@@ -175,6 +197,7 @@ dup.index <- unlist(sapply(indices, function(i, position)  i[duplicated(position
 if(length(dup.index) > 0) copynumberSet <- copynumberSet[-dup.index, ]
 ## exclude any rows that are all missing
 missing.index <- which(rowSums(is.na(copyNumber(copynumberSet))) == ncol(copynumberSet))
+table(chromosome(copynumberSet)[missing.index])
 copynumberSet <- copynumberSet[-missing.index, ]
 @
 

@@ -1030,7 +1030,9 @@ processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
 	reference <- getVarInEnv("reference")
         loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
 	fid <- getVarInEnv("npProbesFid")
+	row.names <- row.names[row.names %in% names(fid)] ##removes chromosome Y
 	fid <- fid[match(row.names, names(fid))]
+	##stopifnot(all.equal(names(fid), row.names))
 	np.index <- match(row.names, rownames(A))
 	gns <- names(fid)
 	set.seed(seed)
