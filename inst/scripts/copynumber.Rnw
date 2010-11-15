@@ -250,15 +250,16 @@ M <- sample(which(cnSet$gender==1), 5)
 F <- sample(which(cnSet$gender==2), 5)
 cn.M <- CA(cnSet, i=npx.index, j=M)
 cn.F <- CA(cnSet, i=npx.index, j=F)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col=cols, outline=FALSE)
+legend("topleft", bty="n", fill=bp.cols, legend=c("male", "female"))
 @
 
 \begin{figure}[t!]
-
-  \centering
-\caption{Copy number estimates for nonpolymorphic loci on chromosome
-  X (5 men, 5 women).  crlmm assumes that the median copy number
-  across samples at a given marker on X is 1 for men and 2 for women.}
+ \centering
+ \includegraphics[width=0.8\textwidth]{copynumber-nonpolymorphicX}
+  \caption{Copy number estimates for nonpolymorphic loci on chromosome
+    X (5 men, 5 women).  crlmm assumes that the median copy number
+    across samples at a given marker on X is 1 for men and 2 for women.}
 \end{figure}
 
 
@@ -440,8 +441,8 @@ hist(cnSet$SNR[, ], xlab="SNR", main="", breaks=25)
 @
 \begin{figure}
   \centering
- \includegraphics[width=0.6\textwidth]{copynumber-plotSnr}
- \caption{Signal to noise ratios for the HapMap samples. SNRs below 5
+  \includegraphics[width=0.6\textwidth]{copynumber-plotSnr}
+  \caption{Signal to noise ratios for the HapMap samples. SNRs below 5
    for the Affymetrix platform are often samples of lower quality.
    Such samples will tend to have much more variable estimates of copy
    number.}
@@ -538,7 +539,7 @@ estimates are missing for a given SNP.
 X.index <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
 ca.X <- CA(cnSet, i=X.index, j=sample.index)
 missing.caX <- is.na(ca.X)
-nmissing.caX <- sum(missing.caX)
+(nmissing.caX <- sum(missing.caX))
 missing.snp.index <- which(rowSums(missing.caX) == length(sample.index))
 index <- which(rowSums(missing.caX) == length(sample.index))
 length(index)*length(sample.index)/nmissing.caX
@@ -574,21 +575,28 @@ Next, we verify that the number of missing values is the same for the
 <<NAmissingForBallele>>=
 cb <- CB(cnSet, i=autosome.index, j=sample.index)
 missing.cb <- is.na(cb)
-nmissing.cb <- sum(missing.cb)
+sum(missing.cb)
 @
 
-For nonpolymorphic loci, the genotype confidence score is irrelevant
-and estimates should be available at all markers.
+For nonpolymorphic loci, the genotype confidence scores are irrelevant
+and estimates are available at most markers.
+
 
 <<NAnonpolymorphic.autosome>>=
 np.index <- which(!isSnp(cnSet) & chromosome(cnSet)==23)
-cb <- CB(cnSet, i=np.index, j=sample.index)
-stopifnot(sum(is.na(cb)) == 0)
 ca.F <- CA(cnSet, i=np.index, j=F)
 ca.M <- CA(cnSet, i=np.index, j=M)
+## NAs for one marker
+ca.F <- ca.F[-match("CN_974939", rownames(ca.F)), ]
+ca.M <- ca.M[-match("CN_974939", rownames(ca.M)), ]
 sum(is.na(ca.F))
 sum(is.na(ca.M))
 @
+
+TODO: marker CN\_974939 has NAs for the normalized intensities.  This
+is because CN_974939 is not in the \Robject{npProbesFid} file in
+\Rpackage{genomewidesnp6Crlmm}.  The \Robject{npProbesFid} file should
+be updated in the next \Rpackage{genomewidesnp6Crlmm} release.
 
 In total, there were \Sexpr{length(missing.snp.index)} polymorphic
 markers on chromosome X for which copy number estimates are not
