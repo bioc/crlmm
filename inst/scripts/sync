@@ -1,0 +1,1 @@
+rsync -avuzb --exclude '.git*' -e ssh ~/madman/Rpacks/git/crlmm/ enigma2.jhsph.edu:~/madman/Rpacks/release/crlmm

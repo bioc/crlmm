@@ -163,8 +163,16 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 			     .FUN=genotype,
 			     filenames=celFiles,
 			     cdfName=cdfName,
-			     batch=batch, .load.it=FALSE)
-	class(calls(gtSet))
+			     batch=batch)
+	## try normalizing np probes on chr X
+	callSet <- gtSet
+	filenames <- celFiles
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	np.index <- which(!is.snp)
+
+
+
 }
 @
 
@@ -247,21 +255,21 @@ stopifnot(all.equal(ct, ct2))
 
 Nonpolymorphic markers on X:
 
-\begin{figure}
-  \centering
+\begin{figure}[!t]
+\centering
 <<nonpolymorphicX>>=
-library(RColorBrewer)
-cols <- brewer.pal(8, "Paired")[3:4]
-cols <- rep(cols, each=5)
-set.seed(123)
-X.markers <- sample(which(chromosome(cnSet)==23 & !isSnp(cnSet)), 10e3)
+npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
+a <- A(cnSet)[npx.index, M]
+nus <- nuA(cnSet)[npx.index, ]
+## nu and phi are not estimated
 M <- sample(which(cnSet$gender==1), 5)
 F <- sample(which(cnSet$gender==2), 5)
+X.markers <- which(!isSnp(cnSet) & chromosome(cnSet) == 23)
 cn.M <- CA(cnSet, i=X.markers, j=M)
 cn.F <- CA(cnSet, i=X.markers, j=F)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", xaxt="n", main="nonpolymorphic markers on X",
-	col=cols, ylim=c(0,5))
-legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
+##phi(cnSet, "A")[X.markers[1:10]]
+index <- which(is.na(nuA(cnSet)[X.markers, 1]))
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
 @
 \caption{Copy number estimates for nonpolymorphic markers on
   chromosome X.  We assume that the median copy number (across
@@ -327,6 +335,7 @@ samples.
 <<check>>=
 dims(cnSet)
 print(object.size(cnSet), units="Mb")
+invisible(open(calls(cnSet)))
 gt <- calls(cnSet)[, 1:50]
 @
 
@@ -370,9 +379,9 @@ markers, we extract only the polymorphic markers using the
 <<assayData>>=
 rows <- which(isSnp(cnSet))
 cols <- which(batch == "C")
+invisible(open(snpCallProbability(cnSet)))
 posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet)),
 			   error=function(e) print("This will not work for an ff object."))
-##posterior.prob2 <- p2i(snpCallProbability(cnSet)[rows, cols])
 @
 
 Accessors for the quantile normalized intensities for the A allele at
