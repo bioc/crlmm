@@ -152,7 +152,7 @@ container <- checkExists("container", .path=outdir,
 			 batch=batch,
 			 .load.it=load.it)
 GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it="FALSE",
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=.load.it,
 		     GT.CONF.THR=GT.CONF.THR)
 @
 
