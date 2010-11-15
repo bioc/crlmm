@@ -69,10 +69,11 @@ options(continue=" ")
 library(ff)
 pkgs <- annotationPackages()
 pkgs[grep("Crlmm", pkgs)]
-if(getRversion() < "2.12.0"){
+if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
 outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")
+dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @
 
