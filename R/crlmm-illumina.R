@@ -1178,7 +1178,6 @@ genotype.Illumina = function(sampleSheet=NULL,
                              highDensity=highDensity, sep=sep, fileExt=fileExt,
 			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch,
                              fns=fns, saveDate=saveDate)
-	save(callSet, file=file.path(ldPath(), "callSet.rda"))
         if(missing(sns)) sns = sampleNames(callSet)
 	open(callSet)
 	is.snp = isSnp(callSet)
@@ -1246,8 +1245,7 @@ genotype.Illumina = function(sampleSheet=NULL,
           open(B(callSet))
           tmpA = initializeBigMatrix(name="A", length(snp.index), narrays)
           tmpB = initializeBigMatrix(name="B", length(snp.index), narrays)
-          ##bb = ocProbesets()*length(sns)*8
-	  bb <- getOption("ffbatchbytes")
+          bb = ocProbesets()*length(sns)*8
 	  ffrowapply(tmpA[i1:i2, ] <- A(callSet)[snp.index,][i1:i2, ], X=A(callSet)[snp.index,], BATCHBYTES=bb)
 	  ffrowapply(tmpB[i1:i2, ] <- B(callSet)[snp.index,][i1:i2, ], X=B(callSet)[snp.index,], BATCHBYTES=bb)
           close(A(callSet))
@@ -1278,8 +1276,7 @@ genotype.Illumina = function(sampleSheet=NULL,
 			  badSNP=badSNP)
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	if(is.lds){
-		##bb = ocProbesets()*ncol(callSet)*8
-		bb <- getOption("ffbatchbytes")
+		bb = ocProbesets()*ncol(callSet)*8
 		open(tmp[["calls"]])
 		open(tmp[["confs"]])
 		ffrowapply(snpCall(callSet)[snp.index,][i1:i2, ] <- tmp[["calls"]][i1:i2, ], X=tmp[["calls"]], BATCHBYTES=bb)
@@ -1348,8 +1345,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         open(res[["SKW"]])
         open(res[["SNR"]])
         open(res[["mixtureParams"]])
-	##bb = ocProbesets()*length(sns)*8
-	bb <- getOption("ffbatchbytes")
+	bb = ocProbesets()*length(sns)*8
         ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
 	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
 	if(length(np.index)>0) {
