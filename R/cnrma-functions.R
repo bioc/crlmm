@@ -47,7 +47,7 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
-	M[is.na(M[, "isSnp"]), "isSnp"] <- 1L
+	M[is.na(M[, "chromosome"]), "isSnp"] <- 1L
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
 }
@@ -239,14 +239,6 @@ genotype <- function(filenames,
 		rm(snprmaRes)
 	}
 	close(callSet)
-	if(is.lds){
-		delete(snprmaRes[["A"]])
-		delete(snprmaRes[["B"]])
-		##delete(snprmaRes[["SNR"]]) -- would need to do something like callSet$SNR <- snprmaRes[["SNR"]][,]
-		##delete(snprmaRes[["SKW"]])
-		delete(snprmaRes[["mixtureParams"]])
-		rm(snprmaRes)
-	}
 	return(callSet)
 }
 
@@ -1078,7 +1070,8 @@ indexComplete <- function(NN, medianA, medianB, MIN.OBS){
 	size <- min(5000, length(index.complete))
 	if(size == 5000) index.complete <- sample(index.complete, 5000, replace=TRUE)
 	if(length(index.complete) < 100){
-		stop("fewer than 100 snps pass criteria for imputing unobserved genotype location/scale")
+		warning("fewer than 100 snps pass criteria for imputing unobserve dgenotype location/scale")
+		return(FALSE)
 	}
 	return(index.complete)
 }
