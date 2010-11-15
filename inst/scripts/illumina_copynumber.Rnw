@@ -152,7 +152,7 @@ container <- checkExists("container", .path=outdir,
 			 batch=batch,
 			 .load.it=load.it)
 GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=.load.it,
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it,
 		     GT.CONF.THR=GT.CONF.THR)
 @
 
@@ -268,8 +268,10 @@ dup.index <- unlist(sapply(indices, function(i, position)  i[duplicated(position
 if(length(dup.index) > 0) copynumberSet <- copynumberSet[-dup.index, ]
 ## exclude any rows that are all missing
 missing.index <- which(rowSums(is.na(copyNumber(copynumberSet))) == ncol(copynumberSet))
-table(chromosome(copynumberSet)[missing.index])
-copynumberSet <- copynumberSet[-missing.index, ]
+if(length(missing.index) > 0){
+			 table(chromosome(copynumberSet)[missing.index])
+			 copynumberSet <- copynumberSet[-missing.index, ]
+}
 @
 
 
@@ -283,7 +285,7 @@ data(chromosomeAnnotation)
 chrAnn <- chromosomeAnnotation[1,]
 layout(matrix(1:5, 5,1), heights=c(1, 1, 1, 1, 1))
 par(mar=c(0.5, 0.5, 0.5, 0.5), las=1, oma=c(4, 4, 4, 4))
-i <- which(chromosome(copynumberSet) == 1)
+	       i <- which(chromosome(copynumberSet) == 1)
 for(j in 1:5){
 	plot(position(copynumberSet)[i], copyNumber(copynumberSet)[i, j], pch=".", cex=0.6,col="grey60", xaxt="n",
 	     ylim=c(-1,6), ylab="total copy number",
