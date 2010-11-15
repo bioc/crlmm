@@ -594,7 +594,7 @@ sum(is.na(ca.M))
 @
 
 TODO: marker CN\_974939 has NAs for the normalized intensities.  This
-is because CN_974939 is not in the \Robject{npProbesFid} file in
+is because CN\_974939 is not in the \Robject{npProbesFid} file in
 \Rpackage{genomewidesnp6Crlmm}.  The \Robject{npProbesFid} file should
 be updated in the next \Rpackage{genomewidesnp6Crlmm} release.
 
