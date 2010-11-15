@@ -245,11 +245,15 @@ stopifnot(all.equal(ct, ct2))
   Nonpolymorphic markers on chromosome X:
 
 <<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
+library(RColorBrewer)
+bp.cols <- brewer.pal(8, "Paired")[3:4]
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
 M <- sample(which(cnSet$gender==1), 5)
-F <- sample(which(cnSet$gender==2), 5)
+cols <- bp.cols[cnSet$gender[c(M,F)]]
 cn.M <- CA(cnSet, i=npx.index, j=M)
 cn.F <- CA(cnSet, i=npx.index, j=F)
+F <- sample(which(cnSet$gender==2), 5)
+par(las=1)
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col=cols, outline=FALSE)
 legend("topleft", bty="n", fill=bp.cols, legend=c("male", "female"))
 @
@@ -274,6 +278,7 @@ ca.F <- CA(cnSet, i=X.markers, j=F)
 cb.F <- CB(cnSet, i=X.markers, j=F)
 cn.M <- ca.M+cb.M
 cn.F <- ca.F+cb.F
+par(las=1)
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col=cols, xaxt="n", ylim=c(0,5))
 legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
 abline(h=c(1,2))
