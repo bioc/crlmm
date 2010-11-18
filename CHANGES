@@ -576,3 +576,11 @@ function (which expects ff objects and supports parallel processing)
 2010-10-17 M. Ritchie 1.7.22
 **  added "humanomni25quadv1b" to validCdfName() in utils.R and RGtoXY() in crlmm-illumina.R
 
+2010-11-18 M. Ritchie 1.9.8
+** genotype.Illumina() is now exported and has a man page.  The argument 'outdir' should 
+be used to specify where you want to store the large data objects.  ldPath(outdir) is specified 
+inside preprocessInfinium2()
+** the 'batch' variable is now left empty and must be specified by the user
+** X and Y are now initialized with zeroes by initializeBigMatrix( ,initdata=0) in RGtoXY().
+** open(A(callSet); open(B(callSet) replaces open(callSet) in genotyp.Illumina()
+

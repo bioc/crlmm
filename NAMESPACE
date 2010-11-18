@@ -68,6 +68,7 @@ export(crlmm,
        snprma2,
        crlmm2,
        genotype2, genotypeLD,
+       genotype.Illumina, 
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(constructIlluminaCNSet)
 export(totalCopynumber)

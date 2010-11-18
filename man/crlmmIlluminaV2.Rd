@@ -10,11 +10,11 @@
 crlmmIlluminaV2(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
       highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
-      saveDate=FALSE, stripNorm=TRUE, useTarget=TRUE, row.names=TRUE, col.names=TRUE,
-      probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-      seed=1, mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
-      cdfName, sns, recallMin=10, recallRegMin=1000,
-      returnParams=FALSE, badSNP=.7)
+      saveDate=FALSE, stripNorm=TRUE, useTarget=TRUE, outdir=".", 
+      row.names=TRUE, col.names=TRUE, probs=c(1/3, 1/3, 1/3), 
+      DF=6, SNRMin=5, gender=NULL, seed=1, mixtureSampleSize=10^5, 
+      eps=0.1, verbose=TRUE, cdfName, sns, recallMin=10, 
+      recallRegMin=1000, returnParams=FALSE, badSNP=.7)
 }
 
 \arguments{
@@ -47,6 +47,8 @@ crlmmIlluminaV2(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
   \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
     Should the reference HapMap intensities be used in strip-level normalization?}
+  \item{outdir}{character string specifying the location to store large data objects 
+    (used when \code{ff} package is loaded)}
   \item{row.names}{'logical'. Use rownames - SNP names?}
   \item{col.names}{'logical'. Use colnames - Sample names?}
   \item{probs}{'numeric' vector with priors for AA, AB and BB.}

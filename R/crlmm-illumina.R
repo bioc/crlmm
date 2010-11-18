@@ -462,18 +462,18 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 #  brgrg = bids[rrgg]
 
   XY = new("NChannelSet",
-	     X=initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer"),
-	     Y=initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer"),
-	     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer"),
+	     X=initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer", initdata=0),
+	     Y=initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer", initdata=0),
+	     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer", initdata=0),
 	     annotation=chipType, phenoData=RG@phenoData,
 	     protocolData=RG@protocolData, storage.mode="environment")
   featureNames(XY) = ids
   sampleNames(XY) = sampleNames(RG)
   gc()
   # Need to initialize - matrices filled with NAs to begin with
-  XY@assayData$X[1:nsnps,] = 0
-  XY@assayData$Y[1:nsnps,] = 0
-  XY@assayData$zero[1:nsnps,] = 0
+#  XY@assayData$X[1:nsnps,] = 0
+#  XY@assayData$Y[1:nsnps,] = 0
+#  XY@assayData$zero[1:nsnps,] = 0
 
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 
@@ -585,7 +585,8 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 				cdfName,
 				sns,
 				stripNorm=TRUE,
-				useTarget=TRUE) {
+				useTarget=TRUE,
+                                outdir=".") {
 #				save.it=FALSE,
 #				snpFile,
 #				cnFile) {
@@ -615,7 +616,8 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   narrays = ncol(XY)
 
   is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-
+  if(is.lds)
+    ldPath(outdir)
 #  if(save.it & !missing(cnFile)) {
     # separate out copy number probes
     npIndex = getVarInEnv("npProbesFid")
@@ -913,6 +915,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 			  saveDate=FALSE,
 			  stripNorm=TRUE,
 			  useTarget=TRUE,
+                          outdir=".",
 			  row.names=TRUE,
 			  col.names=TRUE,
 			  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
@@ -941,7 +944,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
     if (missing(sns)) { sns = sampleNames(XY)
     }
     res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #,
+                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget, outdir=outdir) #,
 #                               save.it=save.it, snpFile=snpFile, cnFile=cnFile)
 
     if(is.lds) {
@@ -1042,7 +1045,8 @@ construct.Illumina = function(sampleSheet=NULL,
 			  red="Red.idat"),
 		      	  cdfName,
 		      	  copynumber=TRUE,
-		      	  verbose=TRUE, batch, fns, saveDate=TRUE){
+		      	  verbose=TRUE, batch, #fns,
+                          saveDate=TRUE, outdir="."){
        if(!is.null(arrayNames)) {
                pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
        }
@@ -1083,7 +1087,7 @@ construct.Illumina = function(sampleSheet=NULL,
 		stopifnot(length(batch) == narrays)
        }
        if(missing(batch)) {
-                batch = as.factor(rep(1, narrays))
+                stop("Must specify 'batch'") # batch = as.factor(rep(1, narrays))
        }
 
        grnfiles = paste(arrayNames, fileExt$green, sep=sep)
@@ -1105,12 +1109,13 @@ construct.Illumina = function(sampleSheet=NULL,
 
 	if(verbose) message("Initializing container for genotyping and copy number estimation")
 	featureData = getFeatureData.Affy(cdfName, copynumber=copynumber)
-	if(!missing(fns)){
-		index = match(fns, featureNames(featureData))
-		if(all(is.na(index))) stop("fns not in featureNames")
-		featureData = featureData[index, ]
-	}
+#	if(!missing(fns)){
+#		index = match(fns, featureNames(featureData))
+#		if(all(is.na(index))) stop("fns not in featureNames")
+#		featureData = featureData[index, ]
+#	}
 	nr = nrow(featureData); nc = narrays
+        ldPath(outdir)
 	cnSet = new("CNSet",
 		     alleleA=initializeBigMatrix(name="A", nr, nc),
 		     alleleB=initializeBigMatrix(name="B", nr, nc),
@@ -1151,7 +1156,8 @@ genotype.Illumina = function(sampleSheet=NULL,
 		      	  cdfName,
 		      	  copynumber=TRUE,
                           batch,
-                          fns,
+                          outdir=".",
+#                          fns,
                           saveDate=TRUE,
        			  stripNorm=TRUE,
 			  useTarget=TRUE,
@@ -1173,14 +1179,19 @@ genotype.Illumina = function(sampleSheet=NULL,
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
         pkgname = getCrlmmAnnotationName(cdfName)
+        if(missing(outdir))
+          stop("Must specify a directory to store large data objects")
 	callSet = construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 			     ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                              highDensity=highDensity, sep=sep, fileExt=fileExt,
-			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch,
-                             fns=fns, saveDate=saveDate)
+			     cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns, 
+                             saveDate=saveDate, outdir=outdir)
         if(missing(sns)) sns = sampleNames(callSet)
-	open(callSet)
-	is.snp = isSnp(callSet)
+        
+        open(A(callSet))
+        open(B(callSet))
+        # open(callSet)
+ 	is.snp = isSnp(callSet)
 	snp.index = which(is.snp)
         narrays = ncol(callSet)
         if(is.lds) {
@@ -1195,7 +1206,7 @@ genotype.Illumina = function(sampleSheet=NULL,
                  sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
                  fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
                  useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
-                 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname))
+                 mixtureParams=mixtureParams, is.snp=is.snp, outdir=outdir, neededPkgs=c("crlmm", pkgname))
 
           open(SKW)
           open(SNR)
@@ -1214,7 +1225,7 @@ genotype.Illumina = function(sampleSheet=NULL,
           rm(RG); gc()
 
           res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
+                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget, outdir=outdir)
           rm(XY); gc()
           if(verbose) message("Finished preprocessing.")
           np.index = which(!is.snp)
@@ -1317,7 +1328,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
 			  sns,
 			  stripNorm=TRUE,
 			  useTarget=TRUE,
-                          A, B, SKW, SNR, mixtureParams, is.snp) {
+                          A, B, SKW, SNR, mixtureParams, is.snp, outdir=".") {
 
         if(length(path)>= length(sel)) path = path[sel]
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
@@ -1331,7 +1342,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
 
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget)
+                               seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget, outdir=outdir)
         #                       save.it=save.it, snpFile=snpFile, cnFile=cnFile)
         open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
         delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero); rm(XY)
