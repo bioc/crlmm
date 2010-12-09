@@ -588,3 +588,4 @@ inside preprocessInfinium2()
 ** ffcolapply() now used instead of ffrowapply()
 ** ff storage only used to initialize callSet - no longer used in storage of RG, XY, res data created along the way (matrices now used here) etc.
 ** removed 'outdir' argument and ldPath() added in 1.9.8
+** verbose argument added to readIdatFiles()
