@@ -582,5 +582,9 @@ be used to specify where you want to store the large data objects.  ldPath(outdi
 inside preprocessInfinium2()
 ** the 'batch' variable is now left empty and must be specified by the user
 ** X and Y are now initialized with zeroes by initializeBigMatrix( ,initdata=0) in RGtoXY().
-** open(A(callSet); open(B(callSet) replaces open(callSet) in genotyp.Illumina()
+** open(A(callSet); open(B(callSet) replaces open(callSet) in genotype.Illumina()
 
+2010-12-10 M. Ritchie 1.9.9
+** ffcolapply() now used instead of ffrowapply()
+** ff storage only used to initialize callSet - no longer used in storage of RG, XY, res data created along the way (matrices now used here) etc.
+** removed 'outdir' argument and ldPath() added in 1.9.8

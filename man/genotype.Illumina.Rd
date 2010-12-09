@@ -11,7 +11,7 @@
 genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
       highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
-      cdfName, copynumber=TRUE, batch, outdir=".", saveDate=TRUE, stripNorm=TRUE, useTarget=TRUE, 
+      cdfName, copynumber=TRUE, batch, saveDate=TRUE, stripNorm=TRUE, useTarget=TRUE, 
       mixtureSampleSize=10^5, fitMixture=TRUE, eps =0.1, verbose = TRUE, seed = 1, 
       sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
       gender = NULL, returnParams = TRUE, badSNP = 0.7)
@@ -43,8 +43,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
   \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.} 
-  \item{batch}{ batch variable. See details. }
-  \item{outdir}{character string specifying the location to store large data objects.}
+  \item{batch}{ batch variable. See details.}
   \item{saveDate}{'logical'.  Should the dates from each .idat be saved
     with sample information?}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}

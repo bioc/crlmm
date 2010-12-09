@@ -14,7 +14,7 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path="",
                                      position="SentrixPosition_A"),
               highDensity=FALSE, sep="_",
               fileExt=list(green="Grn.idat", red="Red.idat"),
-              saveDate=FALSE)
+              saveDate=FALSE, verbose=FALSE)
 }
 
 \arguments{
@@ -44,6 +44,7 @@ readIdatFiles(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path="",
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{saveDate}{logical.  Should the dates from each .idat be saved
     with sample information?}
+  \item{verbose}{logical.  Should processing information be displayed as data is read in?}
 }
 
 \details{
