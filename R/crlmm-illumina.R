@@ -588,9 +588,9 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 #  if(save.it & !missing(cnFile)) {
     # separate out copy number probes
   npIndex = getVarInEnv("npProbesFid")
+  nprobes = length(npIndex)
+  
   if(length(nprobes)>0) {
-     nprobes = length(npIndex)
-
      A = matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
      B = matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
 
