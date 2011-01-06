@@ -1656,24 +1656,30 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 	if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
-	if(CHR.X) {
-		sample.index <- which(object$gender==2)
-		batches <- split(sample.index, as.character(batch(object))[sample.index])
-	} else {
-		batches <- split(seq_along(batch(object)), as.character(batch(object)))
-	}
+##	if(CHR.X) {
+##		sample.index <- which(object$gender==2)
+##		batches <- split(sample.index, as.character(batch(object))[sample.index])
+##	} else {
+##		batches <- split(seq_along(batch(object)), as.character(batch(object)))
+##	}
+	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batchnames <- batchNames(object)
 	nr <- length(index)
 	nc <- length(batchnames)
 	N.AA <- medianA.AA <- madA.AA <- tau2A.AA <- matrix(NA, nr, nc)
 	AA <- as.matrix(A(object)[index, ])
 	for(k in seq_along(batches)){
-		B <- batches[[k]]
-		N.AA[, k] <- length(B)
-		this.batch <- unique(as.character(batch(object)[B]))
+		sample.index <- batches[[k]]
+		N.AA[, k] <- length(sample.index)
+		if(CHR.X){
+			gender <- object$gender[sample.index]
+			sample.index <- sample.index[gender == 2]
+			if(length(sample.index) == 0) next()
+s		}
+		this.batch <- unique(as.character(batch(object)[sample.index]))
 		j <- match(this.batch, batchnames)
 		##NORM <- normal.index[, k]
-		A <- AA[, B]
+		A <- AA[, sample.index]
 		medianA.AA[, k] <- rowMedians(A, na.rm=TRUE)
 		madA.AA[, k] <- rowMAD(A, na.rm=TRUE)
 		## log2 Transform Intensities
@@ -1704,9 +1710,10 @@ summarizeSnps <- function(strata,
 ##	} else {
 ##		batches <- split(seq_along(batch(object)), as.character(batch(object)))
 ##	}
-	if(CHR.X){
-		if(verbose) message("        biallelic cluster medians are estimated using only the women for SNPs on chr. X")
-	}
+	## this message can be confusing if no women are in the dataset
+##	if(CHR.X){
+##		if(verbose) message("        biallelic cluster medians are estimated using only the women for SNPs on chr. X")
+##	}
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batchnames <- batchNames(object)
 	nr <- length(index)
