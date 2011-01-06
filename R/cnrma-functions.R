@@ -316,7 +316,7 @@ fit.wls <- function(NN, sigma, allele, Y, autosome, X){
 shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAMPLES, DF.PRIOR,
 				    verbose, is.lds){
 	if(is.lds) {physical <- get("physical"); open(object)}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -449,7 +449,7 @@ fit.lm1 <- function(strata,
 		    verbose, is.lds,
 		    CHR.X, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	snps <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -528,7 +528,7 @@ fit.lm2 <- function(strata,
 		    MIN.PHI,
 		    verbose, is.lds, CHR.X, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -709,7 +709,7 @@ fit.lm3 <- function(strata,
 		    MIN.PHI,
 		    verbose, is.lds, CHR.X, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	gender <- object$gender
 	enough.males <- sum(gender==1) > MIN.SAMPLES
 	enough.females <- sum(gender==2) > MIN.SAMPLES
@@ -871,7 +871,7 @@ fit.lm4 <- function(strata,
 		message(paste("fewer than", MIN.SAMPLES, "men and women.  Copy number not estimated for CHR X"))
 		return(object)
 	}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
@@ -1654,7 +1654,7 @@ whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
 summarizeNps <- function(strata, index.list, object, batchSize,
 			 GT.CONF.THR, verbose, is.lds, CHR.X, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
 	if(CHR.X) {
 		sample.index <- which(object$gender==2)
@@ -1696,7 +1696,7 @@ summarizeSnps <- function(strata,
 		physical <- get("physical")
 		open(object)
 	}
-	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
+	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
 ##	if(CHR.X) {
 ##		sample.index <- which(object$gender==2)
