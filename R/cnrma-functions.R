@@ -768,7 +768,7 @@ fit.lm3 <- function(strata,
 		madB.Mlist <- res[["madB"]]
 		medianA.Mlist <- res[["medianA"]]
 		medianB.Mlist <- res[["medianB"]]
-		NN.Mlist <- res[["NN.M"]]
+		NN.Mlist <- res[["NN"]]
 		rm(res)
 		## Need N, median, mad
 	}
@@ -783,26 +783,17 @@ fit.lm3 <- function(strata,
 						 is.lds=is.lds,
 						 DF.PRIOR=DF.PRIOR/2,
 					   gender="female")
-		N.AA.F <- as.matrix(N.AA(object)[marker.index, ])
-		N.AB.F <- as.matrix(N.AB(object)[marker.index, ])
-		N.BB.F <- as.matrix(N.BB(object)[marker.index, ])
-		medianA.AA <- as.matrix(medianA.AA(object)[marker.index,])
-		medianA.AB <- as.matrix(medianA.AB(object)[marker.index,])
-		medianA.BB <- as.matrix(medianA.BB(object)[marker.index,])
-		medianB.AA <- as.matrix(medianB.AA(object)[marker.index,])
-		medianB.AB <- as.matrix(medianB.AB(object)[marker.index,])
-		medianB.BB <- as.matrix(medianB.BB(object)[marker.index,])
-		madA.AA <- as.matrix(madA.AA(object)[marker.index,])
-		madA.AB <- as.matrix(madA.AB(object)[marker.index,])
-		madA.BB <- as.matrix(madA.BB(object)[marker.index,])
-		madB.AA <- as.matrix(madB.AA(object)[marker.index,])
-		madB.AB <- as.matrix(madB.AB(object)[marker.index,])
-		madB.BB <- as.matrix(madB.BB(object)[marker.index,])
+		madA.Flist <- res[["madA"]]
+		madB.Flist <- res[["madB"]]
+		medianA.Flist <- res[["medianA"]]
+		medianB.Flist <- res[["medianB"]]
+		NN.Flist <- res[["NN"]]
+		rm(res)
 	}
 	for(k in seq_along(batches)){
-		B <- batches[[k]]
-		this.batch <- unique(as.character(batch(object)[B]))
-		gender <- object$gender[B]
+		sample.index <- batches[[k]]
+		this.batch <- unique(as.character(batch(object)[sample.index]))
+		gender <- object$gender[sample.index]
 		enough.men <- sum(gender==1) >= MIN.SAMPLES
 		enough.women <- sum(gender==2) >= MIN.SAMPLES
 		if(!enough.men & !enough.women) {
@@ -810,11 +801,11 @@ fit.lm3 <- function(strata,
 			next()
 		}
 		if(enough.women){
-			medianA.F <- cbind(medianA.AA[, k], medianA.AB[, k], medianA.BB[, k])
-			medianB.F <- cbind(medianB.AA[, k], medianB.AB[, k], medianB.BB[, k])
-			madA.F <- cbind(madA.AA[, k], madA.AB[, k], madA.BB[, k])
-			madB.F <- cbind(madB.AA[, k], madB.AB[, k], madB.BB[, k])
-			NN.F <- cbind(N.AA.F[, k], N.AB.F[, k], N.BB.F[, k])
+			madA.F <- madA.Flist[[k]]
+			madB.F <- madB.Flist[[k]]
+			medianA.F <- medianA.Flist[[k]]
+			medianB.F <- medianB.Flist[[k]]
+			NN.F <- NN.Flist[[k]]
 		}
 		if(enough.men){
 			madA.M <- madA.Mlist[[k]]
@@ -824,18 +815,18 @@ fit.lm3 <- function(strata,
 			NN.M <- NN.Mlist[[k]]
 		}
 		if(enough.men & enough.women){
-			betas <- fit.wls(cbind(NN.M[, c(1,3)], NN.F),
-					 sigma=cbind(madA.M[, c(1,3)], madA.F),
+			betas <- fit.wls(cbind(NN.M, NN.F),
+					 sigma=cbind(madA.M, madA.F),
 					 allele="A",
-					 Y=cbind(medianA.M[, c(1,3)], medianA.F),
+					 Y=cbind(medianA.M, medianA.F),
 					 autosome=FALSE)
 			nuA[, k] <- betas[1, ]
 			phiA[, k] <- betas[2, ]
 			phiA2[, k] <- betas[3, ]
-			betas <- fit.wls(cbind(NN.M[, c(1,3)], NN.F),
-					 sigma=cbind(madB.M[, c(1,3)], madB.F),
+			betas <- fit.wls(cbind(NN.M, NN.F),
+					 sigma=cbind(madB.M, madB.F),
 					 allele="B",
-					 Y=cbind(medianB.M[, c(1,3)], medianB.F),
+					 Y=cbind(medianB.M, medianB.F),
 					 autosome=FALSE)
 			nuB[, k] <- betas[1, ]
 			phiB[, k] <- betas[2, ]
