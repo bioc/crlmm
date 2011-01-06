@@ -1560,22 +1560,15 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 
 
 shrinkSummary <- function(object,
-			  type=c("SNP", "X.SNP"), ##"X.snps", "X.nps"),
+			  type="SNP", 
 			  MIN.OBS=1,
 			  MIN.SAMPLES=10,
 			  DF.PRIOR=50,
 			  verbose=TRUE,
 			  marker.index,
 			  is.lds){
-	stopifnot(type[[1]] %in% c("SNP", "X.SNP"))
-	if(type[[1]] == "X.SNP"){
-		gender <- object$gender
-		if(sum(gender == 2) < 3) {
-			message("too few females to estimate within genotype summary statistics on CHR X")
-			return(object)
-		}
-		CHR.X <- TRUE
-	} else CHR.X <- FALSE
+	stopifnot(type[[1]] != "SNP")
+	CHR.X <- FALSE ## this is no longer needed
 	if(missing(marker.index)){
 		batch <- batch(object)
 		is.snp <- isSnp(object)
@@ -1892,7 +1885,6 @@ crlmmCopynumber <- function(object,
 		       X.NP="chromosome X nonpolymorphic markers")
 	}
 	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
-##	for(i in seq_along(type)){
 	for(i in c(1, 2, 4)){ ## do not do X.SNP.  Do this during fit.lm3
 		marker.type <- type[i]
 		if(verbose) message(paste("...", mylabel(marker.type)))
@@ -1907,17 +1899,13 @@ crlmmCopynumber <- function(object,
 					  is.lds=is.lds)
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
-##	for(i in c(1, 2, 4)){
-##		marker.type <- type[i]
-##		if(!marker.type %in% c("SNP", "X.SNP")) next()
-##		message(paste("...", mylabel(marker.type)))
 	marker.index <- whichMarkers("SNP", is.snp,
 				     is.autosome, is.annotated, is.X)
 	object <- shrinkSummary(object=object,
 				MIN.OBS=MIN.OBS,
 				MIN.SAMPLES=MIN.SAMPLES,
 				DF.PRIOR=DF.PRIOR,
-				type=marker.type,
+				type="SNP",
 				verbose=verbose,
 				marker.index=marker.index,
 				is.lds=is.lds)
