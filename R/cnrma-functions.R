@@ -346,8 +346,8 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	shrink.corrBB <- corrBB <- as.matrix(corrBB(object)[marker.index, ])
 	flags <- as.matrix(flags(object)[marker.index, ])
 	for(k in seq(along=batches)){
-		B <- batches[[k]]
-		this.batch <- unique(as.character(batch(object)[B]))
+		sample.index <- batches[[k]]
+		this.batch <- unique(as.character(batch(object)[sample.index]))
 		medianA[[k]] <- cbind(medianA.AA[, k], medianA.AB[, k], medianA.BB[, k])
 		medianB[[k]] <- cbind(medianB.AA[, k], medianB.AB[, k], medianB.BB[, k])
 		madA <- cbind(madA.AA[, k], madA.AB[, k], madA.BB[, k])
@@ -356,7 +356,6 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		##RS: estimate DF.PRIOR
 		shrink.madA[[k]] <- shrink(madA, NN, DF.PRIOR)
 		shrink.madB[[k]] <- shrink(madB, NN, DF.PRIOR)
-
 		## an estimate of the background variance is the MAD
 		## of the log2(allele A) intensities among subjects with
 		## genotypes BB
@@ -1675,7 +1674,7 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 			gender <- object$gender[sample.index]
 			sample.index <- sample.index[gender == 2]
 			if(length(sample.index) == 0) next()
-s		}
+		}
 		this.batch <- unique(as.character(batch(object)[sample.index]))
 		j <- match(this.batch, batchnames)
 		##NORM <- normal.index[, k]
@@ -1766,6 +1765,7 @@ summarizeSnps <- function(strata,
 		stats <- summaryStats(G.AA, A, FUNS=c("rowMedians", "rowMAD"))
 		medianA.AA(object)[index, k] <- stats[, 1]
 		madA.AA(object)[index, k] <- stats[, 2]
+
 		stats <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
 		medianA.AB(object)[index, k] <- stats[, 1]
 		madA.AB(object)[index, k] <- stats[, 2]
@@ -1782,7 +1782,7 @@ summarizeSnps <- function(strata,
 		medianB.AB(object)[index, k] <- stats[, 1]
 		madB.AB(object)[index, k] <- stats[, 2]
 
-		statsB.BB[[k]] <- summaryStats(G.BB, B, FUNS=c("rowMedians", "rowMAD"))
+		stats <- summaryStats(G.BB, B, FUNS=c("rowMedians", "rowMAD"))
 		medianB.BB(object)[index, k] <- stats[, 1]
 		madB.BB(object)[index, k] <- stats[, 2]
 
