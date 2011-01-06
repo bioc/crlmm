@@ -612,13 +612,13 @@ summarizeXGenotypes <- function(marker.index,
 				    DF.PRIOR,
 				    gender="male", ...){
 	if(gender == "male"){
-		sample.index <- which(gender==1)
-	} else sample.index <- which(gender==2)
+		sample.index <- which(object$gender==1)
+	} else sample.index <- which(object$gender==2)
 	nr <- length(marker.index)
 	nc <- length(batchNames(object))
 ##	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
-	gender <- object$gender
+	##gender <- object$gender
 	GG <- as.matrix(calls(object)[marker.index, sample.index])
 	CP <- as.matrix(snpCallProbability(object)[marker.index, sample.index])
 	AA <- as.matrix(A(object)[marker.index, sample.index])
@@ -674,7 +674,7 @@ summarizeXGenotypes <- function(marker.index,
 			madB <- cbind(statsB.AA[, 2], ##statsB.AB[, 2],
 				      statsB.BB[, 2])
 			NN <- cbind(N.AA, N.BB)
-			rm(statsA.AA, statsA.BB, statsB.AA, statsB.AB, statsB.BB)
+			rm(statsA.AA, statsA.BB, statsB.AA, statsB.BB)
 		} else {
 			medianA[[k]] <- cbind(statsA.AA[, 1], statsA.AB[, 1],
 					      statsA.BB[, 1])
@@ -694,12 +694,11 @@ summarizeXGenotypes <- function(marker.index,
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
 		index.complete <- indexComplete(NN, medianA[[k]], medianB[[k]], MIN.OBS)
-
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
 		##---------------------------------------------------------------------------
 		if(gender=="male"){
-			res <- imputeCenterX(medianA[[k]], medianB[[k]], NN.M, index.complete, MIN.OBS)
+			res <- imputeCenterX(medianA[[k]], medianB[[k]], NN, index.complete, MIN.OBS)
 		} else {
 			unobservedAA <- NN[, 1] < MIN.OBS
 			unobservedAB <- NN[, 2] < MIN.OBS
