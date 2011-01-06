@@ -1673,12 +1673,13 @@ summarizeSnps <- function(strata,
 	}
 	if(verbose) message("Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
-	if(CHR.X) {
-		sample.index <- which(object$gender==2)
-		batches <- split(sample.index, as.character(batch(object))[sample.index])
-	} else {
-		batches <- split(seq_along(batch(object)), as.character(batch(object)))
-	}
+##	if(CHR.X) {
+##		sample.index <- which(object$gender==2)
+##		batches <- split(sample.index, as.character(batch(object))[sample.index])
+##	} else {
+##		batches <- split(seq_along(batch(object)), as.character(batch(object)))
+##	}
+	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batchnames <- batchNames(object)
 	nr <- length(index)
 	nc <- length(batchnames)
