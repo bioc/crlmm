@@ -1907,21 +1907,20 @@ crlmmCopynumber <- function(object,
 					  is.lds=is.lds)
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
-	for(i in seq_along(type)){
-		marker.type <- type[i]
-		if(!marker.type %in% c("SNP", "X.SNP")) next()
-		message(paste("...", mylabel(marker.type)))
-		marker.index <- whichMarkers(marker.type, is.snp,
-					     is.autosome, is.annotated, is.X)
-		object <- shrinkSummary(object=object,
-					MIN.OBS=MIN.OBS,
-					MIN.SAMPLES=MIN.SAMPLES,
-					DF.PRIOR=DF.PRIOR,
-					type=marker.type,
-					verbose=verbose,
-					marker.index=marker.index,
-					is.lds=is.lds)
-	}
+##	for(i in c(1, 2, 4)){
+##		marker.type <- type[i]
+##		if(!marker.type %in% c("SNP", "X.SNP")) next()
+##		message(paste("...", mylabel(marker.type)))
+	marker.index <- whichMarkers("SNP", is.snp,
+				     is.autosome, is.annotated, is.X)
+	object <- shrinkSummary(object=object,
+				MIN.OBS=MIN.OBS,
+				MIN.SAMPLES=MIN.SAMPLES,
+				DF.PRIOR=DF.PRIOR,
+				type=marker.type,
+				verbose=verbose,
+				marker.index=marker.index,
+				is.lds=is.lds)
 	if(verbose) message("Estimating parameters for copy number")##SNPs only
 	for(i in seq_along(type)){
 		marker.type <- type[i]
