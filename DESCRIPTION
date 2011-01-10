@@ -10,7 +10,7 @@ License: Artistic-2.0
 Depends: R (>= 2.13.0),
          methods,
          Biobase (>= 2.11.8),
-         oligoClasses (>= 1.13.8)
+         oligoClasses (>= 1.13.9)
 Imports: affyio (>= 1.19.2),
          ellipse,
          ff (>= 2.2-1),
