@@ -1560,14 +1560,14 @@ ellipseCenters <- function(object, index, allele, batch, log.it=TRUE){
 
 
 shrinkSummary <- function(object,
-			  type="SNP", 
+			  type="SNP",
 			  MIN.OBS=1,
 			  MIN.SAMPLES=10,
 			  DF.PRIOR=50,
 			  verbose=TRUE,
 			  marker.index,
 			  is.lds){
-	stopifnot(type[[1]] != "SNP")
+	stopifnot(type[[1]] == "SNP")
 	CHR.X <- FALSE ## this is no longer needed
 	if(missing(marker.index)){
 		batch <- batch(object)
