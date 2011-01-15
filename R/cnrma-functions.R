@@ -738,8 +738,8 @@ fit.lm3 <- function(strata,
 	if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	gender <- object$gender
-	enough.males <- sum(gender==1) > MIN.SAMPLES
-	enough.females <- sum(gender==2) > MIN.SAMPLES
+	enough.males <- sum(gender==1) >= MIN.SAMPLES
+	enough.females <- sum(gender==2) >= MIN.SAMPLES
 	if(!enough.males & !enough.females){
 		message(paste("fewer than", MIN.SAMPLES, "men and women.  Copy number not estimated for CHR X"))
 		return(object)
@@ -894,8 +894,8 @@ fit.lm4 <- function(strata,
 		    verbose, is.lds, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
 	gender <- object$gender
-	enough.males <- sum(gender==1) > MIN.SAMPLES
-	enough.females <- sum(gender==2) > MIN.SAMPLES
+	enough.males <- sum(gender==1) >= MIN.SAMPLES
+	enough.females <- sum(gender==2) >= MIN.SAMPLES
 	if(!enough.males & !enough.females){
 		message(paste("fewer than", MIN.SAMPLES, "men and women.  Copy number not estimated for CHR X"))
 		return(object)
@@ -927,19 +927,25 @@ fit.lm4 <- function(strata,
 	flags <- as.matrix(flags(object)[ii, ])
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 10000)
-	N.AA <- as.matrix(N.AA(object)[snp.index, ])
-	N.AB <- as.matrix(N.AA(object)[snp.index, ])
-	N.BB <- as.matrix(N.AA(object)[snp.index, ])
+
+	## exclude batches that have fewer than MIN.SAMPLES
+	excludeBatch <- names(table(batch(object)))[table(batch(object)) < MIN.SAMPLES]
+	batch.index <- which(!batchNames(object) %in% excludeBatch)
+
+	N.AA <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
+	N.AB <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
+	N.BB <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
 	enoughAA <- rowSums(N.AA < 5) == 0
 	enoughAB <- rowSums(N.AB < 5) == 0
 	enoughBB <- rowSums(N.BB < 5) == 0
 	snp.index <- snp.index[enoughAA & enoughAB & enoughBB]
-	stopifnot(length(snp.index) > 100)
-	nuA.snp.notmissing <- rowSums(is.na(as.matrix(nuA(object)[snp.index, ]))) == 0
-	nuA.snp.notnegative <- rowSums(as.matrix(nuA(object)[snp.index, ]) < 20) == 0
+	if(length(snp.index) < 100){
+		message("too few snps pass criteria for estimating parameters for NP markers on chr X")
+		return(object)
+	}
+	nuA.snp.notmissing <- rowSums(is.na(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]))) == 0
+	nuA.snp.notnegative <- rowSums(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]) < 20) == 0
 	snp.index <- snp.index[nuA.snp.notmissing & nuA.snp.notnegative]
-	stopifnot(length(snp.index) > 100)
-
 	medianA.AA.snp <- as.matrix(medianA.AA(object)[snp.index,])
 	medianB.BB.snp <- as.matrix(medianB.BB(object)[snp.index,])
 
@@ -1701,7 +1707,7 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 		this.batch <- unique(as.character(batch(object)[sample.index]))
 		j <- match(this.batch, batchnames)
 		##NORM <- normal.index[, k]
-		A <- AA[, sample.index]
+		A <- AA[, sample.index, drop=FALSE]
 		medianA.AA[, k] <- rowMedians(A, na.rm=TRUE)
 		madA.AA[, k] <- rowMAD(A, na.rm=TRUE)
 		## log2 Transform Intensities
