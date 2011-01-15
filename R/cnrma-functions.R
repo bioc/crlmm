@@ -1754,14 +1754,14 @@ summarizeSnps <- function(strata,
 		sample.index <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[sample.index]))
 		j <- match(this.batch, batchnames)
-		G <- GG[, sample.index]
+		G <- GG[, sample.index, drop=FALSE]
 		##NORM <- normal.index[, k]
-		xx <- CP[, sample.index]
+		xx <- CP[, sample.index, drop=FALSE]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		##G <- G*highConf*NORM
 		G <- G*highConf
-		A <- AA[, sample.index]
-		B <- BB[, sample.index]
+		A <- AA[, sample.index, drop=FALSE]
+		B <- BB[, sample.index, drop=FALSE]
 		## this can be time consuming...do only once
 		G.AA <- G==1
 		G.AA[G.AA==FALSE] <- NA
