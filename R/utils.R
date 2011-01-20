@@ -94,9 +94,6 @@ list2SnpSet <- function(x, returnParams=FALSE){
                           "Center AA", "Center AB", "Center BB",
                           "Scale AA", "Scale AB", "Scale BB",
                           "N AA", "N AB", "N BB"),
-#                          "Shift in parameters AA",
-#                          "Shift in parameters AB",
-#                          "Shift in parameters BB"),
                         row.names=c(
                           "SNPQC",
                           "cAA", "cAB", "cBB",
@@ -142,8 +139,7 @@ loader <- function(theFile, envir, pkgname){
 
 celDates <- function(celfiles){
 	if(!all(file.exists(celfiles))) stop("1 or more cel file does not exist")
-	celdates <- vector("character", length(celfiles))
-	celtimes <- vector("character", length(celfiles))
+	celdates <- celtimes <- vector("character", length(celfiles))
 	for(i in seq(along=celfiles)){
 		if(i %% 100 == 0) cat(".")
 		tmp <- read.celfile.header(celfiles[i], info="full")$DatHeader
@@ -172,19 +168,12 @@ validCdfNames <- function(){
           "humanimmuno12v1b")
 }
 isValidCdfName <- function(cdfName){
-	chipList <- validCdfNames()
-	result <- cdfName %in% chipList	
-	if(!(result)){
-		warning("cdfName must be one of the following: ",
-			chipList)
-	}
-	return(result)
-}
-
-isPackageLoaded <- function(pkg){
-	stopifnot(is.character(pkg))
-	pkg <- paste("package:", pkg, sep="")
-	pkg %in% search()
+    stopifnot(is.character(cdfName))
+    result <- cdfName %in% validCdfNames()
+    if (!result)
+        warning("cdfName must be one of the following: ",
+                chipList)
+    return(result)
 }
 
 paramNames <- function(){

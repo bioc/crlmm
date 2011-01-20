@@ -32,7 +32,7 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "A<-", "B<-", open, close, flags,
 		  batchStatistics, "batchStatistics<-", updateObject)
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
-           copyNumber, initializeBigMatrix, initializeBigVector)
+           copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
 
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
