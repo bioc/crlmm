@@ -587,6 +587,7 @@ summarizeMaleXNps <- function(marker.index,
 	gender <- object$gender
 	AA <- as.matrix(A(object)[marker.index, gender==1])
 	madA.AA <- medianA.AA <- matrix(NA, nr, nc)
+	colnames(madA.AA) <- colnames(medianA.AA) <- batchNames(object)
 	numberMenPerBatch <- rep(NA, nc)
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
@@ -1003,10 +1004,10 @@ fit.lm4 <- function(strata,
 		nuB[nuB < MIN.NU] <- MIN.NU
 		phiB[phiB < MIN.PHI] <- MIN.PHI
 	}
-	nuA(object)[marker.index, ] <- nuA
-	phiA(object)[marker.index, ] <- phiA
-	nuB(object)[marker.index, ] <- nuB
-	phiB(object)[marker.index, ] <- phiB
+	nuA(object)[marker.index, batch.index] <- nuA
+	phiA(object)[marker.index, batch.index] <- phiA
+	nuB(object)[marker.index, batch.index] <- nuB
+	phiB(object)[marker.index, batch.index] <- phiB
 	if(is.lds) {close(object); return(TRUE)} else return(object)
 }
 
