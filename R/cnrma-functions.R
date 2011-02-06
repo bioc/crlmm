@@ -323,31 +323,32 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-	batchnames <- batchNames(object)
-	N.AA <- as.matrix(N.AA(object)[marker.index, ])
-	N.AB <- as.matrix(N.AB(object)[marker.index, ])
-	N.BB <- as.matrix(N.BB(object)[marker.index, ])
-	medianA.AA <- as.matrix(medianA.AA(object)[marker.index,])
-	medianA.AB <- as.matrix(medianA.AB(object)[marker.index,])
-	medianA.BB <- as.matrix(medianA.BB(object)[marker.index,])
-	medianB.AA <- as.matrix(medianB.AA(object)[marker.index,])
-	medianB.AB <- as.matrix(medianB.AB(object)[marker.index,])
-	medianB.BB <- as.matrix(medianB.BB(object)[marker.index,])
-	madA.AA <- as.matrix(madA.AA(object)[marker.index,])
-	madA.AB <- as.matrix(madA.AB(object)[marker.index,])
-	madA.BB <- as.matrix(madA.BB(object)[marker.index,])
-	madB.AA <- as.matrix(madB.AA(object)[marker.index,])
-	madB.AB <- as.matrix(madB.AB(object)[marker.index,])
-	madB.BB <- as.matrix(madB.BB(object)[marker.index,])
-	medianA <- medianB <- shrink.madB <- shrink.madA <- vector("list", length(batchnames))
-	shrink.tau2A.AA <- tau2A.AA <- as.matrix(tau2A.AA(object)[marker.index,])
-	shrink.tau2B.BB <- tau2B.BB <- as.matrix(tau2B.BB(object)[marker.index,])
-	shrink.tau2A.BB <- tau2A.BB <- as.matrix(tau2A.BB(object)[marker.index,])
-	shrink.tau2B.AA <- tau2B.AA <- as.matrix(tau2B.AA(object)[marker.index,])
-	shrink.corrAA <- corrAA <- as.matrix(corrAA(object)[marker.index, ])
-	shrink.corrAB <- corrAB <- as.matrix(corrAB(object)[marker.index, ])
-	shrink.corrBB <- corrBB <- as.matrix(corrBB(object)[marker.index, ])
-	flags <- as.matrix(flags(object)[marker.index, ])
+	batch.names <- batchNames(object)
+	batch.index <- which(batchNames(object) %in% batch.names)
+	N.AA <- as.matrix(N.AA(object)[marker.index, batch.index])
+	N.AB <- as.matrix(N.AB(object)[marker.index, batch.index])
+	N.BB <- as.matrix(N.BB(object)[marker.index, batch.index])
+	medianA.AA <- as.matrix(medianA.AA(object)[marker.index, batch.index])
+	medianA.AB <- as.matrix(medianA.AB(object)[marker.index, batch.index])
+	medianA.BB <- as.matrix(medianA.BB(object)[marker.index, batch.index])
+	medianB.AA <- as.matrix(medianB.AA(object)[marker.index, batch.index])
+	medianB.AB <- as.matrix(medianB.AB(object)[marker.index, batch.index])
+	medianB.BB <- as.matrix(medianB.BB(object)[marker.index, batch.index])
+	madA.AA <- as.matrix(madA.AA(object)[marker.index, batch.index])
+	madA.AB <- as.matrix(madA.AB(object)[marker.index, batch.index])
+	madA.BB <- as.matrix(madA.BB(object)[marker.index, batch.index])
+	madB.AA <- as.matrix(madB.AA(object)[marker.index, batch.index])
+	madB.AB <- as.matrix(madB.AB(object)[marker.index, batch.index])
+	madB.BB <- as.matrix(madB.BB(object)[marker.index, batch.index])
+	medianA <- medianB <- shrink.madB <- shrink.madA <- vector("list", length(batch.names))
+	shrink.tau2A.AA <- tau2A.AA <- as.matrix(tau2A.AA(object)[marker.index, batch.index])
+	shrink.tau2B.BB <- tau2B.BB <- as.matrix(tau2B.BB(object)[marker.index, batch.index])
+	shrink.tau2A.BB <- tau2A.BB <- as.matrix(tau2A.BB(object)[marker.index, batch.index])
+	shrink.tau2B.AA <- tau2B.AA <- as.matrix(tau2B.AA(object)[marker.index, batch.index])
+	shrink.corrAA <- corrAA <- as.matrix(corrAA(object)[marker.index, batch.index])
+	shrink.corrAB <- corrAB <- as.matrix(corrAB(object)[marker.index, batch.index])
+	shrink.corrBB <- corrBB <- as.matrix(corrBB(object)[marker.index, batch.index])
+	flags <- as.matrix(flags(object)[marker.index, batch.index])
 	for(k in seq(along=batches)){
 		sample.index <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[sample.index]))
@@ -414,28 +415,28 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		negB <- rowSums(medianB[[k]] < 0) > 0
 		flags[, k] <- as.integer(rowSums(NN == 0) > 0 | negA | negB)
 	}
-	flags(object)[marker.index, ] <- flags
-	medianA.AA(object)[marker.index, ] <- do.call("cbind", lapply(medianA, function(x) x[, 1]))
-	medianA.AB(object)[marker.index, ] <- do.call("cbind", lapply(medianA, function(x) x[, 2]))
-	medianA.BB(object)[marker.index, ] <- do.call("cbind", lapply(medianA, function(x) x[, 3]))
-	medianB.AA(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 1]))
-	medianB.AB(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 2]))
-	medianB.BB(object)[marker.index, ] <- do.call("cbind", lapply(medianB, function(x) x[, 3]))
+	flags(object)[marker.index, batch.index] <- flags
+	medianA.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA, function(x) x[, 1]))
+	medianA.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA, function(x) x[, 2]))
+	medianA.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA, function(x) x[, 3]))
+	medianB.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB, function(x) x[, 1]))
+	medianB.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB, function(x) x[, 2]))
+	medianB.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB, function(x) x[, 3]))
 	##
-	madA.AA(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 1]))
-	madA.AB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 2]))
-	madA.BB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 3]))
-	madB.AA(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 1]))
-	madB.AB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 2]))
-	madB.BB(object)[marker.index, ] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 3]))
+	madA.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 1]))
+	madA.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 2]))
+	madA.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madA, function(x) x[, 3]))
+	madB.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 1]))
+	madB.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 2]))
+	madB.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(shrink.madB, function(x) x[, 3]))
 	##
-	corrAA(object)[marker.index, ] <- shrink.corrAA
-	corrAB(object)[marker.index, ] <- shrink.corrAB
-	corrBB(object)[marker.index, ] <- shrink.corrBB
-	tau2A.AA(object)[marker.index,] <- shrink.tau2A.AA
-	tau2A.BB(object)[marker.index,] <- shrink.tau2A.BB
-	tau2B.AA(object)[marker.index,] <- shrink.tau2B.AA
-	tau2B.BB(object)[marker.index,] <- shrink.tau2B.BB
+	corrAA(object)[marker.index, batch.index] <- shrink.corrAA
+	corrAB(object)[marker.index, batch.index] <- shrink.corrAB
+	corrBB(object)[marker.index, batch.index] <- shrink.corrBB
+	tau2A.AA(object)[marker.index, batch.index] <- shrink.tau2A.AA
+	tau2A.BB(object)[marker.index, batch.index] <- shrink.tau2A.BB
+	tau2B.AA(object)[marker.index, batch.index] <- shrink.tau2B.AA
+	tau2B.BB(object)[marker.index, batch.index] <- shrink.tau2B.BB
 	if(is.lds) return(TRUE) else return(object)
 }
 
@@ -534,25 +535,26 @@ fit.lm2 <- function(strata,
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-
+	batch.names <- names(batches)
+	batch.index <- which(batchNames(object) %in% batch.names)
+	##
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
-	flags <- as.matrix(flags(object)[ii, ])
+	flags <- as.matrix(flags(object)[ii, batch.index])
 	fns <- featureNames(object)[ii]
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 5000)
-
-	nuA.np <- as.matrix(nuA(object)[marker.index, ])
-	phiA.np <- as.matrix(phiA(object)[marker.index, ])
-	tau2A.AA <- as.matrix(tau2A.AA(object)[marker.index, ])
-
-	nuA.snp <- as.matrix(nuA(object)[snp.index, ])
-	nuB.snp <- as.matrix(nuB(object)[snp.index, ])
-	phiA.snp <- as.matrix(phiA(object)[snp.index, ])
-	phiB.snp <- as.matrix(phiB(object)[snp.index, ])
-	medianA.AA <- as.matrix(medianA.AA(object)[snp.index,])
-	medianB.BB <- as.matrix(medianB.BB(object)[snp.index,])
-
-	medianA.AA.np <- as.matrix(medianA.AA(object)[marker.index,])
+	##
+	nuA.np <- as.matrix(nuA(object)[marker.index, batch.index])
+	phiA.np <- as.matrix(phiA(object)[marker.index, batch.index])
+	tau2A.AA <- as.matrix(tau2A.AA(object)[marker.index, batch.index])
+	##
+	nuA.snp <- as.matrix(nuA(object)[snp.index, batch.index])
+	nuB.snp <- as.matrix(nuB(object)[snp.index, batch.index])
+	phiA.snp <- as.matrix(phiA(object)[snp.index, batch.index])
+	phiB.snp <- as.matrix(phiB(object)[snp.index, batch.index])
+	medianA.AA <- as.matrix(medianA.AA(object)[snp.index, batch.index])
+	medianB.BB <- as.matrix(medianB.BB(object)[snp.index, batch.index])
+	medianA.AA.np <- as.matrix(medianA.AA(object)[marker.index, batch.index])
 	for(k in seq_along(batches)){
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
@@ -570,8 +572,8 @@ fit.lm2 <- function(strata,
 		nuA.np[nuA.np < MIN.NU] <- MIN.NU
 		phiA.np[phiA.np < MIN.PHI] <- MIN.PHI
 	}
-	nuA(object)[marker.index, ] <- nuA.np
-	phiA(object)[marker.index, ] <- phiA.np
+	nuA(object)[marker.index, batch.index] <- nuA.np
+	phiA(object)[marker.index, batch.index] <- phiA.np
 	if(is.lds) { close(object); return(TRUE)}
 	return(object)
 }
@@ -605,27 +607,32 @@ summarizeMaleXNps <- function(marker.index,
 
 
 summarizeXGenotypes <- function(marker.index,
-				    batches,
-				    object,
-				    GT.CONF.THR,
-				    MIN.OBS,
-				    MIN.SAMPLES,
-				    verbose,
-				    is.lds,
-				    DF.PRIOR,
-				    gender="male", ...){
+				batches,
+				object,
+				GT.CONF.THR,
+				MIN.OBS,
+				MIN.SAMPLES,
+				verbose,
+				is.lds,
+				DF.PRIOR,
+				gender="male", ...){
+	I <- unlist(batches)
 	if(gender == "male"){
-		sample.index <- which(object$gender==1)
-	} else sample.index <- which(object$gender==2)
+		sample.index <- intersect(which(object$gender==1), I)
+	} else sample.index <- intersect(which(object$gender==2), I)
+	batch.names <- names(batches)
+	batch.index <- which(batchNames(object) %in% batch.names)
 	nr <- length(marker.index)
-	nc <- length(batchNames(object))
+	##nc <- length(batchNames(object))
+	nc <- length(batch.index)
 ##	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
+	names(NN.Mlist) <- names(medianA) <- names(medianB) <- names(shrink.madA) <- names(shrink.madB) <- batch.names
 	##gender <- object$gender
-	GG <- as.matrix(calls(object)[marker.index, sample.index])
-	CP <- as.matrix(snpCallProbability(object)[marker.index, sample.index])
-	AA <- as.matrix(A(object)[marker.index, sample.index])
-	BB <- as.matrix(B(object)[marker.index, sample.index])
+	GG <- as.matrix(calls(object)[marker.index, ])
+	CP <- as.matrix(snpCallProbability(object)[marker.index, ])
+	AA <- as.matrix(A(object)[marker.index, ])
+	BB <- as.matrix(B(object)[marker.index, ])
 	for(k in seq_along(batches)){
 		sample.index <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[sample.index]))
@@ -751,12 +758,15 @@ fit.lm3 <- function(strata,
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-	nuA <- as.matrix(nuA(object)[marker.index, ])
-	nuB <- as.matrix(nuB(object)[marker.index, ])
-	phiA <- as.matrix(phiA(object)[marker.index, ])
-	phiB <- as.matrix(phiB(object)[marker.index, ])
-	phiA2 <- as.matrix(phiPrimeA(object)[marker.index, ])
-	phiB2 <- as.matrix(phiPrimeB(object)[marker.index, ])
+	batch.names <- names(batches)
+	batch.index <- which(batchNames(object) %in% batch.names)
+
+	nuA <- as.matrix(nuA(object)[marker.index, batch.index])
+	nuB <- as.matrix(nuB(object)[marker.index, batch.index])
+	phiA <- as.matrix(phiA(object)[marker.index, batch.index])
+	phiB <- as.matrix(phiB(object)[marker.index, batch.index])
+	phiA2 <- as.matrix(phiPrimeA(object)[marker.index, batch.index])
+	phiB2 <- as.matrix(phiPrimeB(object)[marker.index, batch.index])
 	if(enough.males){
 		res <- summarizeXGenotypes(marker.index=marker.index,
 					   batches=batches,
@@ -879,12 +889,12 @@ fit.lm3 <- function(strata,
 		phiB[phiB < MIN.PHI] <- MIN.PHI
 		phiB2[phiB2 < MIN.PHI] <- MIN.PHI
 	}
-	nuA(object)[marker.index, ] <- nuA
-	nuB(object)[marker.index, ] <- nuB
-	phiA(object)[marker.index, ] <- phiA
-	phiB(object)[marker.index, ] <- phiB
-	phiPrimeA(object)[marker.index, ] <- phiA2
-	phiPrimeB(object)[marker.index, ] <- phiB2
+	nuA(object)[marker.index, batch.index] <- nuA
+	nuB(object)[marker.index, batch.index] <- nuB
+	phiA(object)[marker.index, batch.index] <- phiA
+	phiB(object)[marker.index, batch.index] <- phiB
+	phiPrimeA(object)[marker.index, batch.index] <- phiA2
+	phiPrimeB(object)[marker.index, batch.index] <- phiB2
 	if(is.lds) {close(object); return(TRUE)} else return(object)
 }
 
