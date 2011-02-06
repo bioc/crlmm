@@ -593,8 +593,8 @@ summarizeMaleXNps <- function(marker.index,
 		sns <- colnames(AA)
 		J <- sns%in%sns.batch
 		numberMenPerBatch[k] <- length(J)
-		medianA.AA[, k] <- rowMedians(AA[, J], na.rm=TRUE)
-		madA.AA[, k] <- rowMAD(AA[, J], na.rm=TRUE)
+		medianA.AA[, k] <- rowMedians(AA[, J, drop=FALSE], na.rm=TRUE)
+		madA.AA[, k] <- rowMAD(AA[, J, drop=FALSE], na.rm=TRUE)
 	}
 	return(list(medianA.AA=medianA.AA,
 		    madA.AA=madA.AA))
