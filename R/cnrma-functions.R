@@ -632,12 +632,12 @@ summarizeXGenotypes <- function(marker.index,
 		##subset GG apppriately
 		sns <- colnames(GG)
 		J <- sns%in%sns.batch
-		G <- GG[, J]
-		xx <- CP[, J]
+		G <- GG[, J, drop=FALSE]
+		xx <- CP[, J, drop=FALSE]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		G <- G*highConf
-		A <- AA[, J]
-		B <- BB[, J]
+		A <- AA[, J, drop=FALSE]
+		B <- BB[, J, drop=FALSE]
 		G.AA <- G==1
 		G.AA[G.AA==FALSE] <- NA
 		G.AB <- G==2
