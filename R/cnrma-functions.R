@@ -455,34 +455,36 @@ fit.lm1 <- function(strata,
 	snps <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-	batchnames <- batchNames(object)
-	N.AA <- as.matrix(N.AA(object)[snps, ])
-	N.AB <- as.matrix(N.AB(object)[snps, ])
-	N.BB <- as.matrix(N.BB(object)[snps, ])
-	medianA.AA <- as.matrix(medianA.AA(object)[snps,])
-	medianA.AB <- as.matrix(medianA.AB(object)[snps,])
-	medianA.BB <- as.matrix(medianA.BB(object)[snps,])
-	medianB.AA <- as.matrix(medianB.AA(object)[snps,])
-	medianB.AB <- as.matrix(medianB.AB(object)[snps,])
-	medianB.BB <- as.matrix(medianB.BB(object)[snps,])
-	madA.AA <- as.matrix(madA.AA(object)[snps,])
-	madA.AB <- as.matrix(madA.AB(object)[snps,])
-	madA.BB <- as.matrix(madA.BB(object)[snps,])
-	madB.AA <- as.matrix(madB.AA(object)[snps,])
-	madB.AB <- as.matrix(madB.AB(object)[snps,])
-	madB.BB <- as.matrix(madB.BB(object)[snps,])
-	tau2A.AA <- as.matrix(tau2A.AA(object)[snps,])
-	tau2B.BB <- as.matrix(tau2B.BB(object)[snps,])
-	tau2A.BB <- as.matrix(tau2A.BB(object)[snps,])
-	tau2B.AA <- as.matrix(tau2B.AA(object)[snps,])
-	corrAA <- as.matrix(corrAA(object)[snps, ])
-	corrAB <- as.matrix(corrAB(object)[snps, ])
-	corrBB <- as.matrix(corrBB(object)[snps, ])
-	nuA <- as.matrix(nuA(object)[snps, ])
-	phiA <- as.matrix(phiA(object)[snps, ])
-	nuB <- as.matrix(nuB(object)[snps, ])
-	phiB <- as.matrix(phiB(object)[snps, ])
-	flags <- as.matrix(flags(object)[snps, ])
+	##batchnames <- batchNames(object)
+	batch.names <- names(batches)
+	batch.index <- which(batchNames(object) %in% batch.names)
+	N.AA <- as.matrix(N.AA(object)[snps, batch.index])
+	N.AB <- as.matrix(N.AB(object)[snps, batch.index])
+	N.BB <- as.matrix(N.BB(object)[snps, batch.index])
+	medianA.AA <- as.matrix(medianA.AA(object)[snps, batch.index])
+	medianA.AB <- as.matrix(medianA.AB(object)[snps, batch.index])
+	medianA.BB <- as.matrix(medianA.BB(object)[snps, batch.index])
+	medianB.AA <- as.matrix(medianB.AA(object)[snps, batch.index])
+	medianB.AB <- as.matrix(medianB.AB(object)[snps, batch.index])
+	medianB.BB <- as.matrix(medianB.BB(object)[snps, batch.index])
+	madA.AA <- as.matrix(madA.AA(object)[snps, batch.index])
+	madA.AB <- as.matrix(madA.AB(object)[snps, batch.index])
+	madA.BB <- as.matrix(madA.BB(object)[snps, batch.index])
+	madB.AA <- as.matrix(madB.AA(object)[snps, batch.index])
+	madB.AB <- as.matrix(madB.AB(object)[snps, batch.index])
+	madB.BB <- as.matrix(madB.BB(object)[snps, batch.index])
+	tau2A.AA <- as.matrix(tau2A.AA(object)[snps, batch.index])
+	tau2B.BB <- as.matrix(tau2B.BB(object)[snps, batch.index])
+	tau2A.BB <- as.matrix(tau2A.BB(object)[snps, batch.index])
+	tau2B.AA <- as.matrix(tau2B.AA(object)[snps, batch.index])
+	corrAA <- as.matrix(corrAA(object)[snps, batch.index])
+	corrAB <- as.matrix(corrAB(object)[snps, batch.index])
+	corrBB <- as.matrix(corrBB(object)[snps, batch.index])
+	nuA <- as.matrix(nuA(object)[snps,  batch.index])
+	phiA <- as.matrix(phiA(object)[snps, batch.index])
+	nuB <- as.matrix(nuB(object)[snps, batch.index])
+	phiB <- as.matrix(phiB(object)[snps, batch.index])
+	flags <- as.matrix(flags(object)[snps, batch.index])
 	for(k in seq(along=batches)){
 		B <- batches[[k]]
 		if(length(B) < MIN.SAMPLES) next()
@@ -500,8 +502,6 @@ fit.lm1 <- function(strata,
 		res <- fit.wls(NN=NN, sigma=madB, allele="B", Y=medianB, autosome=!CHR.X)##allele="B", Ystar=YB, W=wB, Ns=Ns)
 		nuB[, k] <- res[1, ]
 		phiB[, k] <- res[2, ]
-##		cA[, k] <- matrix((1/phiA[, J]*(A-nuA[, J])), nrow(A), ncol(A))
-##		cB[, k] <- matrix((1/phiB[, J]*(B-nuB[, J])), nrow(B), ncol(B))
 	}
 	if(THR.NU.PHI){
 		nuA[nuA < MIN.NU] <- MIN.NU
@@ -509,10 +509,10 @@ fit.lm1 <- function(strata,
 		phiA[phiA < MIN.PHI] <- MIN.PHI
 		phiB[phiB < MIN.PHI] <- MIN.PHI
 	}
-	nuA(object)[snps, ] <- nuA
-	nuB(object)[snps, ] <- nuB
-	phiA(object)[snps, ] <- phiA
-	phiB(object)[snps, ] <- phiB
+	nuA(object)[snps, batch.index] <- nuA
+	nuB(object)[snps, batch.index] <- nuB
+	phiA(object)[snps, batch.index] <- phiA
+	phiB(object)[snps, batch.index] <- phiB
 	if(is.lds){
 		close(object)
 		return(TRUE)
@@ -637,6 +637,7 @@ summarizeXGenotypes <- function(marker.index,
 		J <- sns%in%sns.batch
 		G <- GG[, J, drop=FALSE]
 		xx <- CP[, J, drop=FALSE]
+		p <- i2p(xx)
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		G <- G*highConf
 		A <- AA[, J, drop=FALSE]
@@ -896,6 +897,10 @@ fit.lm4 <- function(strata,
 		    MIN.PHI,
 		    verbose, is.lds, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
+	## exclude batches that have fewer than MIN.SAMPLES
+	excludeBatch <- names(table(batch(object)))[table(batch(object)) < MIN.SAMPLES]
+	batch.index <- which(!batchNames(object) %in% excludeBatch)
+	sample.index <- which(!batch(object)%in% excludeBatch)
 	gender <- object$gender
 	enough.males <- sum(gender==1) >= MIN.SAMPLES
 	enough.females <- sum(gender==2) >= MIN.SAMPLES
@@ -906,34 +911,30 @@ fit.lm4 <- function(strata,
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
-	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-	nc <- length(batchNames(object))
+	batches <- batches[batch.index]
+	nc <- length(batch.index)
 	if(enough.males){
 		res <- summarizeMaleXNps(marker.index=marker.index,
 					 batches=batches,
 					 object=object, MIN.SAMPLES=MIN.SAMPLES)
-		medianA.AA.M <- res[["medianA.AA"]]
-		madA.AA.M <- res[["madA.AA"]]
+		medianA.AA.M <- res[["medianA.AA"]][, batch.index]
+		madA.AA.M <- res[["madA.AA"]][, batch.index]
 
 	}
-	medianA.AA.F <- as.matrix(medianA.AA(object)[marker.index, ]) ## median for women
-	madA.AA.F <- as.matrix(madA.AA(object)[marker.index, ]) ## median for women
-	split.gender <- split(gender, as.character(batch(object)))
+	medianA.AA.F <- as.matrix(medianA.AA(object)[marker.index, batch.index]) ## median for women
+	madA.AA.F <- as.matrix(madA.AA(object)[marker.index, batch.index]) ## median for women
+	split.gender <- split(gender[sample.index], as.character(batch(object)[sample.index]))
 	N.M <- sapply(split.gender, function(x) sum(x==1))
 	N.F <- sapply(split.gender, function(x) sum(x==2))
-	nuA <- as.matrix(nuA(object)[marker.index, ])
-	nuB <- as.matrix(nuB(object)[marker.index, ])
-	phiA <- as.matrix(phiA(object)[marker.index, ])
-	phiB <- as.matrix(phiB(object)[marker.index, ])
+	nuA <- as.matrix(nuA(object)[marker.index, batch.index])
+	nuB <- as.matrix(nuB(object)[marker.index, batch.index])
+	phiA <- as.matrix(phiA(object)[marker.index, batch.index])
+	phiB <- as.matrix(phiB(object)[marker.index, batch.index])
 	ii <- isSnp(object) & chromosome(object) < 23 & !is.na(chromosome(object))
 	fns <- featureNames(object)[ii]
-	flags <- as.matrix(flags(object)[ii, ])
+	flags <- as.matrix(flags(object)[ii, batch.index])
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 10000)
-
-	## exclude batches that have fewer than MIN.SAMPLES
-	excludeBatch <- names(table(batch(object)))[table(batch(object)) < MIN.SAMPLES]
-	batch.index <- which(!batchNames(object) %in% excludeBatch)
 
 	N.AA <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
 	N.AB <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
@@ -946,12 +947,12 @@ fit.lm4 <- function(strata,
 		message("too few snps pass criteria for estimating parameters for NP markers on chr X")
 		return(object)
 	}
-	nuA.snp.notmissing <- rowSums(is.na(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]))) == 0
+	nuA.snp <- as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE])
+	nuA.snp.notmissing <- rowSums(is.na(nuA.snp)) == 0
 	nuA.snp.notnegative <- rowSums(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]) < 20) == 0
 	snp.index <- snp.index[nuA.snp.notmissing & nuA.snp.notnegative]
 	medianA.AA.snp <- as.matrix(medianA.AA(object)[snp.index,])
 	medianB.BB.snp <- as.matrix(medianB.BB(object)[snp.index,])
-
 	nuA.snp <- as.matrix(nuA(object)[snp.index, ])
 	nuB.snp <- as.matrix(nuB(object)[snp.index, ])
 	phiA.snp <- as.matrix(phiA(object)[snp.index, ])
@@ -962,8 +963,8 @@ fit.lm4 <- function(strata,
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
 		gender <- object$gender[B]
-		enough.men <- N.M[k] >= MIN.SAMPLES
-		enough.women <- N.F[k] >= MIN.SAMPLES
+		enough.men <- N.M[[this.batch]] >= MIN.SAMPLES
+		enough.women <- N.F[[this.batch]] >= MIN.SAMPLES
 		if(!enough.men & !enough.women) {
 			if(verbose) message(paste("fewer than", MIN.SAMPLES, "men and women in batch", this.batch, ". CHR X copy number not available. "))
 			next()
@@ -1620,12 +1621,6 @@ genotypeSummary <- function(object,
 			    marker.index,
 			    is.lds){
 	if(type == "X.SNP" | type=="X.NP"){
-##		gender <- object$gender
-##		## the number of women in each batch could be less than 3...
-##		if(sum(gender == 2) < 3) {
-##			message("too few females to estimate within genotype summary statistics on CHR X")
-##			return(object)
-##		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
 	if(missing(marker.index)){
@@ -1735,16 +1730,6 @@ summarizeSnps <- function(strata,
 	}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
-##	if(CHR.X) {
-##		sample.index <- which(object$gender==2)
-##		batches <- split(sample.index, as.character(batch(object))[sample.index])
-##	} else {
-##		batches <- split(seq_along(batch(object)), as.character(batch(object)))
-##	}
-	## this message can be confusing if no women are in the dataset
-##	if(CHR.X){
-##		if(verbose) message("        biallelic cluster medians are estimated using only the women for SNPs on chr. X")
-##	}
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batchnames <- batchNames(object)
 	nr <- length(index)
@@ -1836,24 +1821,9 @@ summarizeSnps <- function(strata,
 	corrAA(object)[index,] <- corrAA
 	corrAB(object)[index,] <- corrAB
 	corrBB(object)[index,] <- corrBB
-##	medianA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 1]))
-##	medianA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 1]))
-##	medianA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 1]))
-##	medianB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 1]))
-##	medianB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 1]))
-##	medianB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 1]))
-##
-##	madA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 2]))
-##	madA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 2]))
-##	madA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 2]))
-##	madB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 2]))
-##	madB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 2]))
-##	madB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 2]))
 	tau2A.AA(object)[index, ] <- tau2A.AA
-##	tau2A.AB(object)[index, ] <- tau2A.AB
 	tau2A.BB(object)[index, ] <- tau2A.BB
 	tau2B.AA(object)[index, ] <- tau2B.AA
-##	tau2B.AB(object)[index, ] <- tau2B.AB
 	tau2B.BB(object)[index, ] <- tau2B.BB
 	if(is.lds) return(TRUE) else return(object)
 }
@@ -1873,6 +1843,7 @@ crlmmCopynumber <- function(object,
 			    THR.NU.PHI=TRUE,
 			    type=c("SNP", "NP", "X.SNP", "X.NP")){
 	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
+	if(GT.CONF.THR >= 1 | GT.CONF.THR < 0) stop("GT.CONF.THR must be in [0,1)")
 	batch <- batch(object)
 	is.snp <- isSnp(object)
 	is.autosome <- chromosome(object) < 23
@@ -1895,20 +1866,19 @@ crlmmCopynumber <- function(object,
 	}
 	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
 	I <- which(type %in% c("SNP", "NP", "X.NP"))
-	if(length(I) > 0){
-		for(i in I){ ## do not do X.SNP.  Do this during fit.lm3
-			marker.type <- type[i]
-			if(verbose) message(paste("...", mylabel(marker.type)))
-			##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
-			marker.index <- whichMarkers(marker.type, is.snp,
-						     is.autosome, is.annotated, is.X)
-			object <- genotypeSummary(object=object,
-						  GT.CONF.THR=GT.CONF.THR,
-						  type=marker.type,
-						  verbose=verbose,
-						  marker.index=marker.index,
-						  is.lds=is.lds)
-		}
+	for(j in seq_along(I)){ ## do not do X.SNP.  Do this during fit.lm3
+		i <- I[j]
+		marker.type <- type[i]
+		if(verbose) message(paste("...", mylabel(marker.type)))
+		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
+		marker.index <- whichMarkers(marker.type, is.snp,
+					     is.autosome, is.annotated, is.X)
+		object <- genotypeSummary(object=object,
+					  GT.CONF.THR=GT.CONF.THR,
+					  type=marker.type,
+					  verbose=verbose,
+					  marker.index=marker.index,
+					  is.lds=is.lds)
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
 	marker.index <- whichMarkers("SNP", is.snp,
