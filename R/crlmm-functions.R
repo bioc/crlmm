@@ -50,13 +50,13 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                     SNRMin=5, recallMin=10, recallRegMin=1000,
                     gender=NULL, desctrucitve=FALSE, verbose=TRUE,
                     returnParams=FALSE, badSNP=.7){
-  
+
   keepIndex <- which(SNR>SNRMin)
   if(length(keepIndex)==0) stop("No arrays above quality threshold!")
-  
+
   NC <- ncol(A)
   NR <- nrow(A)
-  
+
   pkgname <- getCrlmmAnnotationName(cdfName)
   if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
     suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -81,7 +81,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   theKnots <- getVarInEnv("theKnots")
   regionInfo <- getVarInEnv("regionInfo")
   params <- getVarInEnv("params")
-  
+
   ##IF gender not provide, we predict
   if(is.null(gender)){
     if(verbose) message("Determining gender.")
@@ -92,12 +92,12 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       gender <- kmeans(XMedian, c(min(XMedian[SNR>SNRMin]), max(XMedian[SNR>SNRMin])))[["cluster"]]
     }
   }
-  
+
   Indexes <- list(autosomeIndex, XIndex, YIndex)
-  cIndexes <- list(keepIndex, 
-                   keepIndex[which(gender[keepIndex]==2)], 
+  cIndexes <- list(keepIndex,
+                   keepIndex[which(gender[keepIndex]==2)],
                    keepIndex[which(gender[keepIndex]==1)])
-  
+
   if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
@@ -111,12 +111,12 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                             mixtureParams, DF, probs, 0.025)
   gc(verbose=FALSE)
   names(newparams) <- c("centers", "scales", "N")
-  
+
   if(verbose) message("Done.")
   if(verbose) message("Estimating recalibration parameters.")
   d <- newparams[["centers"]] - params$centers
 
-  ##regression 
+  ##regression
   Index <- intersect(which(pmin(newparams[["N"]][, 1],
                                 newparams[["N"]][, 2],
                                 newparams[["N"]][, 3]) > recallMin &
@@ -132,11 +132,11 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     data4reg <- as.data.frame(newparams[["centers"]][Index,])
     names(data4reg) <- c("AA", "AB", "BB")
     regParams <- cbind(  coef(lm(AA~AB*BB, data=data4reg)),
-                       c(coef(lm(AB~AA+BB, data=data4reg)), 0), 
+                       c(coef(lm(AB~AA+BB, data=data4reg)), 0),
                        coef(lm(BB~AA*AB, data=data4reg)))
     rownames(regParams) <- c("intercept", "X", "Y", "XY")
     rm(data4reg)
-  
+
     minN <- 3
     newparams[["centers"]][newparams[["N"]] < minN] <- NA
     Index <- setdiff(which(rowSums(is.na(newparams[["centers"]]))==1), YIndex)
@@ -147,10 +147,10 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       j <- which(is.na(mu))
       newparams[["centers"]][i, j] <- c(1, mu[-j], prod(mu[-j]))%*%regParams[, j]
     }
-    
+
     ##remaing NAs are made like originals
     if(length(YIndex)>0){
-      noMoveIndex <- union(setdiff(which(rowSums(is.na(newparams[["centers"]]))>0), YIndex), 
+      noMoveIndex <- union(setdiff(which(rowSums(is.na(newparams[["centers"]]))>0), YIndex),
                            YIndex[rowSums(is.na(newparams[["centers"]][YIndex, ])>1)])
     }
     snps2ignore <- which(rowSums(is.na(newparams[["centers"]])) > 0)
@@ -158,7 +158,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     rm(snps2ignore)
     newparams[["centers"]][is.na(newparams[["centers"]])] <- params[["centers"]][is.na(newparams[["centers"]])]
     if(verbose) cat("\n")
-  
+
     if(verbose) message("Calculating and standardizing size of shift.")
     GG <- DD <- newparams[["centers"]] - params[["centers"]]
     DD <- sweep(DD, 2, colMeans(DD[autosomeIndex, ]))
@@ -170,7 +170,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       dev[-YIndex] <- 1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev[-YIndex])
       ##Now Y (only two params)
       SSY <- SS[c(1, 3), c(1, 3)]
-      SSI <- solve(SSY) 
+      SSI <- solve(SSY)
       dev[YIndex] <- apply(DD[YIndex, c(1, 3)], 1, function(x) x%*%SSI%*%x)
       dev[YIndex] <- 1/sqrt( (2*pi)^2*det(SSY))*exp(-0.5*dev[YIndex])
     } else {
@@ -178,11 +178,11 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       dev=1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev)
     }
   }
-    
+
   ## BC: must keep SD
   params[-2] <- newparams[-2]
-  
-  rm(newparams);gc(verbose=FALSE)  
+
+  rm(newparams);gc(verbose=FALSE)
   if(verbose) cat("Calling", NR, "SNPs... ")
   ## ###################
   ## ## MOVE TO C#######
@@ -196,7 +196,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   gc(verbose=FALSE)
   ##  END MOVE TO C#######
   ## ##################
-  
+
   dev <- dev/(dev+1/383)
   if(!is.null(row.names)){ rownames(A) <- rownames(B) <- names(dev) <- row.names}
   if(!is.null(col.names)){ colnames(A) <- colnames(B) <- col.names}
@@ -210,7 +210,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     SS <- matrix(0, 3, 3)
     batchQC <- Inf
   }
-  
+
   if(verbose) message("Done.")
   if (returnParams){
     return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covDD=SS, gender=gender, pkgname=pkgname))
@@ -232,7 +232,7 @@ gtypeCallerR <- function(A, B, fIndex, mIndex, theCenters, theScales,
 
   ## make code robust
   ## check types before passing to C
-  
+
   .Call("gtypeCallerPart1", A, B, as.integer(fIndex),
         as.integer(mIndex), as.numeric(theCenters),
         as.numeric(theScales), as.integer(theNs),
@@ -241,7 +241,7 @@ gtypeCallerR <- function(A, B, fIndex, mIndex, theCenters, theScales,
         as.numeric(SMEDIAN), as.numeric(knots),
         as.numeric(params), as.integer(dft), as.numeric(probs),
         as.numeric(trim), PACKAGE="crlmm")
-  
+
 }
 
 gtypeCallerR2 <- function(A, B, fIndex, mIndex, theCenters, theScales,
@@ -261,7 +261,7 @@ gtypeCallerR2 <- function(A, B, fIndex, mIndex, theCenters, theScales,
         as.numeric(SMEDIAN), as.numeric(knots), as.numeric(params),
         as.integer(dft), as.numeric(probs), as.numeric(trim),
         as.integer(noTraining), as.integer(noInfo), PACKAGE="crlmm")
-  
+
 }
 
 ### parallel version
@@ -310,7 +310,7 @@ crlmm2 <- function(filenames, row.names=TRUE, col.names=TRUE,
                    recallRegMin=1000, SNRMin=SNRMin,
                    returnParams=returnParams, badSNP=badSNP,
                    verbose=verbose)
-  
+
   res2[["SNR"]] <- res[["SNR"]]
   res2[["SKW"]] <- res[["SKW"]]
   return(list2SnpSet(res2, returnParams=returnParams))
@@ -323,8 +323,10 @@ predictGender <- function(cols, theA, theB, XIndex){
     open(theA)
     open(theB)
     for (i in 1:n){
-      vA <- log2(theA[XIndex, cols[i]])
-      vB <- log2(theB[XIndex, cols[i]])
+##      vA <- log2(theA[XIndex, cols[i]])
+##      vB <- log2(theB[XIndex, cols[i]])
+      vA <- log2(as.matrix(theA[XIndex, cols[i]]))
+      vB <- log2(as.matrix(theB[XIndex, cols[i]]))
       med[i] <- median(vA+vB)/2
       rm(vA, vB)
     }
@@ -347,13 +349,13 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   open(B)
   open(mixtureParams)
   ## expect objects to be ff
-  
+
   keepIndex <- which( SNR[] > SNRMin)
   if(length(keepIndex)==0) stop("No arrays above quality threshold!")
-  
+
   NC <- ncol(A)
   NR <- nrow(A)
-  
+
   pkgname <- getCrlmmAnnotationName(cdfName)
   stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 
@@ -371,7 +373,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   params <- getVarInEnv("params")
   rm(list=c(obj1, obj2), envir=.crlmmPkgEnv)
   rm(obj1, obj2)
-  
+
   ## IF gender not provide, we predict
   ## FIXME: XIndex may be greater than ocProbesets()
   if(is.null(gender)){
@@ -385,12 +387,12 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       gender <- kmeans(XMedian, c(min(XMedian[SNR[]>SNRMin]), max(XMedian[SNR[]>SNRMin])))[["cluster"]]
     }
   }
-  
+
   Indexes <- list(autosomeIndex, XIndex, YIndex)
-  cIndexes <- list(keepIndex, 
-                   keepIndex[which(gender[keepIndex]==2)], 
+  cIndexes <- list(keepIndex,
+                   keepIndex[which(gender[keepIndex]==2)],
                    keepIndex[which(gender[keepIndex]==1)])
-  
+
   if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
@@ -427,7 +429,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                         sapply(IndexesBatch, length),
                         sapply(cIndexes, length), SMEDIAN,
                         theKnots, mixtureParams[], DF, probs, 0.025)
-    
+
     rm(snps, rSnps, IndexesBatch, tmpA, tmpB, last)
     gc(verbose=FALSE)
     close(A)
@@ -455,7 +457,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   if(verbose) message("Estimating recalibration parameters.")
   d <- newparams[["centers"]] - params$centers
 
-  ##regression 
+  ##regression
   Index <- intersect(which(pmin(newparams[["N"]][, 1],
                                 newparams[["N"]][, 2],
                                 newparams[["N"]][, 3]) > recallMin &
@@ -471,11 +473,11 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     data4reg <- as.data.frame(newparams[["centers"]][Index,])
     names(data4reg) <- c("AA", "AB", "BB")
     regParams <- cbind(  coef(lm(AA~AB*BB, data=data4reg)),
-                       c(coef(lm(AB~AA+BB, data=data4reg)), 0), 
+                       c(coef(lm(AB~AA+BB, data=data4reg)), 0),
                          coef(lm(BB~AA*AB, data=data4reg)))
     rownames(regParams) <- c("intercept", "X", "Y", "XY")
     rm(data4reg)
-  
+
     minN <- 3
     newparams[["centers"]][newparams[["N"]] < minN] <- NA
     Index <- setdiff(which(rowSums(is.na(newparams[["centers"]]))==1), YIndex)
@@ -487,10 +489,10 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       newparams[["centers"]][i, j] <- c(1, mu[-j], prod(mu[-j]))%*%regParams[, j]
       rm(mu, j)
     }
-    
+
     ##remaing NAs are made like originals
     if(length(YIndex)>0){
-      noMoveIndex <- union(setdiff(which(rowSums(is.na(newparams[["centers"]]))>0), YIndex), 
+      noMoveIndex <- union(setdiff(which(rowSums(is.na(newparams[["centers"]]))>0), YIndex),
                            YIndex[rowSums(is.na(newparams[["centers"]][YIndex, ])>1)])
     }
     snps2ignore <- which(rowSums(is.na(newparams[["centers"]])) > 0)
@@ -498,7 +500,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     rm(snps2ignore)
     newparams[["centers"]][is.na(newparams[["centers"]])] <- params[["centers"]][is.na(newparams[["centers"]])]
     if(verbose) cat("\n")
-  
+
     if(verbose) message("Calculating and standardizing size of shift... ", appendLF=FALSE)
     GG <- DD <- newparams[["centers"]] - params[["centers"]]
     DD <- sweep(DD, 2, colMeans(DD[autosomeIndex, ]))
@@ -510,7 +512,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
       dev[-YIndex] <- 1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev[-YIndex])
       ##Now Y (only two params)
       SSY <- SS[c(1, 3), c(1, 3)]
-      SSI <- solve(SSY) 
+      SSI <- solve(SSY)
       dev[YIndex] <- apply(DD[YIndex, c(1, 3)], 1, function(x) x%*%SSI%*%x)
       dev[YIndex] <- 1/sqrt( (2*pi)^2*det(SSY))*exp(-0.5*dev[YIndex])
     } else {
@@ -519,11 +521,11 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     }
   }
   if (verbose) message("OK")
-    
+
   ## BC: must keep SD
   params[-2] <- newparams[-2]
   rm(newparams)
-  gc(verbose=FALSE)  
+  gc(verbose=FALSE)
 
   if(verbose) message("Calling ", NR, " SNPs... ", appendLF=FALSE)
 
@@ -575,7 +577,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
            regionInfo=regionInfo, batchSize=ocProbesets())
   ##  END MOVE TO C#######
   ## ##################
-  
+
   dev <- dev/(dev+1/383)
   if(!is.null(row.names)){ rownames(A) <- rownames(B) <- names(dev) <- row.names}
   if(!is.null(col.names)){ colnames(A) <- colnames(B) <- col.names}
@@ -589,7 +591,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
     SS <- matrix(0, 3, 3)
     batchQC <- Inf
   }
-  
+
   if(verbose) message("Done.")
   if (returnParams){
     return(list(calls=A, confs=B, SNPQC=dev, batchQC=batchQC, params=params, DD=DD, covDD=SS, gender=gender, pkgname=pkgname))

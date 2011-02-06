@@ -755,14 +755,14 @@ fit.lm3 <- function(strata,
 	phiB2 <- as.matrix(phiPrimeB(object)[marker.index, ])
 	if(enough.males){
 		res <- summarizeXGenotypes(marker.index=marker.index,
-					       batches=batches,
-					       object=object,
-					       GT.CONF.THR=GT.CONF.THR,
-					       MIN.SAMPLES=MIN.SAMPLES,
-					       MIN.OBS=MIN.OBS,
-					       verbose=verbose,
-					       is.lds=is.lds,
-					       DF.PRIOR=DF.PRIOR/2,
+					   batches=batches,
+					   object=object,
+					   GT.CONF.THR=GT.CONF.THR,
+					   MIN.SAMPLES=MIN.SAMPLES,
+					   MIN.OBS=MIN.OBS,
+					   verbose=verbose,
+					   is.lds=is.lds,
+					   DF.PRIOR=DF.PRIOR/2,
 					   gender="male")
 		madA.Mlist <- res[["madA"]]
 		madB.Mlist <- res[["madB"]]
