@@ -1865,8 +1865,8 @@ crlmmCopynumber <- function(object,
 	samplesPerBatch <- table(as.character(batch(object)))
 	if(any(samplesPerBatch < MIN.SAMPLES)){
 		tmp <- paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", ")
-		warning("The following batches have fewer than ", MIN.SAMPLES, " samples: ",  tmp)
-		message("Not estimating copy number for batch ", tmp)
+		message("The following batches have fewer than ", MIN.SAMPLES, " samples: ",  tmp)
+		message("Not estimating copy number parameters for batch ", tmp)
 	}
 	mylabel <- function(marker.type){
 		switch(marker.type,
