@@ -1879,9 +1879,9 @@ crlmmCopynumber <- function(object,
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
 	if(any(samplesPerBatch < MIN.SAMPLES)){
-		warning("The following batches have fewer than ", MIN.SAMPLES, ":")
-		message(paste(samplesPerBatch[samplesPerBatch < MIN.SAMPLES], collapse=", "))
-		message("Not estimating copy number for the above batches")
+		tmp <- paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", ")
+		warning("The following batches have fewer than ", MIN.SAMPLES, " samples: ",  tmp)
+		message("Not estimating copy number for batch ", tmp)
 	}
 	mylabel <- function(marker.type){
 		switch(marker.type,
@@ -1891,18 +1891,21 @@ crlmmCopynumber <- function(object,
 		       X.NP="chromosome X nonpolymorphic markers")
 	}
 	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
-	for(i in c(1, 2, 4)){ ## do not do X.SNP.  Do this during fit.lm3
-		marker.type <- type[i]
-		if(verbose) message(paste("...", mylabel(marker.type)))
-		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
-		marker.index <- whichMarkers(marker.type, is.snp,
-					     is.autosome, is.annotated, is.X)
-		object <- genotypeSummary(object=object,
-					  GT.CONF.THR=GT.CONF.THR,
-					  type=marker.type,
-					  verbose=verbose,
-					  marker.index=marker.index,
-					  is.lds=is.lds)
+	I <- which(type %in% c("SNP", "NP", "X.NP"))
+	if(length(I) > 0){
+		for(i in I){ ## do not do X.SNP.  Do this during fit.lm3
+			marker.type <- type[i]
+			if(verbose) message(paste("...", mylabel(marker.type)))
+			##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
+			marker.index <- whichMarkers(marker.type, is.snp,
+						     is.autosome, is.annotated, is.X)
+			object <- genotypeSummary(object=object,
+						  GT.CONF.THR=GT.CONF.THR,
+						  type=marker.type,
+						  verbose=verbose,
+						  marker.index=marker.index,
+						  is.lds=is.lds)
+		}
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
 	marker.index <- whichMarkers("SNP", is.snp,

@@ -189,7 +189,6 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
 
 <<LDS_copynumber>>=
 cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
-stop()
 @
 
 In an effort to reduct I/O, the \Rpackage{crlmmCopynumber} function no
