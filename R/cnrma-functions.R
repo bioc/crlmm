@@ -60,6 +60,9 @@ construct <- function(filenames,
 	if(!missing(batch)){
 		stopifnot(length(batch) == length(sns))
 	}
+	if(any(is.na(batch))){
+		stop("NA's in batch variable")
+	}
 	if(missing(sns) & missing(filenames)) stop("one of filenames or samplenames (sns) must be provided")
 	if(verbose) message("Initializing container for copy number estimation")
 	featureData <- getFeatureData(cdfName, copynumber=copynumber)
