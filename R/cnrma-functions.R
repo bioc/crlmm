@@ -619,23 +619,24 @@ summarizeXGenotypes <- function(marker.index,
 				gender="male", ...){
 	I <- unlist(batches)
 	if(gender == "male"){
-		sample.index <- intersect(which(object$gender==1), I)
-	} else sample.index <- intersect(which(object$gender==2), I)
+		gender.index <- which(object$gender == 1)
+	} else {
+		gender.index <- which(object$gender == 2)
+	}
+	batches <- lapply(batches, function(x, gender.index) intersect(x, gender.index), gender.index)
 	batch.names <- names(batches)
 	batch.index <- which(batchNames(object) %in% batch.names)
 	nr <- length(marker.index)
-	##nc <- length(batchNames(object))
 	nc <- length(batch.index)
-##	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	names(NN.Mlist) <- names(medianA) <- names(medianB) <- names(shrink.madA) <- names(shrink.madB) <- batch.names
-	##gender <- object$gender
 	GG <- as.matrix(calls(object)[marker.index, ])
 	CP <- as.matrix(snpCallProbability(object)[marker.index, ])
 	AA <- as.matrix(A(object)[marker.index, ])
 	BB <- as.matrix(B(object)[marker.index, ])
 	for(k in seq_along(batches)){
 		sample.index <- batches[[k]]
+		if(length(sample.index) == 0) next()
 		this.batch <- unique(as.character(batch(object)[sample.index]))
 		##gender <- object$gender[sample.index]
 		if(length(sample.index) < MIN.SAMPLES) next()
@@ -807,6 +808,7 @@ fit.lm3 <- function(strata,
 	}
 	for(k in seq_along(batches)){
 		sample.index <- batches[[k]]
+		if(is.null(sample.index)) next()
 		this.batch <- unique(as.character(batch(object)[sample.index]))
 		gender <- object$gender[sample.index]
 		enough.men <- sum(gender==1) >= MIN.SAMPLES
@@ -830,6 +832,10 @@ fit.lm3 <- function(strata,
 			NN.M <- NN.Mlist[[k]]
 		}
 		if(enough.men & enough.women){
+			if(any(madA.F == 0)){
+				message("Zeros in median absolute deviation.  Not estimating CN for chrX for batch ", names(batches)[k])
+				next()
+			}
 			betas <- fit.wls(cbind(NN.M, NN.F),
 					 sigma=cbind(madA.M, madA.F),
 					 allele="A",
@@ -866,6 +872,10 @@ fit.lm3 <- function(strata,
 			phiB[, k] <- betas[2, ]
 		}
 		if(!enough.men & enough.women){
+			if(any(madA.F == 0)){
+				message("Zeros in median absolute deviation.  Not estimating CN for chrX for batch ", names(batches)[k])
+				next()
+			}
 			betas <- fit.wls(NN.F,
 					 sigma=madA.F,
 					 allele="A",
