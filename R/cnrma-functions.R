@@ -1392,7 +1392,7 @@ genotypeSummary <- function(object,
 		switch(type,
 		       SNP="summarizeSnps",
 		       NP="summarizeNps",
-		       X.SNP="summarizeSnps",
+##		       X.SNP="summarizeSnps",
 		       X.NP="summarizeNps")
 	}
 	myf <- summaryFxn(type[[1]])
@@ -1650,12 +1650,9 @@ crlmmCopynumber <- function(object,
 		       X.SNP="chromosome X SNPs",
 		       X.NP="chromosome X nonpolymorphic markers")
 	}
-	if(verbose & is.lds) {
-		message("Large data support with ff package is enabled.")
-		message("To reduce RAM, the markers are divided into several strata (see ?ocProbesets for details) and summary statistics are computed on each stratum")
-	}
-	for(i in seq_along(type)){
-		## do all types
+	if(verbose) message("Computing summary statistics of the genotype clusters for each batch")
+##	for(i in seq_along(type)){
+	for(i in c(1, 2, 4)){ ## do not do X.SNP.  Do this during fit.lm3
 		marker.type <- type[i]
 		if(verbose) message(paste("...", mylabel(marker.type)))
 		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
