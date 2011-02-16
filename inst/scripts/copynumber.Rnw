@@ -241,9 +241,9 @@ ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
 stopifnot(all.equal(ct, ct2))
 @
 
-\begin{figure}[t!]
-  Nonpolymorphic markers on chromosome X:
-  \centering
+
+ Nonpolymorphic markers on chromosome X:
+
 <<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
 M <- sample(which(cnSet$gender==1), 5)
