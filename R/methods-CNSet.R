@@ -474,7 +474,6 @@ ACN <- function(object, allele, i , j){
 					jj <- which(object$gender[j] == 2)
 					acn[acn.index, jj] <- C1(object, marker.index, female.batch.index, female.index)
 				}
-##				## 4. CHR X NPs: men
 				male.index <- j[object$gender[j] == 1]
 				if(length(male.index) > 0){
 					if(is.ff){
@@ -508,32 +507,27 @@ ACN <- function(object, allele, i , j){
 			acn[acn.index, ] <- 0
 		}
 		if(any(is.auto)){
-			auto.index <- which(is.auto & is.snp)
-			if(length(auto.index) > 0){
-				marker.index <- i[auto.index]
-				acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
-			}
+			auto.index <- which(is.auto)
+			marker.index <- i[is.auto]
+			acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
 		}
 		if(any(is.X)){
-			##Chr X SNPs
-			if(any(is.snp)){
-				if(is.ff) {
-					open(phiPrimeA(object))
-					open(phiPrimeB(object))
-					open(phiA(object))
-					open(nuA(object))
-					open(A(object))
-				}
-				marker.index <- i[is.X & is.snp]
-				acn.index <- which(is.X & is.snp)
-				acn[acn.index, ] <- C3(object, allele="B", marker.index, batch.index, j)
-				if(is.ff) {
-					close(phiPrimeA(object))
-					close(phiPrimeB(object))
-					close(phiA(object))
-					close(nuA(object))
-					close(A(object))
-				}
+			if(is.ff){
+				open(phiPrimeA(object))
+				open(phiPrimeB(object))
+				open(phiA(object))
+				open(nuA(object))
+				open(A(object))
+			}
+			marker.index <- i[is.X & is.snp]
+			acn.index <- which(is.X & is.snp)
+			acn[acn.index, ] <- C3(object, allele="B", marker.index, batch.index, j)
+			if(is.ff){
+				close(phiPrimeA(object))
+				close(phiPrimeB(object))
+				close(phiA(object))
+				close(nuA(object))
+				close(A(object))
 			}
 			if(any(!is.snp)){
 				acn.index <- which(!is.snp)
