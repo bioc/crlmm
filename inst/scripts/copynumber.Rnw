@@ -54,8 +54,6 @@ separately) that are listed below.
 pkgs <- annotationPackages()
 pkgs <- pkgs[grep("Crlmm", pkgs)]
 pkgs
-library(snow)
-setCluster(4, "SOCK")
 @
 
 Note that 'pd.genomewidesnp6' and 'genomewidesnp6Crlmm' are both
@@ -74,7 +72,7 @@ if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
 ##outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
-outdir <- "~/tmp"
+outdir <- "/home/bst/student/rscharpf/tmp"
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 
@@ -108,9 +106,12 @@ we extract the population identifier from the CEL file names and
 assign these identifiers to the variable \Robject{batch}.
 
 <<celfiles>>=
-celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")[1:10]
+celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 batch <- as.factor(substr(basename(celFiles), 13, 13))
+sample.index <- c(sample(which(batch == "C"), 15), sample(which(batch == "Y"), 11))
+celFiles <- celFiles[sample.index]
+batch <- batch[sample.index]
 @
 
 The preprocessing steps for copy number estimation includes quantile
@@ -191,7 +192,11 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
   displayed during the processing.
 
 <<LDS_copynumber>>=
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet)
+GT.CONF.THR <- 0.8
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR,
+		     MIN.SAMPLES=12)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR,
+		     MIN.SAMPLES=11)
 @
 
 In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
@@ -617,6 +622,11 @@ detection and removal may be explored in the future.
 
 Copy number estimates for other chromosomes, such as mitochondrial and
 chromosome Y, are not currently available in \crlmm{}.
+
+
+\section{Different batch structure.}
+
+
 
 <<echo=FALSE>>=
 invisible(close(cnSet))
