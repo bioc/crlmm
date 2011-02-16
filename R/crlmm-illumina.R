@@ -1273,10 +1273,10 @@ processIDAT =  function(sel, sampleSheet=NULL,
               A, B, SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
 
         if(length(path)>= length(sel)) path = path[sel]
+	message("RS:... processIDAT:  calling readIdatFiles")
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose)
-
         XY = RGtoXY(RG, chipType=cdfName)
 #        open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
 #        delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero);
@@ -1284,6 +1284,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         gc()
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
 
+	message("RS:... processIDAT: calling preprocessInfinium2")
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #, outdir=outdir)
 #							    save.it=save.it, snpFile=snpFile, cnFile=cnFile)
