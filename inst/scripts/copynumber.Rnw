@@ -71,8 +71,8 @@ pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
-##outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
-outdir <- "/home/bst/student/rscharpf/tmp"
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette2", sep="")
+##outdir <- "/home/bst/student/rscharpf/tmp"
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 
@@ -158,14 +158,15 @@ be run interactively.
 
 
 <<LDS_genotype>>=
-if(!file.exists(file.path(outdir, "cnSet.rda"))){
-	gtSet <- checkExists("gtSet",
-			     .path=outdir,
-			     .FUN=genotype,
-			     filenames=celFiles,
-			     cdfName=cdfName,
-			     batch=batch)
-}
+##if(!file.exists(file.path(outdir, "cnSet.rda"))){
+system.time(checkExists("gtSet",
+			.path=outdir,
+			.FUN=genotype,
+			filenames=celFiles,
+			cdfName=cdfName,
+			batch=batch))
+q("no")
+##}
 @
 
 The value returned by genotype is an instance of the class

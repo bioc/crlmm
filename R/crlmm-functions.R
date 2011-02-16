@@ -599,29 +599,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 }
 
 
-## 2 issues with crlmmGT2:
-## 1.  it overwrites what is in A and B with calls and confidence scores
-##     - should be an option to clone.  Then overwrite the clone.
-## 2.  the dimensions are not correct for copy number analysis.
-##     this would be fine if there were a way to virtually rbind to ff objects, but
-##     this is not currently possible.
-
-## current approach:
-## i. Matt and I copy a subset of A (snps only) and a subset of B to new ff objects
-##   -- this is one read and one write for A and for B (2 reads/2 writes)
-## ii.   run crlmmGT2
-##        - calls / confidence scores written to A/B (2 reads / 2 writes)
-## iii. copy results from crlmmGT2 into the full-size container for calls/confidence scores
-##           (2 reads / 2 writes)
-## cost:  6 reads / 6 writes
-##
-## preferred alternative:
-## i.  clone A and B.  (2 writes )  * initializing matrix for calls and confidence scores should be done by the clone
-## 2.  pass cloned A and B to crlmmGT2.
-## 3.  crlmmGT2 would work even though A and B contains more than just SNPs
-##          (2 reads / 2 writes)
-## 4.  results are directly usable -- no need to do anything
-##     4 reads / 2 writes  OR  ( 4 reads/ 4writes if clone requires reading)
+## a copy of crlmmGT2, except changes noted below by *RS* comments
 rscrlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		       col.names=NULL, probs=c(1/3, 1/3, 1/3), DF=6,
 		       SNRMin=5, recallMin=10, recallRegMin=1000,
@@ -676,7 +654,8 @@ rscrlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                    keepIndex[which(gender[keepIndex]==2)],
                    keepIndex[which(gender[keepIndex]==1)])
 
-  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
+  ## move this statement further down
+  ##if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 
   ## call C
   fIndex <- which(gender==2)
@@ -685,11 +664,18 @@ rscrlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   ## different here
   ## use gtypeCallerR in batches
   if(is.null(row.names) & is.null(rownames(A))){
-
+	  ##verify that A has only snps.  otherwise, calling function must pass rownames
+	  message("rownames not available.  Assuming only SNPs in A")
+	  snpBatches <- splitIndicesByLength(1:nrow(A), ocProbesets())
+  } else{
+	  loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	  gns <- getVarInEnv("gns")
+	  index <- match(gns, rownames(A))
+	  snpBatches <- splitIndicesByLength(index, ocProbesets())
   }
-  snpBatches <- splitIndicesByLength(1:nrow(A), ocProbesets())
+  NR <- length(unlist(snpBatches))
+  if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
   newparamsBatch <- vector("list", length(snpBatches))
-
   process1 <- function(idxBatch, snpBatches, autosomeIndex, XIndex,
                        YIndex, A, B, mixtureParams, fIndex, mIndex,
                        params, cIndexes, SMEDIAN, theKnots, DF, probs, batchSize){

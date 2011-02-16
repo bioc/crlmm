@@ -117,27 +117,6 @@ genotype <- function(filenames,
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	if(missing(sns)) sns <- basename(filenames)
-##	callSet <- construct(filenames=filenames,
-##			     cdfName=cdfName,
-##			     copynumber=TRUE,
-##			     sns=sns,
-##			     verbose=verbose,
-##			     batch=batch)
-##	FUN <- ifelse(is.lds, "snprma2", "snprma")
-##	snprmaFxn <- function(FUN,...){
-##		switch(FUN,
-##		       snprma=snprma(...),
-##		       snprma2=snprma2(...))
-##	}
-##	snprmaRes <- snprmaFxn(FUN,
-##			       filenames=filenames,
-##			       mixtureSampleSize=mixtureSampleSize,
-##			       fitMixture=TRUE,
-##			       eps=eps,
-##			       verbose=verbose,
-##			       seed=seed,
-##			       cdfName=cdfName,
-##			       sns=sns)
 	##---------------------------------------------------------------------------
 	##
 	## from snprma2.  Goal is to initialize A and B with appropriate dimension for snps+nps
@@ -159,14 +138,11 @@ genotype <- function(filenames,
 	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
 	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
 	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
-##	A <- initializeBigMatrix("crlmmA-", length(pnsa), length(filenames), "integer")
-##	B <- initializeBigMatrix("crlmmB-", length(pnsb), length(filenames), "integer")
 	featureData <- getFeatureData(cdfName, copynumber=TRUE)
 	nr <- nrow(featureData); nc <- length(sns)
 	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
 	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
 	rownames(A) <- rownames(B) <- featureNames(featureData)
-
 	sampleBatches <- splitIndicesByNode(seq(along=filenames))
 	if(verbose) message("Processing ", length(filenames), " files.")
 	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
@@ -174,11 +150,13 @@ genotype <- function(filenames,
 		 mixtureParams=mixtureParams, eps=eps, seed=seed,
 		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
 		 neededPkgs=c("crlmm", pkgname))
-
 	## Now we initialize a CNSet object, cloning A and B
-	message("Cloning A and B intensities")
+	message("Cloning A and B objects")
+	## The clones will be used to store calls and confidence scores
 	open(A)
 	open(B)
+	##user do
+	## options("ffbatchbytes"=XXX) to make this efficient
 	call <- clone(A)
 	callProbability=clone(B)
 	close(A)
@@ -193,7 +171,9 @@ genotype <- function(filenames,
 		     batch=batch)
 	if(!missing(sns)){
 		sampleNames(cnSet) <- sns
+		open(A)
 		protocolData <- annotatedDataFrameFrom(A(cnSet), byrow=FALSE)
+		close(A)
 	} else {
 		sampleNames(cnSet) <- basename(filenames)
 		protocolData <- getProtocolData.Affy(filenames)
@@ -205,132 +185,36 @@ genotype <- function(filenames,
 	phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
 	stopifnot(validObject(cnSet))
 	snp.I <- isSnp(cnSet)
-	##gns <- snprmaRes[["gns"]]
-##	snp.I <- isSnp(callSet)
-##	is.snp <- which(snp.I)
-##	snp.index <- match(featureNames(callSet)[is.snp], gns)
-##	stopifnot(identical(featureNames(callSet)[is.snp], gns[snp.index]))
-####	is.snp <- isSnp(callSet)
-####	snp.index <- which(is.snp)
-##	if(is.lds) open(callSet)
-##	mixtureParams <- matrix(NA, 4, length(filenames))
-##	##message("Saving snprmaRes file")
-##	##save(snprmaRes, file=file.path(outdir, "snprmaRes.rda"))
-##	if(verbose) message("Finished preprocessing.")
-##	gns <- snprmaRes[["gns"]]
-##	snp.I <- isSnp(callSet)
-##	is.snp <- which(snp.I)
-##	snp.index <- match(featureNames(callSet)[is.snp], gns)
-##	stopifnot(identical(featureNames(callSet)[is.snp], gns[snp.index]))
-##	if(is.lds) open(callSet)
-##	mixtureParams <- matrix(NA, 4, length(filenames))
-##	if(is.lds){
-##		open(snprmaRes[["A"]])
-##		open(snprmaRes[["B"]])
-##		open(snprmaRes[["SNR"]])
-##		open(snprmaRes[["mixtureParams"]])
-##		bb <- getOption("ffbatchbytes")
-##		ffcolapply(A(callSet)[is.snp, i1:i2] <- snprmaRes[["A"]][snp.index, i1:i2], X=snprmaRes[["A"]],
-##			   BATCHBYTES=bb)
-##		ffcolapply(B(callSet)[is.snp, i1:i2] <- snprmaRes[["B"]][snp.index, i1:i2], X=snprmaRes[["B"]],
-##			   BATCHBYTES=bb)
-##	} else{
-##		A(callSet)[is.snp, ] <- snprmaRes[["A"]][snp.index, ]
-##		B(callSet)[is.snp, ] <- snprmaRes[["B"]][snp.index, ]
-##	}
-##	pData(callSet)$SKW <- snprmaRes[["SKW"]]
-##	pData(callSet)$SNR <- snprmaRes[["SNR"]]
 	pData(cnSet)$SKW <- SKW
 	pData(cnSet)$SNR <- SNR
-##	mixtureParams <- snprmaRes$mixtureParams
 	np.index <- which(!snp.I)
 	if(verbose) message("Normalizing nonpolymorphic markers")
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
-	## main purpose is to update 'alleleA'
-	cnrmaFxn <- function(FUN,...){
-		switch(FUN,
-		       cnrma=cnrma(...),
-		       cnrma2=cnrma2(...))
-	}
-	## consider passing only A for NPs.
 	if(verbose) message("Quantile normalizing nonpolymorphic markers")
-##	AA <- cnrmaFxn(FUN, A=A(cnSet),
-##		       filenames=filenames,
-##		       row.names=featureNames(cnSet)[np.index],
-##		       cdfName=cdfName,
-##		       sns=sns,
-##		       seed=seed,
-##		       verbose=verbose)
 	cnrma2(A=A(cnSet),
 	       filenames=filenames,
 	       row.names=featureNames(cnSet)[np.index],
 	       cdfName=cdfName,
-	       sns=sns,
+	       sns=sampleNames(cnSet),
 	       seed=seed,
 	       verbose=verbose)
-	##if(!is.lds) A(callSet) <- AA
-	##rm(AA)
-##	FUN <- ifelse(is.lds, "crlmmGT2", "crlmmGT")
-##	## genotyping
-##	crlmmGTfxn <- function(FUN,...){
-##		switch(FUN,
-##		       crlmmGT2=crlmmGT2(...),
-##		       crlmmGT=crlmmGT(...))
-##	}
-##	if(verbose) message("Running crlmmGT2")
-##	tmp <- crlmmGTfxn(FUN,
-##			  A=snprmaRes[["A"]],
-##			  B=snprmaRes[["B"]],
-##			  SNR=snprmaRes[["SNR"]],
-##			  mixtureParams=snprmaRes[["mixtureParams"]],
-##			  cdfName=cdfName,
-##			  row.names=NULL,
-##			  col.names=sampleNames(callSet),
-##			  SNRMin=SNRMin,
-##			  recallMin=recallMin,
-##			  recallRegMin=recallRegMin,
-##			  gender=gender,
-##			  verbose=verbose,
-##			  returnParams=returnParams,
-##			  badSNP=badSNP)
-	rscrlmmGT2(A=calls(cnSet),
-		   B=callsProbability(cnSet),
-		   SNR=SNR,
-		   mixtureParams=mixtureParams,
-		   cdfName=cdfName,
-		   row.names=NULL,
-		   col.names=sampleNames(callSet),
-		   SNRMin=SNRMin,
-		   recallMin=recallMin,
-		   recallRegMin=recallRegMin,
-		   gender=gender,
-		   verbose=verbose,
-		   returnParams=returnParams,
-		   badSNP=badSNP)
+	tmp <- rscrlmmGT2(A=calls(cnSet),
+			  B=snpCallProbability(cnSet),
+			  SNR=SNR,
+			  mixtureParams=mixtureParams,
+			  cdfName=cdfName,
+			  row.names=NULL,
+			  col.names=sampleNames(cnSet),
+			  SNRMin=SNRMin,
+			  recallMin=recallMin,
+			  recallRegMin=recallRegMin,
+			  gender=gender,
+			  verbose=verbose,
+			  returnParams=returnParams,
+			  badSNP=badSNP)
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	if(is.lds){
-		open(tmp[["calls"]])
-		open(tmp[["confs"]])
-		ffcolapply(snpCall(callSet)[is.snp, i1:i2] <- tmp[["calls"]][snp.index, i1:i2], X=tmp[["calls"]],
-			   BATCHBYTES=bb)
-		ffcolapply(snpCallProbability(callSet)[is.snp, i1:i2] <- tmp[["confs"]][snp.index, i1:i2], X=tmp[["confs"]],
-			   BATCHBYTES=bb)
-		close(tmp[["calls"]])
-		close(tmp[["confs"]])
-	} else {
-		calls(callSet)[is.snp, ] <- tmp[["calls"]][snp.index, ]
-		snpCallProbability(callSet)[is.snp, ] <- tmp[["confs"]][snp.index, ]
-	}
-	message("Finished updating.  Cleaning up.")
-	callSet$gender <- tmp$gender
-	if(is.lds){
-		delete(snprmaRes[["A"]])
-		delete(snprmaRes[["B"]])
-		delete(snprmaRes[["mixtureParams"]])
-		rm(snprmaRes)
-	}
-	close(callSet)
-	return(callSet)
+	cnSet$gender <- tmp$gender
+	return(cnSet)
 }
 
 rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
@@ -1240,11 +1124,13 @@ processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
 	np.index <- match(row.names, rownames(A))
 	gns <- names(fid)
 	set.seed(seed)
+	open(A)
 	##idx2 <- sample(length(fid), 10^5)
 	for (k in i){
 		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
 	}
+	close(A)
 	return(TRUE)
 }
 
