@@ -947,12 +947,13 @@ fit.lm4 <- function(strata,
 	enoughAB <- rowSums(N.AB < 5) == 0
 	enoughBB <- rowSums(N.BB < 5) == 0
 	snp.index <- snp.index[enoughAA & enoughAB & enoughBB]
-	if(length(snp.index) < 100){
-		message("too few snps pass criteria for estimating parameters for NP markers on chr X")
-		return(object)
+	if(length(snp.index) < 100) {
+		message("Too few passing SNPs for estimating model parameters at nonpolymorphic loci on chrom X")
+		return()
 	}
-	nuA.snp.notmissing <- rowSums(is.na(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]))) == 0
-	nuA.snp.notnegative <- rowSums(as.matrix(nuA(object)[snp.index, batch.index, drop=FALSE]) < 20) == 0
+	##stopifnot(length(snp.index) > 100)
+	nuA.snp.notmissing <- rowSums(is.na(as.matrix(nuA(object)[snp.index, ]))) == 0
+	nuA.snp.notnegative <- rowSums(as.matrix(nuA(object)[snp.index, ]) < 20) == 0
 	snp.index <- snp.index[nuA.snp.notmissing & nuA.snp.notnegative]
 	medianA.AA.snp <- as.matrix(medianA.AA(object)[snp.index,])
 	medianB.BB.snp <- as.matrix(medianB.BB(object)[snp.index,])
@@ -1629,8 +1630,8 @@ crlmmCopynumber <- function(object,
 	samplesPerBatch <- table(as.character(batch(object)))
 	if(any(samplesPerBatch < MIN.SAMPLES)){
 		warning("The following batches have fewer than ", MIN.SAMPLES, ":")
-		message(paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", "))
-		message("Not estimating copy number for the above batches")
+		##message(paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", "))
+		message("Not estimating copy number for batches ", names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES])
 	}
 	mylabel <- function(marker.type){
 		switch(marker.type,
