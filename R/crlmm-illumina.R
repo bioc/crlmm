@@ -120,7 +120,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       }
 	       rm(G)
 	       gc()
-	       if(verbose) { 
+	       if(verbose) {
                       cat(paste(sep, fileExt$red, sep=""), "\n")
 	       }
 	       R = readIDAT(redidats[i])
@@ -589,7 +589,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
     # separate out copy number probes
   npIndex = getVarInEnv("npProbesFid")
   nprobes = length(npIndex)
-  
+
   if(length(nprobes)>0) {
      A = matrix(as.integer(exprs(channel(XY, "X"))[npIndex,]), nprobes, narrays)
      B = matrix(as.integer(exprs(channel(XY, "Y"))[npIndex,]), nprobes, narrays)
@@ -1126,7 +1126,7 @@ genotype.Illumina = function(sampleSheet=NULL,
 	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
 				      highDensity=highDensity, sep=sep, fileExt=fileExt,
-				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns, 
+				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
 				      saveDate=saveDate) #, outdir=outdir)
 	if(missing(sns)) sns = sampleNames(callSet)
     if(is.lds) {
@@ -1149,7 +1149,7 @@ genotype.Illumina = function(sampleSheet=NULL,
                  sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
                  fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
                  useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
-                 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname)) # outdir=outdir, 
+                 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
 
           open(SKW)
           open(SNR)
@@ -1196,8 +1196,8 @@ genotype.Illumina = function(sampleSheet=NULL,
           open(A(callSet))
           open(B(callSet))
           tmpA = initializeBigMatrix(name="A", length(snp.index), narrays)
-          tmpB = initializeBigMatrix(name="B", length(snp.index), narrays) 
-#          bb = getOption("ffbatchbytes")          
+          tmpB = initializeBigMatrix(name="B", length(snp.index), narrays)
+#          bb = getOption("ffbatchbytes")
 #          bb = ocProbesets()*length(sns)*8
 		  ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet)) #, BATCHBYTES=bb) # X=A(callSet)[snp.index,]
 		  ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet)) #, BATCHBYTES=bb) # X=B(callSet)[snp.index,]
@@ -1293,7 +1293,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
         gc()
 	    if(verbose) message("Finished preprocessing.")
         snp.index = which(is.snp)
-	    np.index = which(!is.snp)
+	np.index = which(!is.snp)
 
 #        open(res[["A"]])
 #        open(res[["B"]])
@@ -1309,7 +1309,7 @@ processIDAT =  function(sel, sampleSheet=NULL,
 	    if(length(np.index)>0) {
 #			for (j in 1:length(sel)) {
 			ffcolapply(A[np.index,sel][,i1:i2] <- res[["cnAB"]]$A[,i1:i2], X=res[["cnAB"]]$A)
-			ffcolapply(B[np.index,sel][,i1:i2] <- res[["cnAB"]]$B[,i1:i2], X=res[["cnAB"]]$B)		  
+			ffcolapply(B[np.index,sel][,i1:i2] <- res[["cnAB"]]$B[,i1:i2], X=res[["cnAB"]]$B)
 #            A[np.index, sel[j]] = res[["cnAB"]]$A[,j]
 #            B[np.index, sel[j]] = res[["cnAB"]]$B[,j]
 #          }
