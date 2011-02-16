@@ -569,11 +569,22 @@ setMethod("totalCopynumber", signature=signature(object="CNSet"),
 		  return(ca+cb)
 	  })
 
-setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
-                 function(object, ..., value){
+##setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
+##                 function(object, ..., value){
+##			 assayDataElementReplace(object, "call", value)
+##		 })
+
+setReplaceMethod("snpCall", "CNSet",
+                 function(object, value){
 			 assayDataElementReplace(object, "call", value)
 		 })
-setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
-                 function(object, ..., value){
+
+##setReplaceMethod("snpCallProbability", c("CNSet", "ff_or_matrix"),
+##                 function(object, ..., value){
+##			 assayDataElementReplace(object, "callProbability", value)
+##		 })
+
+setReplaceMethod("snpCallProbability", "CNSet",
+                 function(object, value){
 			 assayDataElementReplace(object, "callProbability", value)
 		 })
