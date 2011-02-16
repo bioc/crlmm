@@ -1123,13 +1123,12 @@ genotype.Illumina = function(sampleSheet=NULL,
         pkgname = getCrlmmAnnotationName(cdfName)
 #        if(missing(outdir))
 #          stop("Must specify a directory to store large data objects")
-	callSet = construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
-			                 ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-                             highDensity=highDensity, sep=sep, fileExt=fileExt,
-			                 cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns, 
-                             saveDate=saveDate) #, outdir=outdir)
+	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
+				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
+				      highDensity=highDensity, sep=sep, fileExt=fileExt,
+				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns, 
+				      saveDate=saveDate) #, outdir=outdir)
 	if(missing(sns)) sns = sampleNames(callSet)
-    
     if(is.lds) {
 		open(A(callSet))
 		open(B(callSet))
