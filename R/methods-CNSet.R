@@ -509,7 +509,7 @@ ACN <- function(object, allele, i , j){
 		if(any(is.auto)){
 			auto.index <- which(is.auto & is.snp)
 			if(length(auto.index) > 0){
-				marker.index <- i[is.auto]
+				marker.index <- i[auto.index]
 				acn[auto.index, ] <- C2(object, marker.index, batch.index, j)
 			}
 		}
