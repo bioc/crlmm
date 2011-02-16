@@ -333,7 +333,6 @@ for(j in 1:5){
 @
 
 
-
 \section{Smoothing marker-level estimates of total copy number}
 
 In this section, we show how the total copy number can be smoothed
@@ -354,8 +353,7 @@ if(require(VanillaICE)){
 }
 @
 
-
-\paragraph{Smoothing via a hidden Markov model.}
+\paragraph{Smoothing via segmentation.}
 
 <<cbs>>=
 library("DNAcopy")
@@ -532,6 +530,11 @@ snr <- cnSet$SNR[,]
 hist(snr, breaks=15)
 @
 
+
+We plot the total copy number estimates versus physical position the
+two samples with the lowest (top) and highest (bottom) signal to noise
+ratios.
+
 \begin{figure}
   \centering
 <<firstSample, fig=TRUE>>=
@@ -552,6 +555,7 @@ for(j in 1:2){
 axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
 @
+
 \caption{Copy number estimates for samples with low signal to noise
   ratio (top) and high signal to noise ratio (bottom).  Note the
   slight wave in the bottom figure.  Such waves are typically
@@ -559,8 +563,6 @@ mtext("Mb", 1, outer=TRUE, line=2)
   smoothers or any of the published wave-correction tools for
   genotyping arrays.}
 \end{figure}
-
-
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
