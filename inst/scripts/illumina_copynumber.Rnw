@@ -268,24 +268,89 @@ The following code chunk can be used to create an instance of
 \Robject{CopyNumberSet} that contains the CA + CB at polymorphic
 markers and 'CA' at nonpolymorphic markers.
 
+Alternatively, total copy number can be obtained by
+<<totalCopynumber.snps>>=
+ct2 <- totalCopynumber(cnSet, i=snp.index, j=1:5)
+stopifnot(all.equal(ct, ct2))
+@
+
+Missing values can arise at polymorphic when the confidence score of
+the genotype calls are below the threshold indicated by the threshold
+\texttt{GT.CONF.THR} in \Robject{crlmmCopynumber}. See
+\Robject{?crlmmCopynumber} for additional details.  In the following
+codechunk, we compute the number of samples that had confidence scores
+below \Sexpr{GT.CONF.THR} at loci for which ${\hat CA}$ and ${\hat CB}$
+are missing.
+
+<<NAs.snps>>=
+missing.copynumber <- which(rowSums(is.na(ct)) > 0)
+invisible(open(snpCallProbability(cnSet)))
+gt.confidence <- i2p(snpCallProbability(cnSet)[snp.index, ])
+n.below.threshold <- rowSums(gt.confidence < 0.95)
+unique(n.below.threshold[missing.copynumber])
+@
+\noindent For loci with missing copy number, the confidence scores
+were all below the threshold.
+
+At nonpolymorphic loci, either the \Rfunction{CA} or
+\Rfunction{totalCopynumber} functions can be used to obtain estimates
+of total copy number.
+
+<<nonpolymorphicAutosomes>>=
+marker.index <- which(!isSnp(cnSet) & chromosome(cnSet) < 23)
+ct <- CA(cnSet, i=marker.index, j=1:5)
+## all zeros
+stopifnot(all(CB(cnSet, i=marker.index, j=1:5) == 0))
+ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
+stopifnot(all.equal(ct, ct2))
+@
+
+
+\begin{figure}[t!]
+  Nonpolymorphic markers on chromosome X:
+  \centering
+<<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
+npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
+M <- sample(which(cnSet$gender==1), 5)
+F <- sample(which(cnSet$gender==2), 5)
+cn.M <- CA(cnSet, i=npx.index, j=M)
+cn.F <- CA(cnSet, i=npx.index, j=F)
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
+@
+\caption{Copy number estimates for nonpolymorphic loci on chromosome
+  X (5 men, 5 women).  crlmm assumes that the median copy number
+  across samples at a given marker on X is 1 for men and 2 for women.}
+\end{figure}
+
+
+
+
+\begin{figure}[t!]
+ \centering
+<<polymorphicX, fig=TRUE, width=8, height=4>>=
+## copy number estimates on X for SNPs are biased towards small values.
+X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
+ca.M <- CA(cnSet, i=X.markers, j=M)
+cb.M <- CB(cnSet, i=X.markers, j=M)
+ca.F <- CA(cnSet, i=X.markers, j=F)
+cb.F <- CB(cnSet, i=X.markers, j=F)
+cn.M <- ca.M+cb.M
+cn.F <- ca.F+cb.F
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col="grey60")
+cn2 <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
+stopifnot(all.equal(cbind(cn.M, cn.F), cn2))
+@
+\caption{Copy number estimates for polymorphic markers on chromosome
+  X. }
+\end{figure}
+
+Often it is of interest to smooth the total copy number estimates (the
+sum of the allele-specific copy number) as a function of the physical
+position.  The following code chunk can be used to create an instance
+of \Robject{CopyNumberSet} that contains the CA + CB at polymorphic
+markers and 'CA' at nonpolymorphic markers.
 
 <<copynumberObject>>=
-snp.index <- which(isSnp(cnSet))
-cn <- totalCopynumber(cnSet, i=snp.index, j=1:10)
-missing.snp <- which(rowSums(is.na(cn)) == 10) ##snps with no confidence
-table(chromosome(cnSet)[missing.snp])
-hist(i2p(snpCallProbability(cnSet)[missing.snp, 1:10]), breaks=100)
-
-np.index <- which(!isSnp(cnSet))
-ca <- CA(cnSet, i=np.index, j=1:10)
-cb <- CB(cnSet, i=np.index, j=1:10) ## most are missing
-
-cn <- totalCopynumber(cnSet, i=np.index, j=1:10)
-missing.np <- which(rowSums(is.na(cn)) == 10)
-table(chromosome(cnSet)[missing.np])
-table(chromosome(cnSet)[np.index])
-
-
 marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
 sample.index <- 1:5 ## first five samples
 invisible(open(cnSet))
@@ -331,7 +396,6 @@ for(j in 1:5){
 	polygon(xx, yy, col="bisque")
 }
 @
-
 
 \section{Smoothing marker-level estimates of total copy number}
 

@@ -254,6 +254,7 @@ cn.F <- CA(cnSet, i=npx.index, j=F)
 boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
 @
 
+
 \begin{figure}[t!]
  \centering
  \includegraphics[width=0.8\textwidth]{copynumber-nonpolymorphicX}
@@ -262,6 +263,7 @@ boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
     across samples at a given marker on X is 1 for men and 2 for women.}
 \end{figure}
 
+Polymorphic markers on chromosome X:
 
 
 \begin{figure}[t!]
