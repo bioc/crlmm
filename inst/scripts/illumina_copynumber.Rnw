@@ -151,9 +151,8 @@ container <- checkExists("container", .path=outdir,
 			 cdfName="human370v1c",
 			 batch=batch,
 			 .load.it=load.it)
-GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it,
-		     GT.CONF.THR=GT.CONF.THR)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it="FALSE",
+		     GT.CONF.THR=0.8)
 @
 
 The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
@@ -271,6 +270,22 @@ markers and 'CA' at nonpolymorphic markers.
 
 
 <<copynumberObject>>=
+snp.index <- which(isSnp(cnSet))
+cn <- totalCopynumber(cnSet, i=snp.index, j=1:10)
+missing.snp <- which(rowSums(is.na(cn)) == 10) ##snps with no confidence
+table(chromosome(cnSet)[missing.snp])
+hist(i2p(snpCallProbability(cnSet)[missing.snp, 1:10]), breaks=100)
+
+np.index <- which(!isSnp(cnSet))
+ca <- CA(cnSet, i=np.index, j=1:10)
+cb <- CB(cnSet, i=np.index, j=1:10) ## most are missing
+
+cn <- totalCopynumber(cnSet, i=np.index, j=1:10)
+missing.np <- which(rowSums(is.na(cn)) == 10)
+table(chromosome(cnSet)[missing.np])
+table(chromosome(cnSet)[np.index])
+
+
 marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
 sample.index <- 1:5 ## first five samples
 invisible(open(cnSet))
@@ -282,41 +297,8 @@ dup.index <- unlist(sapply(indices, function(i, position)  i[duplicated(position
 if(length(dup.index) > 0) copynumberSet <- copynumberSet[-dup.index, ]
 ## exclude any rows that are all missing
 missing.index <- which(rowSums(is.na(copyNumber(copynumberSet))) == ncol(copynumberSet))
-if(length(missing.index) > 0){
-			 table(chromosome(copynumberSet)[missing.index])
-			 copynumberSet <- copynumberSet[-missing.index, ]
-}
-@
-
-
-We suggest plotting the total copy number as a function of the
-physical position to evaluate whether a wave-correction is needed.
-
-
-<<plotTotalCn, fig=TRUE, width=8, height=8>>=
-require(SNPchip)
-data(chromosomeAnnotation)
-chrAnn <- chromosomeAnnotation[1,]
-layout(matrix(1:5, 5,1), heights=c(1, 1, 1, 1, 1))
-par(mar=c(0.5, 0.5, 0.5, 0.5), las=1, oma=c(4, 4, 4, 4))
-	       i <- which(chromosome(copynumberSet) == 1)
-for(j in 1:5){
-	plot(position(copynumberSet)[i], copyNumber(copynumberSet)[i, j], pch=".", cex=0.6,col="grey60", xaxt="n",
-	     ylim=c(-1,6), ylab="total copy number",
-	     yaxt="n",
-	     xlim=c(0, max(position(copynumberSet)[i])))
-	legend("topleft", legend=paste("SNR:", round(copynumberSet$SNR[j], 1)))
-	axis(2, at=0:6, labels=0:6)
-	if(j == 5){
-		mtext("physical position (Mb)", 1, outer=TRUE, line=2)
-		mtext("Chromosome 8", 3, line=0, outer=TRUE)
-		at <- pretty(position(copynumberSet)[i], n=8)
-	}
-	## draw centromere
-	xx <- c(chrAnn[1:2], chrAnn[2:1])
-	yy <- c(-0.5, -0.5, 5, 5)
-	polygon(xx, yy, col="bisque")
-}
+table(chromosome(copynumberSet)[missing.index])
+copynumberSet <- copynumberSet[-missing.index, ]
 @
 
 
