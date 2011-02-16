@@ -188,7 +188,6 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
 processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
                        mixtureParams, eps, seed, mixtureSampleSize,
                        pkgname){
-
   obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
   obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)

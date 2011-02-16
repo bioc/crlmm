@@ -2,6 +2,7 @@ All: copynumber crlmmDownstream clean
 
 copynumber: copynumber.tex
 	cp -p ../scripts/copynumber.pdf .
+	cp -p ../scripts/illumina_copynumber.pdf .
 
 crlmmDownstream: crlmmDownstream.tex
 	cp -p ../scripts/crlmmDownstream.pdf .

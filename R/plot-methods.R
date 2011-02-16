@@ -1,9 +1,9 @@
 setMethod("lines", signature=signature(x="CNSet"),
-	  function(x, y, batch, copynumber, ...){
-		  linesCNSet(x, y, batch, copynumber, ...)
+	  function(x, y, batch, copynumber, grid=FALSE, ...){
+		  linesCNSet(x, y, batch, copynumber, grid=grid, ...)
 	  })
 
-linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
+linesCNSet <- function(x, y, batch, copynumber, x.axis="A", grid=FALSE, ...){
 	require(ellipse)
 	object <- x
 	marker.index <- y
@@ -23,11 +23,6 @@ linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 	cors <- corr(object, i=marker.index, j=batch.index)[, , ]
 	corrAB <- cors[["AB"]]
 	corrAA <- cors[["AA"]]
-	corrBB <- cors[["BB"]]
-	if(all(is.na(nuA))) {
-		message("Parameter estimates for batch ", batch, " not available")
-		next()
-	}
 	for(CN in copynumber){
 		for(CA in 0:CN){
 			CB <- CN-CA
@@ -39,13 +34,22 @@ linesCNSet <- function(x, y, batch, copynumber, x.axis="A", ...){
 			if(CA > 0 & CB > 0) rho <- corrAB
 			if(CA == 0 & CB == 0) rho <- 0
 			if(x.axis=="A"){
-				lines(ellipse(x=rho, centre=c(log2(nuA+CA*phiA),
-						     log2(nuB+CB*phiB)),
-					      scale=scale), ...)
+				dat.ellipse <- ellipse(x=rho, centre=c(log2(nuA+CA*phiA),
+							      log2(nuB+CB*phiB)),
+						       scale=scale)
+				if(!grid){
+					lines(dat.ellipse, ...)
+				} else {
+					llines(dat.ellipse[, 1], dat.ellipse[, 2], ...)
+				}
 			} else {
-				lines(ellipse(x=rho, centre=c(log2(nuB+CB*phiB),
-						     log2(nuA+CA*phiA)),
-					      scale=rev(scale)), ...)
+				dat.ellipse <- ellipse(x=rho, centre=c(log2(nuB+CB*phiB),
+							      log2(nuA+CA*phiA)), scale=rev(scale))
+				if(!grid){
+					lines(dat.ellipse, ...)
+				} else {
+					llines(dat.ellipse[, 1], dat.ellipse[, 2], ...)
+				}
 			}
 		}
 	}

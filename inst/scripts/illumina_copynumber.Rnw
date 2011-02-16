@@ -63,6 +63,7 @@ that contains the IDAT files that will be used in our analysis.
 <<setup, echo=FALSE, results=hide>>=
 options(width=70)
 options(continue=" ")
+library(cacheSweave)
 @
 
 <<libraries>>=
@@ -75,6 +76,7 @@ if(getRversion() < "2.13.0"){
 outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+setCacheDir(outdir)
 @
 
 %Options for controlling RAM with the \Rpackage{ff} package.
@@ -128,7 +130,7 @@ normalization does not remove batch effects.)  The genotype confidence
 scores are saved as an integer, and can be converted back to a $[0,
 1]$ probability scale by the transformation $round(-1000*log2(1-p))$.
 
-<<genotype>>=
+<<samplesheet>>=
 samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
 samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
 arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
@@ -142,41 +144,20 @@ if(!load.it){
 plate <- samplesheet$Plate
 table(plate)
 ## too few samples to run the plates as separate batches
-batch <- as.factor(rep("1", nrow(samplesheet)))
-if(!exists("crlmmResult")){
-	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
-		RG <- readIdatFiles(samplesheet,
-				    path=dirname(arrayNames[1]),
-				    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-				    saveDate=TRUE)
-		crlmmResult <- crlmmIllumina(RG=RG,
-					     cdfName="human370v1c",
-					     sns=pData(RG)$ID,
-					     returnParams=TRUE,
-					     cnFile=file.path(outdir, "cnFile.rda"),
-					     snpFile=file.path(outdir, "snpFile.rda"),
-					     save.it=TRUE)
-		protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
-		range(protocolData(crlmmResult)$ScanDate)
-		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
-		rm(RG); gc()
-	} else{
-		message("Loading previously saved file...")
-		load(file.path(outdir, "crlmmResult.rda"))
-	}
-}
-##container <- checkExists("container", .path=outdir,
-##			 .FUN=crlmm:::genotype.Illumina,
-##			 sampleSheet=samplesheet,
-##			 path=dirname(arrayNames[1]),
-##			 arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-##			 cdfName="human370v1c",
-##			 batch=batch,
-##			 .load.it=load.it)
-##GT.CONF.THR <- 0.8
-##cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it,
-##		     GT.CONF.THR=GT.CONF.THR)
-q("no")
+batch <- rep("1", nrow(samplesheet))
+@
+
+<<genotype,cache=TRUE>>=
+container <- genotype.Illumina(sampleSheet=samplesheet,
+			       path=dirname(arrayNames[1]),
+			       arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+			       cdfName="human370v1c",
+			       batch=batch)
+@
+
+<<copynumber,cache=TRUE>>=
+GT.CONF.THR <- 0.8
+cnSet <- crlmmCopynumber(container, GT.CONF.THR=GT.CONF.THR)
 @
 
 The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}

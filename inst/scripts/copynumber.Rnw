@@ -44,6 +44,7 @@ options(continue=" ", width=70)
 
 <<cdfname>>=
 library(crlmm)
+library(cacheSweave)
 @
 
 Several genotyping platforms are currently supported.  Supported
@@ -71,9 +72,9 @@ pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette2", sep="")
-##outdir <- "/home/bst/student/rscharpf/tmp"
+outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
+setCacheDir(outdir)
 @
 
 All long computations are saved in the output directory
@@ -108,7 +109,7 @@ assign these identifiers to the variable \Robject{batch}.
 <<celfiles>>=
 celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
-batch <- as.factor(substr(basename(celFiles), 13, 13))
+plates <- substr(basename(celFiles), 13, 13)
 @
 
 The preprocessing steps for copy number estimation includes quantile
@@ -157,16 +158,8 @@ should instead use the \R{} function \Rfunction{crlmm} or
 be run interactively.
 
 
-<<LDS_genotype>>=
-##if(!file.exists(file.path(outdir, "cnSet.rda"))){
-system.time(checkExists("gtSet",
-			.path=outdir,
-			.FUN=genotype,
-			filenames=celFiles,
-			cdfName=cdfName,
-			batch=batch))
-q("no")
-##}
+<<LDS_genotype, cache=TRUE>>=
+cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName)
 @
 
 The value returned by genotype is an instance of the class
@@ -189,9 +182,9 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
   With \texttt{verbose=TRUE}, the above steps for CN estimation are
   displayed during the processing.
 
-<<LDS_copynumber>>=
-GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR)
+<<LDS_copynumber,cache=TRUE>>=
+open(cnSet)
+cnSet.updated <- crlmmCopynumber(cnSet)
 @
 
 In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
@@ -268,7 +261,6 @@ boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
 
 Polymorphic markers on chromosome X:
 
-
 \begin{figure}[t!]
  \centering
 <<polymorphicX, fig=TRUE, width=8, height=4>>=
@@ -281,8 +273,8 @@ cb.F <- CB(cnSet, i=X.markers, j=F)
 cn.M <- ca.M+cb.M
 cn.F <- ca.F+cb.F
 par(las=1)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col=cols, xaxt="n", ylim=c(0,5))
-legend("topleft", fill=unique(cols), legend=c("Male", "Female"))
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col=cnSet$gender[c(M, F)], xaxt="n", ylim=c(0,5))
+legend("topleft", fill=unique(cnSet$gender[c(M,F)]), legend=c("Male", "Female"))
 abline(h=c(1,2))
 cn2 <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
 stopifnot(all.equal(cbind(cn.M, cn.F), cn2))
@@ -367,7 +359,7 @@ markers, we extract only the polymorphic markers using the
 
 <<assayData>>=
 rows <- which(isSnp(cnSet))
-cols <- which(batch == "C")
+cols <- which(batch(cnSet) == "C")
 invisible(open(snpCallProbability(cnSet)))
 posterior.prob <- tryCatch(i2p(snpCallProbability(cnSet)),
 			   error=function(e) print("This will not work for an ff object."))
@@ -412,7 +404,7 @@ Note that NA's are stored in the slot for normalized 'B' allele
 intensities:
 
 <<B.NAs>>=
-all(is.na(B(cnSet)[np.index, ]))
+stopifnot(all(is.na(B(cnSet)[np.index, ])))
 @
 
 <<clean, echo=FALSE>>=
@@ -442,7 +434,9 @@ A histogram of the signal to noise ratio for the HapMap samples:
 
 <<plotSnr, fig=TRUE, include=FALSE>>=
 open(cnSet$SNR)
-hist(cnSet$SNR[, ], xlab="SNR", main="", breaks=25)
+hist(cnSet$SNR[, ], xlab="SNR", main="", breaks=25, col="lightblue", xlim=c(3, max(cnSet$SNR[])))
+abline(v=5, lty=2, col="grey")
+text(3,5, label="SNR range for low \n quality arrays", adj=0, col="grey40")
 @
 \begin{figure}
   \centering
@@ -465,6 +459,7 @@ available, an idiogram can be added to the existing plotting
 coordinates as indicated in the following example.
 
 <<oneSample, fig=TRUE, width=8, height=4, include=FALSE>>=
+GT.CONF.THR <- 0.8
 marker.index <- which(chromosome(cnSet) == 1)
 cn <- totalCopynumber(cnSet, i=marker.index, j=1)
 x <- position(cnSet)[marker.index]
@@ -514,8 +509,12 @@ HapMap analysis, we used a confidence threshold of
 autosome.index <- which(isSnp(cnSet) & chromosome(cnSet) < 23)
 sample.index <- which(batch(cnSet) == "C")
 ca <- CA(cnSet, i=autosome.index, j=sample.index)
+cb <- CB(cnSet, i=autosome.index, j=sample.index)
 missing.ca <- is.na(ca)
+missing.cb <- is.na(cb)
 (nmissing.ca <- sum(missing.ca))
+(nmissing.cb <- sum(missing.cb))
+identical(nmissing.ca, nmissing.cb)
 @
 
 If \Robject{nmissing.ca} is nonzero, then one could check the genotype
@@ -529,11 +528,20 @@ if(nmissing.ca > 0){
 	invisible(close(snpCallProbability(cnSet)))
 	below.thr <- gt.conf < GT.CONF.THR
 	index.allbelow <- as.integer(which(rowSums(below.thr) == length(sample.index)))
-	all.equal(index, index.allbelow)
+	nmissingBecauseOfGtThr <- length(index.allbelow) * length(sample.index)
+	stopifnot(identical(nmissingBecauseOfGtThr, nmissing.ca))
 	## or calculate the proportion of missing effected by low crlmm confidence
-	sum(index.allbelow %in% index)/length(index)
+	length(index.allbelow) * length(sample.index)/nmissing.ca
 }
 @
+
+One could inspect the cluster plots for the 'low confidence' calls.
+
+<<clusterPlotsLowConfidence>>=
+## TODO
+@
+
+
 
 We repeat the above check for missing values at polymorphic loci on
 chromosome X.  In this case, we compare the \Robject{rowSums} of the
@@ -565,27 +573,18 @@ if(nmissing.caX > 0){
 	below.thr <- gt.conf < GT.CONF.THR
 	F <- which(cnSet$gender[sample.index] == 2)
 	M <- which(cnSet$gender[sample.index] == 1)
+	##nus <- nuA(cnSet)[X.index, "C"]
 	index.allbelowF <- as.integer(which(rowSums(below.thr[, F]) == length(F)))
 	index.allbelowM <- as.integer(which(rowSums(below.thr[, M]) == length(M)))
 	index.allbelow <- as.integer(unique(c(index.allbelowF, index.allbelowM)))
-	all.equal(index, index.allbelow)
+	##all.equal(index, index.allbelow)
 	## or calculate the proportion of missing effected by low crlmm confidence
 	sum(index.allbelow %in% index)/length(index)
 }
 @
 
-Next, we verify that the number of missing values is the same for the
-'B' allele at autosomal polymorphic loci
-
-<<NAmissingForBallele>>=
-cb <- CB(cnSet, i=autosome.index, j=sample.index)
-missing.cb <- is.na(cb)
-sum(missing.cb)
-@
-
 For nonpolymorphic loci, the genotype confidence scores are irrelevant
 and estimates are available at most markers.
-
 
 <<NAnonpolymorphic.autosome>>=
 np.index <- which(!isSnp(cnSet) & chromosome(cnSet)==23)
@@ -598,10 +597,10 @@ sum(is.na(ca.F))
 sum(is.na(ca.M))
 @
 
-TODO: marker CN\_974939 has NAs for the normalized intensities.  This
-is because CN\_974939 is not in the \Robject{npProbesFid} file in
-\Rpackage{genomewidesnp6Crlmm}.  The \Robject{npProbesFid} file should
-be updated in the next \Rpackage{genomewidesnp6Crlmm} release.
+%TODO: marker CN\_974939 has NAs for the normalized intensities.  This
+%is because CN\_974939 is not in the \Robject{npProbesFid} file in
+%\Rpackage{genomewidesnp6Crlmm}.  The \Robject{npProbesFid} file should
+%be updated in the next \Rpackage{genomewidesnp6Crlmm} release.
 
 In total, there were \Sexpr{length(missing.snp.index)} polymorphic
 markers on chromosome X for which copy number estimates are not
@@ -621,7 +620,7 @@ chromosome Y, are not currently available in \crlmm{}.
 
 \section{Different batch structure.}
 
-
+TODO.
 
 <<echo=FALSE>>=
 invisible(close(cnSet))

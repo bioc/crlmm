@@ -311,19 +311,16 @@ setReplaceMethod("flags", signature=signature(object="CNSet", value="ff_matrix")
 ##   autosome NPs
 ##   chromosome X NPs for women
 C1 <- function(object, marker.index, batch.index, sample.index){
-##	acn <- vector("list", length(batch.index))
 	acn <- matrix(NA, nrow=length(marker.index), ncol=length(sample.index))
 	for(k in seq_along(batch.index)){
 		l <- batch.index[k]
+		## calculate cn for all the samples that are in this batch
 		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
 		bg <- nuA(object)[marker.index, l]
 		slope <- phiA(object)[marker.index, l]
 		I <- as.matrix(A(object)[marker.index, jj])
 		acn[, match(jj, sample.index)] <- 1/slope * (I - bg)
 	}
-##	if(length(acn) > 1){
-##		acn <- do.call("cbind", acn)
-##	} else acn <- acn[[1]]
 	return(as.matrix(acn))
 }
 
@@ -363,8 +360,11 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		phiB <- phiB(object)[marker.index, l]
 		nuA <- nuA(object)[marker.index, l]
 		nuB <- nuB(object)[marker.index, l]
+		phiA <- phiA(object)[marker.index, l]
 		IA <- as.matrix(A(object)[marker.index, jj])
 		IB <- as.matrix(B(object)[marker.index, jj])
+		## I = nu + acn * phi
+		## acn = 1/phi* (I-nu)
 		phistar <- phiB2/phiA
 		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
 		CB <- tmp/(1-phistar*phiA2/phiB)

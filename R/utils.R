@@ -32,8 +32,8 @@ isLoaded <- function(dataset, environ=.crlmmPkgEnv)
 	exists(dataset, envir=environ)
 
 getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
-	if (!isLoaded(dataset))
-		stop("Variable ", dataset, " not found in .crlmmPkgEnv")
+	if (!isLoaded(dataset, environ=environ))
+		stop("Variable ", dataset, " not found in ", environ)
 	environ[[dataset]]
 }
 
@@ -168,12 +168,19 @@ validCdfNames <- function(){
           "humanimmuno12v1b")
 }
 isValidCdfName <- function(cdfName){
-    stopifnot(is.character(cdfName))
-    result <- cdfName %in% validCdfNames()
-    if (!result)
-        warning("cdfName must be one of the following: ",
-                chipList)
-    return(result)
+	chipList <- validCdfNames()
+	result <- cdfName %in% chipList
+	if(!(result)){
+		warning("cdfName must be one of the following: ",
+			chipList)
+	}
+	return(result)
+}
+
+isPackageLoaded <- function(pkg){
+	stopifnot(is.character(pkg))
+	pkg <- paste("package:", pkg, sep="")
+	pkg %in% search()
 }
 
 paramNames <- function(){
