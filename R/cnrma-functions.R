@@ -73,8 +73,8 @@ construct <- function(filenames,
 	cnSet <- new("CNSet",
 		     alleleA=initializeBigMatrix(name="A", nr, nc),
 		     alleleB=initializeBigMatrix(name="B", nr, nc),
-##		     call=initializeBigMatrix(name="call", nr, nc),
-##		     callProbability=initializeBigMatrix(name="callPr", nr,nc),
+		     call=initializeBigMatrix(name="call", nr, nc),
+		     callProbability=initializeBigMatrix(name="callPr", nr,nc),
 		     annotation=cdfName,
 		     batch=batch)
 	sampleNames(cnSet) <- sns
@@ -116,27 +116,64 @@ genotype <- function(filenames,
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	if(missing(sns)) sns <- basename(filenames)
-	callSet <- construct(filenames=filenames,
-			     cdfName=cdfName,
-			     copynumber=TRUE,
-			     sns=sns,
-			     verbose=verbose,
-			     batch=batch)
-	FUN <- ifelse(is.lds, "snprma2", "snprma")
-	snprmaFxn <- function(FUN,...){
-		switch(FUN,
-		       snprma=snprma(...),
-		       snprma2=snprma2(...))
-	}
-	snprmaRes <- snprmaFxn(FUN,
-			       filenames=filenames,
-			       mixtureSampleSize=mixtureSampleSize,
-			       fitMixture=TRUE,
-			       eps=eps,
-			       verbose=verbose,
-			       seed=seed,
-			       cdfName=cdfName,
-			       sns=sns)
+##	callSet <- construct(filenames=filenames,
+##			     cdfName=cdfName,
+##			     copynumber=TRUE,
+##			     sns=sns,
+##			     verbose=verbose,
+##			     batch=batch)
+##	FUN <- ifelse(is.lds, "snprma2", "snprma")
+##	snprmaFxn <- function(FUN,...){
+##		switch(FUN,
+##		       snprma=snprma(...),
+##		       snprma2=snprma2(...))
+##	}
+##	snprmaRes <- snprmaFxn(FUN,
+##			       filenames=filenames,
+##			       mixtureSampleSize=mixtureSampleSize,
+##			       fitMixture=TRUE,
+##			       eps=eps,
+##			       verbose=verbose,
+##			       seed=seed,
+##			       cdfName=cdfName,
+##			       sns=sns)
+	##---------------------------------------------------------------------------
+	##
+	## from snprma2.  Goal is to initialize A and B with appropriate dimension for snps+nps
+	##
+	##---------------------------------------------------------------------------
+	if (missing(sns)) sns <- basename(filenames)
+	if (missing(cdfName))
+		cdfName <- read.celfile.header(filenames[1])[["cdfName"]]
+	pkgname <- getCrlmmAnnotationName(cdfName)
+	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
+	if(verbose) message("Loading annotations and mixture model parameters.")
+	obj <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	pnsa <- getVarInEnv("pnsa")
+	pnsb <- getVarInEnv("pnsb")
+	gns <- getVarInEnv("gns")
+	rm(list=obj, envir=.crlmmPkgEnv)
+	rm(obj)
+	if(verbose) message("Initializing objects.")
+	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
+	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
+	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
+##	A <- initializeBigMatrix("crlmmA-", length(pnsa), length(filenames), "integer")
+##	B <- initializeBigMatrix("crlmmB-", length(pnsb), length(filenames), "integer")
+	featureData <- getFeatureData(cdfName, copynumber=TRUE)
+	nr <- nrow(featureData); nc <- length(sns)
+	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
+	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
+	rownames(A) <- rownames(B) <- featureNames(featureData)
+
+	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	if(verbose) message("Processing ", length(filenames), " files.")
+	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
+		 fitMixture=fitMixture, A=A, B=B, SKW=SKW, SNR=SNR,
+		 mixtureParams=mixtureParams, eps=eps, seed=seed,
+		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
+		 neededPkgs=c("crlmm", pkgname))
+
 	gns <- snprmaRes[["gns"]]
 	snp.I <- isSnp(callSet)
 	is.snp <- which(snp.I)
@@ -240,6 +277,69 @@ genotype <- function(filenames,
 	}
 	close(callSet)
 	return(callSet)
+}
+
+rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
+			 mixtureParams, eps, seed, mixtureSampleSize,
+			 pkgname){
+	obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+	obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+	autosomeIndex <- getVarInEnv("autosomeIndex")
+	pnsa <- getVarInEnv("pnsa")
+	pnsb <- getVarInEnv("pnsb")
+	fid <- getVarInEnv("fid")
+	reference <- getVarInEnv("reference")
+	aIndex <- getVarInEnv("aIndex")
+	bIndex <- getVarInEnv("bIndex")
+	SMEDIAN <- getVarInEnv("SMEDIAN")
+	theKnots <- getVarInEnv("theKnots")
+	gns <- getVarInEnv("gns")
+	rm(list=c(obj1, obj2, obj3), envir=.crlmmPkgEnv)
+	rm(obj1, obj2, obj3)
+
+	## for mixture
+	set.seed(seed)
+	idx <- sort(sample(autosomeIndex, mixtureSampleSize))
+	##for skewness. no need to do everything
+	idx2 <- sample(length(fid), 10^5)
+
+	open(A)
+	open(B)
+	open(SKW)
+	open(mixtureParams)
+	open(SNR)
+
+	for (k in i){
+		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
+		x <- log2(y[idx2])
+		SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
+		rm(x)
+		y <- normalize.quantiles.use.target(y, target=reference)
+		A[, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+		B[, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+		rm(y)
+		if(fitMixture){
+			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
+			M <- log2(A[idx, k])-log2(B[idx, k])
+			tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
+			rm(S, M)
+			mixtureParams[, k] <- tmp[["coef"]]
+			SNR[k] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
+			rm(tmp)
+		} else {
+			mixtureParams[, k] <- NA
+			SNR[k] <- NA
+		}
+	}
+	close(A)
+	close(B)
+	close(SKW)
+	close(mixtureParams)
+	close(SNR)
+	rm(list=ls())
+	gc(verbose=FALSE)
+	TRUE
 }
 
 genotype2 <- function(){

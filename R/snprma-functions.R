@@ -15,7 +15,7 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
     message(strwrap(msg))
     stop("Package ", pkgname, " could not be found.")
   }
-  
+
   if(verbose) message("Loading annotations and mixture model parameters.")
   loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
@@ -30,7 +30,7 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
   SMEDIAN <- getVarInEnv("SMEDIAN")
   theKnots <- getVarInEnv("theKnots")
   gns <- getVarInEnv("gns")
-  
+
   ##We will read each cel file, summarize, and run EM one by one
   ##We will save parameters of EM to use later
   mixtureParams <- matrix(0, 4, length(filenames))
@@ -39,7 +39,7 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
 ##   mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames))
 ##   SNR <- initializeBigVector("crlmmSNR-", length(filenames), "numeric")
 ##   SKW <- initializeBigVector("crlmmSKW-", length(filenames), "numeric")
-  
+
   ## This is the sample for the fitting of splines
   ## BC: I like better the idea of the user passing the seed,
   ##     because this might intefere with other analyses
@@ -51,15 +51,15 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
   ##f is the correction. we save to avoid recomputing
   A <- matrix(as.integer(0), length(pnsa), length(filenames))
   B <- matrix(as.integer(0), length(pnsb), length(filenames))
-  
+
   if(verbose){
     message("Processing ", length(filenames), " files.")
     pb <- txtProgressBar(min=0, max=length(filenames), style=3)
   }
-  
+
   ##for skewness. no need to do everything
   idx2 <- sample(length(fid), 10^5)
-  
+
   ##We start looping throug cel files
   for(i in seq(along=filenames)){
     y <- as.matrix(read.celfile(filenames[i], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
@@ -73,10 +73,10 @@ snprma <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
     if(fitMixture){
       S <- (log2(A[idx, i])+log2(B[idx, i]))/2 - SMEDIAN
       M <- log2(A[idx, i])-log2(B[idx, i])
-      
+
       ##we need to test the choice of eps.. it is not the max diff between funcs
       tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
-      
+
       mixtureParams[, i] <- tmp[["coef"]]
       SNR[i] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
     }
@@ -97,12 +97,12 @@ fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=1
   mus <- append(quantile(M, c(1, 5)/6, names=FALSE), 0, 1)
   sigmas <- rep(mad(c(M[M<mus[1]]-mus[1], M[M>mus[3]]-mus[3])), 3)
   sigmas[2] <- sigmas[2]/2
- 
+
   weights <- apply(cbind(mus, sigmas), 1, function(p) dnorm(M, p[1], p[2]))
   previousF1 <- -Inf
   change <- eps+1
   it <- 0
- 
+
   if(verbose) message("Max change must be under ", eps, ".")
   matS <- stupidSplineBasis(S, knots)
   while (change > eps & it < maxit){
@@ -112,19 +112,19 @@ fitAffySnpMixture56 <- function(S, M, knots, probs=rep(1/3, 3), eps=.01, maxit=1
     LogLik <- rowSums(z)
     z <- sweep(z, 1, LogLik, "/")
     probs <- colMeans(z)
- 
+
     ## M
     fit1 <- crossprod(chol2inv(chol(crossprod(sweep(matS, 1, z[, 1], FUN="*"), matS))), crossprod(matS, z[, 1]*M))
- 
+
     fit2 <- sum(z[, 2]*M)/sum(z[, 2])
     F1 <- matS%*%fit1
     sigmas[c(1, 3)] <- sqrt(sum(z[, 1]*(M-F1)^2)/sum(z[, 1]))
     sigmas[2] <- sqrt(sum(z[, 2]*(M-fit2)^2)/sum(z[, 2]))
- 
+
     weights[, 1] <- dnorm(M, F1, sigmas[1])
     weights[, 2] <- dnorm(M, fit2, sigmas[2])
     weights[, 3] <- dnorm(M, -F1, sigmas[3])
-    
+
     change <- max(abs(F1-previousF1))
     previousF1 <- F1
     if(verbose) message("Iter ", it, ": ", change, ".")
@@ -140,7 +140,7 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
     cdfName <- read.celfile.header(filenames[1])[["cdfName"]]
   pkgname <- getCrlmmAnnotationName(cdfName)
   stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
-  
+
   if(verbose) message("Loading annotations and mixture model parameters.")
   obj <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   pnsa <- getVarInEnv("pnsa")
@@ -148,14 +148,14 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
   gns <- getVarInEnv("gns")
   rm(list=obj, envir=.crlmmPkgEnv)
   rm(obj)
-  
+
   ##We will read each cel file, summarize, and run EM one by one
   ##We will save parameters of EM to use later
   if(verbose) message("Initializing objects.")
   mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
   SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
   SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
-  
+
   ## This is the sample for the fitting of splines
   ## BC: I like better the idea of the user passing the seed,
   ##     because this might intefere with other analyses
@@ -180,7 +180,7 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
   close(SKW)
   close(A)
   close(B)
-  
+
   list(A=A, B=B, sns=sns, gns=gns, SNR=SNR, SKW=SKW, mixtureParams=mixtureParams, cdfName=cdfName)
 }
 
@@ -188,7 +188,7 @@ snprma2 <- function(filenames, mixtureSampleSize=10^5, fitMixture=FALSE,
 processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
                        mixtureParams, eps, seed, mixtureSampleSize,
                        pkgname){
-  
+
   obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
   obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
   obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
@@ -226,7 +226,7 @@ processCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
     A[, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
     B[, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
     rm(y)
-    
+
     if(fitMixture){
       S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
       M <- log2(A[idx, k])-log2(B[idx, k])
