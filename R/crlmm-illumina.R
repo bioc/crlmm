@@ -1139,10 +1139,9 @@ genotype.Illumina = function(sampleSheet=NULL,
 	narrays = ncol(callSet)
 	if(is.lds) {
           sampleBatches = splitIndicesByLength(seq(along=sampleNames(callSet)), ocSamples())
-
-          mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
-          SNR = initializeBigVector("crlmmSNR-", narrays, "double")
-          SKW = initializeBigVector("crlmmSKW-", narrays, "double")
+	  mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
+	  SNR = initializeBigVector("crlmmSNR-", narrays, "double")
+	  SKW = initializeBigVector("crlmmSKW-", narrays, "double")
 
           ocLapply(sampleBatches, processIDAT, sampleSheet=sampleSheet, arrayNames=arrayNames,
                  ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
