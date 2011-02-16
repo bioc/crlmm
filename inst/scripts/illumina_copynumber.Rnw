@@ -143,16 +143,40 @@ plate <- samplesheet$Plate
 table(plate)
 ## too few samples to run the plates as separate batches
 batch <- as.factor(rep("1", nrow(samplesheet)))
-container <- checkExists("container", .path=outdir,
-			 .FUN=crlmm:::genotype.Illumina,
-			 sampleSheet=samplesheet,
-			 path=dirname(arrayNames[1]),
-			 arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-			 cdfName="human370v1c",
-			 batch=batch,
-			 .load.it=load.it)
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it="FALSE",
-		     GT.CONF.THR=0.8)
+if(!exists("crlmmResult")){
+	if(!file.exists(file.path(outdir, "crlmmResult.rda"))){
+		RG <- readIdatFiles(samplesheet,
+				    path=dirname(arrayNames[1]),
+				    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+				    saveDate=TRUE)
+		crlmmResult <- crlmmIllumina(RG=RG,
+					     cdfName="human370v1c",
+					     sns=pData(RG)$ID,
+					     returnParams=TRUE,
+					     cnFile=file.path(outdir, "cnFile.rda"),
+					     snpFile=file.path(outdir, "snpFile.rda"),
+					     save.it=TRUE)
+		protocolData(crlmmResult)$ScanDate <- protocolData(RG)$ScanDate
+		range(protocolData(crlmmResult)$ScanDate)
+		save(crlmmResult, file=file.path(outdir, "crlmmResult.rda"))
+		rm(RG); gc()
+	} else{
+		message("Loading previously saved file...")
+		load(file.path(outdir, "crlmmResult.rda"))
+	}
+}
+##container <- checkExists("container", .path=outdir,
+##			 .FUN=crlmm:::genotype.Illumina,
+##			 sampleSheet=samplesheet,
+##			 path=dirname(arrayNames[1]),
+##			 arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+##			 cdfName="human370v1c",
+##			 batch=batch,
+##			 .load.it=load.it)
+##GT.CONF.THR <- 0.8
+##cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=container, .load.it=load.it,
+##		     GT.CONF.THR=GT.CONF.THR)
+q("no")
 @
 
 The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
