@@ -47,7 +47,7 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
-	M[is.na(M[, "chromosome"]), "isSnp"] <- 1L
+	M <- M[!is.na(M[, "chromosome"]), ]
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
 }
