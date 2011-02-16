@@ -163,8 +163,16 @@ if(!file.exists(file.path(outdir, "cnSet.rda"))){
 			     .FUN=genotype,
 			     filenames=celFiles,
 			     cdfName=cdfName,
-			     batch=batch, .load.it=FALSE)
-	class(calls(gtSet))
+			     batch=batch)
+	## try normalizing np probes on chr X
+	callSet <- gtSet
+	filenames <- celFiles
+	snp.I <- isSnp(callSet)
+	is.snp <- which(snp.I)
+	np.index <- which(!is.snp)
+
+
+
 }
 @
 
@@ -189,8 +197,7 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
   displayed during the processing.
 
 <<LDS_copynumber>>=
-GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, .load.it=FALSE)
 @
 
 In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
@@ -219,7 +226,7 @@ the useful accessors for extracting which markers are SNPs, which are
 chromosomes, etc.
 
 <<ca>>=
-snp.index <- which(isSnp(cnSet) & chromosome(cnSet) < 23)
+snp.index <- which(isSnp(cnSet) & !is.na(chromosome(cnSet)))
 ca <- CA(cnSet, i=snp.index, j=1:5)
 cb <- CB(cnSet, i=snp.index, j=1:5)
 ct <- ca+cb
@@ -244,20 +251,22 @@ ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
 stopifnot(all.equal(ct, ct2))
 @
 
-  Nonpolymorphic markers on chromosome X:
 
-<<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
-library(RColorBrewer)
-bp.cols <- brewer.pal(8, "Paired")[3:4]
+TODO: FIX estimation for nonpolymorphic markers on X
+
+<<nonpolymorphicX>>=
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
+a <- A(cnSet)[npx.index, M]
+nus <- nuA(cnSet)[npx.index, ]
+## nu and phi are not estimated
 M <- sample(which(cnSet$gender==1), 5)
-cols <- bp.cols[cnSet$gender[c(M,F)]]
-cn.M <- CA(cnSet, i=npx.index, j=M)
-cn.F <- CA(cnSet, i=npx.index, j=F)
 F <- sample(which(cnSet$gender==2), 5)
-par(las=1)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col=cols, outline=FALSE)
-legend("topleft", bty="n", fill=bp.cols, legend=c("male", "female"))
+X.markers <- which(!isSnp(cnSet) & chromosome(cnSet) == 23)
+cn.M <- CA(cnSet, i=X.markers, j=M)
+cn.F <- CA(cnSet, i=X.markers, j=F)
+##phi(cnSet, "A")[X.markers[1:10]]
+index <- which(is.na(nuA(cnSet)[X.markers, 1]))
+boxplot(data.frame(cbind(cn.M, cn.F)), pch=".")
 @
 
 \begin{figure}[t!]
