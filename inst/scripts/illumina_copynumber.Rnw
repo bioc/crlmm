@@ -256,6 +256,20 @@ position.  The following code chunk can be used to create an instance
 of \Robject{CopyNumberSet} that contains the CA + CB at polymorphic
 markers and 'CA' at nonpolymorphic markers.
 
+The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
+function contains all of the parameters used to compute
+allele-specific copy number.  In order to reduce I/O and speed
+computation, the allele-specific copy number estimates are not written
+to file nor saved in the \Robject{CNSet} object.  Rather, the
+estimates are computed on the fly when the user calls one of the
+helper functions that uses this information. For instance, often it is
+of interest to smooth the total copy number estimates (the sum of the
+allele-specific copy number) as a function of the physical position.
+The following code chunk can be used to create an instance of
+\Robject{CopyNumberSet} that contains the CA + CB at polymorphic
+markers and 'CA' at nonpolymorphic markers.
+
+
 <<copynumberObject>>=
 marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
 sample.index <- 1:5 ## first five samples
@@ -305,6 +319,39 @@ for(j in 1:5){
 }
 @
 
+
+We suggest plotting the total copy number as a function of the
+physical position to evaluate whether a wave-correction is needed.
+
+
+<<plotTotalCn, fig=TRUE, width=8, height=8>>=
+require(SNPchip)
+data(chromosomeAnnotation)
+chrAnn <- chromosomeAnnotation[1,]
+layout(matrix(1:5, 5,1), heights=c(1, 1, 1, 1, 1))
+par(mar=c(0.5, 0.5, 0.5, 0.5), las=1, oma=c(4, 4, 4, 4))
+i <- which(chromosome(copynumberSet) == 1)
+for(j in 1:5){
+	plot(position(copynumberSet)[i], copyNumber(copynumberSet)[i, j], pch=".", cex=0.6,col="grey60", xaxt="n",
+	     ylim=c(-1,6), ylab="total copy number",
+	     yaxt="n",
+	     xlim=c(0, max(position(copynumberSet)[i])))
+	legend("topleft", legend=paste("SNR:", round(copynumberSet$SNR[j], 1)))
+	axis(2, at=0:6, labels=0:6)
+	if(j == 5){
+		mtext("physical position (Mb)", 1, outer=TRUE, line=2)
+		mtext("Chromosome 8", 3, line=0, outer=TRUE)
+		at <- pretty(position(copynumberSet)[i], n=8)
+	}
+	## draw centromere
+	xx <- c(chrAnn[1:2], chrAnn[2:1])
+	yy <- c(-0.5, -0.5, 5, 5)
+	polygon(xx, yy, col="bisque")
+}
+@
+
+
+
 \section{Smoothing marker-level estimates of total copy number}
 
 In this section, we show how the total copy number can be smoothed
@@ -326,7 +373,7 @@ if(require(VanillaICE)){
 @
 
 
-\paragraph{Smoothing via segmentation.}
+\paragraph{Smoothing via a hidden Markov model.}
 
 <<cbs>>=
 library("DNAcopy")
@@ -452,10 +499,50 @@ names(tabs) <- names(cbs.states)
 @
 
 
-Plots of the signal to noise ratio of the sample -- an overall measure
-of how well the genotype clusters separate -- can be useful for
-identifying samples of lower quality.  (Note that this statistic tends
-to be much higher for Illumina than for the Affymetrix platforms.)
+\section{Accessors for extracting the locus-level copy number
+  estimates.}
+
+As an example of how to use accessors to obtain the allele-specific CN
+estimates, the following code chunk extracts the allele-specific copy
+number for polymorphic markers on chromosome 21.
+
+<<acn-accessor>>=
+marker.index <- which(chromosome(cnSet) == 21 & isSnp(cnSet))
+ca <- CA(cnSet, i=marker.index)
+cb <- CB(cnSet, i=marker.index)
+missing.index <- which(rowSums(is.na(ca))==ncol(cnSet))
+ca <- ca[-missing.index, ]
+cb <- cb[-missing.index, ]
+@
+\noindent Negating the \Robject{isSnp} function could be used to
+extract the estimates at nonpolymorphic markers. For instance,
+<<monomorphic-accessor>>=
+cn.monomorphic <- CA(cnSet, i=which(chromosome(cnSet) == 21 & !isSnp(cnSet)))
+@
+
+At polymorphic loci, the total copy number is the sum of the number of
+copies of the A allele and the number of copies for the B allele.  At
+nonpolymorphic loci, the total copy number is the number of copies for
+the A allele.  The helper function totalCopyNumber can be used to
+extract the total copy number for all polymorphic and nonpolymorphic
+markers.  Documentation of the \Rfunction{totalCopyNumber} will be
+available in the devel version of the \Rpackage{oligoClasses}.
+
+<<copyNumberHelper>>=
+cn.total <- ca+cb
+cn.total2 <- totalCopynumber(cnSet, i=marker.index)
+cn.total2 <- cn.total2[-missing.index, ]
+all.equal(cn.total2, cn.total)
+@
+
+A few simple visualizations may be helpful at this point. The first
+plot is a histogram of the signal to noise ratio of the sample -- an
+overall measure of how well the genotype clusters separate.  (This
+statistic tends to be much higher for Illumina than for the Affymetrix
+platforms.) The second is a visualization of the total copy number
+estimates plotted versus physical position on chromosome 1 for the two
+samples with the lowest (top) and highest (bottom) signal to noise
+ratios.
 
 <<snr, fig=TRUE>>=
 open(cnSet$SNR)
@@ -463,13 +550,9 @@ snr <- cnSet$SNR[,]
 hist(snr, breaks=15)
 @
 
-We plot the total copy number estimates versus physical position the
-two samples with the lowest (top) and highest (bottom) signal to noise
-ratios.
-
 \begin{figure}
   \centering
-<<firstSample, fig=TRUE, width=8, height=7>>=
+<<firstSample, fig=TRUE>>=
 low.snr <- which(snr == min(snr))
 high.snr <- which(snr == max(snr))
 marker.index <- which(chromosome(cnSet) == 1)
@@ -488,11 +571,13 @@ axis(1, at=pretty(x), labels=pretty(x/1e6))
 mtext("Mb", 1, outer=TRUE, line=2)
 @
 \caption{Copy number estimates for samples with low signal to noise
-  ratio (top) and high signal to noise ratio (bottom).  The waves in
-  the scatterplots are often correlated with GC-content and can be
-  removed by scatterplot smoothers or any of the published
-  wave-correction tools for genotyping arrays.}
+  ratio (top) and high signal to noise ratio (bottom).  Note the
+  slight wave in the bottom figure.  Such waves are typically
+  correlated with GC-content and can be removed by scatterplot
+  smoothers or any of the published wave-correction tools for
+  genotyping arrays.}
 \end{figure}
+
 
 
 \section{Session information}
