@@ -113,6 +113,7 @@ genotype <- function(filenames,
 		       returnParams=TRUE,
 		       badSNP=0.7){
 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+	if(!is.lds) stop("this function now requires that the ff package be loaded")
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	if(missing(sns)) sns <- basename(filenames)
@@ -169,7 +170,7 @@ genotype <- function(filenames,
 	sampleBatches <- splitIndicesByNode(seq(along=filenames))
 	if(verbose) message("Processing ", length(filenames), " files.")
 	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
-		 fitMixture=fitMixture, A=A, B=B, SKW=SKW, SNR=SNR,
+		 fitMixture=TRUE, A=A, B=B, SKW=SKW, SNR=SNR,
 		 mixtureParams=mixtureParams, eps=eps, seed=seed,
 		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
 		 neededPkgs=c("crlmm", pkgname))
@@ -310,14 +311,18 @@ rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
 	open(mixtureParams)
 	open(SNR)
 
+	## RS ADDED
+	index <- match(gns, rownames(A))
+
 	for (k in i){
 		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
 		x <- log2(y[idx2])
 		SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
 		rm(x)
 		y <- normalize.quantiles.use.target(y, target=reference)
-		A[, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-		B[, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+		## RS: add index for row assignment
+		A[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+		B[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
 		rm(y)
 		if(fitMixture){
 			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
