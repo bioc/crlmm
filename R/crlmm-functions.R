@@ -622,7 +622,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 ##          (2 reads / 2 writes)
 ## 4.  results are directly usable -- no need to do anything
 ##     4 reads / 2 writes  OR  ( 4 reads/ 4writes if clone requires reading)
-mycrlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
+rscrlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		       col.names=NULL, probs=c(1/3, 1/3, 1/3), DF=6,
 		       SNRMin=5, recallMin=10, recallRegMin=1000,
 		       gender=NULL, desctrucitve=FALSE, verbose=TRUE,
