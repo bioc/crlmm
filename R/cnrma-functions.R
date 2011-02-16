@@ -609,7 +609,7 @@ summarizeMaleXNps <- function(marker.index,
 }
 
 
-summarizeMaleXGenotypes <- function(marker.index,
+summarizeXGenotypes <- function(marker.index,
 				    batches,
 				    object,
 				    GT.CONF.THR,
@@ -617,22 +617,26 @@ summarizeMaleXGenotypes <- function(marker.index,
 				    MIN.SAMPLES,
 				    verbose,
 				    is.lds,
-				    DF.PRIOR,...){
+				    DF.PRIOR,
+				    gender="male", ...){
+	if(gender == "male"){
+		sample.index <- which(gender==1)
+	} else sample.index <- which(gender==2)
 	nr <- length(marker.index)
 	nc <- length(batchNames(object))
 ##	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	gender <- object$gender
-	GG <- as.matrix(calls(object)[marker.index, gender==1])
-	CP <- as.matrix(snpCallProbability(object)[marker.index, gender==1])
-	AA <- as.matrix(A(object)[marker.index, gender==1])
-	BB <- as.matrix(B(object)[marker.index, gender==1])
+	GG <- as.matrix(calls(object)[marker.index, sample.index])
+	CP <- as.matrix(snpCallProbability(object)[marker.index, sample.index])
+	AA <- as.matrix(A(object)[marker.index, sample.index])
+	BB <- as.matrix(B(object)[marker.index, sample.index])
 	for(k in seq_along(batches)){
-		B <- batches[[k]]
-		this.batch <- unique(as.character(batch(object)[B]))
-		gender <- object$gender[B]
-		if(sum(gender==1) < MIN.SAMPLES) next()
-		sns.batch <- sampleNames(object)[B]
+		sample.index <- batches[[k]]
+		this.batch <- unique(as.character(batch(object)[sample.index]))
+		##gender <- object$gender[sample.index]
+		if(length(sample.index) < MIN.SAMPLES) next()
+		sns.batch <- sampleNames(object)[sample.index]
 		##subset GG apppriately
 		sns <- colnames(GG)
 		J <- sns%in%sns.batch
@@ -648,9 +652,10 @@ summarizeMaleXGenotypes <- function(marker.index,
 		G.AB[G.AB==FALSE] <- NA
 		G.BB <- G==3
 		G.BB[G.BB==FALSE] <- NA
-		N.AA.M <- rowSums(G.AA, na.rm=TRUE)
-		N.AB.M <- rowSums(G.AB, na.rm=TRUE)
-		N.BB.M <- rowSums(G.BB, na.rm=TRUE)
+		N.AA <- rowSums(G.AA, na.rm=TRUE)
+		if(gender == "female")
+			N.AB <- rowSums(G.AB, na.rm=TRUE)
+		N.BB <- rowSums(G.BB, na.rm=TRUE)
 		summaryStats <- function(X, INT, FUNS){
 			tmp <- matrix(NA, nrow(X), length(FUNS))
 			for(j in seq_along(FUNS)){
@@ -660,44 +665,68 @@ summarizeMaleXGenotypes <- function(marker.index,
 			tmp
 		}
 		statsA.AA <- summaryStats(G.AA, A, FUNS=c("rowMedians", "rowMAD"))
-		##statsA.AB <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
+		if(gender == "female")
+			statsA.AB <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
 		statsA.BB <- summaryStats(G.BB, A, FUNS=c("rowMedians", "rowMAD"))
 		statsB.AA <- summaryStats(G.AA, B, FUNS=c("rowMedians", "rowMAD"))
-		##statsB.AB <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
+		if(gender == "female")
+			statsB.AB <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
 		statsB.BB <- summaryStats(G.BB, B, FUNS=c("rowMedians", "rowMAD"))
-		medianA[[k]] <- cbind(statsA.AA[, 1], ##statsA.AB[, 1],
-				      statsA.BB[, 1])
-		medianB[[k]] <- cbind(statsB.AA[, 1], ##statsB.AB[, 1],
-				      statsB.BB[, 1])
-		madA <- cbind(statsA.AA[, 2],  ##statsA.AB[, 2],
-			      statsA.BB[, 2])
-		madB <- cbind(statsB.AA[, 2], ##statsB.AB[, 2],
-			      statsB.BB[, 2])
-		rm(statsA.AA, ##statsA.AB,
-		   statsA.BB, statsB.AA,
-		   ##statsB.AB,
-		   statsB.BB)
-		NN.M <- cbind(N.AA.M, ##N.AB.M,
-			      N.BB.M)
-		NN.Mlist[[k]] <- NN.M
-		shrink.madA[[k]] <- shrink(madA, NN.M, DF.PRIOR)
-		shrink.madB[[k]] <- shrink(madB, NN.M, DF.PRIOR)
+		if(gender=="male"){
+			medianA[[k]] <- cbind(statsA.AA[, 1], ##statsA.AB[, 1],
+					      statsA.BB[, 1])
+			medianB[[k]] <- cbind(statsB.AA[, 1], ##statsB.AB[, 1],
+					      statsB.BB[, 1])
+			madA <- cbind(statsA.AA[, 2],  ##statsA.AB[, 2],
+				      statsA.BB[, 2])
+			madB <- cbind(statsB.AA[, 2], ##statsB.AB[, 2],
+				      statsB.BB[, 2])
+			NN <- cbind(N.AA, N.BB)
+			rm(statsA.AA, statsA.BB, statsB.AA, statsB.AB, statsB.BB)
+		} else {
+			medianA[[k]] <- cbind(statsA.AA[, 1], statsA.AB[, 1],
+					      statsA.BB[, 1])
+			medianB[[k]] <- cbind(statsB.AA[, 1], statsB.AB[, 1],
+					      statsB.BB[, 1])
+			madA <- cbind(statsA.AA[, 2],  statsA.AB[, 2],
+				      statsA.BB[, 2])
+			madB <- cbind(statsB.AA[, 2], statsB.AB[, 2],
+				      statsB.BB[, 2])
+			NN <- cbind(N.AA, N.AB, N.BB)
+			rm(statsA.AA, statsA.AB, statsA.BB, statsB.AA, statsB.AB, statsB.BB)
+		}
+		NN.Mlist[[k]] <- NN
+		shrink.madA[[k]] <- shrink(madA, NN, DF.PRIOR)
+		shrink.madB[[k]] <- shrink(madB, NN, DF.PRIOR)
 		##---------------------------------------------------------------------------
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
-		##index.complete <- indexComplete(NN.M[, -2], medianA[[k]], medianB[[k]], MIN.OBS)
-		index.complete <- indexComplete(NN.M, medianA[[k]], medianB[[k]], MIN.OBS)
+		index.complete <- indexComplete(NN, medianA[[k]], medianB[[k]], MIN.OBS)
 
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
 		##---------------------------------------------------------------------------
-		res <- imputeCenterX(medianA[[k]], medianB[[k]], NN.M, index.complete, MIN.OBS)
+		if(gender=="male"){
+			res <- imputeCenterX(medianA[[k]], medianB[[k]], NN.M, index.complete, MIN.OBS)
+		} else {
+			unobservedAA <- NN[, 1] < MIN.OBS
+			unobservedAB <- NN[, 2] < MIN.OBS
+			unobservedBB <- NN[, 3] < MIN.OBS
+			unobserved.index <- vector("list", 3)
+			## AB, BB observed
+			unobserved.index[[1]] <- which(unobservedAA & (NN[, 2] >= MIN.OBS & NN[, 3] >= MIN.OBS))
+			## AA and BB observed (strange)
+			unobserved.index[[2]] <- which(unobservedAB & (NN[, 1] >= MIN.OBS & NN[, 3] >= MIN.OBS))
+			## AB and AA observed
+			unobserved.index[[3]] <- which(unobservedBB & (NN[, 2] >= MIN.OBS & NN[, 1] >= MIN.OBS))
+			res <- imputeCenter(medianA[[k]], medianB[[k]], index.complete, unobserved.index)
+		}
 		medianA[[k]] <- res[[1]]
 		medianB[[k]] <- res[[2]]
 	}
 	return(list(madA=shrink.madA,
 		    madB=shrink.madB,
-		    NN.M=NN.Mlist,
+		    NN=NN.Mlist,
 		    medianA=medianA,
 		    medianB=medianB))
 }
@@ -734,7 +763,7 @@ fit.lm3 <- function(strata,
 	phiA2 <- as.matrix(phiPrimeA(object)[marker.index, ])
 	phiB2 <- as.matrix(phiPrimeB(object)[marker.index, ])
 	if(enough.males){
-		res <- summarizeMaleXGenotypes(marker.index=marker.index,
+		res <- summarizeXGenotypes(marker.index=marker.index,
 					       batches=batches,
 					       object=object,
 					       GT.CONF.THR=GT.CONF.THR,
@@ -742,7 +771,8 @@ fit.lm3 <- function(strata,
 					       MIN.OBS=MIN.OBS,
 					       verbose=verbose,
 					       is.lds=is.lds,
-					       DF.PRIOR=DF.PRIOR/2)
+					       DF.PRIOR=DF.PRIOR/2,
+					   gender="male")
 		madA.Mlist <- res[["madA"]]
 		madB.Mlist <- res[["madB"]]
 		medianA.Mlist <- res[["medianA"]]
@@ -752,6 +782,16 @@ fit.lm3 <- function(strata,
 		## Need N, median, mad
 	}
 	if(enough.females){
+		res <- summarizeXGenotypes(marker.index=marker.index,
+						 batches=batches,
+						 object=object,
+						 GT.CONF.THR=GT.CONF.THR,
+						 MIN.SAMPLES=MIN.SAMPLES,
+						 MIN.OBS=MIN.OBS,
+						 verbose=verbose,
+						 is.lds=is.lds,
+						 DF.PRIOR=DF.PRIOR/2,
+					   gender="female")
 		N.AA.F <- as.matrix(N.AA(object)[marker.index, ])
 		N.AB.F <- as.matrix(N.AB(object)[marker.index, ])
 		N.BB.F <- as.matrix(N.BB(object)[marker.index, ])
