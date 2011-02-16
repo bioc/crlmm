@@ -73,8 +73,8 @@ construct <- function(filenames,
 	cnSet <- new("CNSet",
 		     alleleA=initializeBigMatrix(name="A", nr, nc),
 		     alleleB=initializeBigMatrix(name="B", nr, nc),
-		     call=initializeBigMatrix(name="call", nr, nc),
-		     callProbability=initializeBigMatrix(name="callPr", nr,nc),
+##		     call=initializeBigMatrix(name="call", nr, nc),
+##		     callProbability=initializeBigMatrix(name="callPr", nr,nc),
 		     annotation=cdfName,
 		     batch=batch)
 	sampleNames(cnSet) <- sns
