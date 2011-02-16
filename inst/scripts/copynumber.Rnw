@@ -54,6 +54,8 @@ separately) that are listed below.
 pkgs <- annotationPackages()
 pkgs <- pkgs[grep("Crlmm", pkgs)]
 pkgs
+library(snow)
+setCluster(4, "SOCK")
 @
 
 Note that 'pd.genomewidesnp6' and 'genomewidesnp6Crlmm' are both
@@ -71,7 +73,8 @@ pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
+##outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
+outdir <- "~/tmp"
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 
@@ -105,7 +108,7 @@ we extract the population identifier from the CEL file names and
 assign these identifiers to the variable \Robject{batch}.
 
 <<celfiles>>=
-celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
+celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")[1:10]
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 batch <- as.factor(substr(basename(celFiles), 13, 13))
 @
