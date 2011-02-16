@@ -351,7 +351,6 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	for(k in seq(along=batches)){
 		B <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[B]))
-
 		medianA[[k]] <- cbind(medianA.AA[, k], medianA.AB[, k], medianA.BB[, k])
 		medianB[[k]] <- cbind(medianB.AA[, k], medianB.AB[, k], medianB.BB[, k])
 		madA <- cbind(madA.AA[, k], madA.AB[, k], madA.BB[, k])
@@ -393,8 +392,11 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		unobservedAB <- NN[, 2] < MIN.OBS
 		unobservedBB <- NN[, 3] < MIN.OBS
 		unobserved.index <- vector("list", 3)
+		## AB, BB observed
 		unobserved.index[[1]] <- which(unobservedAA & (NN[, 2] >= MIN.OBS & NN[, 3] >= MIN.OBS))
+		## AA and BB observed (strange)
 		unobserved.index[[2]] <- which(unobservedAB & (NN[, 1] >= MIN.OBS & NN[, 3] >= MIN.OBS))
+		## AB and AA observed
 		unobserved.index[[3]] <- which(unobservedBB & (NN[, 2] >= MIN.OBS & NN[, 1] >= MIN.OBS))
 		res <- imputeCenter(medianA[[k]], medianB[[k]], index.complete, unobserved.index)
 		medianA[[k]] <- res[[1]]
@@ -619,7 +621,8 @@ summarizeMaleXGenotypes <- function(marker.index,
 				    DF.PRIOR,...){
 	nr <- length(marker.index)
 	nc <- length(batchNames(object))
-	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
+##	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
+	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	gender <- object$gender
 	GG <- as.matrix(calls(object)[marker.index, gender==1])
 	CP <- as.matrix(snpCallProbability(object)[marker.index, gender==1])
@@ -658,43 +661,46 @@ summarizeMaleXGenotypes <- function(marker.index,
 			tmp
 		}
 		statsA.AA <- summaryStats(G.AA, A, FUNS=c("rowMedians", "rowMAD"))
-		statsA.AB <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
+		##statsA.AB <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
 		statsA.BB <- summaryStats(G.BB, A, FUNS=c("rowMedians", "rowMAD"))
 		statsB.AA <- summaryStats(G.AA, B, FUNS=c("rowMedians", "rowMAD"))
-		statsB.AB <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
+		##statsB.AB <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
 		statsB.BB <- summaryStats(G.BB, B, FUNS=c("rowMedians", "rowMAD"))
-		medianA <- cbind(statsA.AA[, 1], statsA.AB[, 1], statsA.BB[, 1])
-		medianB <- cbind(statsB.AA[, 1], statsB.AB[, 1], statsB.BB[, 1])
-		madA <- cbind(statsA.AA[, 1], statsA.AB[, 1], statsA.BB[, 1])
-		madB <- cbind(statsB.AA[, 1], statsB.AB[, 1], statsB.BB[, 1])
-		rm(statsA.AA, statsA.AB, statsA.BB, statsB.AA, statsB.AB, statsB.BB)
-
-		NN.M <- cbind(N.AA.M, N.AB.M, N.BB.M)
+		medianA[[k]] <- cbind(statsA.AA[, 1], ##statsA.AB[, 1],
+				      statsA.BB[, 1])
+		medianB[[k]] <- cbind(statsB.AA[, 1], ##statsB.AB[, 1],
+				      statsB.BB[, 1])
+		madA <- cbind(statsA.AA[, 2],  ##statsA.AB[, 2],
+			      statsA.BB[, 2])
+		madB <- cbind(statsB.AA[, 2], ##statsB.AB[, 2],
+			      statsB.BB[, 2])
+		rm(statsA.AA, ##statsA.AB,
+		   statsA.BB, statsB.AA,
+		   ##statsB.AB,
+		   statsB.BB)
+		NN.M <- cbind(N.AA.M, ##N.AB.M,
+			      N.BB.M)
 		NN.Mlist[[k]] <- NN.M
-
 		shrink.madA[[k]] <- shrink(madA, NN.M, DF.PRIOR)
 		shrink.madB[[k]] <- shrink(madB, NN.M, DF.PRIOR)
-
 		##---------------------------------------------------------------------------
 		## SNPs that we'll use for imputing location/scale of unobserved genotypes
 		##---------------------------------------------------------------------------
-		index.complete <- indexComplete(NN.M[, -2], medianA, medianB, MIN.OBS)
-		if(length(index.complete) == 1){
-			if(index.complete == FALSE) return()
-		}
+		##index.complete <- indexComplete(NN.M[, -2], medianA[[k]], medianB[[k]], MIN.OBS)
+		index.complete <- indexComplete(NN.M, medianA[[k]], medianB[[k]], MIN.OBS)
 
 		##---------------------------------------------------------------------------
 		## Impute sufficient statistics for unobserved genotypes (plate-specific)
 		##---------------------------------------------------------------------------
-		res <- imputeCenterX(medianA, medianB, NN.M, index.complete, MIN.OBS)
-		imputed.medianA[[k]] <- res[[1]]
-		imputed.medianB[[k]] <- res[[2]]
+		res <- imputeCenterX(medianA[[k]], medianB[[k]], NN.M, index.complete, MIN.OBS)
+		medianA[[k]] <- res[[1]]
+		medianB[[k]] <- res[[2]]
 	}
 	return(list(madA=shrink.madA,
 		    madB=shrink.madB,
 		    NN.M=NN.Mlist,
-		    medianA=imputed.medianA,
-		    medianB=imputed.medianB))
+		    medianA=medianA,
+		    medianB=medianB))
 }
 
 ## X chromosome, SNPs
@@ -729,11 +735,14 @@ fit.lm3 <- function(strata,
 	phiA2 <- as.matrix(phiPrimeA(object)[marker.index, ])
 	phiB2 <- as.matrix(phiPrimeB(object)[marker.index, ])
 	if(enough.males){
-		res <- summarizeMaleXGenotypes(marker.index=marker.index, batches=batches,
-					       object=object, GT.CONF.THR=GT.CONF.THR,
+		res <- summarizeMaleXGenotypes(marker.index=marker.index,
+					       batches=batches,
+					       object=object,
+					       GT.CONF.THR=GT.CONF.THR,
 					       MIN.SAMPLES=MIN.SAMPLES,
 					       MIN.OBS=MIN.OBS,
-					       verbose=verbose, is.lds=is.lds,
+					       verbose=verbose,
+					       is.lds=is.lds,
 					       DF.PRIOR=DF.PRIOR/2)
 		madA.Mlist <- res[["madA"]]
 		madB.Mlist <- res[["madB"]]
@@ -803,18 +812,18 @@ fit.lm3 <- function(strata,
 			phiB2[, k] <- betas[3, ]
 		}
 		if(enough.men & !enough.women){
-			betas <- fit.wls(NN.M[, c(1,3)],
-					 sigma=madA.M[, c(1,3)],
+			betas <- fit.wls(NN.M,##[, c(1,3)],
+					 sigma=madA.M,##[, c(1,3)],
 					 allele="A",
-					 Y=medianA.M[, c(1,3)],
+					 Y=medianA.M,##[, c(1,3)],
 					 autosome=FALSE,
-					 X=cbind(1, c(0, 1)))
+					 X=cbind(1, c(1, 0)))
 			nuA[, k] <- betas[1, ]
 			phiA[, k] <- betas[2, ]
-			betas <- fit.wls(NN.M[, c(1,3)],
-					 sigma=madB.M[, c(1,3)],
+			betas <- fit.wls(NN.M,##[, c(1,3)],
+					 sigma=madB.M,#[, c(1,3)],
 					 allele="B",
-					 Y=medianB.M[, c(1,3)],
+					 Y=medianB.M,#[, c(1,3)],
 					 autosome=FALSE,
 					 X=cbind(1, c(0, 1)))
 			nuB[, k] <- betas[1, ]
@@ -1050,17 +1059,20 @@ imputeCenter <- function(muA, muB, index.complete, index.missing){
 	index <- index.missing
 	mnA <- muA
 	mnB <- muB
-	for(j in 1:3){
-		if(length(index[[j]]) == 0) next()
-		X <- cbind(1, mnA[index.complete,  -j, drop=FALSE], mnB[index.complete,  -j, drop=FALSE])
-		Y <- cbind(mnA[index.complete, j], mnB[index.complete,  j])
-		betahat <- solve(crossprod(X), crossprod(X,Y))
-		X <- cbind(1, mnA[index[[j]],  -j, drop=FALSE],  mnB[index[[j]],  -j, drop=FALSE])
-		mus <- X %*% betahat
-		muA[index[[j]], j] <- mus[, 1]
-		muB[index[[j]], j] <- mus[, 2]
+	if(length(index.complete) >= 100){
+		for(j in 1:3){
+			if(length(index[[j]]) == 0) next()
+			X <- cbind(1, mnA[index.complete,  -j, drop=FALSE], mnB[index.complete,  -j, drop=FALSE])
+			Y <- cbind(mnA[index.complete, j], mnB[index.complete,  j])
+			betahat <- solve(crossprod(X), crossprod(X,Y))
+			X <- cbind(1, mnA[index[[j]],  -j, drop=FALSE],  mnB[index[[j]],  -j, drop=FALSE])
+			mus <- X %*% betahat
+			muA[index[[j]], j] <- mus[, 1]
+			muB[index[[j]], j] <- mus[, 2]
+		}
 	}
-	list(muA, muB)
+	results <- list(muA, muB)
+	return(results)
 }
 
 indexComplete <- function(NN, medianA, medianB, MIN.OBS){
@@ -1069,15 +1081,19 @@ indexComplete <- function(NN, medianA, medianB, MIN.OBS){
 	index.complete <- intersect(Nindex, correct.order)
 	size <- min(5000, length(index.complete))
 	if(size == 5000) index.complete <- sample(index.complete, 5000, replace=TRUE)
-	if(length(index.complete) < 100){
-		warning("fewer than 100 snps pass criteria for imputing unobserve dgenotype location/scale")
-		return(FALSE)
-	}
+##	if(length(index.complete) < 100){
+##		stop("fewer than 100 snps pass criteria for imputing unobserved genotype location/scale")
+##	}
 	return(index.complete)
 }
 
 imputeCentersForMonomorphicSnps <- function(medianA, medianB, index.complete, unobserved.index){
 	cols <- c(3, 1, 2)
+	if(length(index.complete) < 100){
+		##message("index.complete less than 100.  No imputation")
+		results <- list(medianA=medianA, medianB=medianB)
+		return(results)
+	}
 	for(j in 1:3){
 		if(length(unobserved.index[[j]]) == 0) next()
 		kk <- cols[j]
@@ -1090,36 +1106,40 @@ imputeCentersForMonomorphicSnps <- function(medianA, medianB, index.complete, un
 		medianA[unobserved.index[[j]], -kk] <- mus[, 1:2]
 		medianB[unobserved.index[[j]], -kk] <- mus[, 3:4]
 	}
-	list(medianA=medianA, medianB=medianB)
+	results <- list(medianA=medianA, medianB=medianB)
+	return(results)
 }
 
 
 imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
-	index1 <- which(Ns[, 1] == 0 & Ns[, 3] > MIN.OBS)
+	##index1 <- which(Ns[, 1] == 0 & Ns[, 3] > MIN.OBS)
+	index1 <- which(Ns[, 1] == 0 & Ns[, 2] > MIN.OBS)
 	if(length(index1) > 0){
-		X <- cbind(1, muA[index.complete, 3], muB[index.complete, 3])
+		##X <- cbind(1, muA[index.complete, 3], muB[index.complete, 3])
+		X <- cbind(1, muA[index.complete, 2], muB[index.complete, 2])
 		Y <- cbind(1, muA[index.complete, 1], muB[index.complete, 1])
 ##		X <- cbind(1, muA[index.complete[[1]], 3], muB[index.complete[[1]], 3])
 ##		Y <- cbind(1, muA[index.complete[[1]], 1], muB[index.complete[[1]], 1])
 		betahat <- solve(crossprod(X), crossprod(X,Y))
 		##now with the incomplete SNPs
-		X <- cbind(1, muA[index1, 3], muB[index1, 3])
+		##X <- cbind(1, muA[index1, 3], muB[index1, 3])
+		X <- cbind(1, muA[index1, 2], muB[index1, 2])
 		mus <- X %*% betahat
 		muA[index1, 1] <- mus[, 2]
 		muB[index1, 1] <- mus[, 3]
 	}
-	index1 <- which(Ns[, 3] == 0)
+	index1 <- which(Ns[, 2] == 0)
 	if(length(index1) > 0){
 		X <- cbind(1, muA[index.complete, 1], muB[index.complete, 1])
-		Y <- cbind(1, muA[index.complete, 3], muB[index.complete, 3])
+		Y <- cbind(1, muA[index.complete, 2], muB[index.complete, 2])
 ##		X <- cbind(1, muA[index.complete[[2]], 1], muB[index.complete[[2]], 1])
 ##		Y <- cbind(1, muA[index.complete[[2]], 3], muB[index.complete[[2]], 3])
 		betahat <- solve(crossprod(X), crossprod(X,Y))
 		##now with the incomplete SNPs
 		X <- cbind(1, muA[index1, 1], muB[index1, 1])
 		mus <- X %*% betahat
-		muA[index1, 3] <- mus[, 2]
-		muB[index1, 3] <- mus[, 3]
+		muA[index1, 2] <- mus[, 2]
+		muB[index1, 2] <- mus[, 3]
 	}
 	list(muA, muB)
 }
@@ -1311,11 +1331,12 @@ genotypeSummary <- function(object,
 			    marker.index,
 			    is.lds){
 	if(type == "X.SNP" | type=="X.NP"){
-		gender <- object$gender
-		if(sum(gender == 2) < 3) {
-			message("too few females to estimate within genotype summary statistics on CHR X")
-			return(object)
-		}
+##		gender <- object$gender
+##		## the number of women in each batch could be less than 3...
+##		if(sum(gender == 2) < 3) {
+##			message("too few females to estimate within genotype summary statistics on CHR X")
+##			return(object)
+##		}
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
 	if(missing(marker.index)){
@@ -1436,6 +1457,9 @@ summarizeSnps <- function(strata,
 ##	} else {
 ##		batches <- split(seq_along(batch(object)), as.character(batch(object)))
 ##	}
+	if(CHR.X){
+		if(verbose) message("        biallelic cluster medians are estimated using only the women for SNPs on chr. X")
+	}
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batchnames <- batchNames(object)
 	nr <- length(index)
@@ -1451,23 +1475,17 @@ summarizeSnps <- function(strata,
 	FL <- as.matrix(flags(object)[index, ])
 	if(verbose) message("        Computing summaries...")
 	for(k in seq_along(batches)){
-		B <- batches[[k]]
-		this.batch <- unique(as.character(batch(object)[B]))
+		##note that the genotype frequency for AA would include 'A' on chromosome X for men
+		sample.index <- batches[[k]]
+		this.batch <- unique(as.character(batch(object)[sample.index]))
 		j <- match(this.batch, batchnames)
-		G <- GG[, B]
+		G <- GG[, sample.index]
 		##NORM <- normal.index[, k]
-		xx <- CP[, B]
+		xx <- CP[, sample.index]
 		highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
 		G <- G*highConf
-		## Some markers may have genotype confidences scores that are ALL below the threshold
-		## For these markers, provide statistical summaries based on all the samples and flag
-		## Provide summaries for these markers and flag to indicate the problem
-		ii <- which(rowSums(G) == 0)
-		G[ii, ] <- GG[ii, B]
-		## table(rowSums(G==0))
-		##G <- G*highConf*NORM
-		A <- AA[, B]
-		B <- BB[, B]
+		A <- AA[, sample.index]
+		B <- BB[, sample.index]
 		## this can be time consuming...do only once
 		G.AA <- G==1
 		G.AA[G.AA==FALSE] <- NA
@@ -1478,6 +1496,11 @@ summarizeSnps <- function(strata,
 		Ns.AA[, k] <- rowSums(G.AA, na.rm=TRUE)
 		Ns.AB[, k] <- rowSums(G.AB, na.rm=TRUE)
 		Ns.BB[, k] <- rowSums(G.BB, na.rm=TRUE)
+		if(CHR.X){
+			gender <- object$gender[sample.index]
+			sample.index <- sample.index[gender == 2]
+			if(length(sample.index) == 0) next()
+		}
 		summaryStats <- function(X, INT, FUNS){
 			tmp <- matrix(NA, nrow(X), length(FUNS))
 			for(j in seq_along(FUNS)){
@@ -1486,12 +1509,29 @@ summarizeSnps <- function(strata,
 			}
 			tmp
 		}
-		statsA.AA[[k]] <- summaryStats(G.AA, A, FUNS=c("rowMedians", "rowMAD"))
-		statsA.AB[[k]] <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
-		statsA.BB[[k]] <- summaryStats(G.BB, A, FUNS=c("rowMedians", "rowMAD"))
-		statsB.AA[[k]] <- summaryStats(G.AA, B, FUNS=c("rowMedians", "rowMAD"))
-		statsB.AB[[k]] <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
+		stats <- summaryStats(G.AA, A, FUNS=c("rowMedians", "rowMAD"))
+		medianA.AA(object)[index, k] <- stats[, 1]
+		madA.AA(object)[index, k] <- stats[, 2]
+		stats <- summaryStats(G.AB, A, FUNS=c("rowMedians", "rowMAD"))
+		medianA.AB(object)[index, k] <- stats[, 1]
+		madA.AB(object)[index, k] <- stats[, 2]
+
+		stats <- summaryStats(G.BB, A, FUNS=c("rowMedians", "rowMAD"))
+		medianA.BB(object)[index, k] <- stats[, 1]
+		madA.BB(object)[index, k] <- stats[, 2]
+
+		stats <- summaryStats(G.AA, B, FUNS=c("rowMedians", "rowMAD"))
+		medianB.AA(object)[index, k] <- stats[, 1]
+		madB.AA(object)[index, k] <- stats[, 2]
+
+		stats <- summaryStats(G.AB, B, FUNS=c("rowMedians", "rowMAD"))
+		medianB.AB(object)[index, k] <- stats[, 1]
+		madB.AB(object)[index, k] <- stats[, 2]
+
 		statsB.BB[[k]] <- summaryStats(G.BB, B, FUNS=c("rowMedians", "rowMAD"))
+		medianB.BB(object)[index, k] <- stats[, 1]
+		madB.BB(object)[index, k] <- stats[, 2]
+
 		## log2 Transform Intensities
 		A <- log2(A); B <- log2(B)
 		tau2A.AA[, k] <- summaryStats(G.AA, A, FUNS="rowMAD")^2
@@ -1510,19 +1550,19 @@ summarizeSnps <- function(strata,
 	corrAA(object)[index,] <- corrAA
 	corrAB(object)[index,] <- corrAB
 	corrBB(object)[index,] <- corrBB
-	medianA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 1]))
-	medianA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 1]))
-	medianA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 1]))
-	medianB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 1]))
-	medianB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 1]))
-	medianB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 1]))
-
-	madA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 2]))
-	madA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 2]))
-	madA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 2]))
-	madB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 2]))
-	madB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 2]))
-	madB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 2]))
+##	medianA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 1]))
+##	medianA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 1]))
+##	medianA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 1]))
+##	medianB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 1]))
+##	medianB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 1]))
+##	medianB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 1]))
+##
+##	madA.AA(object)[index,] <- do.call(cbind, lapply(statsA.AA, function(x) x[, 2]))
+##	madA.AB(object)[index,] <- do.call(cbind, lapply(statsA.AB, function(x) x[, 2]))
+##	madA.BB(object)[index,] <- do.call(cbind, lapply(statsA.BB, function(x) x[, 2]))
+##	madB.AA(object)[index,] <- do.call(cbind, lapply(statsB.AA, function(x) x[, 2]))
+##	madB.AB(object)[index,] <- do.call(cbind, lapply(statsB.AB, function(x) x[, 2]))
+##	madB.BB(object)[index,] <- do.call(cbind, lapply(statsB.BB, function(x) x[, 2]))
 	tau2A.AA(object)[index, ] <- tau2A.AA
 ##	tau2A.AB(object)[index, ] <- tau2A.AB
 	tau2A.BB(object)[index, ] <- tau2A.BB

@@ -356,6 +356,7 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		l <- batch.index[k]
 		##j <- which(as.character(batch(object))[sample.index] == batchNames(object)[l])
 		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
+		##phiA2 and phiB2 are not always estimable  -- need both men and women
 		phiA2 <- phiPrimeA(object)[marker.index, l]
 		phiB2 <- phiPrimeB(object)[marker.index, l]
 		phiA <- phiA(object)[marker.index, l]
@@ -364,28 +365,28 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		nuB <- nuB(object)[marker.index, l]
 		IA <- A(object)[marker.index, jj]
 		IB <- B(object)[marker.index, jj]
+		## I = nu + acn * phi
+		## acn = 1/phi* (I-nu)
 		phistar <- phiB2/phiA
 		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
 		CB <- tmp/(1-phistar*phiA2/phiB)
-		##CB <- 1/(1-phiA2*phiB2/(phiA*phiB)) * 1/phiB * (IA-nuB-phiB2/phiA*(IA-nuA))
-		CA <- (IA-nuA-phiA2*CB)/phiA
+		index <- which(is.na(phiB2) | is.na(phiA2))
+		if(length(index) > 0){
+			cb <- 1/phiB[index] * (IB[index, ] - nuB[index])
+			CB[index, ] <- cb
+		}
 		if(allele == "B"){
 			acn[, match(jj, sample.index)] <- CB
 			##acn[[k]] <- CB
 		}
 		if(allele == "A"){
-			acn[, match(jj, sample.index)] <- (IA-nuA-phiA2*CB)/phiA
+			CA <- (IA-nuA-phiA2*CB)/phiA
+			if(length(index) > 0){
+				ca <- 1/phiA[index] * (IA[index, ] - nuA[index])
+ 				CA[index, ] <- ca
+			}
+			acn[, match(jj, sample.index)] <- CA
 		}
-		if(allele == "AandB"){
-			CA <- tmp/(1-phistar*phiA2/phiB)
-			CB <- (IA-nuA-phiA2*CB)/phiA
-			acn[, match(jj, sample.index)] <- (IA-nuA-phiA2*CB)/phiA
-		}
-##		if(allele=="AandB")
-##			CA <- tmp/(1-phistar*phiA2/phiB)
-##			CB <- (IA-nuA-phiA2*CB)/phiA
-##			acn[[k]] <- CA+CB
-##		}
 	}
 ##	if(length(acn) > 1){
 ##		acn <- do.call("cbind", acn)
