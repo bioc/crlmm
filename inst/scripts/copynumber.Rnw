@@ -109,9 +109,6 @@ assign these identifiers to the variable \Robject{batch}.
 celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 batch <- as.factor(substr(basename(celFiles), 13, 13))
-sample.index <- c(sample(which(batch == "C"), 15), sample(which(batch == "Y"), 11))
-celFiles <- celFiles[sample.index]
-batch <- batch[sample.index]
 @
 
 The preprocessing steps for copy number estimation includes quantile
@@ -193,10 +190,7 @@ The \Rfunction{crlmmCopynumber} performs the following steps:
 
 <<LDS_copynumber>>=
 GT.CONF.THR <- 0.8
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR,
-		     MIN.SAMPLES=12)
-cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR,
-		     MIN.SAMPLES=11)
+cnSet <- checkExists("cnSet", .path=outdir, .FUN=crlmmCopynumber, object=gtSet, GT.CONF.THR=GT.CONF.THR)
 @
 
 In an effort to reduce I/O, the \Rpackage{crlmmCopynumber} function no
