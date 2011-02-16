@@ -390,6 +390,20 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	shrink.corrAB <- corrAB <- as.matrix(corrAB(object)[marker.index, ])
 	shrink.corrBB <- corrBB <- as.matrix(corrBB(object)[marker.index, ])
 	flags <- as.matrix(flags(object)[marker.index, ])
+	if(length(batches) >= 3){
+		if(verbose) message("Imputing centers for unobserved genotypes from other batches")
+		res <- imputeAcrossBatch(N.AA, N.AB, N.BB,
+					 medianA.AA, medianA.AB, medianA.BB,
+					 medianB.AA, medianB.AB, medianB.BB)
+		medianA.AA <- res[["medianA.AA"]]
+		medianA.AB <- res[["medianA.AB"]]
+		medianA.BB <- res[["medianA.BB"]]
+		medianB.AA <- res[["medianB.AA"]]
+		medianB.AB <- res[["medianB.AB"]]
+		medianB.BB <- res[["medianB.BB"]]
+		updated <- res[["updated"]]
+	}
+
 	for(k in seq(along=batches)){
 		sample.index <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[sample.index]))
@@ -1815,4 +1829,207 @@ estimateCnParameters <- function(object,
 	}
 	message("finished")
 	return(object)
+}
+
+
+imputeAA.AB <- function(index, N.AA, N.AB, N.BB,
+			medianA.AA, medianA.AB, medianA.BB,
+			medianB.AA, medianB.AB, medianB.BB){
+	gt.to.impute <- 1:2
+	imputed <- rep(FALSE, length(index))
+	for(i in index){
+		Ns <- cbind(N.AA[i, ], N.AB[i, ], N.BB[i, ])
+		medianA <- cbind(medianA.AA[i, ], medianA.AB[i, ], medianA.BB[i, ])
+		medianB <- cbind(medianB.AA[i, ], medianB.AB[i, ], medianB.BB[i, ])
+		colnames(medianA) <- colnames(medianB) <- c("AA", "AB", "BB")
+
+		##Find batches with sufficient data
+		K <- which(rowSums(Ns < 3) == 0)
+		if(length(K) < 1) next() ## nothing we can do.  use information from other snps
+		X <- cbind(1, medianA[K, -gt.to.impute, drop=FALSE], medianB[K, -gt.to.impute, drop=FALSE])
+		Y <- cbind(medianA[K, gt.to.impute, drop=FALSE], medianB[K, gt.to.impute, drop=FALSE])
+		tmp <- tryCatch(betahat <- solve(crossprod(X), crossprod(X,Y)), error=function(e) NULL)
+		if(is.null(tmp)) {cat("."); next()}
+
+		## Get data from observed genotypes in batch with insufficient data for genotypes 'gt.to.impute'
+		L <- which(rowSums(Ns < 3) == 2)
+		Z <- cbind(1, medianA[L, -gt.to.impute, drop=FALSE], medianB[L, -gt.to.impute, drop=FALSE])
+		imputedVals <- Z %*% betahat
+		medianA.AA[i, L] <- imputedVals[, 1]
+		medianA.AB[i, L] <- imputedVals[, 2]
+		medianB.AA[i, L] <- imputedVals[, 3]
+		medianB.AB[i, L] <- imputedVals[, 4]
+		imputed[i] <- TRUE
+	}
+	return(list(medianA.AA=medianA.AA, medianA.AB=medianA.AB, medianA.BB=medianA.BB,
+		    medianB.AA=medianB.AA, medianB.AB=medianB.AB, medianB.BB=medianB.BB,
+		    imputed=imputed))
+}
+
+imputeAB.BB <- function(index, N.AA, N.AB, N.BB,
+			medianA.AA, medianA.AB, medianA.BB,
+			medianB.AA, medianB.AB, medianB.BB){
+	gt.to.impute <- 2:3
+	imputed <- rep(FALSE, length(index))
+	for(j in seq_along(index)){
+		i <- index[j]
+		Ns <- cbind(N.AA[i, ], N.AB[i, ], N.BB[i, ])
+		medianA <- cbind(medianA.AA[i, ], medianA.AB[i, ], medianA.BB[i, ])
+		medianB <- cbind(medianB.AA[i, ], medianB.AB[i, ], medianB.BB[i, ])
+		colnames(medianA) <- colnames(medianB) <- c("AA", "AB", "BB")
+
+		##Find batches with sufficient data
+		K <- which(rowSums(Ns < 3) == 0)
+		if(length(K) < 1) next() ## nothing we can do.  use information from other snps
+		X <- cbind(1, medianA[K, -gt.to.impute, drop=FALSE], medianB[K, -gt.to.impute, drop=FALSE])
+		Y <- cbind(medianA[K, gt.to.impute, drop=FALSE], medianB[K, gt.to.impute, drop=FALSE])
+		tmp <- tryCatch(betahat <- solve(crossprod(X), crossprod(X,Y)), error=function(e) NULL)
+		if(is.null(tmp)) {cat("."); next()}
+
+		## Get data from observed genotypes in batch with insufficient data for genotypes 'gt.to.impute'
+		L <- which(rowSums(Ns < 3) == 2)
+		Z <- cbind(1, medianA[L, -gt.to.impute, drop=FALSE], medianB[L, -gt.to.impute, drop=FALSE])
+		imputedVals <- Z %*% betahat
+		medianA.AB[i, L] <- imputedVals[, 1]
+		medianA.BB[i, L] <- imputedVals[, 2]
+		medianB.AB[i, L] <- imputedVals[, 3]
+		medianB.BB[i, L] <- imputedVals[, 4]
+		imputed[j] <- TRUE
+	}
+	return(list(medianA.AA=medianA.AA, medianA.AB=medianA.AB, medianA.BB=medianA.BB,
+		    medianB.AA=medianB.AA, medianB.AB=medianB.AB, medianB.BB=medianB.BB,
+		    imputed=imputed))
+}
+
+imputeAA <- function(index, N.AA, N.AB, N.BB,
+		     medianA.AA, medianA.AB, medianA.BB,
+		     medianB.AA, medianB.AB, medianB.BB){
+	gt.to.impute <- 1
+	imputed <- rep(FALSE, length(index))
+	for(j in seq_along(index)){
+		i <- index[j]
+		Ns <- cbind(N.AA[i, ], N.AB[i, ], N.BB[i, ])
+		medianA <- cbind(medianA.AA[i, ], medianA.AB[i, ], medianA.BB[i, ])
+		medianB <- cbind(medianB.AA[i, ], medianB.AB[i, ], medianB.BB[i, ])
+		colnames(medianA) <- colnames(medianB) <- c("AA", "AB", "BB")
+
+		##Find batches with sufficient data
+		K <- which(rowSums(Ns < 3) == 0)
+		if(length(K) < 1) next() ## nothing we can do.  use information from other snps
+		X <- cbind(1, medianA[K, -gt.to.impute, drop=FALSE], medianB[K, -gt.to.impute, drop=FALSE])
+		Y <- cbind(medianA[K, gt.to.impute, drop=FALSE], medianB[K, gt.to.impute, drop=FALSE])
+		tmp <- tryCatch(betahat <- solve(crossprod(X), crossprod(X,Y)), error=function(e) NULL)
+		if(is.null(tmp)) {cat("."); next()}
+
+		## Get data from observed genotypes in batch with insufficient data for genotypes 'gt.to.impute'
+		L <- which(rowSums(Ns < 3) == 1)
+		Z <- cbind(1, medianA[L, -gt.to.impute, drop=FALSE], medianB[L, -gt.to.impute, drop=FALSE])
+		imputedVals <- Z %*% betahat
+		medianA.AA[i, L] <- imputedVals[, 1]
+		medianB.AA[i, L] <- imputedVals[, 2]
+		imputed[j] <- TRUE
+	}
+	return(list(medianA.AA=medianA.AA, medianA.AB=medianA.AB, medianA.BB=medianA.BB,
+		    medianB.AA=medianB.AA, medianB.AB=medianB.AB, medianB.BB=medianB.BB,
+		    imputed=imputed))
+}
+
+imputeBB <- function(index, N.AA, N.AB, N.BB,
+		     medianA.AA, medianA.AB, medianA.BB,
+		     medianB.AA, medianB.AB, medianB.BB){
+	gt.to.impute <- 3
+	imputed <- rep(FALSE, length(index))
+	for(j in seq_along(index)){
+		i <- index[j]
+		Ns <- cbind(N.AA[i, ], N.AB[i, ], N.BB[i, ])
+		medianA <- cbind(medianA.AA[i, ], medianA.AB[i, ], medianA.BB[i, ])
+		medianB <- cbind(medianB.AA[i, ], medianB.AB[i, ], medianB.BB[i, ])
+		colnames(medianA) <- colnames(medianB) <- c("AA", "AB", "BB")
+
+		##Find batches with sufficient data
+		K <- which(rowSums(Ns < 3) == 0)
+		if(length(K) < 1) next() ## nothing we can do.  use information from other snps
+		X <- cbind(1, medianA[K, -gt.to.impute, drop=FALSE], medianB[K, -gt.to.impute, drop=FALSE])
+		Y <- cbind(medianA[K, gt.to.impute, drop=FALSE], medianB[K, gt.to.impute, drop=FALSE])
+		tmp <- tryCatch(betahat <- solve(crossprod(X), crossprod(X,Y)), error=function(e) NULL)
+		if(is.null(tmp)) {cat("."); next()}
+
+		## Get data from observed genotypes in batch with insufficient data for genotypes 'gt.to.impute'
+		L <- which(rowSums(Ns < 3) == 1)
+		Z <- cbind(1, medianA[L, -gt.to.impute, drop=FALSE], medianB[L, -gt.to.impute, drop=FALSE])
+		imputedVals <- Z %*% betahat
+		medianA.BB[i, L] <- imputedVals[, 1]
+		medianB.BB[i, L] <- imputedVals[, 2]
+		imputed[j] <- TRUE
+	}
+	return(list(medianA.AA=medianA.AA, medianA.AB=medianA.AB, medianA.BB=medianA.BB,
+		    medianB.AA=medianB.AA, medianB.AB=medianB.AB, medianB.BB=medianB.BB,
+		    imputed=imputed))
+}
+
+imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
+			      medianA.AA, medianA.AB, medianA.BB,
+			      medianB.AA, medianB.AB, medianB.BB){
+	N.missing <- (N.AA < 3) + (N.AB < 3) + (N.BB < 3)
+	## find all indices in which one or more batches need to have 2 genotypes imputed
+	missingAA.AB <- (N.AA < 3) & (N.AB < 3)
+	missingAB.BB <- (N.AB < 3) & (N.BB < 3)
+	missingAA <- (N.AA < 3) & (N.AB >= 3)
+	missingBB <- (N.BB < 3) & (N.AB >= 3)
+	index <- list(AA.AB=which(rowSums(missingAA.AB) > 0),
+		      AB.BB=which(rowSums(missingAB.BB) > 0),
+		      AA=which(rowSums(missingAA) > 0),
+		      BB=which(rowSums(missingBB) > 0))
+	imputeNone <- which(rowSums(N.missing == 0) > 0)
+	## only works if there are batches with complete data
+	index <- lapply(index, intersect, y=imputeNone)
+	##indices.to.update <- rep(1:4, each=sapply(index, length))
+	updated <- vector("list", 4)
+	names(updated) <- c("AA.AB", "AB.BB", "AA", "BB")
+	if(length(index[["AA.AB"]] > 0)){
+		res <- imputeAA.AB(index[["AA.AB"]],
+			   N.AA,
+			   N.AB,
+			   N.BB,
+			   medianA.AA,
+			   medianA.AB,
+			   medianA.BB,
+			   medianB.AA, medianB.AB, medianB.BB)
+		updated$AA.AB <- res$imputed
+	}
+	if(length(index[["AB.BB"]] > 0)){
+		res <- imputeAB.BB(index[["AB.BB"]],
+				   N.AA,
+				   N.AB,
+				   N.BB,
+				   res[["medianA.AA"]],
+				   res[["medianA.AB"]],
+				   res[["medianA.BB"]],
+				   res[["medianB.AA"]], res[["medianB.AB"]], res[["medianB.BB"]])
+		updated$AB.BB <- res$imputed
+	}
+	if(length(index[["AA"]] > 0)){
+		res <- imputeAA(index[["AA"]],
+				N.AA,
+				N.AB,
+				N.BB,
+				res[["medianA.AA"]],
+				res[["medianA.AB"]],
+				res[["medianA.BB"]],
+				res[["medianB.AA"]], res[["medianB.AB"]], res[["medianB.BB"]])
+		updated$AA <- res$imputed
+	}
+	if(length(index[["BB"]] > 0)){
+		res <- imputeBB(index[["BB"]],
+				N.AA,
+				N.AB,
+				N.BB,
+				res[["medianA.AA"]],
+				res[["medianA.AB"]],
+				res[["medianA.BB"]],
+				res[["medianB.AA"]], res[["medianB.AB"]], res[["medianB.BB"]])
+		updated$BB <- res$imputed
+	}
+	updated.indices <- unlist(updated)
+	return(res, updated)
 }
