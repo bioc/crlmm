@@ -390,20 +390,6 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	shrink.corrAB <- corrAB <- as.matrix(corrAB(object)[marker.index, ])
 	shrink.corrBB <- corrBB <- as.matrix(corrBB(object)[marker.index, ])
 	flags <- as.matrix(flags(object)[marker.index, ])
-	if(length(batches) >= 3){
-		if(verbose) message("Imputing centers for unobserved genotypes from other batches")
-		res <- imputeAcrossBatch(N.AA, N.AB, N.BB,
-					 medianA.AA, medianA.AB, medianA.BB,
-					 medianB.AA, medianB.AB, medianB.BB)
-		medianA.AA <- res[["medianA.AA"]]
-		medianA.AB <- res[["medianA.AB"]]
-		medianA.BB <- res[["medianA.BB"]]
-		medianB.AA <- res[["medianB.AA"]]
-		medianB.AB <- res[["medianB.AB"]]
-		medianB.BB <- res[["medianB.BB"]]
-		updated <- res[["updated"]]
-	}
-
 	for(k in seq(along=batches)){
 		sample.index <- batches[[k]]
 		this.batch <- unique(as.character(batch(object)[sample.index]))
@@ -472,6 +458,19 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 		negA <- rowSums(medianA[[k]] < 0) > 0
 		negB <- rowSums(medianB[[k]] < 0) > 0
 		flags[, k] <- as.integer(rowSums(NN == 0) > 0 | negA | negB)
+	}
+	if(length(batches) >= 3){
+		if(verbose) message("Imputing centers for unobserved genotypes from other batches")
+		res <- imputeAcrossBatch(N.AA, N.AB, N.BB,
+					 medianA.AA, medianA.AB, medianA.BB,
+					 medianB.AA, medianB.AB, medianB.BB)
+		medianA.AA <- res[["medianA.AA"]]
+		medianA.AB <- res[["medianA.AB"]]
+		medianA.BB <- res[["medianA.BB"]]
+		medianB.AA <- res[["medianB.AA"]]
+		medianB.AB <- res[["medianB.AB"]]
+		medianB.BB <- res[["medianB.BB"]]
+		updated <- res[["updated"]]
 	}
 	flags(object)[marker.index, ] <- flags
 	medianA.AA(object)[marker.index, ] <- do.call("cbind", lapply(medianA, function(x) x[, 1]))

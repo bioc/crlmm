@@ -318,7 +318,7 @@ C1 <- function(object, marker.index, batch.index, sample.index){
 		jj <- sample.index[as.character(batch(object))[sample.index] == batchNames(object)[l]]
 		bg <- nuA(object)[marker.index, l]
 		slope <- phiA(object)[marker.index, l]
-		I <- A(object)[marker.index, jj]
+		I <- as.matrix(A(object)[marker.index, jj])
 		acn[, match(jj, sample.index)] <- 1/slope * (I - bg)
 	}
 ##	if(length(acn) > 1){
@@ -338,8 +338,8 @@ C2 <- function(object, marker.index, batch.index, sample.index, NP.X=FALSE){
 		bg <- nuB(object)[marker.index, l]
 		slope <- phiB(object)[marker.index, l]
 		if(!NP.X){
-			I <- B(object)[marker.index, jj]
-		} else I <- A(object)[marker.index, jj]
+			I <- as.matrix(B(object)[marker.index, jj])
+		} else I <- as.matrix(A(object)[marker.index, jj])
 		acn[, match(jj, sample.index)] <- 1/slope * (I - bg)
 	}
 ##	if(length(acn) > 1){
@@ -363,10 +363,8 @@ C3 <- function(object, allele, marker.index, batch.index, sample.index){
 		phiB <- phiB(object)[marker.index, l]
 		nuA <- nuA(object)[marker.index, l]
 		nuB <- nuB(object)[marker.index, l]
-		IA <- A(object)[marker.index, jj]
-		IB <- B(object)[marker.index, jj]
-		## I = nu + acn * phi
-		## acn = 1/phi* (I-nu)
+		IA <- as.matrix(A(object)[marker.index, jj])
+		IB <- as.matrix(B(object)[marker.index, jj])
 		phistar <- phiB2/phiA
 		tmp <- (IB - nuB - phistar*IA + phistar*nuA)/phiB
 		CB <- tmp/(1-phistar*phiA2/phiB)
