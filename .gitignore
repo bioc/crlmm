@@ -1,4 +1,4 @@
-test*
+test/*
 myCrlmmGT2.Rnw
 ffobjs*
 auto*
@@ -19,3 +19,8 @@ copynumber.log
 *.png
 *~
 relocating*
+push
+pull
+copynumber.R
+runcopynumber.R
+runillumina.R
