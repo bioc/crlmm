@@ -367,7 +367,7 @@ shrinkGenotypeSummaries <- function(strata, index.list, object, MIN.OBS, MIN.SAM
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
 	batches <- batches[sapply(batches, length) >= MIN.SAMPLES]
-	batch.names <- batchNames(object)
+	batch.names <- names(batches)
 	batch.index <- which(batchNames(object) %in% batch.names)
 	N.AA <- as.matrix(N.AA(object)[marker.index, batch.index])
 	N.AB <- as.matrix(N.AB(object)[marker.index, batch.index])
@@ -2157,9 +2157,11 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 
 
 calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
-			  prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7)){
+				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
+				   CN=0:4){
 	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
 	stopifnot(sum(prior.prob)==1)
+	stopifnot(length(CN) == length(prior.prob))
 	batch <- batch(object)
 	is.snp <- isSnp(object)
 	is.autosome <- chromosome(object) < 23
@@ -2169,6 +2171,14 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
 
+	message("adding <posteriorMean> slot to assayData")
+	pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
+	tmp <- assayDataNew(alleleA=A(object),
+		    alleleB=B(object),
+		    call=calls(object),
+		    callProbability=snpCallProbability(object),
+		    posteriorMean=pM)
+	assayData(object) <- tmp
 	## add new assay data element for posterior probabilities
 	mylabel <- function(marker.type){
 		switch(marker.type,
@@ -2190,16 +2200,25 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 				 object=object,
 				 index.list=marker.list,
 				 verbose=verbose,
-				 prior.prob=prior.prob)
-		for(i in seq_along(marker.list)){
-			index <- marker.list[[i]]
+				 prior.prob=prior.prob,
+				 CN=CN)
+		#for(i in seq_along(marker.list)){
+		#index <- marker.list[[i]]
 
-		}
+	#}
 	} else stop("type not available")
-	return(emit)
+	if(length(emit)==1) emit <- emit[[1]] else stop("need to rbind elements of emit list?")
+	##tmp <- do.call("rbind", emit)
+	match.index <- match(rownames(emit), featureNames(object))
+
+	S <- length(prior.prob)
+	pM <- matrix(0, length(match.index), ncol(object), dimnames=list(featureNames(object)[match.index], sampleNames(object)))
+	for(i in 1:S) pM <- pM + CN[i]*emit[, , i]
+	posteriorMean(object)[match.index, ] <- pM
+	return(object)
 }
 
-posteriorMean.snp <- function(stratum, object, index.list,
+posteriorMean.snp <- function(stratum, object, index.list, CN,
 			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE){
 	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
 	index <- index.list[[stratum]]
@@ -2254,19 +2273,39 @@ posteriorMean.snp <- function(stratum, object, index.list,
 		x <- list(...)
 		return(x[[1]] + do.call(sum, x[-1]))
 	}
+	numberGenotypes <- function(CT){
+		stopifnot(length(CT)==1)
+		copynumber <- paste("cn", CT, sep="")
+		switch(copynumber,
+		       cn0=1,
+		       cn1=2,
+		       cn2=3,
+		       cn3=4,
+		       cn4=4, NULL)
+	}
 	##emit <- vector("list", length(sample.index))
 	for(j in seq_along(sample.index)){
 		cat("batch ", j, "\n")
 		J <- sample.index[[j]]
 		probs <- array(NA, dim=c(nrow(a), length(J), S))
-		for(k in seq_along(0:4)){
-			CT <- (0:4)[k]
-			f.x.y <- vector("list", choose(CT+1, CT))
-			for(i in seq_along(0:CT)){
+		for(k in seq_along(CN)){
+			CT <- CN[k]
+			##CN=4
+			## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
+			##CN=3
+			##  AAA, AAB, ABB, BBB ; L = 4
+			## CN=2
+			##  AA, AB, BB; L=3
+			## CN = 1: A, B; L=2
+			## CN = 0: null; L=1
+			L <- numberGenotypes(CT)
+			stopifnot(!is.null(L))
+			f.x.y <- vector("list", L)
+			for(i in seq_along(f.x.y)){
 				CA <- (0:CT)[i]
 				CB <- CT-CA
 				A.scale <- sqrt(tau2A[, j]*(CA==0) + sig2A[, j]*(CA > 0))
-				B.scale <- sqrt(tau2B[, j]*(CA==0) + sig2B[, j]*(CA > 0))
+				B.scale <- sqrt(tau2B[, j]*(CB==0) + sig2B[, j]*(CB > 0))
 				if(CA == 0 & CB == 0) rho <- 0
 				if(CA == 0 & CB > 0) rho <- corrBB[, j]
 				if(CA > 0 & CB == 0) rho <- corrAA[, j]
@@ -2276,7 +2315,9 @@ posteriorMean.snp <- function(stratum, object, index.list,
 				covs <- rho*A.scale*B.scale
 				A.scale2 <- A.scale^2
 				B.scale2 <- B.scale^2
-				Q.x.y <- 1/(1-rho^2)*(((a[, J] - meanA)/A.scale)^2 + ((b[, J] - meanB)/B.scale)^2 - 2*rho*((a[, J] - meanA)*(b[, J] - meanB))/(A.scale*B.scale))
+				x <- a[, J]
+				y <- b[, J]
+				Q.x.y <- 1/(1-rho^2)*((x - meanA)^2/A.scale2 + (y - meanB)^2/B.scale2 - (2*rho*((x - meanA)*(y - meanB)))/(A.scale*B.scale))
 				f.x.y[[i]] <- 1/(2*pi*A.scale*B.scale*sqrt(1-rho^2))*exp(-0.5*Q.x.y)
 				class(f.x.y[[i]]) <- "mymatrix"
 			}
@@ -2304,7 +2345,7 @@ posteriorMean.snp <- function(stratum, object, index.list,
 	##  - use priors (posterior mean will likely be near 2).  smoothing needs to take into account the uncertainty
 	##  - need uncertainty estimates for posterior means
 	for(i in 1:S) emit[, , i] <- emit[, , i]/total
-	dimnames(emit) <- featureNames(object)[index]
+	dimnames(emit) <- list(featureNames(object)[index], sampleNames(object), paste("states", 1:S, sep="_"))
 	## for one marker/one sample, the emission probs must sum to 1
 	return(emit)
 }
