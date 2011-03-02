@@ -92,5 +92,8 @@ setGeneric("tau2A<-", function(object, value) standardGeneric("tau2A<-"))
 setGeneric("tau2B<-", function(object, value) standardGeneric("tau2B<-"))
 setGeneric("flags<-", function(object, value) standardGeneric("flags<-"))
 
+setGeneric("posteriorMean", function(object) standardGeneric("posteriorMean"))
+setGeneric("posteriorMean<-", function(object, value) standardGeneric("posteriorMean<-"))
+
 
 

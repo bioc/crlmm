@@ -1,3 +1,6 @@
+setMethod("posteriorMean", signature(object="CNSet"), function(object) assayDataElement(object, "posteriorMean"))
+setReplaceMethod("posteriorMean", signature(object="CNSet", value="matrix"), function(object, value) assayDataElementReplace(object, "posteriorMean", value))
+
 linearParamElementReplace <- function(obj, elt, value) {
     storage.mode <- storageMode(batchStatistics(obj))
     switch(storage.mode,

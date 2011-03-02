@@ -2153,8 +2153,11 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 	return(list(res, updated))
 }
 
-posteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
-			  prior.prob=c(1/6, 1/6, 3/6, 1/6)){
+
+
+
+calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
+			  prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7)){
 	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
 	stopifnot(sum(prior.prob)==1)
 	batch <- batch(object)
@@ -2165,6 +2168,8 @@ posteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
+
+	## add new assay data element for posterior probabilities
 	mylabel <- function(marker.type){
 		switch(marker.type,
 		       SNP="autosomal SNPs",
@@ -2186,16 +2191,20 @@ posteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=
 				 index.list=marker.list,
 				 verbose=verbose,
 				 prior.prob=prior.prob)
-	}
+		for(i in seq_along(marker.list)){
+			index <- marker.list[[i]]
+
+		}
+	} else stop("type not available")
 	return(emit)
 }
 
 posteriorMean.snp <- function(stratum, object, index.list,
-			      prior.prob=c(1/6, 1/6, 3/6, 1/6), is.lds=TRUE, verbose=TRUE){
+			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE){
 	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
 	index <- index.list[[stratum]]
-	if(is.lds){
-		open(A(object))
+	test <- tryCatch(open(A(object)), error=function(e) NULL)
+	if(!is.null(test)){
 		open(B(object))
 		open(tau2A.AA(object))
 		open(tau2B.BB(object))
@@ -2211,6 +2220,7 @@ posteriorMean.snp <- function(stratum, object, index.list,
 	}
 	a <- log2(as.matrix(A(object)[index, ]))
 	b <- log2(as.matrix(B(object)[index, ]))
+	NN <- Ns(object, i=index)[, , 1]
 	sig2A <- as.matrix(tau2A.AA(object)[index,])
 	sig2B <- as.matrix(tau2B.BB(object)[index,])
 	tau2A <- as.matrix(tau2A.BB(object)[index,])
@@ -2222,7 +2232,7 @@ posteriorMean.snp <- function(stratum, object, index.list,
 	phiA <- as.matrix(phiA(object)[index, ])
 	nuB <- as.matrix(nuB(object)[index, ])
 	phiB <- as.matrix(phiB(object)[index, ])
-	if(is.lds){
+	if(!is.null(test)){
 		close(A(object))
 		close(B(object))
 		close(tau2A.AA(object))
@@ -2237,7 +2247,8 @@ posteriorMean.snp <- function(stratum, object, index.list,
 		close(phiA(object))
 		close(phiB(object))
 	}
-	emit <- array(NA, dim=c(nrow(a), ncol(a), 4))##SNPs x sample x 'truth'
+	S <- length(prior.prob)
+	emit <- array(NA, dim=c(nrow(a), ncol(a), S))##SNPs x sample x 'truth'
 	sample.index <- split(1:ncol(object), batch(object))
 	sum.mymatrix <- function(...){
 		x <- list(...)
@@ -2247,9 +2258,9 @@ posteriorMean.snp <- function(stratum, object, index.list,
 	for(j in seq_along(sample.index)){
 		cat("batch ", j, "\n")
 		J <- sample.index[[j]]
-		probs <- array(NA, dim=c(nrow(a), length(J), 4))
-		for(k in seq_along(0:3)){
-			CT <- (0:3)[k]
+		probs <- array(NA, dim=c(nrow(a), length(J), S))
+		for(k in seq_along(0:4)){
+			CT <- (0:4)[k]
 			f.x.y <- vector("list", choose(CT+1, CT))
 			for(i in seq_along(0:CT)){
 				CA <- (0:CT)[i]
@@ -2276,9 +2287,9 @@ posteriorMean.snp <- function(stratum, object, index.list,
 		}
 		emit[, J, ] <- probs
 	}
-	for(i in 1:4) emit[, , i] <- emit[, , i]*prior.prob[i]
+	for(i in 1:S) emit[, , i] <- emit[, , i]*prior.prob[i]
 	total <- matrix(0, nrow(emit), ncol(emit))
-	for(i in 1:4) total <- total+emit[, , i]
+	for(i in 1:S) total <- total+emit[, , i]
 	message(" need to check for outliers before rescaling")
 	is.outlier <- total < 1e-5
 ##	plot(a[outlier.index[1], ], b[outlier.index[1], ], col="grey50",
@@ -2292,7 +2303,9 @@ posteriorMean.snp <- function(stratum, object, index.list,
 	## how to handle outliers...
 	##  - use priors (posterior mean will likely be near 2).  smoothing needs to take into account the uncertainty
 	##  - need uncertainty estimates for posterior means
-	for(i in 1:4) emit[, , i] <- emit[, , i]/total
+	for(i in 1:S) emit[, , i] <- emit[, , i]/total
+	dimnames(emit) <- featureNames(object)[index]
+	## for one marker/one sample, the emission probs must sum to 1
 	return(emit)
 }
 
