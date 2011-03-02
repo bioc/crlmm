@@ -23,6 +23,7 @@ linesCNSet <- function(x, y, batch, copynumber, x.axis="A", grid=FALSE, ...){
 	cors <- corr(object, i=marker.index, j=batch.index)[, , ]
 	corrAB <- cors[["AB"]]
 	corrAA <- cors[["AA"]]
+	corrBB <- cors[["BB"]]
 	for(CN in copynumber){
 		for(CA in 0:CN){
 			CB <- CN-CA
