@@ -6,6 +6,7 @@
 \alias{phiA}
 \alias{phiB}
 \alias{totalCopynumber}
+\alias{rawCopynumber}
 
 \title{
 
@@ -28,6 +29,7 @@ nuB(object)
 phiA(object)
 phiB(object)
 totalCopynumber(object,...)
+rawCopynumber(object,...)
 }
 
 \arguments{
@@ -64,7 +66,7 @@ totalCopynumber(object,...)
 
 	CA and CB return matrices of allele-specific copy number.  
 
-	totalCopynumber returns a matrix of CA+CB.
+	totalCopynumber (or rawCopynumber) returns a matrix of CA+CB.
 
 }
 
