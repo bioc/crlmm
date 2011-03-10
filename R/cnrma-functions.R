@@ -2153,9 +2153,6 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 	return(list(res, updated))
 }
 
-
-
-
 calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
 				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
 				   CN=0:4){
@@ -2170,7 +2167,6 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
-
 	message("adding <posteriorMean> slot to assayData")
 	pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
 	tmp <- assayDataNew(alleleA=A(object),
