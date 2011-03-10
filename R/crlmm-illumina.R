@@ -1239,6 +1239,21 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		tmpA = A(callSet)[snp.index,]
 		tmpB = B(callSet)[snp.index,]
 	}
+##	return(list(tmpA,
+##		    tmpB,
+##		    SNR,
+##		    mixtureParams,
+##		    cdfName,
+##		    sampleNames(callSet),
+##		    probs,
+##		    DF,
+##		    SNRMin,
+##		    recallMin,
+##		    recallRegMin,
+##		    gender,
+##		    verbose,
+##		    returnParams,
+##		    badSNP))
 	tmp <- crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
