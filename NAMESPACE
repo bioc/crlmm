@@ -71,5 +71,11 @@ export(constructIlluminaCNSet)
 export(totalCopynumber)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 
+## for posterior means
+export(calculatePosteriorMean)
+exportMethods(posteriorMean, "posteriorMean<-")
+
+
+
 
 ##export(summarizeNps, genotypeSummary, fit.lm2)

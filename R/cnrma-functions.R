@@ -2161,7 +2161,7 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 
 calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
 				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
-				   CN=0:4){
+				   CN=0:4, scale.sd=1){
 	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
 	stopifnot(sum(prior.prob)==1)
 	stopifnot(length(CN) == length(prior.prob))
@@ -2173,14 +2173,16 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
-	message("adding <posteriorMean> slot to assayData")
-	pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
-	tmp <- assayDataNew(alleleA=A(object),
-		    alleleB=B(object),
-		    call=calls(object),
-		    callProbability=snpCallProbability(object),
-		    posteriorMean=pM)
-	assayData(object) <- tmp
+	if(!"posteriorMean" %in% assayDataElementNames(object)){
+		message("adding <posteriorMean> slot to assayData")
+		pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
+		tmp <- assayDataNew(alleleA=A(object),
+				    alleleB=B(object),
+				    call=calls(object),
+				    callProbability=snpCallProbability(object),
+				    posteriorMean=pM)
+		assayData(object) <- tmp
+	}
 	## add new assay data element for posterior probabilities
 	mylabel <- function(marker.type){
 		switch(marker.type,
@@ -2203,7 +2205,8 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 				 index.list=marker.list,
 				 verbose=verbose,
 				 prior.prob=prior.prob,
-				 CN=CN)
+				 CN=CN,
+				 scale.sd=scale.sd)
 		#for(i in seq_along(marker.list)){
 		#index <- marker.list[[i]]
 
@@ -2212,7 +2215,6 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	if(length(emit)==1) emit <- emit[[1]] else stop("need to rbind elements of emit list?")
 	##tmp <- do.call("rbind", emit)
 	match.index <- match(rownames(emit), featureNames(object))
-
 	S <- length(prior.prob)
 	pM <- matrix(0, length(match.index), ncol(object), dimnames=list(featureNames(object)[match.index], sampleNames(object)))
 	for(i in 1:S) pM <- pM + CN[i]*emit[, , i]
@@ -2221,7 +2223,9 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 }
 
 posteriorMean.snp <- function(stratum, object, index.list, CN,
-			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE){
+			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE,
+			      scale.sd=1){
+	if(length(scale.sd) == 1) rep(scale.sd,2)
 	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
 	index <- index.list[[stratum]]
 	test <- tryCatch(open(A(object)), error=function(e) NULL)
@@ -2283,7 +2287,8 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		       cn1=2,
 		       cn2=3,
 		       cn3=4,
-		       cn4=4, NULL)
+		       cn4=4,
+		       cn5=6, NULL)
 	}
 	##emit <- vector("list", length(sample.index))
 	for(j in seq_along(sample.index)){
@@ -2292,6 +2297,7 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		probs <- array(NA, dim=c(nrow(a), length(J), S))
 		for(k in seq_along(CN)){
 			CT <- CN[k]
+			## 5: AAAAA, AAAAB, AAABB, AABBB, ABBBB, BBBBB
 			##CN=4
 			## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
 			##CN=3
@@ -2308,6 +2314,13 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 				CB <- CT-CA
 				A.scale <- sqrt(tau2A[, j]*(CA==0) + sig2A[, j]*(CA > 0))
 				B.scale <- sqrt(tau2B[, j]*(CB==0) + sig2B[, j]*(CB > 0))
+				if(CA == 0 | CB == 0){
+					A.scale <- A.scale*scale.sd[1]
+					B.scale <- B.scale*scale.sd[1]
+				} else { ## both greater than zero
+					A.scale <- A.scale*scale.sd[2]
+					B.scale <- B.scale*scale.sd[2]
+				}
 				if(CA == 0 & CB == 0) rho <- 0
 				if(CA == 0 & CB > 0) rho <- corrBB[, j]
 				if(CA > 0 & CB == 0) rho <- corrAA[, j]
@@ -2333,16 +2346,6 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 	for(i in 1:S) emit[, , i] <- emit[, , i]*prior.prob[i]
 	total <- matrix(0, nrow(emit), ncol(emit))
 	for(i in 1:S) total <- total+emit[, , i]
-	message(" need to check for outliers before rescaling")
-	is.outlier <- total < 1e-5
-##	plot(a[outlier.index[1], ], b[outlier.index[1], ], col="grey50",
-##	     xaxt="n", yaxt="n", pch=21, cex=0.8,
-##	     xlim=c(6.5, 12.5), ylim=c(6.5, 12.5), xlab="", ylab="")
-##	for(j in seq_along(sample.index)){
-##		J <- sample.index[[j]]
-##		b <- unique(batch(object)[J])
-##		for(CN in 2) 	lines(object, outlier.index[1], b, CN, col="black", lwd=2, x.axis="A")
-##	}
 	## how to handle outliers...
 	##  - use priors (posterior mean will likely be near 2).  smoothing needs to take into account the uncertainty
 	##  - need uncertainty estimates for posterior means
