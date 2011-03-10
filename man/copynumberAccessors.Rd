@@ -78,10 +78,7 @@ rawCopynumber(object,...)
 
 \examples{
 ## Version 1.6* of crlmm used CNSetLM objects.
-data(sample.CNSetLM)
-
-## To update to class CNSet, use
-cnSet <- as(sample.CNSetLM, "CNSet")
+data(sample.CNSet)
 all(isCurrent(cnSet)) ## is the cnSet object current?
 
 ## --------------------------------------------------

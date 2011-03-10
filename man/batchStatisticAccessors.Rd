@@ -77,10 +77,8 @@ log-scale the variance is rougly constant for CA, CB > 0).
 }
 
 \examples{
-data(sample.CNSetLM)
-## update to class CNSet
-cnSet <- as(sample.CNSetLM, "CNSet")
-## All NAs. Need to replace sample.CNSetLM with a HapMap example
+data(sample.CNSet)
+## All NAs. Need to replace sample.CNSet with a HapMap example
 Ns(cnSet, i=1:5, j=1:2)
 corr(cnSet, i=1:5, j=1:2)
 medians(cnSet, i=1:5, j=1:2)
