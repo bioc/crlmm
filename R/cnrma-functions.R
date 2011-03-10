@@ -554,7 +554,10 @@ fit.lm1 <- function(strata,
 	## Grand mean
 	##
 	##---------------------------------------------------------------------------
-	if(length(batches) > 1 && "grandMean" %in% batchNames(object)){
+##	if(length(batches) > 1 && "grandMean" %in% batchNames(object)){
+	##  TODO:  There are NA's in the medianA.AA for the grandMean and 0's in the madA
+	##         - both need to be handled prior to estimating a grand intercept and slope
+	if(FALSE){
 		## then the last column is for the grandMean
 		k <- ncol(medianA.AA)
 		medianA <- cbind(medianA.AA[, k], medianA.AB[, k], medianA.BB[, k])
@@ -562,8 +565,8 @@ fit.lm1 <- function(strata,
 		madA <- cbind(madA.AA[, k], madA.AB[, k], madA.BB[, k])
 		madB <- cbind(madB.AA[, k], madB.AB[, k], madB.BB[, k])
 		NN <- cbind(N.AA[, k], N.AB[, k], N.BB[, k])
-		##index <- which(rowSums(is.na(medianA)) > 0)
-		res <- fit.wls(NN=NN, sigma=madA, allele="A", Y=medianA, autosome=!CHR.X)
+		index <- which(rowSums(is.na(medianA)) == 0)
+		res <- fit.wls(NN=NN[index, ], sigma=madA[index, ], allele="A", Y=medianA[index, ], autosome=!CHR.X)
 		nuA[, k] <- res[1, ]
 		phiA[, k] <- res[2, ]
 		rm(res)
@@ -1738,6 +1741,9 @@ summarizeSnps <- function(strata,
 		corrAA[, k] <- rowCors(AA*G.AA, BB*G.AA, na.rm=TRUE)
 		corrAB[, k] <- rowCors(AA*G.AB, BB*G.AB, na.rm=TRUE)
 		corrBB[, k] <- rowCors(AA*G.BB, BB*G.BB, na.rm=TRUE)
+		##
+		## TODO:   fill in NAs -- use code from shrinkGenotypeSummaries
+		##
 		rm(GG, CP, AA, BB, FL, stats)
 		gc()
 	}
