@@ -68,7 +68,7 @@ export(crlmm,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(constructIlluminaCNSet)
-export(totalCopynumber)
+export(totalCopynumber, rawCopynumber)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 
 ## for posterior means

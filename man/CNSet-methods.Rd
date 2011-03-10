@@ -5,6 +5,7 @@
 \alias{CB,CNSet-method}
 \alias{lines,CNSet-method}
 \alias{totalCopynumber,CNSet-method}
+\alias{rawCopynumber,CNSet-method}
 \alias{nuA,CNSet-method}
 \alias{nuB,CNSet-method}
 \alias{Ns,CNSet-method}
@@ -36,6 +37,7 @@
     \item{CB}{\code{signature(object="CNSet")}: ...}
     \item{lines}{\code{signature(x="CNSet")}: ...}
     \item{totalCopynumber}{\code{signature(object="CNSet")}: ...}
+    \item{rawCopynumber}{\code{signature(object="CNSet")}: ...}
     \item{nuA}{\code{signature(object="CNSet")}: ...}
     \item{nuB}{\code{signature(object="CNSet")}: ...}
     \item{phiA}{\code{signature(object="CNSet")}: ...}
@@ -49,6 +51,7 @@
 }
 
 \seealso{
-  \code{\link{CNSet-class}}, \code{\link{CA}}, \code{\link{CB}}, \code{\link{totalCopynumber}}
+  \code{\link{CNSet-class}}, \code{\link{CA}}, \code{\link{CB}},
+  \code{\link{totalCopynumber}}, \code{\link{rawCopynumber}}
 }
 \keyword{methods}

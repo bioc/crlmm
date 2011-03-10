@@ -569,6 +569,7 @@ setMethod("totalCopynumber", signature=signature(object="CNSet"),
 		  cb <- CB(object, ...)
 		  return(ca+cb)
 	  })
+rawCopynumber <- totalCopynumber
 
 ##setReplaceMethod("snpCall", c("CNSet", "ff_or_matrix"),
 ##                 function(object, ..., value){
