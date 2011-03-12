@@ -1,5 +1,6 @@
 \name{sample.CNSet}
 \alias{sample.CNSet}
+\alias{cnSet}
 \docType{data}
 \title{
 	Object of class 'CNSet'
