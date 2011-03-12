@@ -5,8 +5,6 @@ ffobjs*
 auto*
 ModelForPolymorphicX.pdf
 .Rhistory
-*.o
-*.so
 *.tex
 illumina_copynumber-*
 Makefile2

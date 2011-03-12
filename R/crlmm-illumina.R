@@ -1160,9 +1160,10 @@ genotype.Illumina <- function(sampleSheet=NULL,
 					      highDensity=highDensity, sep=sep, fileExt=fileExt,
 					      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
 					      saveDate=saveDate) #, outdir=outdir)
+		sampleNames(callSet) <- basename(sampleNames(callSet))
 		save(callSet, file=file.path(ldPath(), "callSet.rda"))
 	} else message("Using callSet loaded from GlobalEnv")
-	if(missing(sns)) sns = sampleNames(callSet)
+	if(missing(sns)) sns = basename(sampleNames(callSet))
 	if(is.lds) {
 		open(A(callSet))
 		open(B(callSet))
@@ -1227,10 +1228,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		open(B(callSet))
 		tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
 		tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
-		##          bb = getOption("ffbatchbytes")
-		##          bb = ocProbesets()*length(sns)*8
-		ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet)) #, BATCHBYTES=bb) # X=A(callSet)[snp.index,]
-		ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet)) #, BATCHBYTES=bb) # X=B(callSet)[snp.index,]
+		ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet))
+		ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet))
 		close(A(callSet))
 		close(B(callSet))
 		close(tmpA)
@@ -1254,6 +1253,9 @@ genotype.Illumina <- function(sampleSheet=NULL,
 ##		    verbose,
 ##		    returnParams,
 ##		    badSNP))
+	save(tmpA, file=file.path(ldPath(), "tmpA.rda"))
+	save(tmpB, file=file.path(ldPath(), "tmpB.rda"))
+	save(mixtureParams, file=file.path(ldPath(), "mixtureParams.rda"))
 	tmp <- crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
