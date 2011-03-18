@@ -33,7 +33,7 @@ isLoaded <- function(dataset, environ=.crlmmPkgEnv)
 
 getVarInEnv <- function(dataset, environ=.crlmmPkgEnv){
 	if (!isLoaded(dataset, environ=environ))
-		stop("Variable ", dataset, " not found in ", environ)
+		stop("Variable ", dataset, " not found in supplied environment")
 	environ[[dataset]]
 }
 

@@ -1110,10 +1110,117 @@ construct.Illumina <- function(sampleSheet=NULL,
 	protocolData(cnSet) = protocolData
 	featureData(cnSet) = featureData
 	featureNames(cnSet) = featureNames(featureData)
+	cnSet$gender <- initializeBigVector("gender", ncol(cnSet), vmode="integer")
+	cnSet$SNR = initializeBigVector("crlmmSNR-", ncol(cnSet), "double")
+	cnSet$SKW = initializeBigVector("crlmmSKW-", ncol(cnSet), "double")
+	sampleNames(cnSet) <- basename(sampleNames(cnSet))
 	##pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet))
 	##colnames(pd)=c("SKW", "SNR", "gender")
 	##phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
 	return(cnSet)
+}
+
+preprocess <- function(cnSet,
+		       arrayNames=NULL,
+		       ids=NULL,
+		       path=".",
+		       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+		       highDensity=TRUE,
+		       sep="_",
+		       fileExt=list(green="Grn.idat", red="Red.idat"),
+		       saveDate=TRUE,
+		       stripNorm=TRUE,
+		       useTarget=TRUE,
+		       mixtureSampleSize=10^5,
+		       fitMixture=TRUE,
+		       eps=0.1,
+		       verbose=TRUE,
+		       seed=1){
+	stopifnot(all(c("gender", "SNR", "SKW") %in% varLabels(cnSet)))
+	open(A(cnSet))
+	open(B(cnSet))
+	sns <- sampleNames(cnSet)
+	pkgname = getCrlmmAnnotationName(annotation(cnSet))
+	is.snp = isSnp(cnSet)
+	snp.index = which(is.snp)
+	narrays = ncol(cnSet)
+	sampleBatches <- splitIndicesByLength(seq(length=ncol(cnSet)), ocSamples())
+	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
+	ocLapply(seq_along(sampleBatches),
+		 processIDAT,
+		 sampleBatches=sampleBatches,
+		 sampleSheet=sampleSheet,
+		 arrayNames=arrayNames,
+		 ids=ids,
+		 path=path,
+		 arrayInfoColNames=arrayInfoColNames,
+		 highDensity=highDensity,
+		 sep=sep,
+		 fileExt=fileExt,
+		 saveDate=saveDate,
+		 verbose=verbose,
+		 mixtureSampleSize=mixtureSampleSize,
+		 fitMixture=fitMixture,
+		 eps=eps,
+		 seed=seed,
+		 cdfName=cdfName,
+		 sns=sns,
+		 stripNorm=stripNorm,
+		 useTarget=useTarget,
+		 A=A(cnSet),
+		 B=B(cnSet),
+		 SKW=cnSet$SKW,
+		 SNR=cnSet$SNR,
+		 mixtureParams=mixtureParams,
+		 is.snp=is.snp,
+		 neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
+	return(mixtureParams)
+}
+
+genotypeRS <- function(cnSet, mixtureParams, probs=rep(1/3,3),
+		       SNRMin=5,
+		       recallMin=10,
+		       recallRegMin=1000,
+		       verbose=TRUE,
+		       returnParams=TRUE,
+		       badSNP=0.7,
+		       gender=NULL,
+		       DF=6){
+	is.snp = isSnp(cnSet)
+	snp.index = which(is.snp)
+	narrays = ncol(cnSet)
+	open(A(cnSet))
+	open(B(cnSet))
+	open(snpCall(cnSet))
+	open(snpCallProbability(cnSet))
+	## crlmmGT2 overwrites the normalized intensities with calls and confidenceScores
+	message("Writing to call and callProbability slots")
+	for(j in 1:ncol(cnSet)){
+		snpCall(cnSet)[snp.index, j] <- as.integer(A(cnSet)[snp.index, j])
+		snpCallProbability(cnSet)[snp.index, j] <- as.integer(B(cnSet)[snp.index, j])
+	}
+	message("Writing complete.  Begin genotyping...")
+	close(A(cnSet))
+	close(B(cnSet))
+	tmp <- rscrlmmGT2(A=snpCall(cnSet),
+			  B=snpCallProbability(cnSet),
+			  SNR=cnSet$SNR,
+			  mixtureParams=mixtureParams,
+			  cdfName=cdfName,
+			  col.names=sampleNames(cnSet),
+			  probs=probs,
+			  DF=DF,
+			  SNRMin=SNRMin,
+			  recallMin=recallMin,
+			  recallRegMin=recallRegMin,
+			  gender=gender,
+			  verbose=verbose,
+			  returnParams=returnParams,
+			  badSNP=badSNP,
+			  snp.names=featureNames(cnSet)[snp.index])
+	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
+	cnSet$gender[,] = tmp$gender
+	TRUE
 }
 
 
@@ -1144,18 +1251,28 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      recallRegMin=1000,
 			      gender=NULL,
 			      returnParams=TRUE,
-			      badSNP=0.7) {
+			      badSNP=0.7,
+			      callSet) {
 	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	stopifnot(is.lds)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
         pkgname = getCrlmmAnnotationName(cdfName)
-	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
+	if(missing(callSet) | !validObject(callSet)){
+		callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
 				      highDensity=highDensity, sep=sep, fileExt=fileExt,
 				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
 				      saveDate=saveDate) #, outdir=outdir)
-	sampleNames(callSet) <- basename(sampleNames(callSet))
+	}
+	## Basic checks
+	##check that mixtureParams provided
+	if(missing(mixtureParams))
+		stop("preprocess is FALSE but mixtureParams were not provided")
+	if(ncol(callSet) != length(arrayNames))
+		stop("callSet provided but number of samples is not the same as the length of arrayNames")
+	snr <- callSet$SNR[]
+	if(any(is.na(snr))) stop("missing values in callSet$SNR")
 	if(missing(sns)) sns = basename(sampleNames(callSet))
 	open(A(callSet))
 	open(B(callSet))
@@ -1180,12 +1297,6 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	save(callSet, file=file.path(ldPath(), "callSet.rda"))
 	close(SNR)
 	close(SKW)
-	FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
-	crlmmGTfxn = function(FUN,...){
-		switch(FUN,
-		       crlmmGT2=crlmmGT2(...),
-		       crlmmGT=crlmmGT(...))
-	}
 	open(A(callSet))
 	open(B(callSet))
 	tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
@@ -1204,27 +1315,25 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	save(SKW, file=file.path(ldPath(), "SKW.rda"))
 	save(mixtureParams, file=file.path(ldPath(), "mixtureParams.rda"))
 	message("Begin genotyping")
-	tmp <- crlmmGTfxn(FUN,
-			  A=tmpA,
-			  B=tmpB,
-			  SNR=SNR,
-			  mixtureParams=mixtureParams,
-			  cdfName=cdfName,
-			  row.names=NULL,
-			  col.names=sampleNames(callSet),
-			  probs=probs,
-			  DF=DF,
-			  SNRMin=SNRMin,
-			  recallMin=recallMin,
-			  recallRegMin=recallRegMin,
-			  gender=gender,
-			  verbose=verbose,
-			  returnParams=returnParams,
-			  badSNP=badSNP)
+	tmp <- crlmmGT2(A=tmpA,
+			B=tmpB,
+			SNR=SNR,
+			mixtureParams=mixtureParams,
+			cdfName=cdfName,
+			row.names=NULL,
+			col.names=sampleNames(callSet),
+			probs=probs,
+			DF=DF,
+			SNRMin=SNRMin,
+			recallMin=recallMin,
+			recallRegMin=recallRegMin,
+			gender=gender,
+			verbose=verbose,
+			returnParams=returnParams,
+			badSNP=badSNP)
 	save(tmp, file=file.path(ldPath(), "tmp.rda"))
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	open(tmpA)
-	open(tmpB)
+	open(tmpA); open(tmpB)
 	for(j in 1:ncol(callSet)){
 		snpCall(callSet)[snp.index, j] <- as.integer(tmpA[, j])
 		snpCallProbability(callSet)[snp.index, j] <- as.integer(tmpB[, j])
@@ -1262,7 +1371,7 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
 	message("Processing sample stratum ", stratum, " of ", length(sampleBatches))
 	sel <- sampleBatches[[stratum]]
         if(length(path)>= length(sel)) path = path[sel]
-	message("RS:... processIDAT:  calling readIdatFiles")
+	##message("RS:... processIDAT:  calling readIdatFiles")
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose)
@@ -1273,7 +1382,7 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
         gc()
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
 
-	message("RS:... processIDAT: calling preprocessInfinium2")
+	##message("RS:... processIDAT: calling preprocessInfinium2")
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #, outdir=outdir)
 #							    save.it=save.it, snpFile=snpFile, cnFile=cnFile)
