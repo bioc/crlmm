@@ -2290,6 +2290,15 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		       cn3=4,
 		       cn4=4,
 		       cn5=6, NULL)
+	}
+	##emit <- vector("list", length(sample.index))
+	for(j in seq_along(sample.index)){
+		cat("batch ", j, "\n")
+		J <- sample.index[[j]]
+		probs <- array(NA, dim=c(nrow(a), length(J), S))
+		for(k in seq_along(CN)){
+			CT <- CN[k]
+			## 5: AAAAA, AAAAB, AAABB, AABBB, ABBBB, BBBBB
 			##CN=4
 			## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
 			##CN=3

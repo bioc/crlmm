@@ -71,10 +71,3 @@ export(constructIlluminaCNSet)
 export(totalCopynumber, rawCopynumber)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
 
-## for posterior means
-
-
-
-
-
-##export(summarizeNps, genotypeSummary, fit.lm2)
