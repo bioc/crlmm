@@ -1232,7 +1232,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
 		##ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet))
 		##ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet))
-		for(j in seq(length=ncol(callSet)){
+		for(j in seq(length=ncol(callSet))){
 			tmpA[, j] <- as.integer(A(callSet)[snp.index, j])
 			tmpB[, j] <- as.integer(B(callSet)[snp.index, j])
 		}
