@@ -1110,9 +1110,9 @@ construct.Illumina <- function(sampleSheet=NULL,
 	protocolData(cnSet) = protocolData
 	featureData(cnSet) = featureData
 	featureNames(cnSet) = featureNames(featureData)
-	pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet))
-	colnames(pd)=c("SKW", "SNR", "gender")
-	phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
+	##pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet))
+	##colnames(pd)=c("SKW", "SNR", "gender")
+	##phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
 	return(cnSet)
 }
 
@@ -1151,18 +1151,18 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
         pkgname = getCrlmmAnnotationName(cdfName)
-#        if(missing(outdir))
-#          stop("Must specify a directory to store large data objects")
-	callSet <- .GlobalEnv[["callSet"]]
-	if(is.null(callSet)){
+##        if(missing(outdir))
+##		stop("Must specify a directory to store large data objects")
+	##callSet <- .GlobalEnv[["callSet"]]
+	##if(is.null(callSet)){
 		callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 					      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
 					      highDensity=highDensity, sep=sep, fileExt=fileExt,
 					      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
 					      saveDate=saveDate) #, outdir=outdir)
 		sampleNames(callSet) <- basename(sampleNames(callSet))
-		save(callSet, file=file.path(ldPath(), "callSet.rda"))
-	} else message("Using callSet loaded from GlobalEnv")
+	##save(callSet, file=file.path(ldPath(), "callSet.rda"))
+	##} else message("Using callSet loaded from GlobalEnv")
 	if(missing(sns)) sns = basename(sampleNames(callSet))
 	if(is.lds) {
 		open(A(callSet))
@@ -1173,10 +1173,11 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	snp.index = which(is.snp)
 	narrays = ncol(callSet)
 	if(is.lds) {
-		index <- .GlobalEnv[["index"]]
-		if(is.null(index)){
-			sampleBatches = splitIndicesByLength(seq(along=sampleNames(callSet)), ocSamples())
-		} else sampleBatches <- splitIndicesByLength(index, ocSamples())
+##		index <- .GlobalEnv[["index"]]
+##		if(is.null(index)){
+##			sampleBatches = splitIndicesByLength(seq(along=sampleNames(callSet)), ocSamples())
+##		} else sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
+		sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
 		mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
 		SNR = initializeBigVector("crlmmSNR-", narrays, "double")
 		SKW = initializeBigVector("crlmmSKW-", narrays, "double")
@@ -1190,6 +1191,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		open(SNR)
 		pData(callSet)$SKW = SKW
 		pData(callSet)$SNR = SNR
+		save(callSet, file=file.path(ldPath(), "callSet.rda"))
 		close(SNR)
 		close(SKW)
 	} else {
@@ -1228,8 +1230,12 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		open(B(callSet))
 		tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
 		tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
-		ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet))
-		ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet))
+		##ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet))
+		##ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet))
+		for(j in seq(length=ncol(callSet)){
+			tmpA[, j] <- as.integer(A(callSet)[snp.index, j])
+			tmpB[, j] <- as.integer(B(callSet)[snp.index, j])
+		}
 		close(A(callSet))
 		close(B(callSet))
 		close(tmpA)
@@ -1255,7 +1261,10 @@ genotype.Illumina <- function(sampleSheet=NULL,
 ##		    badSNP))
 	save(tmpA, file=file.path(ldPath(), "tmpA.rda"))
 	save(tmpB, file=file.path(ldPath(), "tmpB.rda"))
+	save(SNR, file=file.path(ldPath(), "SNR.rda"))
+	save(SKW, file=file.path(ldPath(), "SKW.rda"))
 	save(mixtureParams, file=file.path(ldPath(), "mixtureParams.rda"))
+##	return(NULL)
 	tmp <- crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
@@ -1282,12 +1291,15 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		open(snpCallProbability(callSet))
 		ffcolapply(snpCall(callSet)[snp.index,i1:i2] <- tmp[["calls"]][,i1:i2], X=tmp[["calls"]]) #, BATCHBYTES=bb)
 		ffcolapply(snpCallProbability(callSet)[snp.index,i1:i2] <- tmp[["confs"]][,i1:i2], X=tmp[["confs"]]) #, BATCHBYTES=bb)
-#		close(tmp[["calls"]])
-#		close(tmp[["confs"]])
-		open(tmpA); open(tmpB)
+		close(tmp[["calls"]])
+		close(tmp[["confs"]])
+		close(tmpA); close(tmpB)
 		delete(tmpA); delete(tmpB);
-		delete(tmp[["calls"]]); delete(tmp[["confs"]])
-		rm(tmpA, tmpB)
+		## This line is not needed as tmp[["calls"]]
+		## is stored in tmpA and tmp[["confs"]] is stored in tmpB
+		## So deleting tmpA and tmpB in the above command removes
+		## the ff objects on disk
+		##delete(tmp[["calls"]]); delete(tmp[["confs"]])
 	} else {
 		calls(callSet)[snp.index, ] = tmp[["calls"]]
 		snpCallProbability(callSet)[snp.index, ] = tmp[["confs"]]
@@ -1302,25 +1314,25 @@ genotype.Illumina <- function(sampleSheet=NULL,
 
 
 
-processIDAT = function(sel, sampleSheet=NULL,
+processIDAT <- function(sel, sampleSheet=NULL,
 			arrayNames=NULL,
-			  ids=NULL,
-			  path=".",
-			  arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-			  highDensity=FALSE,
-			  sep="_",
-			  fileExt=list(green="Grn.idat", red="Red.idat"),
-			  saveDate=FALSE,
-			  verbose=TRUE,
+			ids=NULL,
+			path=".",
+			arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+			highDensity=FALSE,
+			sep="_",
+			fileExt=list(green="Grn.idat", red="Red.idat"),
+			saveDate=FALSE,
+			verbose=TRUE,
 			mixtureSampleSize=10^5,
-			  fitMixture=TRUE,
-			  eps=0.1,
-			  seed=1,
-			  cdfName,
-			  sns,
-			  stripNorm=TRUE,
-			  useTarget=TRUE,
-              A, B, SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
+			fitMixture=TRUE,
+			eps=0.1,
+			seed=1,
+			cdfName,
+			sns,
+			stripNorm=TRUE,
+			useTarget=TRUE,
+			A, B, SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
 
         if(length(path)>= length(sel)) path = path[sel]
 	message("RS:... processIDAT:  calling readIdatFiles")
@@ -1353,24 +1365,41 @@ processIDAT = function(sel, sampleSheet=NULL,
 #        open(res[["mixtureParams"]])
 # remove this line: bb = ocProbesets()*length(sns)*8
 # Add these
+	##segfault came after 'Finished preprocessing', but the processIDAT loop was not yet complete
 	open(A); open(B);
-        ffcolapply(A[snp.index,sel][,i1:i2] <- res[["A"]][,i1:i2], X=res[["A"]])
-        ffcolapply(B[snp.index,sel][,i1:i2] <- res[["B"]][,i1:i2], X=res[["B"]])
+	Amatrix <- res[["A"]]
+	Bmatrix <- res[["B"]]
+	for(j in seq_along(sel)){
+		jj <- sel[j]
+		A[snp.index, jj] <- Amatrix[, j]
+		B[snp.index, jj] <- Bmatrix[, j]
+	}
+		##ffcolapply(A[snp.index,sel][,i1:i2] <- res[["A"]][,i1:i2], X=res[["A"]])
+		##ffcolapply(B[snp.index,sel][,i1:i2] <- res[["B"]][,i1:i2], X=res[["B"]])
+##	}
 #   ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
 #	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
 	    if(length(np.index)>0) {
 #			for (j in 1:length(sel)) {
-			ffcolapply(A[np.index,sel][,i1:i2] <- res[["cnAB"]]$A[,i1:i2], X=res[["cnAB"]]$A)
-			ffcolapply(B[np.index,sel][,i1:i2] <- res[["cnAB"]]$B[,i1:i2], X=res[["cnAB"]]$B)
+		    cnAmatrix <- res[["cnAB"]]$A
+		    cnBmatrix <- res[["cnAB"]]$B
+		    for(j in seq_along(sel)){
+			    jj <- sel[j]
+			    A[np.index, jj] <- cnAmatrix[, j]
+			    B[np.index, jj] <- cnBmatrix[, j]
+		    }
+
+##			ffcolapply(A[np.index,sel][,i1:i2] <- res[["cnAB"]]$A[,i1:i2], X=res[["cnAB"]]$A)
+##			ffcolapply(B[np.index,sel][,i1:i2] <- res[["cnAB"]]$B[,i1:i2], X=res[["cnAB"]]$B)
 #            A[np.index, sel[j]] = res[["cnAB"]]$A[,j]
 #            B[np.index, sel[j]] = res[["cnAB"]]$B[,j]
 #          }
         }
 #        delete(res[["A"]]); delete(res[["B"]])
 	open(SKW); open(SNR); open(mixtureParams)
-	    SKW[sel] = res[["SKW"]][]
-	    SNR[sel] = res[["SNR"]][]
-	    mixtureParams[,sel] = res[["mixtureParams"]][]
+	SKW[sel] = res[["SKW"]][]
+	SNR[sel] = res[["SNR"]][]
+	mixtureParams[, sel] = res[["mixtureParams"]][]
         close(A)
         close(B)
         close(SNR)
@@ -1378,6 +1407,6 @@ processIDAT = function(sel, sampleSheet=NULL,
         close(mixtureParams)
 #        delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
         rm(res)
-		gc()
+	gc()
         TRUE
       }
