@@ -2159,6 +2159,7 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 	return(list(res, updated))
 }
 
+
 calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
 				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
 				   CN=0:4, scale.sd=1){
@@ -2183,6 +2184,9 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 				    posteriorMean=pM)
 		assayData(object) <- tmp
 	}
+=======
+
+>>>>>>> fixed cyclic namespace dependency by updating version dependencies in DESCRIPTION, and updating other bioc packages
 	## add new assay data element for posterior probabilities
 	mylabel <- function(marker.type){
 		switch(marker.type,
