@@ -1251,20 +1251,17 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      recallRegMin=1000,
 			      gender=NULL,
 			      returnParams=TRUE,
-			      badSNP=0.7,
-			      callSet) {
+			      badSNP=0.7) {
 	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	stopifnot(is.lds)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
         pkgname = getCrlmmAnnotationName(cdfName)
-	if(missing(callSet) | !validObject(callSet)){
-		callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
+	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
 				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
 				      highDensity=highDensity, sep=sep, fileExt=fileExt,
 				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
 				      saveDate=saveDate) #, outdir=outdir)
-	}
 	## Basic checks
 	##check that mixtureParams provided
 	if(missing(mixtureParams))
