@@ -1128,8 +1128,6 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      cdfName,
 			      copynumber=TRUE,
 			      batch,
-			      ##                          outdir=".",
-			      ##                          fns,
 			      saveDate=TRUE,
 			      stripNorm=TRUE,
 			      useTarget=TRUE,
@@ -1148,124 +1146,64 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      returnParams=TRUE,
 			      badSNP=0.7) {
 	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+	stopifnot(is.lds)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
         pkgname = getCrlmmAnnotationName(cdfName)
-##        if(missing(outdir))
-##		stop("Must specify a directory to store large data objects")
-	##callSet <- .GlobalEnv[["callSet"]]
-	##if(is.null(callSet)){
-		callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
-					      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-					      highDensity=highDensity, sep=sep, fileExt=fileExt,
-					      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
-					      saveDate=saveDate) #, outdir=outdir)
-		sampleNames(callSet) <- basename(sampleNames(callSet))
-	##save(callSet, file=file.path(ldPath(), "callSet.rda"))
-	##} else message("Using callSet loaded from GlobalEnv")
+	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
+				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
+				      highDensity=highDensity, sep=sep, fileExt=fileExt,
+				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
+				      saveDate=saveDate) #, outdir=outdir)
+	sampleNames(callSet) <- basename(sampleNames(callSet))
 	if(missing(sns)) sns = basename(sampleNames(callSet))
-	if(is.lds) {
-		open(A(callSet))
-		open(B(callSet))
-		## open(callSet)
-	}
+	open(A(callSet))
+	open(B(callSet))
  	is.snp = isSnp(callSet)
 	snp.index = which(is.snp)
 	narrays = ncol(callSet)
-	if(is.lds) {
-##		index <- .GlobalEnv[["index"]]
-##		if(is.null(index)){
-##			sampleBatches = splitIndicesByLength(seq(along=sampleNames(callSet)), ocSamples())
-##		} else sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
-		sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
-		mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
-		SNR = initializeBigVector("crlmmSNR-", narrays, "double")
-		SKW = initializeBigVector("crlmmSKW-", narrays, "double")
-		ocLapply(stratum=seq_along(sampleBatches), processIDAT, sampleBatches=sampleBatches,
-			 sampleSheet=sampleSheet, arrayNames=arrayNames,
-			 ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
-			 sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
-			 fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
-			 useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
-			 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
-		open(SKW)
-		open(SNR)
-		pData(callSet)$SKW = SKW
-		pData(callSet)$SNR = SNR
-		save(callSet, file=file.path(ldPath(), "callSet.rda"))
-		close(SNR)
-		close(SKW)
-	} else {
-		mixtureParams = matrix(NA, 4, nrow(callSet))
-		RG <- readIdatFiles(sampleSheet=sampleSheet, arrayNames=arrayNames,
-				    ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-				    highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate)
-		XY = RGtoXY(RG, chipType=cdfName)
-		rm(RG); gc()
-
-		res <- preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-					   seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) # , outdir=outdir)
-		rm(XY); gc()
-		if(verbose) message("Finished preprocessing.")
-		np.index = which(!is.snp)
-		A(callSet)[snp.index, ] = res[["A"]]
-		B(callSet)[snp.index, ] = res[["B"]]
-		if(length(np.index)>0) {
-			A(callSet)[np.index, ] = res[["cnAB"]]$A
-			B(callSet)[np.index, ] = res[["cnAB"]]$B
-		}
-		SKW = pData(callSet)$SKW = res[["SKW"]]
-		SNR = pData(callSet)$SNR = res[["SNR"]]
-		mixtureParams = res[["mixtureParams"]]
-		rm(res)
-	}
+	sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
+	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
+	SNR = initializeBigVector("crlmmSNR-", narrays, "double")
+	SKW = initializeBigVector("crlmmSKW-", narrays, "double")
+	ocLapply(seq_along(sampleBatches), processIDAT, sampleBatches=sampleBatches,
+		 sampleSheet=sampleSheet, arrayNames=arrayNames,
+		 ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
+		 sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
+		 fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
+		 useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
+		 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
+	open(SKW)
+	open(SNR)
+	pData(callSet)$SKW = SKW
+	pData(callSet)$SNR = SNR
+	save(callSet, file=file.path(ldPath(), "callSet.rda"))
+	close(SNR)
+	close(SKW)
 	FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
-	## genotyping
 	crlmmGTfxn = function(FUN,...){
 		switch(FUN,
 		       crlmmGT2=crlmmGT2(...),
 		       crlmmGT=crlmmGT(...))
 	}
-	if(is.lds) {
-		open(A(callSet))
-		open(B(callSet))
-		tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
-		tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
-		##ffcolapply(tmpA[,i1:i2] <- A(callSet)[snp.index,i1:i2], X=A(callSet))
-		##ffcolapply(tmpB[,i1:i2] <- B(callSet)[snp.index,i1:i2], X=B(callSet))
-		for(j in seq(length=ncol(callSet))){
-			tmpA[, j] <- as.integer(A(callSet)[snp.index, j])
-			tmpB[, j] <- as.integer(B(callSet)[snp.index, j])
-		}
-		close(A(callSet))
-		close(B(callSet))
-		close(tmpA)
-		close(tmpB)
-	} else {
-		tmpA = A(callSet)[snp.index,]
-		tmpB = B(callSet)[snp.index,]
+	open(A(callSet))
+	open(B(callSet))
+	tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
+	tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
+	for(j in seq(length=ncol(callSet))){
+		tmpA[, j] <- as.integer(A(callSet)[snp.index, j])
+		tmpB[, j] <- as.integer(B(callSet)[snp.index, j])
 	}
-##	return(list(tmpA,
-##		    tmpB,
-##		    SNR,
-##		    mixtureParams,
-##		    cdfName,
-##		    sampleNames(callSet),
-##		    probs,
-##		    DF,
-##		    SNRMin,
-##		    recallMin,
-##		    recallRegMin,
-##		    gender,
-##		    verbose,
-##		    returnParams,
-##		    badSNP))
+	close(A(callSet))
+	close(B(callSet))
+	close(tmpA)
+	close(tmpB)
 	save(tmpA, file=file.path(ldPath(), "tmpA.rda"))
 	save(tmpB, file=file.path(ldPath(), "tmpB.rda"))
 	save(SNR, file=file.path(ldPath(), "SNR.rda"))
 	save(SKW, file=file.path(ldPath(), "SKW.rda"))
 	save(mixtureParams, file=file.path(ldPath(), "mixtureParams.rda"))
-##	return(NULL)
+	message("Begin genotyping")
 	tmp <- crlmmGTfxn(FUN,
 			  A=tmpA,
 			  B=tmpB,
@@ -1283,29 +1221,16 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			  verbose=verbose,
 			  returnParams=returnParams,
 			  badSNP=badSNP)
+	save(tmp, file=file.path(ldPath(), "tmp.rda"))
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	if(is.lds){
-		##       bb = getOption("ffbatchbytes") # ocProbesets()*ncol(callSet)*8
-		open(tmp[["calls"]])
-		open(tmp[["confs"]])
-		open(calls(callSet))
-		open(snpCallProbability(callSet))
-		ffcolapply(snpCall(callSet)[snp.index,i1:i2] <- tmp[["calls"]][,i1:i2], X=tmp[["calls"]]) #, BATCHBYTES=bb)
-		ffcolapply(snpCallProbability(callSet)[snp.index,i1:i2] <- tmp[["confs"]][,i1:i2], X=tmp[["confs"]]) #, BATCHBYTES=bb)
-		close(tmp[["calls"]])
-		close(tmp[["confs"]])
-		close(tmpA); close(tmpB)
-		delete(tmpA); delete(tmpB);
-		## This line is not needed as tmp[["calls"]]
-		## is stored in tmpA and tmp[["confs"]] is stored in tmpB
-		## So deleting tmpA and tmpB in the above command removes
-		## the ff objects on disk
-		##delete(tmp[["calls"]]); delete(tmp[["confs"]])
-	} else {
-		calls(callSet)[snp.index, ] = tmp[["calls"]]
-		snpCallProbability(callSet)[snp.index, ] = tmp[["confs"]]
-		rm(tmpA, tmpB)
+	open(tmpA)
+	open(tmpB)
+	for(j in 1:ncol(callSet)){
+		snpCall(callSet)[snp.index, j] <- as.integer(tmpA[, j])
+		snpCallProbability(callSet)[snp.index, j] <- as.integer(tmpB[, j])
 	}
+	close(tmpA); close(tmpB)
+	delete(tmpA); delete(tmpB);
 	callSet$gender = tmp$gender
 	rm(tmp)
 	close(callSet)
