@@ -1181,7 +1181,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
 		SNR = initializeBigVector("crlmmSNR-", narrays, "double")
 		SKW = initializeBigVector("crlmmSKW-", narrays, "double")
-		ocLapply(sampleBatches, processIDAT, sampleSheet=sampleSheet, arrayNames=arrayNames,
+		ocLapply(stratum=seq_along(sampleBatches), processIDAT, sampleBatches=sampleBatches,
+			 sampleSheet=sampleSheet, arrayNames=arrayNames,
 			 ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
 			 sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
 			 fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
@@ -1314,7 +1315,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 
 
 
-processIDAT <- function(sel, sampleSheet=NULL,
+processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
 			arrayNames=NULL,
 			ids=NULL,
 			path=".",
@@ -1333,7 +1334,8 @@ processIDAT <- function(sel, sampleSheet=NULL,
 			stripNorm=TRUE,
 			useTarget=TRUE,
 			A, B, SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
-
+	message("Processing sample stratum ", stratum, " of ", length(sampleBatches))
+	sel <- sampleBatches[[stratum]]
         if(length(path)>= length(sel)) path = path[sel]
 	message("RS:... processIDAT:  calling readIdatFiles")
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
