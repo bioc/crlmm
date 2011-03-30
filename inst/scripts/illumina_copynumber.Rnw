@@ -36,7 +36,7 @@
   to the copy number vignette.
 \end{abstract}
 
-\section{Infrastructure}
+\section{Setup}
 
 <<crlmm, results=hide, echo=FALSE>>=
 library(crlmm)
@@ -44,29 +44,16 @@ options(width=70)
 options(continue=" ")
 @
 
-\textbf{Supported platforms:} The supported Infinium platforms are
-those for which a corresponding annotation package is available.  The
-annotation packages contain information on the markers, such as
-physical position and chromosome, as well as pre-computed parameters
-estimated from HapMap used during the preprocessing and genotyping
-steps. Currently supported Infinium platforms are listed in the
-following code chunk.
-
-<<supportedPlatforms>>=
-pkgs <- annotationPackages()
-crlmm.pkgs <- pkgs[grep("Crlmm", pkgs)]
-crlmm.pkgs[grep("human", crlmm.pkgs)]
-@
-
-\textbf{Large data:} In order to reduce \crlmm{}'s memory footprint,
-we require the \Rpackage{ff} for copy number estimation.  The
-\Rpackage{ff} package provides infrastructure for accessing and
-writing data to disk instead of keeping data in memory.  Each element
-of the \verb+assayData+ and \verb+batchStatistics+ slot of the
-\Rclass{CNSet} class are \Robject{ff} objects.  \Robject{ff} objects
-in the \R{} workspace contain pointers to several files with the
-\verb+.ff+ extension.  The location of where the data is stored on
-disk is specified by use of the \Rfunction{ldPath} function.
+%\textbf{Supported platforms:} The supported Infinium platforms are
+%those for which a corresponding annotation package is available.  The
+%annotation packages contain information on the markers, such as
+%physical position and chromosome, as well as pre-computed parameters
+%estimated from HapMap used during the preprocessing and genotyping
+%steps. Currently supported Infinium platforms are listed in the
+%following code chunk.
+The following codechunk declares a directory for saving \Robject{ff}
+files that will contain the normalized intensities and the genotype
+calls.
 
 <<ldpath,results=hide>>=
 library(ff)
@@ -78,39 +65,21 @@ ldPath(outdir)
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 
-Users should not move or rename this directory.  If only output files
-are stored in \verb+outdir+, one can either remove the entire
-directory prior to rerunning the analysis or all of the '.ff' files.
-Otherwise, one would accumulate a large number of '.ff' files on disk
-that are no longer in use.
-
-As none of the functions for preprocessing, genotyping, or copy number
-estimation simultaneously require all samples and all probes in
-memory, memory-usage by \crlmm{} can be fine tuned by reading in and
-processing subsets of the markers and/or samples. The functions
-\Rfunction{ocSamples} and \Rfunction{ocProbesets} in the
-\Rpackage{oligoClasses} package can be used to declare how many
-markers and samples to read at once.  In general, specifying smaller
-values should reduce the RAM required for a particular job, but would
-be expected to have an increased run-time. In the following
-code-chunk, we declare that \crlmm{} should process 150,000 markers at
-a time (when possible) and 500 samples at a time.  (As our dataset in
-this vignette only contains 43 samples, the \Rfunction{ocSamples}
-option would not have any effect.)  One can view the current settings
-for these commands, by typing the functions without an argument.
-
-<<ram>>=
-ocSamples()
-ocProbesets()
-ocProbesets(150e3)
-ocSamples(500)
-ocSamples()
-ocProbesets()
-@
+We will also store cached computations in the directory \verb+outdir+.
 
 <<cacheSweave, echo=FALSE, results=hide>>=
 library(cacheSweave)
 setCacheDir(outdir)
+@
+
+We declare that \crlmm{} should process 150,000 markers at a time
+(when possible) and/or 500 samples at a time.  As our example dataset
+in this vignette contains fewer than 500 samples, all samples will be
+processed simultaneously.
+
+<<ram>>=
+ocProbesets(150e3)
+ocSamples(500)
 @
 
 \textbf{Limitations:} There is no minimum number of samples required
@@ -134,7 +103,7 @@ platforms, several steps are required.
 We begin by specifying the path containing the raw IDAT files for a
 set of samples from the Infinium 370k platform.
 
-<libraries>>=
+<<datadir>>=
 datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @
 

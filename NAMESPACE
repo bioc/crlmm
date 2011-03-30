@@ -54,6 +54,12 @@ importClassesFrom(oligoClasses, ff_matrix, ffdf)
 ## Important to export these classes
 ##exportClasses(ff_or_matrix, ff_matrix, ffdf)
 ##exportClasses(ff_or_matrix)
+##---------------------------------------------------------------------------
+## lattice imports
+##---------------------------------------------------------------------------
+##import(panel.number, panel.grid, panel.xyplot, lpoints, lsegments, lrect, ltext)
+
+
 exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,

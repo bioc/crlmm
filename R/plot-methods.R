@@ -57,42 +57,42 @@ linesCNSet <- function(x, y, batch, copynumber, x.axis="A", grid=FALSE, ...){
 }
 
 
-cnPanel <- function(x, y, ..., pch.cols, gt, cbs.segs, hmm.segs=NULL, shades, subscripts, add.ideogram=TRUE){
-	##if(panel.number() == 2) browser()
-	add.ideogram <- add.ideogram[[panel.number()]]
-	##cbs.segs <- cbs.segs[[panel.number()]]
-	draw.hmm.states <- ifelse(panel.number() <= length(hmm.segs), TRUE, FALSE)
-	panel.grid(h=6, v=10)
-	which.hom <- which(gt[subscripts] == 1 | gt[subscripts]==3)
-	which.het <- which(gt[subscripts] == 2)
-	panel.xyplot(x, y, col="grey60", ...)
-	lpoints(x[which.hom], y[which.hom], col=pch.cols[1], ...)
-	lpoints(x[which.het], y[which.het], col=pch.cols[2], ...)
-	lsegments(x0=start(cbs.segs)/1e6, x1=end(cbs.segs)/1e6,
-		  y0=cbs.segs$seg.mean,
-		  y1=cbs.segs$seg.mean, ...)
-	if(draw.hmm.states){
-		hmm.segs <- hmm.segs[order(width(hmm.segs), decreasing=TRUE), ]
-		lrect(xleft=start(hmm.segs)/1e6,
-		      xright=end(hmm.segs)/1e6,
-		      ybottom=-0.4,
-		      ytop=0,
-		      border=shades[hmm.segs$state],
-		      col=shades[hmm.segs$state])
-	}
-	ltext(130, 5, paste("MAD:", round(mad(y, na.rm=TRUE), 2)))
-	if(add.ideogram){
-		pathto <- system.file("hg18", package="SNPchip")
-		cytoband <- read.table(file.path(pathto, "cytoBand.txt"), as.is=TRUE)
-		cytoband$V2 <- cytoband$V2/1e6
-		cytoband$V3 <- cytoband$V3/1e6
-		colnames(cytoband) <- c("chrom", "start", "end", "name", "gieStain")
-		plotCytoband(unique(hmm.segs$chrom),
-			     cytoband=cytoband,
-			     cytoband.ycoords=c(5.6, 5.9),
-			     new=FALSE,
-			     label.cytoband=FALSE,
-			     build="hg18",
-			     use.lattice=TRUE)
-	}
-}
+##cnPanel <- function(x, y, ..., pch.cols, gt, cbs.segs, hmm.segs=NULL, shades, subscripts, add.ideogram=TRUE){
+##	##if(panel.number() == 2) browser()
+##	add.ideogram <- add.ideogram[[panel.number()]]
+##	##cbs.segs <- cbs.segs[[panel.number()]]
+##	draw.hmm.states <- ifelse(panel.number() <= length(hmm.segs), TRUE, FALSE)
+##	panel.grid(h=6, v=10)
+##	which.hom <- which(gt[subscripts] == 1 | gt[subscripts]==3)
+##	which.het <- which(gt[subscripts] == 2)
+##	panel.xyplot(x, y, col="grey60", ...)
+##	lpoints(x[which.hom], y[which.hom], col=pch.cols[1], ...)
+##	lpoints(x[which.het], y[which.het], col=pch.cols[2], ...)
+##	lsegments(x0=start(cbs.segs)/1e6, x1=end(cbs.segs)/1e6,
+##		  y0=cbs.segs$seg.mean,
+##		  y1=cbs.segs$seg.mean, ...)
+##	if(draw.hmm.states){
+##		hmm.segs <- hmm.segs[order(width(hmm.segs), decreasing=TRUE), ]
+##		lrect(xleft=start(hmm.segs)/1e6,
+##		      xright=end(hmm.segs)/1e6,
+##		      ybottom=-0.4,
+##		      ytop=0,
+##		      border=shades[hmm.segs$state],
+##		      col=shades[hmm.segs$state])
+##	}
+##	ltext(130, 5, paste("MAD:", round(mad(y, na.rm=TRUE), 2)))
+##	if(add.ideogram){
+##		pathto <- system.file("hg18", package="SNPchip")
+##		cytoband <- read.table(file.path(pathto, "cytoBand.txt"), as.is=TRUE)
+##		cytoband$V2 <- cytoband$V2/1e6
+##		cytoband$V3 <- cytoband$V3/1e6
+##		colnames(cytoband) <- c("chrom", "start", "end", "name", "gieStain")
+##		plotCytoband(unique(hmm.segs$chrom),
+##			     cytoband=cytoband,
+##			     cytoband.ycoords=c(5.6, 5.9),
+##			     new=FALSE,
+##			     label.cytoband=FALSE,
+##			     build="hg18",
+##			     use.lattice=TRUE)
+##	}
+##}

@@ -1180,8 +1180,8 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			badSNP=0.7,
 			gender=NULL,
 			DF=6){
-##	is.snp = isSnp(cnSet)
-##	snp.index = which(is.snp)
+	is.snp = isSnp(cnSet)
+	snp.index = which(is.snp)
 ##	narrays = ncol(cnSet)
 ##	open(A(cnSet))
 ##	open(B(cnSet))

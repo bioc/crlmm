@@ -143,6 +143,7 @@ genotype <- function(filenames,
 	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
 	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
 	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
+	genderff <- initializeBigVector("gender", length(filenames), "integer")
 	featureData <- getFeatureData(cdfName, copynumber=TRUE)
 	nr <- nrow(featureData); nc <- length(sns)
 	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
@@ -182,15 +183,17 @@ genotype <- function(filenames,
 	protocolData <- getProtocolData.Affy(filenames)
 	rownames(pData(protocolData)) <- sns
 	protocolData(cnSet) <- protocolData
-	##protocolData(cnSet) <- protocolData
-	pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
-	colnames(pd)=c("SKW", "SNR", "gender")
-	phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
+	##pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
+	##colnames(pd)=c("SKW", "SNR", "gender")
+	##phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
+	cnSet$SKW <- SKW
+	cnSet$SNR <- SNR
+	cnSet$gender <- genderff
 	stopifnot(validObject(cnSet))
 	snp.I <- isSnp(cnSet)
 	snp.index <- which(snp.I)
-	pData(cnSet)$SKW <- SKW
-	pData(cnSet)$SNR <- SNR
+	##pData(cnSet)$SKW <- SKW
+	##pData(cnSet)$SNR <- SNR
 	np.index <- which(!snp.I)
 	if(verbose) message("Normalizing nonpolymorphic markers")
 	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
@@ -203,22 +206,24 @@ genotype <- function(filenames,
 	       seed=seed,
 	       verbose=verbose)
 	tmp <- crlmmGT2(A=calls(cnSet),
-			  B=snpCallProbability(cnSet),
-			  SNR=SNR,
-			  mixtureParams=mixtureParams,
-			  cdfName=cdfName,
-			  row.names=NULL,
-			  col.names=sampleNames(cnSet),
-			  SNRMin=SNRMin,
-			  recallMin=recallMin,
-			  recallRegMin=recallRegMin,
-			  gender=gender,
-			  verbose=verbose,
-			  returnParams=returnParams,
-			  badSNP=badSNP,
-			  snp.names=featureNames(cnSet)[snp.index])
+			B=snpCallProbability(cnSet),
+			SNR=SNR,
+			mixtureParams=mixtureParams,
+			cdfName=cdfName,
+			row.names=NULL,
+			col.names=sampleNames(cnSet),
+			SNRMin=SNRMin,
+			recallMin=recallMin,
+			recallRegMin=recallRegMin,
+			gender=gender,
+			verbose=verbose,
+			returnParams=returnParams,
+			badSNP=badSNP,
+			snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	cnSet$gender <- tmp[["gender"]]
+	open(cnSet$gender)
+	cnSet$gender[,] <- tmp[["gender"]]
+	close(cnSet$gender)
 	return(cnSet)
 }
 
