@@ -1160,6 +1160,8 @@ preprocessInf <- function(cnSet,
 		 useTarget=useTarget,
 		 A=A(cnSet),
 		 B=B(cnSet),
+		 GT=calls(cnSet),
+		 GTP=snpCallProbability(cnSet),
 		 SKW=cnSet$SKW,
 		 SNR=cnSet$SNR,
 		 mixtureParams=mixtureParams,
@@ -1178,22 +1180,22 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			badSNP=0.7,
 			gender=NULL,
 			DF=6){
-	is.snp = isSnp(cnSet)
-	snp.index = which(is.snp)
-	narrays = ncol(cnSet)
-	open(A(cnSet))
-	open(B(cnSet))
-	open(snpCall(cnSet))
-	open(snpCallProbability(cnSet))
-	## crlmmGT2 overwrites the normalized intensities with calls and confidenceScores
-	message("Writing to call and callProbability slots")
-	for(j in 1:ncol(cnSet)){
-		snpCall(cnSet)[snp.index, j] <- as.integer(A(cnSet)[snp.index, j])
-		snpCallProbability(cnSet)[snp.index, j] <- as.integer(B(cnSet)[snp.index, j])
-	}
-	message("Writing complete.  Begin genotyping...")
-	close(A(cnSet))
-	close(B(cnSet))
+##	is.snp = isSnp(cnSet)
+##	snp.index = which(is.snp)
+##	narrays = ncol(cnSet)
+##	open(A(cnSet))
+##	open(B(cnSet))
+##	open(snpCall(cnSet))
+##	open(snpCallProbability(cnSet))
+##	## crlmmGT2 overwrites the normalized intensities with calls and confidenceScores
+##	message("Writing to call and callProbability slots")
+##	for(j in 1:ncol(cnSet)){
+##		snpCall(cnSet)[snp.index, j] <- as.integer(A(cnSet)[snp.index, j])
+##		snpCallProbability(cnSet)[snp.index, j] <- as.integer(B(cnSet)[snp.index, j])
+##	}
+##	message("Writing complete.  Begin genotyping...")
+##	close(A(cnSet))
+##	close(B(cnSet))
 	tmp <- rscrlmmGT2(A=snpCall(cnSet),
 			  B=snpCallProbability(cnSet),
 			  SNR=cnSet$SNR,
@@ -1316,81 +1318,64 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
 			sns,
 			stripNorm=TRUE,
 			useTarget=TRUE,
-			A, B, SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
+			A, B,
+			GT,
+			GTP,
+			SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
 	message("Processing sample stratum ", stratum, " of ", length(sampleBatches))
 	sel <- sampleBatches[[stratum]]
         if(length(path)>= length(sel)) path = path[sel]
-	##message("RS:... processIDAT:  calling readIdatFiles")
         RG = readIdatFiles(sampleSheet=sampleSheet[sel,], arrayNames=arrayNames[sel],
                        ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose)
         XY = RGtoXY(RG, chipType=cdfName)
-#        open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
-#        delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero);
         rm(RG)
         gc()
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
-
-	##message("RS:... processIDAT: calling preprocessInfinium2")
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #, outdir=outdir)
-#							    save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-#        open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
-#        delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero);
         rm(XY)
         gc()
-	    if(verbose) message("Finished preprocessing.")
+	if(verbose) message("Finished preprocessing.")
         snp.index = which(is.snp)
 	np.index = which(!is.snp)
-
-#        open(res[["A"]])
-#        open(res[["B"]])
-#        open(res[["SKW"]])
-#        open(res[["SNR"]])
-#        open(res[["mixtureParams"]])
-# remove this line: bb = ocProbesets()*length(sns)*8
-# Add these
-	##segfault came after 'Finished preprocessing', but the processIDAT loop was not yet complete
 	open(A); open(B);
+	open(GT); open(GTP)
 	Amatrix <- res[["A"]]
 	Bmatrix <- res[["B"]]
+
+	## Amatrix and Bmatrix are ordinary matrices--not ff objects.
+	## By writing columns of a ordinary matrix to GT and GTP, we
+	## save one read step later on.  GT and GTP will be updated to
+	## calls and call probabilities by the crlmmGT2 function. The A
+	## and B slots will retain the normalized intensities for the
+	## A and B alleles
 	for(j in seq_along(sel)){
 		jj <- sel[j]
 		A[snp.index, jj] <- Amatrix[, j]
+		GT[snp.index, jj] <- Amatrix[, j]
 		B[snp.index, jj] <- Bmatrix[, j]
+		GTP[snp.index, jj] <- Bmatrix[, j]
 	}
-		##ffcolapply(A[snp.index,sel][,i1:i2] <- res[["A"]][,i1:i2], X=res[["A"]])
-		##ffcolapply(B[snp.index,sel][,i1:i2] <- res[["B"]][,i1:i2], X=res[["B"]])
-##	}
-#   ffrowapply(A[snp.index,][i1:i2, sel] <- res[["A"]][i1:i2, ], X=res[["A"]], BATCHBYTES=bb)
-#	ffrowapply(B[snp.index,][i1:i2, sel] <- res[["B"]][i1:i2, ], X=res[["B"]], BATCHBYTES=bb)
-	    if(length(np.index)>0) {
-#			for (j in 1:length(sel)) {
-		    cnAmatrix <- res[["cnAB"]]$A
-		    cnBmatrix <- res[["cnAB"]]$B
-		    for(j in seq_along(sel)){
-			    jj <- sel[j]
-			    A[np.index, jj] <- cnAmatrix[, j]
-			    B[np.index, jj] <- cnBmatrix[, j]
-		    }
-
-##			ffcolapply(A[np.index,sel][,i1:i2] <- res[["cnAB"]]$A[,i1:i2], X=res[["cnAB"]]$A)
-##			ffcolapply(B[np.index,sel][,i1:i2] <- res[["cnAB"]]$B[,i1:i2], X=res[["cnAB"]]$B)
-#            A[np.index, sel[j]] = res[["cnAB"]]$A[,j]
-#            B[np.index, sel[j]] = res[["cnAB"]]$B[,j]
-#          }
+	if(length(np.index)>0) {
+		cnAmatrix <- res[["cnAB"]]$A
+		cnBmatrix <- res[["cnAB"]]$B
+		for(j in seq_along(sel)){
+			jj <- sel[j]
+			A[np.index, jj] <- cnAmatrix[, j]
+			GT[np.index, jj] <- cnAmatrix[, j]
+			B[np.index, jj] <- cnBmatrix[, j]
+			GTP[np.index, jj] <- cnBmatrix[, j]
+		}
         }
-#        delete(res[["A"]]); delete(res[["B"]])
 	open(SKW); open(SNR); open(mixtureParams)
 	SKW[sel] = res[["SKW"]][]
 	SNR[sel] = res[["SNR"]][]
 	mixtureParams[, sel] = res[["mixtureParams"]][]
-        close(A)
-        close(B)
-        close(SNR)
-        close(SKW)
+        close(A); close(B)
+	close(GT); close(GTP)
+        close(SNR); close(SKW)
         close(mixtureParams)
-#        delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
         rm(res)
 	gc()
         TRUE
