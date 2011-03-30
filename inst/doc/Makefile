@@ -1,13 +1,10 @@
-All: copynumber illumina_copynumber crlmmDownstream clean
+All: copynumber crlmmDownstream clean
 
 copynumber: copynumber.tex
-#	cp  -p ../scripts/copynumber.pdf .
-#	cp  -p ../scripts/illumina_copynumber.pdf .
-	cp  ../scripts/copynumber.pdf .
-	cp  ../scripts/illumina_copynumber.pdf .
-
-illumina_copynumber: illumina_copynumber.tex
-	cp ../scripts/illumina_copynumber.pdf .
+	cp -p ../scripts/copynumber.pdf .
+	cp -p ../scripts/AffymetrixPreprocessCN.pdf .
+	cp -p ../scripts/IlluminaPreprocessCN.pdf .
+	cp -p ../scripts/Infrastructure.pdf .
 
 crlmmDownstream: crlmmDownstream.tex
 	cp -p ../scripts/crlmmDownstream.pdf .
