@@ -2335,24 +2335,27 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 			for(i in seq_along(f.x.y)){
 				CA <- (0:CT)[i]
 				CB <- CT-CA
-				A.scale <- sqrt(tau2A[, j]*(CA==0) + sig2A[, j]*(CA > 0))
-				B.scale <- sqrt(tau2B[, j]*(CB==0) + sig2B[, j]*(CB > 0))
+				A.scale <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
+				B.scale <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
 				if(CA == 0 | CB == 0){
 					A.scale <- A.scale*scale.sd[1]
 					B.scale <- B.scale*scale.sd[1]
-				} else { ## both greater than zero
+				} else { ## one or both greater than zero
 					A.scale <- A.scale*scale.sd[2]
 					B.scale <- B.scale*scale.sd[2]
 				}
-				if(CA == 0 & CB == 0) rho <- 0
-				if(CA == 0 & CB > 0) rho <- corrBB[, j]
-				if(CA > 0 & CB == 0) rho <- corrAA[, j]
-				if(CA > 0 & CB > 0) rho <- corrAB[, j]
-				meanA <- log2(nuA[, j]+CA*phiA[, j])
-				meanB <- log2(nuB[, j]+CB*phiB[, j])
-				covs <- rho*A.scale*B.scale
+				A.scale <- as.numeric(A.scale)
+				B.scale <- as.numeric(B.scale)
 				A.scale2 <- A.scale^2
 				B.scale2 <- B.scale^2
+				if(CA == 0 & CB == 0) rho <- 0
+				if(CA == 0 & CB > 0) rho <- corrBB
+				if(CA > 0 & CB == 0) rho <- corrAA
+				if(CA > 0 & CB > 0) rho <- corrAB
+				rho <- as.numeric(rho)
+				meanA <- as.numeric(log2(nuA+CA*phiA))
+				meanB <- as.numeric(log2(nuB+CB*phiB))
+				covs <- rho*A.scale*B.scale
 				x <- a[, J]
 				y <- b[, J]
 				Q.x.y <- 1/(1-rho^2)*((x - meanA)^2/A.scale2 + (y - meanB)^2/B.scale2 - (2*rho*((x - meanA)*(y - meanB)))/(A.scale*B.scale))
