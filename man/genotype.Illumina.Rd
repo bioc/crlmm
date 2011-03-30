@@ -72,7 +72,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	For large datasets it is important to utilize the large data
 	support by installing and loading the ff package before calling
 	the \code{genotype} function. In previous versions of the
-	\code{crlmm} package, we useed different functions for
+	\code{crlmm} package, we used different functions for
 	genotyping depending on whether the ff package is loaded, namely
 	\code{genotype} and \code{genotype2}.  The \code{genotype}
 	function now handles both instances.

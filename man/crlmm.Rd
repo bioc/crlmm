@@ -58,15 +58,25 @@ crlmm2(filenames, row.names=TRUE, col.names=TRUE,
 }
 \details{
   'crlmm2' allows one to genotype very large datasets (via ff package) and also permits
-  the use of clusters or multiple cores (via snow package) to speed up genotyping.
-  }
-\references{
-  Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
-  normalization, and genotype calls of high-density oligonucleotide SNP
-  array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
-  22. PMID: 17189563.
+  the use of clusters or multiple cores (via snow package) to speed up
+  genotyping.
 
-  Carvalho BS, Louis TA, Irizarry RA. 
+  As noted above, the call probabilities are stored using an integer
+  representation to reduce file size using the transformation
+  'round(-1000*log2(1-p))', where p is the probability.  The function
+  \code{i2P} can be used to convert the integers back to the scale of
+  probabilities.
+}
+
+
+\seealso{ \code{\link{i2p}}, \code{\link{snpCall}}, \code{\link{snpCallProbability}}}
+
+\references{ Carvalho B, Bengtsson H, Speed TP,
+  Irizarry RA. Exploration, normalization, and genotype calls of
+  high-density oligonucleotide SNP array data. Biostatistics. 2007
+  Apr;8(2):485-99. Epub 2006 Dec 22. PMID: 17189563.
+
+  Carvalho BS, Louis TA, Irizarry RA.
   Quantifying uncertainty in genotype calls.
   Bioinformatics. 2010 Jan 15;26(2):242-9.
 }
@@ -86,7 +96,7 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   gender <- c("female", "female", "male")
   gender[gender == "female"] <- 2
   gender[gender == "male"] <- 1
-  \dontrun{  (crlmmOutput <- crlmm(cels, gender=gender))} 
+  \dontrun{  (crlmmOutput <- crlmm(cels, gender=gender))}
 }
 
 \dontrun{

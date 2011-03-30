@@ -100,21 +100,21 @@ construct <- function(filenames,
 }
 
 genotype <- function(filenames,
-		       cdfName,
-		       batch,
-		       mixtureSampleSize=10^5,
-		       eps=0.1,
-		       verbose=TRUE,
-		       seed=1,
-		       sns,
-		       probs=rep(1/3, 3),
-		       DF=6,
-		       SNRMin=5,
-		       recallMin=10,
-		       recallRegMin=1000,
+		     cdfName,
+		     batch,
+		     mixtureSampleSize=10^5,
+		     eps=0.1,
+		     verbose=TRUE,
+		     seed=1,
+		     sns,
+		     probs=rep(1/3, 3),
+		     DF=6,
+		     SNRMin=5,
+		     recallMin=10,
+		     recallRegMin=1000,
 		     gender=NULL,
-		       returnParams=TRUE,
-		       badSNP=0.7){
+		     returnParams=TRUE,
+		     badSNP=0.7){
 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(!is.lds) stop("this function now requires that the ff package be loaded")
 	if(missing(cdfName)) stop("must specify cdfName")
@@ -498,6 +498,7 @@ fit.lm1 <- function(strata,
 		    MIN.PHI,
 		    verbose, is.lds,
 		    CHR.X, ...){
+	open(object$gender)
 	if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	snps <- index.list[[strata]]
@@ -606,6 +607,7 @@ fit.lm2 <- function(strata,
 		    MIN.PHI,
 		    verbose, is.lds, CHR.X, ...){
 	if(is.lds) {physical <- get("physical"); open(object)}
+	open(object$gender)
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	marker.index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
@@ -663,7 +665,9 @@ summarizeMaleXNps <- function(marker.index,
 	nr <- length(marker.index)
 	nc <- length(batchNames(object))
 	NN.Mlist <- imputed.medianA <- imputed.medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
-	gender <- object$gender
+	open(object$gender)
+	gender <- object$gender[]
+	open(A(object))
 	AA <- as.matrix(A(object)[marker.index, gender==1])
 	madA.AA <- medianA.AA <- matrix(NA, nr, nc)
 	colnames(madA.AA) <- colnames(medianA.AA) <- batchNames(object)
@@ -697,10 +701,11 @@ summarizeXGenotypes <- function(marker.index,
 				DF.PRIOR,
 				gender="male", ...){
 	I <- unlist(batches)
+	open(object$gender)
 	if(gender == "male"){
-		gender.index <- which(object$gender == 1)
+		gender.index <- which(object$gender[] == 1)
 	} else {
-		gender.index <- which(object$gender == 2)
+		gender.index <- which(object$gender[] == 2)
 	}
 	batches <- lapply(batches, function(x, gender.index) intersect(x, gender.index), gender.index)
 	batch.names <- names(batches)
@@ -709,6 +714,10 @@ summarizeXGenotypes <- function(marker.index,
 	nc <- length(batch.index)
 	NN.Mlist <- medianA <- medianB <- shrink.madA <- shrink.madB <- vector("list", nc)
 	names(NN.Mlist) <- names(medianA) <- names(medianB) <- names(shrink.madA) <- names(shrink.madB) <- batch.names
+	open(calls(object))
+	open(snpCallProbability(object))
+	open(A(object))
+	open(B(object))
 	GG <- as.matrix(calls(object)[marker.index, ])
 	CP <- as.matrix(snpCallProbability(object)[marker.index, ])
 	AA <- as.matrix(A(object)[marker.index, ])
@@ -819,6 +828,10 @@ summarizeXGenotypes <- function(marker.index,
 		medianA[[k]] <- res[[1]]
 		medianB[[k]] <- res[[2]]
 	}
+	close(calls(object))
+	close(snpCallProbability(object))
+	close(A(object))
+	close(B(object))
 	return(list(madA=shrink.madA,
 		    madB=shrink.madB,
 		    NN=NN.Mlist,
@@ -841,7 +854,8 @@ fit.lm3 <- function(strata,
 		    verbose, is.lds, CHR.X, ...){
 	##if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
-	gender <- object$gender
+	open(object$gender)
+	gender <- object$gender[]
 	enough.males <- sum(gender==1) >= MIN.SAMPLES
 	enough.females <- sum(gender==2) >= MIN.SAMPLES
 	if(!enough.males & !enough.females){
@@ -1011,7 +1025,8 @@ fit.lm4 <- function(strata,
 		    verbose, is.lds=TRUE, ...){
 	##if(is.lds) {physical <- get("physical"); open(object)}
 	## exclude batches that have fewer than MIN.SAMPLES
-	gender <- object$gender
+	open(object$gender)
+	gender <- object$gender[]
 	enough.males <- sum(gender==1) >= MIN.SAMPLES
 	enough.females <- sum(gender==2) >= MIN.SAMPLES
 	if(!enough.males & !enough.females){
@@ -1434,7 +1449,7 @@ shrinkSummary <- function(object,
 			  DF.PRIOR=50,
 			  verbose=TRUE,
 			  marker.index,
-			  is.lds){
+			  is.lds=TRUE){
 	stopifnot(type[[1]] == "SNP")
 	CHR.X <- FALSE ## this is no longer needed
 	if(missing(marker.index)){
@@ -1469,7 +1484,7 @@ shrinkSummary <- function(object,
 			      DF.PRIOR=DF.PRIOR,
 			      is.lds=is.lds)
 	}
-	return(object)
+	TRUE
 }
 
 genotypeSummary <- function(object,
@@ -1522,7 +1537,7 @@ genotypeSummary <- function(object,
 			      is.lds=is.lds,
 			      CHR.X=CHR.X)
 	}
-	return(object)
+	TRUE
 }
 
 whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
@@ -1552,6 +1567,8 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 	nc <- length(batchnames)
 	N.AA <- medianA.AA <- madA.AA <- tau2A.AA <- matrix(NA, nr, nc)
 	is.illumina <- whichPlatform(annotation(object)) == "illumina"
+	open(A(object))
+	open(object$gender)
 	AA <- as.matrix(A(object)[index, ])
 	if(is.illumina){
 		BB <- as.matrix(B(object)[index, ])
@@ -1593,7 +1610,6 @@ summarizeSnps <- function(strata,
 ##		physical <- get("physical")
 ##		open(object)
 ##	}
-	open(object)
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
@@ -1789,6 +1805,7 @@ crlmmCopynumber <- function(object,
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	samplesPerBatch <- table(as.character(batch(object)))
+	open(object)
 	if(any(samplesPerBatch < MIN.SAMPLES)){
 		tmp <- paste(names(samplesPerBatch)[samplesPerBatch < MIN.SAMPLES], collapse=", ")
 		message("The following batches have fewer than ", MIN.SAMPLES, " samples: ",  tmp)
@@ -1810,25 +1827,25 @@ crlmmCopynumber <- function(object,
 		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
 		marker.index <- whichMarkers(marker.type, is.snp,
 					     is.autosome, is.annotated, is.X)
-		object <- genotypeSummary(object=object,
-					  GT.CONF.THR=GT.CONF.THR,
-					  type=marker.type,
-					  verbose=verbose,
-					  marker.index=marker.index,
-					  is.lds=is.lds)
+		genotypeSummary(object=object,
+				GT.CONF.THR=GT.CONF.THR,
+				type=marker.type,
+				verbose=verbose,
+				marker.index=marker.index,
+				is.lds=is.lds)
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
 	if("SNP" %in% type){
 		marker.index <- whichMarkers("SNP", is.snp,
 					     is.autosome, is.annotated, is.X)
-		object <- shrinkSummary(object=object,
-					MIN.OBS=MIN.OBS,
-					MIN.SAMPLES=MIN.SAMPLES,
-					DF.PRIOR=DF.PRIOR,
-					type="SNP",
-					verbose=verbose,
-					marker.index=marker.index,
-					is.lds=is.lds)
+		shrinkSummary(object=object,
+			      MIN.OBS=MIN.OBS,
+			      MIN.SAMPLES=MIN.SAMPLES,
+			      DF.PRIOR=DF.PRIOR,
+			      type="SNP",
+			      verbose=verbose,
+			      marker.index=marker.index,
+			      is.lds=is.lds)
 	}
 	if(verbose) message("Estimating parameters for copy number")##SNPs only
 	for(i in seq_along(type)){
@@ -1852,6 +1869,7 @@ crlmmCopynumber <- function(object,
 					       is.lds=is.lds,
 					       CHR.X=CHR.X)
 	}
+	close(object)
 	TRUE
 }
 crlmmCopynumber2 <- function(){

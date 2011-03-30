@@ -15,6 +15,7 @@
 \newcommand{\Rclass}[1]{{\textit{#1}}}
 \newcommand{\oligo}{\Rpackage{oligo }}
 \newcommand{\R}{\textsf{R}}
+\newcommand{\ff}{\Rpackage{ff}}
 
 \begin{document}
 \title{Using \crlmm{} for copy number estimation and genotype calling
@@ -27,619 +28,291 @@
 
 
 \begin{abstract}
-  This vignette illustrates the steps necessary for obtaining
-  marker-level estimates of allele-specific copy number from the raw
-  Illumina IDAT files.  Hidden markov models or segmentation
-  algorithms can be applied to the marker-level estimates.  Examples
-  of both are illustrated.
+  This vignette illustrates the steps required prior to copy number
+  analysis for Infinium platforms.  Specifically, we require
+  construction of a container to store processed forms of the raw
+  data, preprocessing to normalize the arrays, and genotyping using
+  the CRLMM algorithm.  After completing these steps, users can refer
+  to the copy number vignette.
 \end{abstract}
 
-\section{About this vignette}
+\section{Infrastructure}
+
 <<crlmm, results=hide, echo=FALSE>>=
 library(crlmm)
-@
-
-%The vignette for copy number estimation for illumina platforms is
-%under development.  Please use the latest stable release of crlmm.
-
-%\end{document}
-
-Allele-specific copy number estimation in the crlmm package is
-available for several Illumina platforms.  As described in the
-\texttt{copynumber} vignette, copy number estimation in \crlmm{} works
-best when there are a sufficient number of samples such that AA, AB,
-and BB genotypes are observed at most loci. For small studies (e.g.,
-fewer than 50 samples), there will be a large number of SNPs that are
-monomorphic. For monomorphic SNPs, the estimation problem becomes more
-difficult and alternative strategies that estimate the relative total
-copy number may be preferable.  In addition to installing \crlmm{},
-one must also install the appropriate annotation package for the
-Illumina platform.  In the following code, we list the platforms for
-which annotation packages are currently available. Next we create a
-directory where output files will be stored and indicate the directory
-that contains the IDAT files that will be used in our analysis.
-
-
-<<setup, echo=FALSE, results=hide>>=
 options(width=70)
 options(continue=" ")
-library(cacheSweave)
 @
 
-<<libraries>>=
-library(ff)
+\textbf{Supported platforms:} The supported Infinium platforms are
+those for which a corresponding annotation package is available.  The
+annotation packages contain information on the markers, such as
+physical position and chromosome, as well as pre-computed parameters
+estimated from HapMap used during the preprocessing and genotyping
+steps. Currently supported Infinium platforms are listed in the
+following code chunk.
+
+<<supportedPlatforms>>=
 pkgs <- annotationPackages()
-pkgs[grep("Crlmm", pkgs)]
+crlmm.pkgs <- pkgs[grep("Crlmm", pkgs)]
+crlmm.pkgs[grep("human", crlmm.pkgs)]
+@
+
+\textbf{Large data:} In order to reduce \crlmm{}'s memory footprint,
+we require the \Rpackage{ff} for copy number estimation.  The
+\Rpackage{ff} package provides infrastructure for accessing and
+writing data to disk instead of keeping data in memory.  Each element
+of the \verb+assayData+ and \verb+batchStatistics+ slot of the
+\Rclass{CNSet} class are \Robject{ff} objects.  \Robject{ff} objects
+in the \R{} workspace contain pointers to several files with the
+\verb+.ff+ extension.  The location of where the data is stored on
+disk is specified by use of the \Rfunction{ldPath} function.
+
+<<ldpath,results=hide>>=
+library(ff)
 if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
 outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")
+ldPath(outdir)
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
-datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+@
+
+Users should not move or rename this directory.  If only output files
+are stored in \verb+outdir+, one can either remove the entire
+directory prior to rerunning the analysis or all of the '.ff' files.
+Otherwise, one would accumulate a large number of '.ff' files on disk
+that are no longer in use.
+
+As none of the functions for preprocessing, genotyping, or copy number
+estimation simultaneously require all samples and all probes in
+memory, memory-usage by \crlmm{} can be fine tuned by reading in and
+processing subsets of the markers and/or samples. The functions
+\Rfunction{ocSamples} and \Rfunction{ocProbesets} in the
+\Rpackage{oligoClasses} package can be used to declare how many
+markers and samples to read at once.  In general, specifying smaller
+values should reduce the RAM required for a particular job, but would
+be expected to have an increased run-time. In the following
+code-chunk, we declare that \crlmm{} should process 150,000 markers at
+a time (when possible) and 500 samples at a time.  (As our dataset in
+this vignette only contains 43 samples, the \Rfunction{ocSamples}
+option would not have any effect.)  One can view the current settings
+for these commands, by typing the functions without an argument.
+
+<<ram>>=
+ocSamples()
+ocProbesets()
+ocProbesets(150e3)
+ocSamples(500)
+ocSamples()
+ocProbesets()
+@
+
+<<cacheSweave, echo=FALSE, results=hide>>=
+library(cacheSweave)
 setCacheDir(outdir)
 @
 
-%Options for controlling RAM with the \Rpackage{ff} package.
+\textbf{Limitations:} There is no minimum number of samples required
+for preprocessing and genotyping.  However, for copy number estimation
+the \crlmm{} package currently requires at least 10 samples per batch.
+The parameter estimates for copy number and the corresponding
+estimates of raw copy number will tend to be more noisy for batches
+with small sample sizes (e.g., $<$ 50).  Chemistry plate or scan date
+are often useful surrogates for batch.
 
-<<ldOptions>>=
-ldPath(outdir)
-ocProbesets(150e3)
-ocSamples(200)
+\section{Initializing a container for storing processed data}
+
+This section will initialize a container for storing processed forms
+of the data, including the normalized intensities for the A and B
+alleles and the CRLMM genotype calls and confidence scores.  In
+addition, the container will store information on the markers
+(physical position, chromosome, and a SNP indicator), the batch, and
+the samples (e.g., gender).  To construct this container for Infinium
+platforms, several steps are required.
+
+We begin by specifying the path containing the raw IDAT files for a
+set of samples from the Infinium 370k platform.
+
+<libraries>>=
+datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
 @
 
-This vignette was created using Illumina IDAT files that are located
-in a specific directory on my computer (\Robject{pathToCels}).  Long
-computations are saved in the output directory \Robject{outdir}.
-Towards this end, we make repeated use of the \Rfunction{checkExists}
--- an ad-hoc approach for storing long computations.  This function
-simply checks that a variable is in the workspace.  If not, the
-variable is loaded from the indicated path.  If the file (with '.rda'
-extension) does not exist in this path, the function indicated by the
-.FUN argument is executed.  Alternatively, if \Robject{.load.it} is
-\Robject{FALSE} the function will be executed regardless of whether
-the file exists.  Users should see the \Rpackage{weaver} package for a
-more 'correct' approach for cacheing long computations. The following
-code chunk checks that that the variables specific to the directory
-structure on my computer exist.  Users should modify the
-\Robject{outdir} and \Robject{datadir} variables as appropriate.
-
-<<checkSetup>>=
-if(!file.exists(outdir)) stop("Please specify valid directory for storing output")
-if(!file.exists(datadir)) stop("Please specify the correct path to the CEL files")
-@
-
-\section{Preprocessing Illumina IDAT files, genotyping, and copy number
-  estimation}
-To perform copy number analysis on the Illumina platform, several
-steps are required.  The first step is to read in the IDAT files and
-create a container for storing the red and green intensities. These
-intensities are quantile normalized in the function
-\Rfunction{crlmmIllumina}, and then genotyped using the crlmm
-algorithm.  Details on the crlmm genotyping algorithm are described
-elsewhere.  We will make use of the normalized intensities when we
-estimate copy number.  The object returned by the
-\Rfunction{genotype.Illumina} function is an instance of the
-\Robject{CNSet} class, a container for storing the genotype calls,
-genotype confidence scores, the normalized intensities for the A and B
-channels, and summary statistics on the batches.  The batch variable
-can be the date on which the array was scanned or the 96 well
-microarray chemistry plate on which the samples were processed. Both
-date and chemistry plate are useful surrogates for experimental
-factors that effect subgroups of the probe intensities.  (Quantile
-normalization does not remove batch effects.)  The genotype confidence
-scores are saved as an integer, and can be converted back to a $[0,
-1]$ probability scale by the transformation $round(-1000*log2(1-p))$.
+For Infinium platforms, an Illumina sample sheet containing
+information for reading the raw IDAT files is required. Please refer
+to the BeadStudio Genotyping guide, Appendix A, for additional
+information.  The following code reads in the samplesheet for the IDAT
+files on our local server. For our dataset, the file extensions are
+`Grn.dat' and `Red.idat'.  We store the complete path to the filename
+without the file extension in the \Robject{arrayNames} and check that
+all of the green and red IDAT files exists.
 
 <<samplesheet>>=
 samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
 samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
 arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
-grnfiles = all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
-redfiles = all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
-load.it <- TRUE
-if(!load.it){
-	rmFiles <- list.files(outdir, pattern=".ff", full.names=TRUE)
-	unlink(rmFiles)
-}
-plate <- samplesheet$Plate
-table(plate)
-## too few samples to run the plates as separate batches
+all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
+all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
+arrayInfo <- list(barcode=NULL, position="SentrixPosition")
+@
+
+As discussed previously, all supported platforms have a corresponding
+annotation package.  The appropriate annotation package is specified
+by the platform identifier without the \verb+Crlmm+ postfix.
+
+<<cdfname>>=
+cdfName <- "human370v1c"
+@
+
+Next, we construct a character vector that specifies the batch for
+each of the \Sexpr{length(arrayNames)} arrays.  Here, we have a small
+dataset and process the samples in a single batch. Processing the
+samples as a single batch is generally reasonable if the samples were
+processed at similar times (e.g., within a few weeks).
+
+<<batch>>=
 batch <- rep("1", nrow(samplesheet))
 @
 
+Finally, we initialize an object of class \Robject{CNSet} using the
+function \Rfunction{constructInf}.
+
+<<container,cache=TRUE>>=
+cnSet <- constructInf(sampleSheet=samplesheet,
+		      arrayNames=arrayNames,
+		      batch=batch,
+		      arrayInfoColNames=arrayInfo,
+		      cdfName=cdfName,
+		      verbose=TRUE,
+		      saveDate=TRUE)
+@
+
+A concise summary of the object's contents can be viewed with the
+\Rfunction{print} function.
+
+<<cnset>>=
+print(cnSet)
+@
+
+Note that the above object does not yet contain any processed data
+(only \verb+NA+'s) and several \verb+.ff+ files now appear in the
+\verb+outdir+.  Again, these files should not be removed.
+
+<<listff>>=
+list.files(outdir, pattern=".ff")[1:5]
+@
+
+Finally, note that the elements of the \verb+assayData+ slot are
+\Robject{ff} objects and not matrices. For the most part, the
+\emph{appearance} that the data is stored in memory is preserved.
+
+
+<<assaydataelements>>=
+sapply(assayData(cnSet), function(x) class(x)[1])
+@
+
+\section{Preprocessing}
+
+The raw intensities from the Infinium IDAT files are read and
+normalized using the function \Rfunction{preprocessInf}.  The function
+\Rfunction{preprocessInf} returns a \Robject{ff} object containing the
+parameters for the mixture model used by the CRLMM genotyping
+algorithm.
+
+<<preprocess,cache=TRUE>>=
+mixtureParams <- preprocessInf(cnSet=cnSet, sampleSheet=samplesheet, arrayNames=arrayNames, arrayInfoColNames=arrayInfo)
+invisible(open(mixtureParams))
+str(mixtureParams[])
+invisible(close(mixtureParams))
+@
+
+Note that the normalized intensities for the A and B alleles are no
+longer \verb+NA+s and can now be accessed and inspected using the
+methods \Rfunction{A} and \Rfunction{B}, respectively.
+
+<<intensities>>=
+invisible(open(A(cnSet)))
+invisible(open(B(cnSet)))
+as.matrix(A(cnSet)[1:5, 1:5])
+as.matrix(B(cnSet)[1:5, 1:5])
+invisible(close(A(cnSet)))
+invisible(close(B(cnSet)))
+@
+
+
+\section{Genotyping}
+
+
+CRLMM genotype calls and confidence scores are estimated using the
+function \Rfunction{genotypeInf}.
+
 <<genotype,cache=TRUE>>=
-container <- genotype.Illumina(sampleSheet=samplesheet,
-			       path=dirname(arrayNames[1]),
-			       arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-			       cdfName="human370v1c",
-			       batch=batch)
+updated <- genotypeInf(cnSet, mixtureParams=mixtureParams)
+print(updated)
 @
 
-<<copynumber,cache=TRUE>>=
-GT.CONF.THR <- 0.8
-cnSet <- crlmmCopynumber(container, GT.CONF.THR=GT.CONF.THR)
-@
+The posterior probabilities for the
+genotype calls in the \verb+callProbability+ element of the
+\verb+assayData+ are stored as integers to reduce the file size on
+disk.  However, the scores can be easily transformed back to the
+probability scale using the \Rfunction{i2p} function as illustrated in
+the following code chunk.
 
-The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
-function contains all of the parameters used to compute
-allele-specific copy number.  In order to reduce I/O and speed
-computation, the allele-specific copy number estimates are not written
-to file nor saved in the \Robject{CNSet} object.  Rather,
-allele-specific estimates are computed on the fly by the functions
-\Rfunction{CA}, \Rfunction{CB}, or \Rfunction{totalCopynumber}.  The
-following codechunks provide a few examples.
-
-Copy number for polymorphic markers on chromosomes 1 - 22.
-
-<<ca>>=
-snp.index <- which(isSnp(cnSet) & !is.na(chromosome(cnSet)) & chromosome(cnSet) < 22)
-ca <- CA(cnSet, i=snp.index, j=1:5)
-cb <- CB(cnSet, i=snp.index, j=1:5)
-ct <- ca+cb
-@
-
-Alternatively, total copy number can be obtained by
-<<totalCopynumber.snps>>=
-ct2 <- totalCopynumber(cnSet, i=snp.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
-@
-
-Missing values can arise at polymorphic when the confidence score of
-the genotype calls are below the threshold indicated by the threshold
-\texttt{GT.CONF.THR} in \Robject{crlmmCopynumber}. See
-\Robject{?crlmmCopynumber} for additional details.  In the following
-codechunk, we compute the number of samples that had confidence scores
-below \Sexpr{GT.CONF.THR} at loci for which ${\hat CA}$ and ${\hat CB}$
-are missing.
-
-<<NAs.snps>>=
-missing.copynumber <- which(rowSums(is.na(ct)) > 0)
+<<callprobs>>=
 invisible(open(snpCallProbability(cnSet)))
-gt.confidence <- i2p(snpCallProbability(cnSet)[snp.index, ])
-n.below.threshold <- rowSums(gt.confidence < 0.95)
-unique(n.below.threshold[missing.copynumber])
-@
-\noindent For loci with missing copy number, the confidence scores
-were all below the threshold.
-
-At nonpolymorphic loci, either the \Rfunction{CA} or
-\Rfunction{totalCopynumber} functions can be used to obtain estimates
-of total copy number.
-
-<<nonpolymorphicAutosomes>>=
-marker.index <- which(!isSnp(cnSet) & chromosome(cnSet) < 23)
-ct <- CA(cnSet, i=marker.index, j=1:5)
-## all zeros
-stopifnot(all(CB(cnSet, i=marker.index, j=1:5) == 0))
-ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
+callProbs <- as.matrix(snpCallProbability(cnSet)[1:5, 1:5])
+i2p(callProbs)
+invisible(close(snpCallProbability(cnSet)))
 @
 
+%As described in the \texttt{copynumber} vignette, copy number
+%estimation in \crlmm{} works best when there are a sufficient number
+%of samples such that AA, AB, and BB genotypes are observed at most
+%loci. For small studies (e.g., fewer than 50 samples), there will be a
+%large number of SNPs that are monomorphic. For monomorphic SNPs, the
+%estimation problem becomes more difficult and alternative strategies
+%that estimate the relative total copy number may be preferable.  In
+%addition to installing \crlmm{}, one must also install the appropriate
+%annotation package for the Illumina platform.  In the following code,
+%we list the platforms for which annotation packages are currently
+%available. Next we create a directory where output files will be
+%stored and indicate the directory that contains the IDAT files that
+%will be used in our analysis.
 
-\begin{figure}[t!]
-  Nonpolymorphic markers on chromosome X:
-  \centering
-<<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
-npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
-M <- sample(which(cnSet$gender==1), 5)
-F <- sample(which(cnSet$gender==2), 5)
-cn.M <- CA(cnSet, i=npx.index, j=M)
-cn.F <- CA(cnSet, i=npx.index, j=F)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
-@
-\caption{Copy number estimates for nonpolymorphic loci on chromosome
-  X (5 men, 5 women).  crlmm assumes that the median copy number
-  across samples at a given marker on X is 1 for men and 2 for women.}
-\end{figure}
+\textbf{Wrapper:} The construction of a \Rclass{CNSet} object,
+preprocessing, and genotype calling are wrapped into a convenience
+function called \Rfunction{genotype.Illumina}.
 
-
-
-
-\begin{figure}[t!]
- \centering
-<<polymorphicX, fig=TRUE, width=8, height=4>>=
-## copy number estimates on X for SNPs are biased towards small values.
-X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
-ca.M <- CA(cnSet, i=X.markers, j=M)
-cb.M <- CB(cnSet, i=X.markers, j=M)
-ca.F <- CA(cnSet, i=X.markers, j=F)
-cb.F <- CB(cnSet, i=X.markers, j=F)
-cn.M <- ca.M+cb.M
-cn.F <- ca.F+cb.F
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col="grey60")
-cn2 <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
-stopifnot(all.equal(cbind(cn.M, cn.F), cn2))
-@
-\caption{Copy number estimates for polymorphic markers on chromosome
-  X. }
-\end{figure}
-
-Often it is of interest to smooth the total copy number estimates (the
-sum of the allele-specific copy number) as a function of the physical
-position.  The following code chunk can be used to create an instance
-of \Robject{CopyNumberSet} that contains the CA + CB at polymorphic
-markers and 'CA' at nonpolymorphic markers.
-
-The \Robject{cnSet} returned by the \Rfunction{crlmmCopynumber}
-function contains all of the parameters used to compute
-allele-specific copy number.  In order to reduce I/O and speed
-computation, the allele-specific copy number estimates are not written
-to file nor saved in the \Robject{CNSet} object.  Rather, the
-estimates are computed on the fly when the user calls one of the
-helper functions that uses this information. For instance, often it is
-of interest to smooth the total copy number estimates (the sum of the
-allele-specific copy number) as a function of the physical position.
-The following code chunk can be used to create an instance of
-\Robject{CopyNumberSet} that contains the CA + CB at polymorphic
-markers and 'CA' at nonpolymorphic markers.
-
-Alternatively, total copy number can be obtained by
-<<totalCopynumber.snps>>=
-ct2 <- totalCopynumber(cnSet, i=snp.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
+<<genotype.Illumina,cache=TRUE,results=hide>>=
+cnSet2 <- genotype.Illumina(sampleSheet=samplesheet,
+			    arrayNames=arrayNames,
+			    arrayInfoColNames=arrayInfo,
+			    cdfName="human370v1c",
+			    batch=batch)
 @
 
-Missing values can arise at polymorphic when the confidence score of
-the genotype calls are below the threshold indicated by the threshold
-\texttt{GT.CONF.THR} in \Robject{crlmmCopynumber}. See
-\Robject{?crlmmCopynumber} for additional details.  In the following
-codechunk, we compute the number of samples that had confidence scores
-below \Sexpr{GT.CONF.THR} at loci for which ${\hat CA}$ and ${\hat CB}$
-are missing.
-
-<<NAs.snps>>=
-missing.copynumber <- which(rowSums(is.na(ct)) > 0)
-invisible(open(snpCallProbability(cnSet)))
-gt.confidence <- i2p(snpCallProbability(cnSet)[snp.index, ])
-n.below.threshold <- rowSums(gt.confidence < 0.95)
-unique(n.below.threshold[missing.copynumber])
-@
-\noindent For loci with missing copy number, the confidence scores
-were all below the threshold.
-
-At nonpolymorphic loci, either the \Rfunction{CA} or
-\Rfunction{totalCopynumber} functions can be used to obtain estimates
-of total copy number.
-
-<<nonpolymorphicAutosomes>>=
-marker.index <- which(!isSnp(cnSet) & chromosome(cnSet) < 23)
-ct <- CA(cnSet, i=marker.index, j=1:5)
-## all zeros
-stopifnot(all(CB(cnSet, i=marker.index, j=1:5) == 0))
-ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
+<<checkIdenticalCalls>>=
+invisible(open(calls(cnSet)))
+invisible(open(calls(cnSet2)))
+snp.index <- which(isSnp(cnSet))
+identical(calls(cnSet)[snp.index, 1:20], calls(cnSet2)[snp.index, 1:20])
+invisible(close(calls(cnSet)))
+invisible(close(calls(cnSet2)))
 @
 
+To fully remove the data associated with the \Robject{cnSet2} object,
+one should use the \Rfunction{delete} function in the \Rpackage{ff}
+package followed by the \Rfunction{rm} function.  The following code
+is not evaluated is it would change the results of the cached
+computations in the previous code chunk.
 
-\begin{figure}[t!]
-  Nonpolymorphic markers on chromosome X:
-  \centering
-<<nonpolymorphicX, fig=TRUE, width=8, height=4>>=
-npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
-M <- sample(which(cnSet$gender==1), 5)
-F <- sample(which(cnSet$gender==2), 5)
-cn.M <- CA(cnSet, i=npx.index, j=M)
-cn.F <- CA(cnSet, i=npx.index, j=F)
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", col="grey60", outline=FALSE)
+<<delete, eval=FALSE>>=
+lapply(assayData(cnSet2), delete)
+lapply(batchStatistics(cnSet2), delete)
+delete(cnSet2$gender)
+delete(cnSet2$SNR)
+delete(cnSet2$SKW)
+rm(cnSet2)
 @
-\caption{Copy number estimates for nonpolymorphic loci on chromosome
-  X (5 men, 5 women).  crlmm assumes that the median copy number
-  across samples at a given marker on X is 1 for men and 2 for women.}
-\end{figure}
-
-
-
-
-\begin{figure}[t!]
- \centering
-<<polymorphicX, fig=TRUE, width=8, height=4>>=
-## copy number estimates on X for SNPs are biased towards small values.
-X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
-ca.M <- CA(cnSet, i=X.markers, j=M)
-cb.M <- CB(cnSet, i=X.markers, j=M)
-ca.F <- CA(cnSet, i=X.markers, j=F)
-cb.F <- CB(cnSet, i=X.markers, j=F)
-cn.M <- ca.M+cb.M
-cn.F <- ca.F+cb.F
-boxplot(data.frame(cbind(cn.M, cn.F)), pch=".", outline=FALSE, col="grey60")
-cn2 <- totalCopynumber(cnSet, i=X.markers, j=c(M, F))
-stopifnot(all.equal(cbind(cn.M, cn.F), cn2))
-@
-\caption{Copy number estimates for polymorphic markers on chromosome
-  X. }
-\end{figure}
-
-Often it is of interest to smooth the total copy number estimates (the
-sum of the allele-specific copy number) as a function of the physical
-position.  The following code chunk can be used to create an instance
-of \Robject{CopyNumberSet} that contains the CA + CB at polymorphic
-markers and 'CA' at nonpolymorphic markers.
-
-<<copynumberObject>>=
-marker.index <- which(chromosome(cnSet) <= 22)## & isSnp(cnSet))
-sample.index <- 1:5 ## first five samples
-invisible(open(cnSet))
-copynumberSet <- as(cnSet[marker.index, 1:5], "CopyNumberSet")
-invisible(close(cnSet))
-copynumberSet <- copynumberSet[order(chromosome(copynumberSet), position(copynumberSet)), ]
-indices <- split(1:nrow(copynumberSet), chromosome(copynumberSet))
-dup.index <- unlist(sapply(indices, function(i, position)  i[duplicated(position[i])], position=position(copynumberSet)))
-if(length(dup.index) > 0) copynumberSet <- copynumberSet[-dup.index, ]
-## exclude any rows that are all missing
-missing.index <- which(rowSums(is.na(copyNumber(copynumberSet))) == ncol(copynumberSet))
-table(chromosome(copynumberSet)[missing.index])
-copynumberSet <- copynumberSet[-missing.index, ]
-@
-
-
-We suggest plotting the total copy number as a function of the
-physical position to evaluate whether a wave-correction is needed.
-
-
-<<plotTotalCn, fig=TRUE, width=8, height=8>>=
-require(SNPchip)
-data(chromosomeAnnotation)
-chrAnn <- chromosomeAnnotation[1,]
-layout(matrix(1:5, 5,1), heights=c(1, 1, 1, 1, 1))
-par(mar=c(0.5, 0.5, 0.5, 0.5), las=1, oma=c(4, 4, 4, 4))
-i <- which(chromosome(copynumberSet) == 1)
-for(j in 1:5){
-	plot(position(copynumberSet)[i], copyNumber(copynumberSet)[i, j], pch=".", cex=0.6,col="grey60", xaxt="n",
-	     ylim=c(-1,6), ylab="total copy number",
-	     yaxt="n",
-	     xlim=c(0, max(position(copynumberSet)[i])))
-	legend("topleft", legend=paste("SNR:", round(copynumberSet$SNR[j], 1)))
-	axis(2, at=0:6, labels=0:6)
-	if(j == 5){
-		mtext("physical position (Mb)", 1, outer=TRUE, line=2)
-		mtext("Chromosome 8", 3, line=0, outer=TRUE)
-		at <- pretty(position(copynumberSet)[i], n=8)
-	}
-	## draw centromere
-	xx <- c(chrAnn[1:2], chrAnn[2:1])
-	yy <- c(-0.5, -0.5, 5, 5)
-	polygon(xx, yy, col="bisque")
-}
-@
-
-\section{Smoothing marker-level estimates of total copy number}
-
-In this section, we show how the total copy number can be smoothed
-using either the hidden Markov model implemented in the \R{}  package
-\Rpackage{VanillaICE} or circular binary segmentation implemented in
-the \R{} package{DNAcopy}.
-
-\paragraph{Smoothing via a hidden Markov model.}
-
-<<hmm>>=
-if(require(VanillaICE)){
-	hmmOpts <- hmm.setup(copynumberSet, c("hom-del", "hem-del", "normal", "amp"),
-			     copynumberStates=0:3, normalIndex=3,
-			     log.initialP=rep(log(1/4), 4))
-	timing <- system.time(fit.cn <- hmm(copynumberSet, hmmOpts, TAUP=1e10, verbose=FALSE))
-	hmm.df <- as.data.frame(fit.cn)
-	print(hmm.df[1:5, c(2:4,7:9)])
-}
-@
-
-\paragraph{Smoothing via segmentation.}
-
-<<cbs>>=
-library("DNAcopy")
-CNA.object <- CNA(genomdat=copyNumber(copynumberSet),
-		  chrom=chromosome(copynumberSet),
-		  maploc=position(copynumberSet),
-		  data.type="logratio",
-		  sampleid=sampleNames(copynumberSet))
-smu.object <- smooth.CNA(CNA.object)
-if(!load.it) unlink(file.path(outdir, "cbs.segments.rda"))
-cbs.segments <- checkExists("cbs.segments", .path=outdir, .FUN=segment, x=smu.object, .load.it=load.it)
-cbs.segments <- cbind(cbs.segments$output, cbs.segments$segRows)
-cbs.segments$call <- rep(3, nrow(cbs.segments))
-cbs.segments$call[cbs.segments$seg.mean > 2.5] <- 4
-cbs.segments$call[cbs.segments$seg.mean < 1.25 & cbs.segments$seg.mean > 0.75] <- 2
-cbs.segments$call[cbs.segments$seg.mean < 0.75] <- 1
-cbs.ir <- RangedData(IRanges(cbs.segments$loc.start, cbs.segments$loc.end),
-		     chrom=cbs.segments$chrom,
-		     numMarkers=cbs.segments$num.mark,
-		     seg.mean=cbs.segments$seg.mean,
-		     cnCall=cbs.segments$call,
-		     sampleId=substr(cbs.segments$ID, 2, 13))
-@
-
-\paragraph{Visualizing inferred CNV.}
-
-In the following code chunk, we plot the total copy number versus
-physical position for chromosome 1 and overlay the copy number
-predictions from the HMM and a CNV call from the segmentation obtained
-by thresholding the segment means.  We restrict our focus to regions
-that have 3 or more markers.
-
-<<smoothFig, fig=TRUE, width=8, height=8>>=
-require(SNPchip)
-CHR <- 1
-cnSet2 <- copynumberSet
-## require at least 3 markers
-fit.cn2 <- fit.cn[fit.cn$numMarkers >= 3, ]
-cbs.ir2 <- cbs.ir[cbs.ir$numMarkers >= 3, ]
-
-copynumberSet2 <- copynumberSet[which(chromosome(copynumberSet) == CHR), ]
-layout(matrix(1:5, 5,1), heights=c(1, 1, 1, 1, 1))
-par(mar=c(0.5, 0.5, 0.5, 0.5), las=1, oma=c(4, 4, 4, 4))
-for(j in 1:5){
-	fit.cn3 <- fit.cn2[fit.cn2$chrom==CHR & fit.cn2$sampleId == sampleNames(copynumberSet2)[j], ]
-	cbs.ir3 <- cbs.ir2[cbs.ir2$chrom==CHR & cbs.ir2$sampleId == sampleNames(copynumberSet2)[j], ]
-	plot(position(copynumberSet2), copyNumber(copynumberSet2)[, j], pch=".", cex=0.6,col="grey60", xaxt="n",
-	     ylim=c(-1,6), ylab="total copy number",
-	     yaxt="n",
-	     xlim=c(0, max(position(copynumberSet2))))
-
-	legend("topleft", legend=paste("SNR:", round(copynumberSet2$SNR[j], 1)))
-	axis(2, at=0:6, labels=0:6)
-	if(j == 5){
-		mtext("physical position (Mb)", 1, outer=TRUE, line=2)
-		mtext("Chromosome 8", 3, line=0, outer=TRUE)
-		at <- pretty(position(copynumberSet2))
-	}
-	##Use polygon at bottom to show predictions
-	w <- width(fit.cn3)
-	fit.cn3 <- fit.cn3[order(w, decreasing=TRUE), ]
-	##fit.cn3 <- fit.cn3[fit.cn3$numMarkers > 5, ]
-	col <- c("blue", "black", "grey80", "red")
-	x <- c(min(start(fit.cn3)), max(end(fit.cn3)))
-	xx <- c(x, rev(x))
-	y <- rep(c(-0.3, 0), each=2)
-	polygon(xx, y, col="white")
-	for(i in seq_along(w)){
-		x <- c(start(fit.cn3)[i], end(fit.cn3)[i])
-		xx <- c(x, rev(x))
-		statecolor <- col[fit.cn3$state[i]]
-		polygon(xx, y, col=statecolor, border=statecolor)
-	}
-	w <- width(cbs.ir3)
-	cbs.ir3 <- cbs.ir3[order(w, decreasing=TRUE), ]
-	##cbs.ir3 <- cbs.ir3[cbs.ir3$numMarkers > 5, ]
-	y <- rep(c(-1, -0.7), each=2)
-	for(i in seq_along(w)){
-		x <- c(start(cbs.ir3)[i], end(cbs.ir3)[i])
-		xx <- c(x, rev(x))
-		statecolor <- col[cbs.ir3$cnCall[i]]
-		polygon(xx, y, col=statecolor, border=statecolor)
-	}
-	axis(4, at=c(-0.9, -0.1), c("CBS", "HMM"), cex=0.8)
-	if(j==5){
-		legend("topright", fill=col, legend=c(0, 1, 2, expression(3+.)))
-##		invisible(plotCytoband(8, label.cytoband=FALSE, xlim=c(0,max(position(copynumberSet2)))))
-		labels <- at/1e6
-		axis(1, at=at, labels=labels, outer=T, line=0)
-	}
-	## draw centromere
-	xx <- c(chrAnn[1:2], chrAnn[2:1])
-	yy <- c(-0.5, -0.5, 5, 5)
-	polygon(xx, yy, col="bisque")
-}
-@
-
-TODO: Samples 4 and 5 have a sparse band of CN-estimates near 1 that
-is uniformly distributed across chromosome 1.  This suggests markers
-that are either not well fit by the linear model, or a problem with
-the genotyping.  Need to check.
-
-
-%Make a 4 x 4 table of the called states for each sample.
-% NA estimates are not counted in CBS -- need to recompute the number
-% of markers in each segment in order to make the 4 x 4 table
-
-<<smooth, eval=FALSE, echo=FALSE>>=
-nm.hmm <- sapply(split(fit.cn$numMarkers, fit.cn$sampleId), sum)
-stopifnot(length(unique(nm.hmm)) == 1)
-nm.cbs <- sapply(split(cbs.ir$numMarkers, cbs.ir$sampleId), sum)
-stopifnot(length(unique(nm.cbs)) == 1)
-stopifnot(all.equal(nm.cbs, nm.hmm))
-hmm.states <- rep(fit.cn$state, fit.cn$numMarkers)
-sample.id <- rep(fit.cn$sampleId, fit.cn$numMarkers)
-hmm.states <- split(hmm.states, sample.id)
-cbs.states <- rep(cbs.ir$cnCall, cbs.ir$numMarkers)
-sample.id <- rep(cbs.ir$sampleId, cbs.ir$numMarkers)
-cbs.states <- split(cbs.states, sample.id)
-tabs <- vector("list", length(cbs.states))
-for(i in seq_along(cbs.states)) tabs[[i]] <- table(cbs.states[[i]], hmm.states[[i]])
-names(tabs) <- names(cbs.states)
-@
-
-
-\section{Accessors for extracting the locus-level copy number
-  estimates.}
-
-As an example of how to use accessors to obtain the allele-specific CN
-estimates, the following code chunk extracts the allele-specific copy
-number for polymorphic markers on chromosome 21.
-
-<<acn-accessor>>=
-marker.index <- which(chromosome(cnSet) == 21 & isSnp(cnSet))
-ca <- CA(cnSet, i=marker.index)
-cb <- CB(cnSet, i=marker.index)
-missing.index <- which(rowSums(is.na(ca))==ncol(cnSet))
-ca <- ca[-missing.index, ]
-cb <- cb[-missing.index, ]
-@
-\noindent Negating the \Robject{isSnp} function could be used to
-extract the estimates at nonpolymorphic markers. For instance,
-<<monomorphic-accessor>>=
-cn.monomorphic <- CA(cnSet, i=which(chromosome(cnSet) == 21 & !isSnp(cnSet)))
-@
-
-At polymorphic loci, the total copy number is the sum of the number of
-copies of the A allele and the number of copies for the B allele.  At
-nonpolymorphic loci, the total copy number is the number of copies for
-the A allele.  The helper function totalCopyNumber can be used to
-extract the total copy number for all polymorphic and nonpolymorphic
-markers.  Documentation of the \Rfunction{totalCopyNumber} will be
-available in the devel version of the \Rpackage{oligoClasses}.
-
-<<copyNumberHelper>>=
-cn.total <- ca+cb
-cn.total2 <- totalCopynumber(cnSet, i=marker.index)
-cn.total2 <- cn.total2[-missing.index, ]
-all.equal(cn.total2, cn.total)
-@
-
-A few simple visualizations may be helpful at this point. The first
-plot is a histogram of the signal to noise ratio of the sample -- an
-overall measure of how well the genotype clusters separate.  (This
-statistic tends to be much higher for Illumina than for the Affymetrix
-platforms.) The second is a visualization of the total copy number
-estimates plotted versus physical position on chromosome 1 for the two
-samples with the lowest (top) and highest (bottom) signal to noise
-ratios.
-
-<<snr, fig=TRUE>>=
-open(cnSet$SNR)
-snr <- cnSet$SNR[,]
-hist(snr, breaks=15)
-@
-
-
-We plot the total copy number estimates versus physical position the
-two samples with the lowest (top) and highest (bottom) signal to noise
-ratios.
-
-\begin{figure}
-  \centering
-<<firstSample, fig=TRUE>>=
-low.snr <- which(snr == min(snr))
-high.snr <- which(snr == max(snr))
-marker.index <- which(chromosome(cnSet) == 1)
-x <- position(cnSet)[marker.index]
-cn.total <- totalCopynumber(cnSet, i=marker.index, j=c(low.snr, high.snr))
-##x <- x[-missing.index]
-snrs <- round(snr[c(low.snr, high.snr)], 2)
-par(mfrow=c(2,1), las=1, mar=c(0.5, 4, 0.5, 0.5), oma=c(4, 1, 1,1))
-for(j in 1:2){
-	cn <- cn.total[, j]
-	plot(x, cn, pch=".", ylab="copy number", xaxt="n", ylim=c(0, 6),
-	     col="grey50")
-	legend("topleft", legend=paste("SNR", snrs[j]))
-}
-axis(1, at=pretty(x), labels=pretty(x/1e6))
-mtext("Mb", 1, outer=TRUE, line=2)
-@
-
-\caption{Copy number estimates for samples with low signal to noise
-  ratio (top) and high signal to noise ratio (bottom).  Note the
-  slight wave in the bottom figure.  Such waves are typically
-  correlated with GC-content and can be removed by scatterplot
-  smoothers or any of the published wave-correction tools for
-  genotyping arrays.}
-\end{figure}
-
-\section{Session information}
-<<sessionInfo, results=tex>>=
-toLatex(sessionInfo())
-@
-
 
 \end{document}
-
-
-

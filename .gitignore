@@ -1,5 +1,7 @@
 .auto*
 test/*
+*.o
+*.so
 myCrlmmGT2.Rnw
 ffobjs*
 auto*

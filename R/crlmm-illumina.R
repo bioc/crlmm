@@ -1008,16 +1008,14 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 }
 
 
-construct.Illumina <- function(sampleSheet=NULL,
+constructInf <- function(sampleSheet=NULL,
 			       arrayNames=NULL,
-			       ids=NULL,
 			       path=".",
 			       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
 			       highDensity=FALSE,
 			       sep="_",
 			       fileExt=list(green="Grn.idat", red="Red.idat"),
 			       cdfName,
-			       copynumber=TRUE,
 			       verbose=FALSE,
 			       batch, #fns,
 			       saveDate=TRUE) { #, outdir="."){
@@ -1082,14 +1080,8 @@ construct.Illumina <- function(sampleSheet=NULL,
 	if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")
 
 	if(verbose) message("Initializing container for genotyping and copy number estimation")
-	featureData = getFeatureData(cdfName, copynumber=copynumber)
-#	if(!missing(fns)){
-#		index = match(fns, featureNames(featureData))
-#		if(all(is.na(index))) stop("fns not in featureNames")
-#		featureData = featureData[index, ]
-#	}
+	featureData = getFeatureData(cdfName, copynumber=TRUE)
 	nr = nrow(featureData); nc = narrays
-#        ldPath(outdir)
 	cnSet <- new("CNSet",
 		     alleleA=initializeBigMatrix(name="A", nr, nc),
 		     alleleB=initializeBigMatrix(name="B", nr, nc),
@@ -1114,13 +1106,12 @@ construct.Illumina <- function(sampleSheet=NULL,
 	cnSet$SNR = initializeBigVector("crlmmSNR-", ncol(cnSet), "double")
 	cnSet$SKW = initializeBigVector("crlmmSKW-", ncol(cnSet), "double")
 	sampleNames(cnSet) <- basename(sampleNames(cnSet))
-	##pd = data.frame(matrix(NA, nc, 3), row.names=sampleNames(cnSet))
-	##colnames(pd)=c("SKW", "SNR", "gender")
-	##phenoData(cnSet) = new("AnnotatedDataFrame", data=pd)
 	return(cnSet)
 }
+construct.Illumina <- constructInf
 
-preprocess <- function(cnSet,
+preprocessInf <- function(cnSet,
+			  sampleSheet=NULL,
 		       arrayNames=NULL,
 		       ids=NULL,
 		       path=".",
@@ -1176,16 +1167,17 @@ preprocess <- function(cnSet,
 		 neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
 	return(mixtureParams)
 }
+preprocess <- preprocessInf
 
-genotypeRS <- function(cnSet, mixtureParams, probs=rep(1/3,3),
-		       SNRMin=5,
-		       recallMin=10,
-		       recallRegMin=1000,
-		       verbose=TRUE,
-		       returnParams=TRUE,
-		       badSNP=0.7,
-		       gender=NULL,
-		       DF=6){
+genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
+			SNRMin=5,
+			recallMin=10,
+			recallRegMin=1000,
+			verbose=TRUE,
+			returnParams=TRUE,
+			badSNP=0.7,
+			gender=NULL,
+			DF=6){
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 	narrays = ncol(cnSet)
@@ -1256,91 +1248,49 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	stopifnot(is.lds)
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
-        pkgname = getCrlmmAnnotationName(cdfName)
-	callSet <- construct.Illumina(sampleSheet=sampleSheet, arrayNames=arrayNames,
-				      ids=ids, path=path, arrayInfoColNames=arrayInfoColNames,
-				      highDensity=highDensity, sep=sep, fileExt=fileExt,
-				      cdfName=cdfName, copynumber=copynumber, verbose=verbose, batch=batch, # fns=fns,
-				      saveDate=saveDate) #, outdir=outdir)
-	## Basic checks
-	##check that mixtureParams provided
-	if(missing(mixtureParams))
-		stop("preprocess is FALSE but mixtureParams were not provided")
-	if(ncol(callSet) != length(arrayNames))
-		stop("callSet provided but number of samples is not the same as the length of arrayNames")
-	snr <- callSet$SNR[]
-	if(any(is.na(snr))) stop("missing values in callSet$SNR")
-	if(missing(sns)) sns = basename(sampleNames(callSet))
-	open(A(callSet))
-	open(B(callSet))
- 	is.snp = isSnp(callSet)
-	snp.index = which(is.snp)
-	narrays = ncol(callSet)
-	sampleBatches <- splitIndicesByLength(seq(length=ncol(callSet)), ocSamples())
-	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
-	SNR = initializeBigVector("crlmmSNR-", narrays, "double")
-	SKW = initializeBigVector("crlmmSKW-", narrays, "double")
-	ocLapply(seq_along(sampleBatches), processIDAT, sampleBatches=sampleBatches,
-		 sampleSheet=sampleSheet, arrayNames=arrayNames,
-		 ids=ids, path=path, arrayInfoColNames=arrayInfoColNames, highDensity=highDensity,
-		 sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose, mixtureSampleSize=mixtureSampleSize,
-		 fitMixture=fitMixture, eps=eps, seed=seed, cdfName=cdfName, sns=sns, stripNorm=stripNorm,
-		 useTarget=useTarget, A=A(callSet), B=B(callSet), SKW=SKW, SNR=SNR,
-		 mixtureParams=mixtureParams, is.snp=is.snp, neededPkgs=c("crlmm", pkgname)) # outdir=outdir,
-	open(SKW)
-	open(SNR)
-	pData(callSet)$SKW = SKW
-	pData(callSet)$SNR = SNR
-	save(callSet, file=file.path(ldPath(), "callSet.rda"))
-	close(SNR)
-	close(SKW)
-	open(A(callSet))
-	open(B(callSet))
-	tmpA = initializeBigMatrix(name="tmpA", length(snp.index), narrays)
-	tmpB = initializeBigMatrix(name="tmpB", length(snp.index), narrays)
-	for(j in seq(length=ncol(callSet))){
-		tmpA[, j] <- as.integer(A(callSet)[snp.index, j])
-		tmpB[, j] <- as.integer(B(callSet)[snp.index, j])
-	}
-	close(A(callSet))
-	close(B(callSet))
-	close(tmpA)
-	close(tmpB)
-	save(tmpA, file=file.path(ldPath(), "tmpA.rda"))
-	save(tmpB, file=file.path(ldPath(), "tmpB.rda"))
-	save(SNR, file=file.path(ldPath(), "SNR.rda"))
-	save(SKW, file=file.path(ldPath(), "SKW.rda"))
-	save(mixtureParams, file=file.path(ldPath(), "mixtureParams.rda"))
-	message("Begin genotyping")
-	tmp <- crlmmGT2(A=tmpA,
-			B=tmpB,
-			SNR=SNR,
-			mixtureParams=mixtureParams,
-			cdfName=cdfName,
-			row.names=NULL,
-			col.names=sampleNames(callSet),
-			probs=probs,
-			DF=DF,
-			SNRMin=SNRMin,
-			recallMin=recallMin,
-			recallRegMin=recallRegMin,
-			gender=gender,
-			verbose=verbose,
-			returnParams=returnParams,
-			badSNP=badSNP)
-	save(tmp, file=file.path(ldPath(), "tmp.rda"))
-	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	open(tmpA); open(tmpB)
-	for(j in 1:ncol(callSet)){
-		snpCall(callSet)[snp.index, j] <- as.integer(tmpA[, j])
-		snpCallProbability(callSet)[snp.index, j] <- as.integer(tmpB[, j])
-	}
-	close(tmpA); close(tmpB)
-	delete(tmpA); delete(tmpB);
-	callSet$gender = tmp$gender
-	rm(tmp)
-	close(callSet)
-	return(callSet)
+	stopifnot(!missing(batch))
+        pkgname <- getCrlmmAnnotationName(cdfName)
+	message("Instantiate CNSet container.")
+	cnSet <- constructInf(sampleSheet=sampleSheet,
+				    arrayNames=arrayNames,
+				    path=path,
+				    arrayInfoColNames=arrayInfoColNames,
+				    highDensity=highDensity,
+				    sep=sep,
+				    fileExt=fileExt,
+				    cdfName=cdfName,
+				    verbose=verbose,
+				    batch=batch,
+				    saveDate=saveDate)
+	mixtureParams <- preprocessInf(cnSet=cnSet,
+				    sampleSheet=sampleSheet,
+				    arrayNames=arrayNames,
+				    ids=ids,
+				    path=path,
+				    arrayInfoColNames=arrayInfoColNames,
+				    highDensity=highDensity,
+				    sep=sep,
+				    fileExt=fileExt,
+				    saveDate=saveDate,
+				    stripNorm=stripNorm,
+				    useTarget=useTarget,
+				    mixtureSampleSize=mixtureSampleSize,
+				    fitMixture=fitMixture,
+				    eps=eps,
+				    verbose=verbose,
+				    seed=seed)
+	message("Preprocessing complete.  Begin genotyping...")
+	genotypeInf(cnSet=cnSet, mixtureParams=mixtureParams,
+		   probs=probs,
+		   SNRMin=SNRMin,
+		   recallMin=recallMin,
+		   recallRegMin=recallRegMin,
+		   verbose=verbose,
+		   returnParams=returnParams,
+		   badSNP=badSNP,
+		   gender=gender,
+		   DF=DF)
+	return(cnSet)
 }
 
 

@@ -70,4 +70,4 @@ export(crlmm,
 export(constructIlluminaCNSet)
 export(totalCopynumber, rawCopynumber)
 exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
-
+export(constructInf, preprocessInf, genotypeInf)
