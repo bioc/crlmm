@@ -1196,7 +1196,7 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 ##	message("Writing complete.  Begin genotyping...")
 ##	close(A(cnSet))
 ##	close(B(cnSet))
-	tmp <- rscrlmmGT2(A=snpCall(cnSet),
+	tmp <- crlmmGT2(A=snpCall(cnSet),
 			  B=snpCallProbability(cnSet),
 			  SNR=cnSet$SNR,
 			  mixtureParams=mixtureParams,
