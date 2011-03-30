@@ -1211,7 +1211,9 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			  badSNP=badSNP,
 			  snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
+	open(cnSet$gender)
 	cnSet$gender[,] = tmp$gender
+	close(cnSet$gender)
 	TRUE
 }
 
