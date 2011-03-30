@@ -16,15 +16,19 @@
       \item We have added several vignettes pertaining to copy number
       analyses in the crlmm package: CopyNumberOverview,
       AffymetrixPreprocessCN, IlluminaPreprocessCN, and Infrastructure.
+      The AffymetrixPreprocessCN and IlluminaPreprocessCN vignettes
+      provide instructions for preprocessing and genotyping the raw
+      intensities for Affymetrix and Illumina platforms, respectively.
       The 'copynumber' and 'Infrastructure' vignettes are applicable to
       both the Illumina and Affymetrix platforms. The CopyNumberOverview
-      vignette gives a brief summary of the available vignettes for copy
-      number analyses.
+      vignette provides a brief summary of the available vignettes for
+      copy number analysis.
 
-      \item Exporting function constructInf, preprocessInf, and
-      genotypeInf for preprocessing and genotyping Illumina files prior
-      to copy number analyses.  The genotype.Illumina function is now a
-      wrapper for these functions.
+      \item For those interested in copy number analysis of Illumina
+      platforms, we added functions that break-down the preprocessing
+      and genotyping steps: constructInf, preprocessInf, and
+      genotypeInf. The genotype.Illumina function is now a wrapper for
+      these functions.
 
       \item additional documentation for crlmm is provided in a
       compendium: http://www.biostat.jhsph.edu/~rscharpf/crlmmCompendium/index.html

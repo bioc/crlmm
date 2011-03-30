@@ -186,9 +186,5 @@ analyses.
 toLatex(sessionInfo())
 @
 
-<<echo=FALSE, results=hide>>=
-q("no")
-@
-
 
 \end{document}
