@@ -1,10 +1,34 @@
 \name{NEWS}
 \title{News for Package 'crlmm'}
 
-\section{Changes in version 1.10}{
+
+\section{Changes in version 1.9}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
       \item Using NEWS.Rd
+
+      \item batch slot in CNSet objects is class 'character'
+      (previously, class was 'factor')
+
+      \item the ff package is required for preprocessing and genotyping
+      prior to copy number analyses with the crlmmCopynumber function.
+
+      \item We have added several vignettes pertaining to copy number
+      analyses in the crlmm package: CopyNumberOverview,
+      AffymetrixPreprocessCN, IlluminaPreprocessCN, and Infrastructure.
+      The 'copynumber' and 'Infrastructure' vignettes are applicable to
+      both the Illumina and Affymetrix platforms. The CopyNumberOverview
+      vignette gives a brief summary of the available vignettes for copy
+      number analyses.
+
+      \item Exporting function constructInf, preprocessInf, and
+      genotypeInf for preprocessing and genotyping Illumina files prior
+      to copy number analyses.  The genotype.Illumina function is now a
+      wrapper for these functions.
+
+      \item additional documentation for crlmm is provided in a
+      compendium: http://www.biostat.jhsph.edu/~rscharpf/crlmmCompendium/index.html
+
     }
   }
 }
@@ -37,7 +61,7 @@
  	  elements of this object, including featureNames,
  	  sampleNames, and '['.
 	}
-	
+
         \item 'CopyNumberSet': contains locus-level estimates of copy
   	number for SNPs and polymorphic probes.
 	\enumerate{
@@ -47,7 +71,7 @@
 
 	  \item For nonpolymorphic probes, the total copy number is
           stored in the 'CA' slot and a NA is recorded for the
-          corresponding row in the CB matrix. 
+          corresponding row in the CB matrix.
 
 	  \item Useful methods: 'copyNumber', 'ellipse', 'points'
 	}
@@ -60,4 +84,5 @@
      'CrlmmSetList' and returns an object of class 'CopyNumberSet'.
     }
   }
+
 }

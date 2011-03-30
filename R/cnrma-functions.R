@@ -99,22 +99,7 @@ construct <- function(filenames,
 	return(cnSet)
 }
 
-genotype <- function(filenames,
-		     cdfName,
-		     batch,
-		     mixtureSampleSize=10^5,
-		     eps=0.1,
-		     verbose=TRUE,
-		     seed=1,
-		     sns,
-		     probs=rep(1/3, 3),
-		     DF=6,
-		     SNRMin=5,
-		     recallMin=10,
-		     recallRegMin=1000,
-		     gender=NULL,
-		     returnParams=TRUE,
-		     badSNP=0.7){
+constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(!is.lds) stop("this function now requires that the ff package be loaded")
 	if(missing(cdfName)) stop("must specify cdfName")
@@ -139,8 +124,8 @@ genotype <- function(filenames,
 	gns <- getVarInEnv("gns")
 	rm(list=obj, envir=.crlmmPkgEnv)
 	rm(obj)
-	if(verbose) message("Initializing objects.")
-	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
+	if(verbose) message("Initializing ff objects.")
+	##mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
 	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
 	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
 	genderff <- initializeBigVector("gender", length(filenames), "integer")
@@ -148,30 +133,16 @@ genotype <- function(filenames,
 	nr <- nrow(featureData); nc <- length(sns)
 	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
 	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
+	call <- initializeBigMatrix("call-", nr, length(filenames), "integer")
+	callPr <- initializeBigMatrix("callPr-", nr, length(filenames), "integer")
 	rownames(A) <- rownames(B) <- featureNames(featureData)
-	sampleBatches <- splitIndicesByNode(seq(along=filenames))
-	if(verbose) message("Processing ", length(filenames), " files.")
-	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
-		 fitMixture=TRUE, A=A, B=B, SKW=SKW, SNR=SNR,
-		 mixtureParams=mixtureParams, eps=eps, seed=seed,
-		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
-		 neededPkgs=c("crlmm", pkgname))
-	## Now we initialize a CNSet object, cloning A and B
-	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
-	## The clones will be used to store calls and confidence scores
-	open(A)
-	open(B)
-	##user do
-	## options("ffbatchbytes"=XXX) to make this efficient
-	call <- clone(A)
-	callProbability=clone(B)
-	close(A)
-	close(B)
+	rownames(call) <- rownames(callPr) <- featureNames(featureData)
+	if(verbose) message("Instantiating CNSet container")
 	cnSet <- new("CNSet",
 		     alleleA=A,
 		     alleleB=B,
 		     call=call,
-		     callProbability=callProbability,
+		     callProbability=callPr,
 		     featureData=featureData,
 		     annotation=cdfName,
 		     batch=batch)
@@ -190,26 +161,152 @@ genotype <- function(filenames,
 	cnSet$SNR <- SNR
 	cnSet$gender <- genderff
 	stopifnot(validObject(cnSet))
-	snp.I <- isSnp(cnSet)
-	snp.index <- which(snp.I)
-	##pData(cnSet)$SKW <- SKW
-	##pData(cnSet)$SNR <- SNR
-	np.index <- which(!snp.I)
-	if(verbose) message("Normalizing nonpolymorphic markers")
-	FUN <- ifelse(is.lds, "cnrma2", "cnrma")
-	if(verbose) message("Quantile normalizing nonpolymorphic markers")
-	cnrma2(A=A(cnSet),
-	       filenames=filenames,
-	       row.names=featureNames(cnSet)[np.index],
-	       cdfName=cdfName,
-	       sns=sampleNames(cnSet),
-	       seed=seed,
-	       verbose=verbose)
+	return(cnSet)
+}
+
+snprmaAffy <- function(cnSet, filenames,
+		       mixtureSampleSize=10^5,
+		       eps=0.1,
+		       seed=1,
+		       verbose=TRUE){
+	if(verbose) message("Preprocessing ", length(filenames), " files.")
+	pkgname <- getCrlmmAnnotationName(annotation(cnSet))
+	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
+	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
+	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
+		 fitMixture=TRUE, A=A(cnSet), B=B(cnSet), C=calls(cnSet),
+		 D=snpCallProbability(cnSet),
+		 SKW=cnSet$SKW, SNR=cnSet$SNR,
+		 mixtureParams=mixtureParams, eps=eps, seed=seed,
+		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
+		 neededPkgs=c("crlmm", pkgname))
+	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
+	return(mixtureParams)
+}
+genotype <- function(filenames,
+		     cdfName,
+		     batch,
+		     mixtureSampleSize=10^5,
+		     eps=0.1,
+		     verbose=TRUE,
+		     seed=1,
+		     sns,
+		     probs=rep(1/3, 3),
+		     DF=6,
+		     SNRMin=5,
+		     recallMin=10,
+		     recallRegMin=1000,
+		     gender=NULL,
+		     returnParams=TRUE,
+		     badSNP=0.7){
+##	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+##	if(!is.lds) stop("this function now requires that the ff package be loaded")
+##	if(missing(cdfName)) stop("must specify cdfName")
+##	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
+##	if(missing(sns)) sns <- basename(filenames)
+##	stopifnot(!missing(batch))
+##	##---------------------------------------------------------------------------
+##	##
+##	## from snprma2.  Goal is to initialize A and B with
+##	## appropriate dimension for snps+nps
+##	##
+##	##---------------------------------------------------------------------------
+##	if (missing(sns)) sns <- basename(filenames)
+##	if (missing(cdfName))
+##		cdfName <- read.celfile.header(filenames[1])[["cdfName"]]
+##	pkgname <- getCrlmmAnnotationName(cdfName)
+##	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
+##	if(verbose) message("Loading annotations and mixture model parameters.")
+##	obj <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+##	pnsa <- getVarInEnv("pnsa")
+##	pnsb <- getVarInEnv("pnsb")
+##	gns <- getVarInEnv("gns")
+##	rm(list=obj, envir=.crlmmPkgEnv)
+##	rm(obj)
+##	if(verbose) message("Initializing objects.")
+##	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
+##	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
+##	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
+##	genderff <- initializeBigVector("gender", length(filenames), "integer")
+##	featureData <- getFeatureData(cdfName, copynumber=TRUE)
+##	nr <- nrow(featureData); nc <- length(sns)
+##	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
+##	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
+##	rownames(A) <- rownames(B) <- featureNames(featureData)
+##	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+##	if(verbose) message("Processing ", length(filenames), " files.")
+##	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
+##		 fitMixture=TRUE, A=A, B=B, SKW=SKW, SNR=SNR,
+##		 mixtureParams=mixtureParams, eps=eps, seed=seed,
+##		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
+##		 neededPkgs=c("crlmm", pkgname))
+##	## Now we initialize a CNSet object, cloning A and B
+##	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
+##	## The clones will be used to store calls and confidence scores
+##	open(A)
+##	open(B)
+##	##user do
+##	## options("ffbatchbytes"=XXX) to make this efficient
+##	call <- clone(A)
+##	callProbability=clone(B)
+##	close(A)
+##	close(B)
+##	cnSet <- new("CNSet",
+##		     alleleA=A,
+##		     alleleB=B,
+##		     call=call,
+##		     callProbability=callProbability,
+##		     featureData=featureData,
+##		     annotation=cdfName,
+##		     batch=batch)
+##	if(!missing(sns)){
+##		sampleNames(cnSet) <- sns
+##	} else {
+##		sampleNames(cnSet) <- basename(filenames)
+##	}
+##	protocolData <- getProtocolData.Affy(filenames)
+##	rownames(pData(protocolData)) <- sns
+##	protocolData(cnSet) <- protocolData
+##	##pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
+##	##colnames(pd)=c("SKW", "SNR", "gender")
+##	##phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
+##	cnSet$SKW <- SKW
+##	cnSet$SNR <- SNR
+##	cnSet$gender <- genderff
+##	save(cnSet, file=file.path(ldPath(), "cnSet.rda"))
+##	stopifnot(validObject(cnSet))
+	cnSet <- constructAffy(filenames=filenames,
+			       cdfName=cdfName,
+			       batch=batch, verbose=verbose)
+	mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
+				    mixtureSampleSize=mixtureSampleSize,
+				    eps=eps,
+				    seed=seed,
+				    verbose=verbose)
+	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames, seed=seed,
+			verbose=verbose)
+	stopifnot(ok)
+	ok <- genotypeAffy(cnSet=cnSet, mixtureParams=mixtureParams,
+			   SNRMin=SNRMin, recallMin=recallMin,
+			   recallRegMin=recallRegMin,
+			   gender=gender,
+			   badSNP=badSNP,
+			   returnParams=returnParams,
+			   verbose=verbose)
+	return(cnSet)
+}
+
+genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
+			 recallRegMin=1000,
+			 gender=NULL, badSNP=0.7, returnParams=TRUE,
+			 verbose=TRUE){
+	snp.index <- which(isSnp(cnSet))
 	tmp <- crlmmGT2(A=calls(cnSet),
 			B=snpCallProbability(cnSet),
-			SNR=SNR,
+			SNR=cnSet$SNR,
 			mixtureParams=mixtureParams,
-			cdfName=cdfName,
+			cdfName=annotation(cnSet),
 			row.names=NULL,
 			col.names=sampleNames(cnSet),
 			SNRMin=SNRMin,
@@ -224,10 +321,25 @@ genotype <- function(filenames,
 	open(cnSet$gender)
 	cnSet$gender[,] <- tmp[["gender"]]
 	close(cnSet$gender)
-	return(cnSet)
+	return(TRUE)
 }
 
-rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
+cnrmaAffy <- function(cnSet, filenames, seed=1, verbose=TRUE){
+	snp.I <- isSnp(cnSet)
+	snp.index <- which(snp.I)
+	np.index <- which(!snp.I)
+	if(verbose) message("Quantile normalizing nonpolymorphic markers")
+	cnrma2(A=A(cnSet),
+	       filenames=filenames,
+	       row.names=featureNames(cnSet)[np.index],
+	       cdfName=cdfName,
+	       sns=sampleNames(cnSet),
+	       seed=seed,
+	       verbose=verbose)
+	TRUE
+}
+
+rsprocessCEL <- function(i, filenames, fitMixture, A, B, C, D, SKW, SNR,
 			 mixtureParams, eps, seed, mixtureSampleSize,
 			 pkgname){
 	obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
@@ -254,6 +366,8 @@ rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
 
 	open(A)
 	open(B)
+	open(C)
+	open(D)
 	open(SKW)
 	open(mixtureParams)
 	open(SNR)
@@ -270,6 +384,8 @@ rsprocessCEL <- function(i, filenames, fitMixture, A, B, SKW, SNR,
 		## RS: add index for row assignment
 		A[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
 		B[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+		C[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+		D[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
 		rm(y)
 		if(fitMixture){
 			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN

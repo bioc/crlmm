@@ -25,7 +25,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	}
 	snpBatches <- splitIndicesByLength(index, ocProbesets())
 	NR <- length(unlist(snpBatches))
-	if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
+	if(verbose) message("Calling ", NR, " SNPs for recalibration... ")
 	NC <- ncol(A)
 	##
 	if(verbose) message("Loading annotations.")
@@ -61,7 +61,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	cIndexes <- list(keepIndex,
 			 keepIndex[which(gender[keepIndex]==2)],
 			 keepIndex[which(gender[keepIndex]==1)])
-	if(verbose) cat("Calling", NR, "SNPs for recalibration... ")
 	## call C
 	fIndex <- which(gender==2)
 	mIndex <- which(gender==1)
@@ -101,6 +100,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		tmp
 	}
 	##
+	if(verbose) message("Calling process1")
 	newparamsBatch <- ocLapply(seq(along=snpBatches), process1,
 				   snpBatches=snpBatches,
 				   autosomeIndex=autosomeIndex, XIndex=XIndex,
