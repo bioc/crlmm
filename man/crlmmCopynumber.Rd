@@ -7,7 +7,7 @@
   Locus- and allele-specific estimation of copy number.
 }
 \usage{
-crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1, 
+crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 	        DF.PRIOR = 50, bias.adj = FALSE,
                 prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE,
                 GT.CONF.THR = 0.80, MIN.NU = 2^3, MIN.PHI = 2^3,
@@ -15,9 +15,9 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 }
 
 \arguments{
-  
+
   \item{object}{object of class \code{CNSet}.}
-  
+
  \item{MIN.SAMPLES}{ 'Integer'.  The minimum number of samples in a
   batch.  Bathes with fewer than MIN.SAMPLES are skipped.  Therefore,
   samples in batches with fewer than MIN.SAMPLES have NA's for the
@@ -28,7 +28,7 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
   \item{SNRMin}{ Samples with low signal to noise ratios are  excluded.  }
 
-  \item{MIN.OBS}{ 
+  \item{MIN.OBS}{
 
   For a SNP with with fewer than \code{MIN.OBS} of a genotype in a given
   batch, the within-genotype median is imputed.  The imputation is based
@@ -78,7 +78,7 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
   \item{verbose}{ Logical. }
 
-  \item{GT.CONF.THR}{ 
+  \item{GT.CONF.THR}{
 
     Confidence threshold for genotype calls (0, 1).  Calls with
     confidence scores below this theshold are not used to estimate the
@@ -90,10 +90,10 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
   \item{MIN.NU}{ numeric. Minimum value for background
     intensity. Ignored if \code{THR.NU.PHI} is \code{FALSE}. }
-  
+
   \item{MIN.PHI}{numeric. Minimum value for slope. Ignored if
     \code{THR.NU.PHI} is \code{FALSE}.}
-  
+
   \item{THR.NU.PHI}{  If \code{THR.NU.PHI} is \code{FALSE},
     \code{MIN.NU} and \code{MIN.PHI} are ignored. When TRUE, background
     (nu) and slope (phi) coefficients below MIN.NU and MIN.PHI are set
@@ -102,23 +102,23 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
   \item{type}{ Character string vector that must be one or more of
     "SNP", "NP", "X.SNP", or "X.NP". Type refers to a set of
     markers. See details below}
-    
+
  }
-  
+
  \references{
-   
+
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
   normalization, and genotype calls of high-density oligonucleotide SNP
   array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
   22. PMID: 17189563.
 
-  Carvalho BS, Louis TA, Irizarry RA. 
+  Carvalho BS, Louis TA, Irizarry RA.
   Quantifying uncertainty in genotype calls.
   Bioinformatics. 2010 Jan 15;26(2):242-9.
 
   Scharpf RB, Ruczinski I, Carvalho B, Doan B, Chakravarti A, and
   Irizarry RA, Biostatistics.  Biostatistics, Epub July 2010.
-  
+
 }
 
 \details{
@@ -155,6 +155,28 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
 	'X.NP' refers to autosomes on chromosome X.
 
-}
+      }
+
+      \value{
+
+	The value returned by the \code{crlmmCopynumber} function
+	depends on whether the data is stored in RAM or whether the data
+	is stored on disk using the R package \code{ff} for reading /
+	writing.  Specifically,
+
+	- if the elements of the \code{batchStaticts} slot in the
+	\code{CNSet} object have the class "ff_matrix" or "ffdf", then
+	the \code{crlmmCopynumber} function updates the data stored on
+	disk and returns the value \code{TRUE}.
+
+	- if the elements of the \code{batchStatistics} slot in the
+	\code{CNSet} object have the class 'matrix', then the
+	\code{crlmmCopynumber} function returns an object of class
+	\code{CNSet} with the elements of \code{batchStatistics}
+	updated.
+
+      }
+
+
 \author{R. Scharpf}
 \keyword{manip}

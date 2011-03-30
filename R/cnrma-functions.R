@@ -1453,18 +1453,17 @@ shrinkSummary <- function(object,
 			  MIN.SAMPLES=10,
 			  DF.PRIOR=50,
 			  verbose=TRUE,
-			  marker.index,
-			  is.lds=TRUE){
+			  marker.index){
 	stopifnot(type[[1]] == "SNP")
 	CHR.X <- FALSE ## this is no longer needed
+	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	if(missing(marker.index)){
 		batch <- batch(object)
 		is.snp <- isSnp(object)
 		is.autosome <- chromosome(object) < 23
 		is.annotated <- !is.na(chromosome(object))
 		is.X <- chromosome(object) == 23
-		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	if(is.lds){
@@ -1489,33 +1488,31 @@ shrinkSummary <- function(object,
 			      DF.PRIOR=DF.PRIOR,
 			      is.lds=is.lds)
 	}
-	TRUE
+	if(is.lds) return(TRUE) else return(object)
 }
 
 genotypeSummary <- function(object,
 			    GT.CONF.THR=0.80,
 			    type=c("SNP", "NP", "X.SNP", "X.NP"), ##"X.snps", "X.nps"),
 			    verbose=TRUE,
-			    marker.index,
-			    is.lds){
+			    marker.index){
 	if(type == "X.SNP" | type=="X.NP"){
 		CHR.X <- TRUE
 	} else CHR.X <- FALSE
+	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	if(missing(marker.index)){
 		batch <- batch(object)
 		is.snp <- isSnp(object)
 		is.autosome <- chromosome(object) < 23
 		is.annotated <- !is.na(chromosome(object))
 		is.X <- chromosome(object) == 23
-		is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-		if(is.lds) stopifnot(isPackageLoaded("ff"))
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	summaryFxn <- function(type){
 		switch(type,
 		       SNP="summarizeSnps",
 		       NP="summarizeNps",
-##		       X.SNP="summarizeSnps",
 		       X.NP="summarizeNps")
 	}
 	myf <- summaryFxn(type[[1]])
@@ -1529,7 +1526,6 @@ genotypeSummary <- function(object,
 			 batchSize=ocProbesets(),
 			 GT.CONF.THR=GT.CONF.THR,
 			 verbose=verbose,
-			 is.lds=is.lds,
 			 CHR.X=CHR.X,
 			 neededPkgs="crlmm")
 	} else{
@@ -1539,10 +1535,9 @@ genotypeSummary <- function(object,
 			      batchSize=ocProbesets(),
 			      GT.CONF.THR=GT.CONF.THR,
 			      verbose=verbose,
-			      is.lds=is.lds,
 			      CHR.X=CHR.X)
 	}
-	TRUE
+	if(is.lds) return(TRUE) else return(object)
 }
 
 whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
@@ -1556,7 +1551,8 @@ whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
 }
 
 summarizeNps <- function(strata, index.list, object, batchSize,
-			 GT.CONF.THR, verbose, is.lds, CHR.X, ...){
+			 GT.CONF.THR, verbose, CHR.X, ...){
+	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
@@ -1610,11 +1606,13 @@ summarizeSnps <- function(strata,
 			  index.list,
 			  object,
 			  GT.CONF.THR,
-			  verbose, is.lds=TRUE, CHR.X, ...){
+			  verbose, CHR.X, ...){
 ##	if(is.lds) {
 ##		physical <- get("physical")
 ##		open(object)
 ##	}
+	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+	if(is.lds) stopifnot(isPackageLoaded("ff"))
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
 	index <- index.list[[strata]]
 	batches <- split(seq_along(batch(object)), as.character(batch(object)))
@@ -1832,25 +1830,28 @@ crlmmCopynumber <- function(object,
 		##if(verbose) message(paste("Computing summary statistics for ", mylabel(marker.type), " genotype clusters for each batch")
 		marker.index <- whichMarkers(marker.type, is.snp,
 					     is.autosome, is.annotated, is.X)
-		genotypeSummary(object=object,
-				GT.CONF.THR=GT.CONF.THR,
-				type=marker.type,
-				verbose=verbose,
-				marker.index=marker.index,
-				is.lds=is.lds)
+		if(length(marker.index) == 0) next()
+		res <- genotypeSummary(object=object,
+				       GT.CONF.THR=GT.CONF.THR,
+				       type=marker.type,
+				       verbose=verbose,
+				       marker.index=marker.index)
+		if(!is.lds) {object <- res; rm(res); gc()}
 	}
 	if(verbose) message("Imputing unobserved genotype medians and shrinking the variances (within-batch, across loci) ")##SNPs only
 	if("SNP" %in% type){
 		marker.index <- whichMarkers("SNP", is.snp,
 					     is.autosome, is.annotated, is.X)
-		shrinkSummary(object=object,
-			      MIN.OBS=MIN.OBS,
-			      MIN.SAMPLES=MIN.SAMPLES,
-			      DF.PRIOR=DF.PRIOR,
-			      type="SNP",
-			      verbose=verbose,
-			      marker.index=marker.index,
-			      is.lds=is.lds)
+		if(length(marker.index) > 0){
+			res <- shrinkSummary(object=object,
+					     MIN.OBS=MIN.OBS,
+					     MIN.SAMPLES=MIN.SAMPLES,
+					     DF.PRIOR=DF.PRIOR,
+					     type="SNP",
+					     verbose=verbose,
+					     marker.index=marker.index)
+			if(!is.lds) {object <- res; rm(res); gc()}
+		}
 	}
 	if(verbose) message("Estimating parameters for copy number")##SNPs only
 	for(i in seq_along(type)){
@@ -1859,6 +1860,7 @@ crlmmCopynumber <- function(object,
 		CHR.X <- ifelse(marker.type %in% c("X.SNP", "X.NP"), TRUE, FALSE)
 		marker.index <- whichMarkers(marker.type, is.snp,
 					     is.autosome, is.annotated, is.X)
+		if(length(marker.index) == 0) next()
 		object <- estimateCnParameters(object=object,
 					       type=marker.type,
 					       SNRMin=SNRMin,
@@ -1875,7 +1877,7 @@ crlmmCopynumber <- function(object,
 					       CHR.X=CHR.X)
 	}
 	close(object)
-	TRUE
+	if(is.lds) return(TRUE) else return(object)
 }
 crlmmCopynumber2 <- function(){
 	.Defunct(msg="The crlmmCopynumber2 function has been deprecated. The function crlmmCopynumber should be used instead.  crlmmCopynumber will support large data using ff provided that the ff package is loaded.")

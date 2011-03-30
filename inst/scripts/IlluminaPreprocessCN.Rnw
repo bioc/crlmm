@@ -1,6 +1,6 @@
-%\VignetteIndexEntry{crlmm copy number Vignette for Illumina}
-%\VignetteDepends{crlmm}
-%\VignetteKeywords{crlmm, illumina}
+%\VignetteIndexEntry{IlluminaPreprocessCN Vignette for Illumina}
+%\VignetteDepends{crlmm, ff, cacheSweave}
+%\VignetteKeywords{crlmm, illumina, copy number, SNP}
 %\VignettePackage{crlmm}
 \documentclass{article}
 \usepackage{graphicx}
@@ -18,8 +18,7 @@
 \newcommand{\ff}{\Rpackage{ff}}
 
 \begin{document}
-\title{Using \crlmm{} for copy number estimation and genotype calling
-  with Illumina platforms}
+\title{Preprocessing and Genotyping Illumina Arrays for Copy Number Analysis}
 
 \date{\today}
 
@@ -28,15 +27,18 @@
 
 
 \begin{abstract}
+
   This vignette illustrates the steps required prior to copy number
   analysis for Infinium platforms.  Specifically, we require
   construction of a container to store processed forms of the raw
   data, preprocessing to normalize the arrays, and genotyping using
   the CRLMM algorithm.  After completing these steps, users can refer
-  to the copy number vignette.
+  to the \verb+copynumber+ vignette.
+
 \end{abstract}
 
-\section{Setup}
+
+\section{Set up}
 
 <<crlmm, results=hide, echo=FALSE>>=
 library(crlmm)
@@ -73,22 +75,14 @@ setCacheDir(outdir)
 @
 
 We declare that \crlmm{} should process 150,000 markers at a time
-(when possible) and/or 500 samples at a time.  As our example dataset
-in this vignette contains fewer than 500 samples, all samples will be
-processed simultaneously.
+and/or 500 samples at a time (when possible) to reduce the memory
+footprint.  As our example dataset in this vignette contains fewer
+than 500 samples, all samples will be processed simultaneously.
 
 <<ram>>=
 ocProbesets(150e3)
 ocSamples(500)
 @
-
-\textbf{Limitations:} There is no minimum number of samples required
-for preprocessing and genotyping.  However, for copy number estimation
-the \crlmm{} package currently requires at least 10 samples per batch.
-The parameter estimates for copy number and the corresponding
-estimates of raw copy number will tend to be more noisy for batches
-with small sample sizes (e.g., $<$ 50).  Chemistry plate or scan date
-are often useful surrogates for batch.
 
 \section{Initializing a container for storing processed data}
 
@@ -111,13 +105,19 @@ For Infinium platforms, an Illumina sample sheet containing
 information for reading the raw IDAT files is required. Please refer
 to the BeadStudio Genotyping guide, Appendix A, for additional
 information.  The following code reads in the samplesheet for the IDAT
-files on our local server. For our dataset, the file extensions are
-`Grn.dat' and `Red.idat'.  We store the complete path to the filename
-without the file extension in the \Robject{arrayNames} and check that
-all of the green and red IDAT files exists.
+files on our local server.
 
 <<samplesheet>>=
 samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
+@
+
+For the purposes of this vignette, we indicate that we only wish to
+process a subset of the arrays.  For our dataset, the file extensions
+are `Grn.dat' and `Red.idat'.  We store the complete path to the
+filename without the file extension in the \Robject{arrayNames} and
+check that all of the green and red IDAT files exists.
+
+<<subsetArrays>>=
 samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
 arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
 all(file.exists(paste(arrayNames, "_Grn.idat", sep="")))
@@ -125,9 +125,9 @@ all(file.exists(paste(arrayNames, "_Red.idat", sep="")))
 arrayInfo <- list(barcode=NULL, position="SentrixPosition")
 @
 
-As discussed previously, all supported platforms have a corresponding
-annotation package.  The appropriate annotation package is specified
-by the platform identifier without the \verb+Crlmm+ postfix.
+All supported platforms have a corresponding annotation package.  The
+appropriate annotation package is specified by the platform identifier
+without the \verb+Crlmm+ postfix.
 
 <<cdfname>>=
 cdfName <- "human370v1c"
@@ -164,20 +164,16 @@ print(cnSet)
 @
 
 Note that the above object does not yet contain any processed data
-(only \verb+NA+'s) and several \verb+.ff+ files now appear in the
-\verb+outdir+.  Again, these files should not be removed.
+(only \verb+NA+'s).  As the elements of the \verb+assayData+ slot are
+\Robject{ff} objects (not matrices), several \verb+.ff+ files now
+appear in the \verb+outdir+. The \verb+.ff+ files should not be
+removed and can be listed using the \R{} function
+\Rfunction{list.files}.  %For the most part, the \emph{appearance} that
+%the data is stored in memory is preserved.
 
 <<listff>>=
-list.files(outdir, pattern=".ff")[1:5]
-@
-
-Finally, note that the elements of the \verb+assayData+ slot are
-\Robject{ff} objects and not matrices. For the most part, the
-\emph{appearance} that the data is stored in memory is preserved.
-
-
-<<assaydataelements>>=
 sapply(assayData(cnSet), function(x) class(x)[1])
+list.files(outdir, pattern=".ff")[1:5]
 @
 
 \section{Preprocessing}
@@ -196,8 +192,8 @@ invisible(close(mixtureParams))
 @
 
 Note that the normalized intensities for the A and B alleles are no
-longer \verb+NA+s and can now be accessed and inspected using the
-methods \Rfunction{A} and \Rfunction{B}, respectively.
+longer \verb+NA+s and can be inspected using the methods \Rfunction{A}
+and \Rfunction{B}, respectively.
 
 <<intensities>>=
 invisible(open(A(cnSet)))
@@ -208,9 +204,7 @@ invisible(close(A(cnSet)))
 invisible(close(B(cnSet)))
 @
 
-
 \section{Genotyping}
-
 
 CRLMM genotype calls and confidence scores are estimated using the
 function \Rfunction{genotypeInf}.
@@ -220,12 +214,11 @@ updated <- genotypeInf(cnSet, mixtureParams=mixtureParams)
 print(updated)
 @
 
-The posterior probabilities for the
-genotype calls in the \verb+callProbability+ element of the
-\verb+assayData+ are stored as integers to reduce the file size on
-disk.  However, the scores can be easily transformed back to the
-probability scale using the \Rfunction{i2p} function as illustrated in
-the following code chunk.
+The posterior probabilities for the genotype calls in the
+\verb+callProbability+ element of the \verb+assayData+ are stored as
+integers to reduce the file size on disk. The scores can be
+transformed to the probability scale using the \Rfunction{i2p}
+function as illustrated in the following code chunk.
 
 <<callprobs>>=
 invisible(open(snpCallProbability(cnSet)))
@@ -234,23 +227,11 @@ i2p(callProbs)
 invisible(close(snpCallProbability(cnSet)))
 @
 
-%As described in the \texttt{copynumber} vignette, copy number
-%estimation in \crlmm{} works best when there are a sufficient number
-%of samples such that AA, AB, and BB genotypes are observed at most
-%loci. For small studies (e.g., fewer than 50 samples), there will be a
-%large number of SNPs that are monomorphic. For monomorphic SNPs, the
-%estimation problem becomes more difficult and alternative strategies
-%that estimate the relative total copy number may be preferable.  In
-%addition to installing \crlmm{}, one must also install the appropriate
-%annotation package for the Illumina platform.  In the following code,
-%we list the platforms for which annotation packages are currently
-%available. Next we create a directory where output files will be
-%stored and indicate the directory that contains the IDAT files that
-%will be used in our analysis.
-
-\textbf{Wrapper:} The construction of a \Rclass{CNSet} object,
-preprocessing, and genotype calling are wrapped into a convenience
-function called \Rfunction{genotype.Illumina}.
+\textbf{Wrapper:} As an alternative to calling the functions
+\Rfunction{constructInf}, \Rfunction{preprocessInf} and
+\Rfunction{genotypeInf} in sequence, a convenience function called
+\Rfunction{genotype.Illumina} is a wrapper for the above functions and
+produces identical results.
 
 <<genotype.Illumina,cache=TRUE,results=hide>>=
 cnSet2 <- genotype.Illumina(sampleSheet=samplesheet,
@@ -282,6 +263,29 @@ delete(cnSet2$gender)
 delete(cnSet2$SNR)
 delete(cnSet2$SKW)
 rm(cnSet2)
+@
+
+Users may now proceed to the CopyNumber vignette for copy number
+analyses.
+
+
+
+\section{Session information}
+<<sessionInfo, results=tex>>=
+toLatex(sessionInfo())
+@
+
+
+<<>>=
+cnset.updated <- crlmmCopynumber(cnSet)
+@
+
+<<>>=
+snp.index <- which(chromosome(cnSet)==1)
+cnset2 <- cnSet[snp.index, ]
+trace(crlmmCopynumber, browser)
+object <- crlmmCopynumber(cnset2)
+## elements no longer ff
 @
 
 \end{document}

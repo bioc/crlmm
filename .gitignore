@@ -1,4 +1,7 @@
 .auto*
+*.aux
+*.dvi
+cnvignette.org
 test/*
 *.o
 *.so

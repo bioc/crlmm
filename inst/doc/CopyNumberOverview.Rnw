@@ -1,0 +1,98 @@
+%\VignetteIndexEntry{crlmm copy number Vignette}
+%\VignetteDepends{crlmm, genomewidesnp6Crlmm}
+%\VignetteKeywords{crlmm, SNP 6}
+%\VignettePackage{crlmm}
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{url}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textsf{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\oligo}{\Rpackage{oligo }}
+\newcommand{\R}{\textsf{R}}
+\newcommand{\crlmm}{\Rpackage{crlmm}}
+\newcommand{\ff}{\Rpackage{ff}}
+\usepackage[margin=1in]{geometry}
+
+\begin{document}
+\title{Overview of vignettes for copy number estimation}
+\date{\today}
+\author{Rob Scharpf}
+\maketitle
+
+The workflow for copy number analyses in the \crlmm{} package requires
+preprocessing and genotyping, followed by estimation of parameters for
+copy number estimation.  Supported platforms are those for which a
+corresponding annotation package is available (see Tables
+\ref{overview} and \ref{illumina}).  Table \ref{overview} provides an
+overview of the available vignettes pertaining to copy number
+estimation.  These vignettes are located in the \verb+inst/scripts+
+subdirectory of the \crlmm{} package. HapMap datasets are used to
+illustrate the workflow and are not provided as part of the \crlmm{}
+package.  Users wishing to reproduce the analysis should download the
+HapMap CEL files (Affymetrix) or the \verb+idat+ files (Illumina) and
+modify the paths to the raw data files as appropriate.
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|lp{1.2in}p{1.5in}p{2in}|}
+\hline
+ Vignette                &  Platform            &  Annotation package                        &  Scope                                               \\
+\hline
+ Infrastructure          &                      &                                            &  The CNSet container / large data support            \\
+ AffymetrixPreprocessCN  &  Affy 5.0, 6.0       &  genomewidesnp5Crlmm, genomewidesnp6Crlmm  &  Preprocessing and genotyping                        \\
+ IlluminaPreprocessCN    &  Illumina platforms  &  several$^\dagger$                                   &  Preprocessing and genotyping                        \\
+ copynumber              &  Affy/Illumina       &  N/A                                       &  raw copy number estimates                           \\
+% SmoothingRawCN          &  Affy/Illumina       &  N/A                                       &  smoothing via segmentation or hidden Markov models  \\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{overview} Vignettes for copy number
+  estimation. $^\dagger$ See table \ref{illumina} for the annotation
+  packages available for the Illumina platform.}
+\end{table}
+
+\begin{table}[h!]
+\begin{center}
+\begin{tabular}{|l|}
+\hline
+ human370v1cCrlmm        \\
+ human370quadv3cCrlmm    \\
+ human550v3bCrlmm        \\
+ human650v3aCrlmm        \\
+ human610quadv1bCrlmm    \\
+ human660quadv1aCrlmm    \\
+ human1mduov3bCrlmm      \\
+ humanomni1quadv1bCrlmm  \\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{illumina} Annotation packages for the Illumina platform.}
+\end{table}
+
+%We make use of the \R{} package \Rpackage{cacheSweave} for cacheing
+%code chunks that are computationally intensive.  In addition, we
+%indicate that the cached files should be stored in the directory
+%\verb+outdir+.
+
+In general, the workflow is
+\begin{enumerate}
+\item preprocessing and genotyping (\verb+AffymetrixPreprocessCN+ or \verb+IlluminaPreprocessCN+ vignettes)
+\item copy number estimation (\verb+copynumber+ vignette)
+%\item inferring regions of copy number gain and loss
+%  (\verb+SmoothingRawCN+ vignette)
+\end{enumerate}
+%The \verb+SmoothingRawCN+ vignette illustrates one approach for
+%interfacing with packages such as \Rpackage{DNAcopy} and
+%\Rpackage{VanillaICE} for identifying regions of copy number gain or
+%loss.
+The \verb+Infrastructure+ vignette provides additional details on the
+\Rclass{CNSet} container used to organize the processed data as well
+as a brief discussion regarding large data support through the \ff{}
+package.
+
+\end{document}
