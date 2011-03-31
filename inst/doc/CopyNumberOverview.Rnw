@@ -1,6 +1,6 @@
-%\VignetteIndexEntry{crlmm copy number Vignette}
-%\VignetteDepends{crlmm, genomewidesnp6Crlmm}
-%\VignetteKeywords{crlmm, SNP 6}
+%\VignetteIndexEntry{Overview of copy number vignettes}
+%\VignetteDepends{}
+%\VignetteKeywords{}
 %\VignettePackage{crlmm}
 \documentclass{article}
 \usepackage{graphicx}

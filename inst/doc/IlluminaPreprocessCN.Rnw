@@ -1,6 +1,6 @@
-%\VignetteIndexEntry{Copy number estimation}
+%\VignetteIndexEntry{Preprocessing and genotyping Illumina arrays for copy number analysis}
 %\VignetteDepends{}
-%\VignetteKeywords{crlmm, SNP 6, copy number}
+%\VignetteKeywords{crlmm, copy number}
 %\VignettePackage{crlmm}
 
 %%% The real .Rnw is under inst/scripts.

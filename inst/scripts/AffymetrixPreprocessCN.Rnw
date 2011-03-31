@@ -1,4 +1,5 @@
-%\VignetteIndexEntry{AffymetrixPreprocessCN Vignette for Affymetrix}
+%\VignetteIndexEntry{Preprocessing and genotyping Affymetrix arrays
+%for copy number analysis}
 %\VignetteDepends{crlmm, genomewidesnp6Crlmm, cacheSweave, ff}
 %\VignetteKeywords{crlmm, SNP 6, copy number, SNP}
 %\VignettePackage{crlmm}

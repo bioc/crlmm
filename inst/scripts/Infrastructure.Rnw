@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Infrastructure for crlmm copy number Vignette}
+%\VignetteIndexEntry{Infrastructure for copy number analysis}
 %\VignetteDepends{crlmm, genomewidesnp6Crlmm}
 %\VignetteKeywords{crlmm, SNP 6}
 %\VignettePackage{crlmm}
