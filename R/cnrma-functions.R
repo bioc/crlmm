@@ -284,7 +284,7 @@ genotype <- function(filenames,
 				    eps=eps,
 				    seed=seed,
 				    verbose=verbose)
-	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames, seed=seed,
+	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames, cdfName=cdfName, seed=seed,
 			verbose=verbose)
 	stopifnot(ok)
 	ok <- genotypeAffy(cnSet=cnSet, mixtureParams=mixtureParams,
@@ -324,7 +324,7 @@ genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
 	return(TRUE)
 }
 
-cnrmaAffy <- function(cnSet, filenames, seed=1, verbose=TRUE){
+cnrmaAffy <- function(cnSet, filenames, cdfName, seed=1, verbose=TRUE){
 	snp.I <- isSnp(cnSet)
 	snp.index <- which(snp.I)
 	np.index <- which(!snp.I)

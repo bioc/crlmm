@@ -38,7 +38,7 @@ options(continue=" ", width=70)
   vignettes for the Affymetrix and Illumina platforms,
   respectively. While this vignette uses Affymetrix 6.0 arrays for
   illustration, the steps at this point are identical for both
-  platforms.  See \citep{Scharpf2010} for details regarding the
+  platforms.  See \citep{Scharpf2011} for details regarding the
   methodology implemented in \crlmm{} for copy number analysis.  In
   addition, a compendium describing copy number analysis using the
   \crlmm{} package is available from the author's website:
@@ -80,7 +80,9 @@ the \crlmm{} package currently requires at least 10 samples per batch.
 The parameter estimates for copy number and the corresponding
 estimates of raw copy number will tend to be more noisy for batches
 with small sample sizes (e.g., $<$ 50).  Chemistry plate or scan date
-are often useful surrogates for batch.
+are often useful surrogates for batch.  Samples that were processed at
+similar times (e.g., in the same month) can be grouped together in the
+same batch.
 
 \section{Quality control}
 
@@ -98,7 +100,7 @@ quality.  The following code chunk makes a histogram of the SNR values
 for the HapMap samples.
 
 <<snr,fig=TRUE,include=FALSE,width=6, height=4>>=
-open(cnSet$SNR)
+invisible(open(cnSet$SNR))
 snr <- cnSet$SNR[]
 close(cnSet$SNR)
 print(histogram(~snr, panel=function(...){
@@ -120,13 +122,13 @@ print(histogram(~snr, panel=function(...){
 
 \section{Copy number estimation}
 
-As described in \cite{Scharpf2010}, the CRLMM-CopyNumber algorithm
+As described in \cite{Scharpf2011}, the CRLMM-CopyNumber algorithm
 fits a linear model to the normalized intensities stratified by the
 diallic genotype call.  The intercept and slope from the linear model
 are both SNP- and batch-specific.  The implementation in the \crlmm{}
 package is encapsulated by the function \Rfunction{crlmmCopynumber}
 that, using the default settings, can be called by passing a single
-object of class \code{CNSet}.  See the appropriate
+object of class \Rclass{CNSet}.  See the appropriate
 preprocessing/genotyping vignette for the construction of an object of
 class \Rclass{CNSet}.
 <<LDS_copynumber,cache=TRUE>>=
@@ -147,7 +149,7 @@ computed for subsets of the markers to reduce the required RAM. Note
 that the value returned by the \Rfunction{crlmmCopynumber} function in
 the above example is \verb+TRUE+.  The reason the function returns
 \verb+TRUE+ in the above example is that the elements of the
-\verb+batchStatistics+ slot have the class \Rclass{ff_matrix}.  Rather
+\verb+batchStatistics+ slot have the class \Rclass{ff\_matrix}.  Rather
 than keep the statistical summaries in memory, the summaries are
 written to files on disk using protocols described in the
 \Rpackage{ff} package. Hence, while the \Robject{cnSet} object itself
@@ -169,9 +171,9 @@ slot of the class \Rclass{CNSet}.  Using the default settings for the
 Note that depends on whether the elements of the \verb+batchStatistics+
 slot are \Robject{ff} objects or ordinary matrices.  In this example,
 the elements of \verb+batchStatistics+ have the class
-\Rclass{ff_matrix}.
+\Rclass{ff\_matrix}.
 
-<<LDS_copynumber,cache=TRUE>>=
+<<classes>>=
 nms <- ls(batchStatistics(cnSet))
 cls <- rep(NA, length(nms))
 for(i in seq_along(nms)) cls[i] <- class(batchStatistics(cnSet)[[nms[i]]])[1]
@@ -284,6 +286,7 @@ In the following code chunk, we extract estimates of the total copy
 number at nonpolymorphic markers on chromosome X.
 
 <<npx>>=
+set.seed(123)
 npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
 M <- sample(which(cnSet$gender[]==1), 5)
 F <- sample(which(cnSet$gender[]==2), 5)
@@ -341,9 +344,9 @@ print(bwplot(cn~id,df, panel=function(x,y,...){
 \begin{figure}[t!]
  \centering
  \includegraphics[width=0.5\textwidth]{copynumber-polymorphicX}
-\caption{Copy number estimates for polymorphic markers on chromosome
-  X. crlmm assumes that the median copy number across samples at a
-  given marker on X is 1 for men and 2 for women.}
+ \caption{Copy number estimates for polymorphic markers on chromosome
+   X. crlmm assumes that the median copy number across samples at a
+   given marker on X is 1 for men and 2 for women.}
 \end{figure}
 
 \subsection{A container for raw copy number}
@@ -355,29 +358,31 @@ confidence scores, and the total copy number at each marker is the
 \Rfunction{as} (as illustrated below). Users should note that if the
 \verb+assayData+ elements in the \Rclass{CNSet} instance are
 \Rpackage{ff} objects, the \verb+assayData+ elements of the
-instantiated \Rclass{oligoSnpSet} will also be \Rpackage{ff} object (a
-new \verb+total_cn*.ff+ file will be created in the \verb+ldPath()+
-directory). The advantage of this approach is that the raw copy number
-estimates can be computed for all markers and all samples
-simultaneously without excessive RAM.  The disadvantage is that such a
-step creates additional I/O for reading and writing the raw copy
-number estimates from disk.  For very large data sets (1000+ samples),
-the time required for I/O may outweigh the benefits.  The alternative
-is to perform downstream processing (such as smoothing) on the total
-copy number for subsets of markers and/or samples.  As indicated
-previously, the subset `[' method applied to an object of class
-\Robject{CNSet} will return an object of the same class with simple
-matrices instead of \Rpackage{ff} objects.  Therefore, one can
-instantiate a \Rpackage{oligoSnpSet} object from a \Robject{CNSet}
-object without the I/O overhead for storing the total copy number
-estimates by first subsetting the \Rclass{CNSet} object.  One could
-then smooth the raw copy number estimates and store a summary copy
-number for the interval, thereby substantially reducing the
-dimensionality of the copy number estimates.  Examples of smoothing
-applications such as circular binary segmentation implemented in the
-\Rpackage{DNAcopy} package or a hidden Markov model implemented in the
-\Rpackage{VanillaICE} package are provided in the \verb+SmoothingCN+
-vignette.
+instantiated \Rclass{oligoSnpSet} will also be \Rpackage{ff}-dervied
+objects (a new \verb+total_cn*.ff+ file will be created in the
+\verb+ldPath()+ directory).
+
+%The advantage of this approach is that the raw copy number estimates
+%can be computed for all markers and all samples simultaneously without
+%excessive RAM.  The disadvantage is that such a step creates
+%additional I/O for reading and writing the raw copy number estimates
+%from disk.  For very large data sets (1000+ samples), the time
+%required for I/O may outweigh the benefits.  The alternative is to
+%perform downstream processing (such as smoothing) on the total copy
+%number for subsets of markers and/or samples.  As indicated
+%previously, the subset `[' method applied to an object of class
+%\Robject{CNSet} will return an object of the same class with simple
+%matrices instead of \Rpackage{ff} objects.  Therefore, one can
+%instantiate a \Rpackage{oligoSnpSet} object from a \Robject{CNSet}
+%object without the I/O overhead for storing the total copy number
+%estimates by first subsetting the \Rclass{CNSet} object.  One could
+%then smooth the raw copy number estimates and store a summary copy
+%number for the interval, thereby substantially reducing the
+%dimensionality of the copy number estimates.  Examples of smoothing
+%applications such as circular binary segmentation implemented in the
+%\Rpackage{DNAcopy} package or a hidden Markov model implemented in the
+%\Rpackage{VanillaICE} package are provided in the \verb+SmoothingCN+
+%vignette.
 
 <<oligoSnpSet>>=
 open(cnSet3)
@@ -388,7 +393,7 @@ class(copyNumber(oligoSet))
 
 \noindent Note that the raw copy number estimates stored in the
 \Robject{oligoSnpSet} object can be retrieved by the
-\Rfunction{copyNumber} accessor and is equivalanet to that returned by
+\Rfunction{copyNumber} accessor and is equivalent to that returned by
 the \Rfunction{totalCopynumber} function defined over the same row and
 column indices.
 

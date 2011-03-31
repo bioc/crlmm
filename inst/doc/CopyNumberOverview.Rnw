@@ -24,18 +24,19 @@
 \author{Rob Scharpf}
 \maketitle
 
-The workflow for copy number analyses in the \crlmm{} package requires
-preprocessing and genotyping, followed by estimation of parameters for
-copy number estimation.  Supported platforms are those for which a
-corresponding annotation package is available (see Tables
-\ref{overview} and \ref{illumina}).  Table \ref{overview} provides an
-overview of the available vignettes pertaining to copy number
-estimation.  These vignettes are located in the \verb+inst/scripts+
-subdirectory of the \crlmm{} package. HapMap datasets are used to
-illustrate the workflow and are not provided as part of the \crlmm{}
-package.  Users wishing to reproduce the analysis should download the
-HapMap CEL files (Affymetrix) or the \verb+idat+ files (Illumina) and
-modify the paths to the raw data files as appropriate.
+The workflow for copy number analyses in the \crlmm{} package includes
+preprocessing and genotyping of the raw intensities followed by
+estimation of parameters for copy number estimation using
+\Rfunction{crlmmCopynumber}.  Supported platforms are those for which
+a corresponding annotation package is available.  Table \ref{overview}
+provides an overview of the available vignettes pertaining to copy
+number estimation.  These vignettes are located in the
+\verb+inst/scripts+ subdirectory of the \crlmm{} package. HapMap
+datasets are used to illustrate the workflow and are not provided as
+part of the \crlmm{} package.  Users wishing to reproduce the analysis
+should download the HapMap CEL files (Affymetrix) or the \verb+idat+
+files (Illumina) and modify the paths to the raw data files as
+appropriate.
 
 \begin{table}[h!]
 \begin{center}
@@ -43,35 +44,20 @@ modify the paths to the raw data files as appropriate.
 \hline
  Vignette                &  Platform            &  Annotation package                        &  Scope                                               \\
 \hline
- Infrastructure          &                      &                                            &  The CNSet container / large data support            \\
+Infrastructure          & Affy/Illumina                    &
+&  The CNSet container / large data support using the \Rpackage{ff} package            \\
  AffymetrixPreprocessCN  &  Affy 5.0, 6.0       &  genomewidesnp5Crlmm, genomewidesnp6Crlmm  &  Preprocessing and genotyping                        \\
- IlluminaPreprocessCN    &  Illumina platforms  &  several$^\dagger$                                   &  Preprocessing and genotyping                        \\
+ IlluminaPreprocessCN    &  Illumina  &  several$^\dagger$                                   &  Preprocessing and genotyping                        \\
  copynumber              &  Affy/Illumina       &  N/A                                       &  raw copy number estimates                           \\
 % SmoothingRawCN          &  Affy/Illumina       &  N/A                                       &  smoothing via segmentation or hidden Markov models  \\
 \hline
 \end{tabular}
 \end{center}
 \caption{\label{overview} Vignettes for copy number
-  estimation. $^\dagger$ See table \ref{illumina} for the annotation
-  packages available for the Illumina platform.}
-\end{table}
-
-\begin{table}[h!]
-\begin{center}
-\begin{tabular}{|l|}
-\hline
- human370v1cCrlmm        \\
- human370quadv3cCrlmm    \\
- human550v3bCrlmm        \\
- human650v3aCrlmm        \\
- human610quadv1bCrlmm    \\
- human660quadv1aCrlmm    \\
- human1mduov3bCrlmm      \\
- humanomni1quadv1bCrlmm  \\
-\hline
-\end{tabular}
-\end{center}
-\caption{\label{illumina} Annotation packages for the Illumina platform.}
+  estimation. $^\dagger$ Annotation packages available for the
+  Illumina platform include  \Rpackage{human370v1cCrlmm}, \Rpackage{human370quadv3cCrlmm},
+  \Rpackage{human550v3bCrlmm}, \Rpackage{human650v3aCrlmm}, \Rpackage{human610quadv1bCrlmm},
+  \Rpackage{human660quadv1aCrlmm}, \Rpackage{human1mduov3bCrlmm}, and \Rpackage{humanomni1quadv1bCrlmm}}
 \end{table}
 
 %We make use of the \R{} package \Rpackage{cacheSweave} for cacheing
@@ -81,7 +67,9 @@ modify the paths to the raw data files as appropriate.
 
 In general, the workflow is
 \begin{enumerate}
-\item preprocessing and genotyping (\verb+AffymetrixPreprocessCN+ or \verb+IlluminaPreprocessCN+ vignettes)
+\item preprocess and genotype the arrays
+  (\verb+AffymetrixPreprocessCN+ for Affymetrix and
+  \verb+IlluminaPreprocessCN+ vignettes for Illumina)
 \item copy number estimation (\verb+copynumber+ vignette)
 %\item inferring regions of copy number gain and loss
 %  (\verb+SmoothingRawCN+ vignette)

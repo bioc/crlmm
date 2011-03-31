@@ -184,8 +184,11 @@ normalized using the function \Rfunction{preprocessInf}.  The function
 parameters for the mixture model used by the CRLMM genotyping
 algorithm.
 
-<<preprocess,cache=TRUE>>=
+<<preprocess,cache=TRUE, results=hide>>=
 mixtureParams <- preprocessInf(cnSet=cnSet, sampleSheet=samplesheet, arrayNames=arrayNames, arrayInfoColNames=arrayInfo)
+@
+
+<<showMixtureParams>>=
 invisible(open(mixtureParams))
 str(mixtureParams[])
 invisible(close(mixtureParams))
@@ -211,20 +214,10 @@ function \Rfunction{genotypeInf}.
 
 <<genotype,cache=TRUE>>=
 updated <- genotypeInf(cnSet, mixtureParams=mixtureParams)
-print(updated)
 @
-
-The posterior probabilities for the genotype calls in the
-\verb+callProbability+ element of the \verb+assayData+ are stored as
-integers to reduce the file size on disk. The scores can be
-transformed to the probability scale using the \Rfunction{i2p}
-function as illustrated in the following code chunk.
-
-<<callprobs>>=
-invisible(open(snpCallProbability(cnSet)))
-callProbs <- as.matrix(snpCallProbability(cnSet)[1:5, 1:5])
-i2p(callProbs)
-invisible(close(snpCallProbability(cnSet)))
+\vspace{-0.5em}
+<<>>=
+updated
 @
 
 \textbf{Wrapper:} As an alternative to calling the functions
@@ -265,27 +258,14 @@ delete(cnSet2$SKW)
 rm(cnSet2)
 @
 
-Users may now proceed to the CopyNumber vignette for copy number
-analyses.
-
-
+Users can proceed to the \verb+copynumber+ vignette for copy number
+analyses.  See the \verb+Infrastructure+ vignette for additional
+details on the \Robject{CNSet} class, including an overview of the
+available accessors.
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
-@
-
-
-<<>>=
-cnset.updated <- crlmmCopynumber(cnSet)
-@
-
-<<>>=
-snp.index <- which(chromosome(cnSet)==1)
-cnset2 <- cnSet[snp.index, ]
-trace(crlmmCopynumber, browser)
-object <- crlmmCopynumber(cnset2)
-## elements no longer ff
 @
 
 \end{document}
