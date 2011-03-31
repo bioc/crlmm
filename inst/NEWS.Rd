@@ -37,6 +37,27 @@
   }
 }
 
+\section{Changes in version 1.8}{
+  \subsection{USER VISIBLE CHANGES}{
+    \itemize{
+
+      \item define CNSet class with batch and batchStatistics slots
+
+      \item deprecate CNSetList class
+
+      \item deprecate crlmmWrapper, genotype2, and crlmmCopynumber2.
+      Use crlmmCopynumber in place of crlmmWrapper and crlmmCopynumber2.
+      Use genotype instead of genotype2.
+
+      \item raw copy number estimates no longer stored in container.  CA
+      and CB methods are no longer simple accessors to data stored in
+      the eset-extension.  These functions compute raw copy number
+      estimates from the linear model parameters.
+
+    }
+  }
+}
+
 \section{Changes in version 1.3}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
