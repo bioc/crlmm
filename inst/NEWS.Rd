@@ -1,8 +1,7 @@
 \name{NEWS}
 \title{News for Package 'crlmm'}
 
-
-\section{Changes in version 1.9}{
+\section{Changes in version 1.10}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
       \item Using NEWS.Rd
