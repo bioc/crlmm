@@ -100,7 +100,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		tmp
 	}
 	##
-	if(verbose) message("Calling process1")
+	##if(verbose) message("Calling process1")
 	newparamsBatch <- ocLapply(seq(along=snpBatches), process1,
 				   snpBatches=snpBatches,
 				   autosomeIndex=autosomeIndex, XIndex=XIndex,
