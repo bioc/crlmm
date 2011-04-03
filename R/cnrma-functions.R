@@ -1821,72 +1821,98 @@ summarizeSnps <- function(strata,
 	##---------------------------------------------------------------------------
 	## grand mean
 	##---------------------------------------------------------------------------
-	if(length(batches) > 1 && "grandMean" %in% batchNames(object)){
-		##k <- k+1
-		k <- match("grandMean", batchNames(object))
-		if(verbose) message("        computing grand means...")
-		##G <- GG[, B]
-		##NORM <- normal.index[, k]
-		##xx <- CP[, B]
-		##highConf <- (1-exp(-xx/1000)) > GT.CONF.THR
-		highConf <- (1-exp(-CP/1000)) > GT.CONF.THR
-		##G <- G*highConf
-		## Some markers may have genotype confidences scores that are ALL below the threshold
-		## For these markers, provide statistical summaries based on all the samples and flag
-		## Provide summaries for these markers and flag to indicate the problem
-		ii <- which(rowSums(highConf) == 0)
-		if(length(ii) > 0) highConf[ii, ] <- TRUE
-		GG <- GG*highConf
-		## table(rowSums(G==0))
-		##G <- G*highConf*NORM
-##		A <- AA[, B]
-##		B <- BB[, B]
-		## this can be time consuming...do only once
-##		G.AA <- G==1
-		G.AA <- GG==1
-		G.AA[G.AA==FALSE] <- NA
-		G.AB <- GG==2
-		G.AB[G.AB==FALSE] <- NA
-		G.BB <- GG==3
-		G.BB[G.BB==FALSE] <- NA
-		Ns.AA[, k] <- rowSums(G.AA, na.rm=TRUE)
-		Ns.AB[, k] <- rowSums(G.AB, na.rm=TRUE)
-		Ns.BB[, k] <- rowSums(G.BB, na.rm=TRUE)
-		## Calculate row medians and MADs
-		stats <- summaryStats(G.AA, AA, FUNS=c("rowMedians", "rowMAD"))
-		medianA.AA(object)[index, k] <- stats[, 1]
-		madA.AA(object)[index, k] <- stats[, 2]
-		stats <- summaryStats(G.AB, AA, FUNS=c("rowMedians", "rowMAD"))
-		medianA.AB(object)[index, k] <- stats[, 1]
-		madA.AB(object)[index, k] <- stats[, 2]
-		stats <- summaryStats(G.BB, AA, FUNS=c("rowMedians", "rowMAD"))
-		medianA.BB(object)[index, k] <- stats[, 1]
-		madA.BB(object)[index, k] <- stats[, 2]
-		stats <- summaryStats(G.AA, BB, FUNS=c("rowMedians", "rowMAD"))
-		medianB.AA(object)[index, k] <- stats[, 1]
-		madB.AA(object)[index, k] <- stats[, 2]
-		stats <- summaryStats(G.AB, BB, FUNS=c("rowMedians", "rowMAD"))
-		medianB.AB(object)[index, k] <- stats[, 1]
-		madB.AB(object)[index, k] <- stats[, 2]
-		stats <- summaryStats(G.BB, BB, FUNS=c("rowMedians", "rowMAD"))
-		medianB.BB(object)[index, k] <- stats[, 1]
-		madB.BB(object)[index, k] <- stats[, 2]
-		## log2 Transform Intensities
-		AA <- log2(AA); BB <- log2(BB)
-		tau2A.AA[, k] <- summaryStats(G.AA, AA, FUNS="rowMAD")^2
-		tau2A.BB[, k] <- summaryStats(G.BB, AA, FUNS="rowMAD")^2
-		tau2B.AA[, k] <- summaryStats(G.AA, BB, FUNS="rowMAD")^2
-		tau2B.BB[, k] <- summaryStats(G.BB, BB, FUNS="rowMAD")^2
-		corrAA[, k] <- rowCors(AA*G.AA, BB*G.AA, na.rm=TRUE)
-		corrAB[, k] <- rowCors(AA*G.AB, BB*G.AB, na.rm=TRUE)
-		corrBB[, k] <- rowCors(AA*G.BB, BB*G.BB, na.rm=TRUE)
-		##
-		## TODO:   fill in NAs -- use code from shrinkGenotypeSummaries
-		##
-		rm(GG, CP, AA, BB, FL, stats)
-		gc()
+	if(FALSE){ ## no implemented
+		if(length(batches) > 1 && "grandMean" %in% batchNames(object)){
+			k <- match("grandMean", batchNames(object))
+			if(verbose) message("        computing grand means...")
+			highConf <- (1-exp(-CP/1000)) > GT.CONF.THR
+			rm(CP); gc()
+			## Some markers may have genotype confidences scores that are ALL below the threshold
+			## For these markers, provide statistical summaries based on all the samples and flag
+			## Provide summaries for these markers and flag to indicate the problem
+			ii <- which(rowSums(highConf) == 0)
+			if(length(ii) > 0) highConf[ii, ] <- TRUE
+			GG <- GG*highConf
+			rm(highConf); gc()
+			Ns <- list(Ns.AA, Ns.AB, Ns.BB)
+			rm(Ns.AA, Ns.AB, Ns.BB) ; gc()
+			I <- list(AA, BB)
+			lI <- lapply(I, log2)
+			cors <- list(corrAA, corrAB, corrBB)
+			rm(corrAA, corrAB, corrBB); gc()
+			rm(AA,BB); gc()
+			tau2 <- list(AA=list(tau2A.AA,
+				     tau2B.AA),
+				     AB=list(NULL, NULL),
+				     BB=list(tau2A.BB,
+				     tau2B.BB))
+			rm(tau2A.AA, tau2B.AA, tau2A.BB, tau2B.BB); gc()
+			for(i in 1:3){
+				G.call <- isCall(GG, call=i)
+				for(j in 1:2){
+					computeSummary(object,
+						       G.call,
+						       call=i,
+						       I=I[[j]],
+						       allele=c("A", "B")[j],
+						       Ns=Ns[[i]],
+						       call=i,
+						       tau2=tau2[[i]][[j]],
+						       index=index)
+				}
+				updateCors(cors[[i]], G.call, lI)
+			}
+			##I <- lapply(I, log2)
+			##AA <- log2(AA)
+			##BB <- log2(BB)
+			##		tau2A.AA[, k] <- summaryStats(G.AA, AA, FUNS="rowMAD")^2
+			##		tau2A.BB[, k] <- summaryStats(G.BB, AA, FUNS="rowMAD")^2
+			##tau2B.AA[, k] <- summaryStats(G.AA, BB, FUNS="rowMAD")^2
+			##tau2B.BB[, k] <- summaryStats(G.BB, BB, FUNS="rowMAD")^2
+			##		corrAA[, k] <- rowCors(AA*G.AA, BB*G.AA, na.rm=TRUE)
+			##		corrAB[, k] <- rowCors(AA*G.AB, BB*G.AB, na.rm=TRUE)
+			##		corrBB[, k] <- rowCors(AA*G.BB, BB*G.BB, na.rm=TRUE)
+			##		rm(AA, BB); gc()
+			##
+			## TODO:   fill in NAs -- use code from shrinkGenotypeSummaries
+			##
+			##		rm(GG, CP, AA, BB, FL, stats)
+			##		gc()
+			##		G.AA <- GG==1
+			##		G.AA[G.AA==FALSE] <- NA
+			##		G.AB <- GG==2
+			##		G.AB[G.AB==FALSE] <- NA
+			##		G.BB <- GG==3
+			##		G.BB[G.BB==FALSE] <- NA
+			##		Ns.AA[, k] <- rowSums(G.AA, na.rm=TRUE)
+			##		Ns.AB[, k] <- rowSums(G.AB, na.rm=TRUE)
+			##		Ns.BB[, k] <- rowSums(G.BB, na.rm=TRUE)
+			##		N.AA(object)[index,] <- Ns.AA
+			##		N.AB(object)[index,] <- Ns.AB
+			##		N.BB(object)[index,] <- Ns.BB
+
+			## Calculate row medians and MADs
+			##		medianA.AA(object)[index, k] <- stats[, 1]
+			##		madA.AA(object)[index, k] <- stats[, 2]
+			##		stats <- summaryStats(G.AB, AA, FUNS=c("rowMedians", "rowMAD"))
+			##		medianA.AB(object)[index, k] <- stats[, 1]
+			##		madA.AB(object)[index, k] <- stats[, 2]
+			##		stats <- summaryStats(G.BB, AA, FUNS=c("rowMedians", "rowMAD"))
+			##		medianA.BB(object)[index, k] <- stats[, 1]
+			##		madA.BB(object)[index, k] <- stats[, 2]
+			##		stats <- summaryStats(G.AA, BB, FUNS=c("rowMedians", "rowMAD"))
+			##		medianB.AA(object)[index, k] <- stats[, 1]
+			##		madB.AA(object)[index, k] <- stats[, 2]
+			##		stats <- summaryStats(G.AB, BB, FUNS=c("rowMedians", "rowMAD"))
+			##		medianB.AB(object)[index, k] <- stats[, 1]
+			##		madB.AB(object)[index, k] <- stats[, 2]
+			##		stats <- summaryStats(G.BB, BB, FUNS=c("rowMedians", "rowMAD"))
+			##		medianB.BB(object)[index, k] <- stats[, 1]
+			##		madB.BB(object)[index, k] <- stats[, 2]
+			## log2 Transform Intensities
+		}
 	}
-	if(verbose) message("        Begin writing...")
+	##	if(verbose) message("        Begin writing...")
 	N.AA(object)[index,] <- Ns.AA
 	N.AB(object)[index,] <- Ns.AB
 	N.BB(object)[index,] <- Ns.BB
@@ -1898,6 +1924,92 @@ summarizeSnps <- function(strata,
 	tau2B.AA(object)[index, ] <- tau2B.AA
 	tau2B.BB(object)[index, ] <- tau2B.BB
 	if(is.lds) return(TRUE) else return(object)
+}
+
+isCall <- function(G, call){
+	G.call <- G==call
+	G.call[G.call==FALSE] <- NA
+	G.call
+}
+
+computeSummary(object, G.call, call, I, allele, Ns, call=1, index){
+	k <- match("grandMean", batchNames(object))
+	stats <- summaryStats(G.call, I, FUNS=c("rowMedians", "rowMAD"))
+	Ns[, k] <- rowSums(G.call, na.rm=TRUE)
+	updateStats(stats, Ns, object, call, allele, index)
+	gc()
+	return()
+}
+
+updateTau <- function(object, tau2, G.call, call, I, allele, index){
+	k <- match("grandMean", batchNames(object))
+	logI <- log2(I)
+	rm(I); gc()
+	tau2[, k] <- summaryStats(G.call, logI, FUNS="rowMAD")^2
+	if(call==1 & allele=="A"){
+		tau2A.AA(object)[index, ] <- tau2
+	}
+	if(call==1 & allele=="B"){
+		tau2B.AA(object)[index, ] <- tau2
+	}
+	if(call==3 & allele=="A"){
+		tau2A.BB(object)[index, ] <- tau2
+	}
+	if(call==3 & allele=="B"){
+		tau2B.BB(object)[index, ] <- tau2
+	}
+	NULL
+}
+
+updateCors <- function(cors, G.call, I){
+	k <- match("grandMean", batchNames(object))
+	cors[, k] <- rowCors(I[[1]]*G.call, I[[2]]*G.call, na.rm=TRUE)
+	if(call==1){
+		corrAA(object)[index, ] <- cors
+	}
+	if(call==2){
+		corrAB(object)[index, ] <- cors
+	}
+	if(call==3){
+		corrBB(object)[index, ] <- cors
+	}
+}
+
+updateStats <- function(stats, Ns, object, call, allele, tau2, index){
+	if(call==1){
+		Ns.AA(object)[index, ] <- Ns
+		if(allele=="A"){
+			medianA.AA(object)[index, k] <- stats[, 1]
+			madA.AA(object)[index, k] <- stats[, 2]
+			updateTau(object, tau2, G.call, call, I, allele, index)
+		} else {
+			medianB.AA(object)[index, k] <- stats[, 1]
+			madB.AA(object)[index, k] <- stats[, 2]
+			updateTau(object, tau2, G.call, call, I, allele, index)
+		}
+	}
+	if(call==2){
+		Ns.AB(object)[index, ] <- Ns
+		if(allele=="A"){
+			medianA.AB(object)[index, k] <- stats[, 1]
+			madA.AB(object)[index, k] <- stats[, 2]
+		} else {
+			medianB.AB(object)[index, k] <- stats[, 1]
+			madB.AB(object)[index, k] <- stats[, 2]
+		}
+	}
+	if(call==3){
+		Ns.BB(object)[index, ] <- Ns
+		if(allele=="A"){
+			medianA.BB(object)[index, k] <- stats[, 1]
+			madA.BB(object)[index, k] <- stats[, 2]
+			updateTau(object, tau2, G.call, call, I, allele, index)
+		} else {
+			medianB.BB(object)[index, k] <- stats[, 1]
+			madB.BB(object)[index, k] <- stats[, 2]
+			updateTau(object, tau2, G.call, call, I, allele, index)
+		}
+	}
 }
 
 crlmmCopynumber <- function(object,
