@@ -1932,7 +1932,7 @@ isCall <- function(G, call){
 	G.call
 }
 
-computeSummary(object, G.call, call, I, allele, Ns, call=1, index){
+computeSummary <- function(object, G.call, call, I, allele, Ns, index){
 	k <- match("grandMean", batchNames(object))
 	stats <- summaryStats(G.call, I, FUNS=c("rowMedians", "rowMAD"))
 	Ns[, k] <- rowSums(G.call, na.rm=TRUE)
