@@ -127,20 +127,8 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
     \code{crlmmCopynumber}.  50 or more samples per batch is preferred
     and will improve the estimates.
 
-	The function crlmmCopynumber uses matrices instead of ff objects
-	if the ff library is not loaded. When the ff package is loaded,
-	large data support is enabled.  Normalized intensities
-	(\code{alleleA} and \code{alleleB}), genotype calls and
-	confidence scores (\code{snpCall} and \code{snpCallProbability})
-	are stored in \code{assayData} slot.  Summary statistics for
-	each batch, including the linear model paramters for copy
-	number, are stored in the \code{batchStatistics} slot.  Both the
-	\code{assayData} and \code{batchStatistics} slot are of class
-	\code{AssayData} with elements that are ff objects (if ff
-	package is loaded) or matrices.
-
-	The functions \code{crlmmCopynumberLD} and
-	\code{crlmmCopynumber2} have been deprecated.
+    The functions \code{crlmmCopynumberLD} and
+    \code{crlmmCopynumber2} have been deprecated.
 
 	The argument \code{type} can be used to specify a subset of
 	markers for which the copy number estimation algorithm is run.
@@ -155,6 +143,9 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 
 	'X.NP' refers to autosomes on chromosome X.
 
+	However, users must run 'SNP' prior to running 'NP' and 'X.NP',
+	or specify \code{type = c('SNP', 'X.NP')}.
+
       }
 
       \value{
@@ -162,7 +153,10 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 	The value returned by the \code{crlmmCopynumber} function
 	depends on whether the data is stored in RAM or whether the data
 	is stored on disk using the R package \code{ff} for reading /
-	writing.  Specifically,
+	writing.  If uncertain, the first line of the \code{show} method
+	defined for \code{CNSet} objects prints whether the
+	\code{assayData} elements are derived from the \code{ff} package
+	in the first line.  Specifically,
 
 	- if the elements of the \code{batchStaticts} slot in the
 	\code{CNSet} object have the class "ff_matrix" or "ffdf", then
@@ -176,7 +170,6 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 	updated.
 
       }
-
 
 \author{R. Scharpf}
 \keyword{manip}

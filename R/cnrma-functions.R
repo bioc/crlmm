@@ -1257,7 +1257,7 @@ fit.lm4 <- function(strata,
 	nuB(object)[marker.index, batch.index] <- nuB
 	phiB(object)[marker.index, batch.index] <- phiB
 	##if(is.lds) {close(object); return(TRUE)} else return(object)
-	TRUE
+	if(is.lds) {close(object); return(TRUE)} else return(object)
 }
 
 whichPlatform <- function(cdfName){
@@ -2026,7 +2026,8 @@ crlmmCopynumber <- function(object,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
 			    type=c("SNP", "NP", "X.SNP", "X.NP")){
-	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
+	typeof <- paste(type, collapse=",")
+	stopifnot(typeof %in% c("SNP", "NP", "SNP,NP", "SNP,X.SNP", "SNP,X.NP", "SNP,NP,X.SNP", "SNP,NP,X.SNP,X.NP"))
 	if(GT.CONF.THR >= 1 | GT.CONF.THR < 0) stop("GT.CONF.THR must be in [0,1)")
 	batch <- batch(object)
 	is.snp <- isSnp(object)
@@ -2089,7 +2090,7 @@ crlmmCopynumber <- function(object,
 		marker.index <- whichMarkers(marker.type, is.snp,
 					     is.autosome, is.annotated, is.X)
 		if(length(marker.index) == 0) next()
-		object <- estimateCnParameters(object=object,
+		res <- estimateCnParameters(object=object,
 					       type=marker.type,
 					       SNRMin=SNRMin,
 					       DF.PRIOR=DF.PRIOR,
@@ -2103,6 +2104,8 @@ crlmmCopynumber <- function(object,
 					       marker.index=marker.index,
 					       is.lds=is.lds,
 					       CHR.X=CHR.X)
+		##if(!is.lds) {object <- res; rm(res); gc()}
+		##if(!is.lds) {object <- res; rm(res); gc()}
 	}
 	close(object)
 	if(is.lds) return(TRUE) else return(object)

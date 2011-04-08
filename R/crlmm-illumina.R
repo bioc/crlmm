@@ -1009,16 +1009,16 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 
 
 constructInf <- function(sampleSheet=NULL,
-			       arrayNames=NULL,
-			       path=".",
-			       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-			       highDensity=FALSE,
-			       sep="_",
-			       fileExt=list(green="Grn.idat", red="Red.idat"),
-			       cdfName,
-			       verbose=FALSE,
-			       batch, #fns,
-			       saveDate=TRUE) { #, outdir="."){
+			 arrayNames=NULL,
+			 path=".",
+			 arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+			 highDensity=FALSE,
+			 sep="_",
+			 fileExt=list(green="Grn.idat", red="Red.idat"),
+			 cdfName,
+			 verbose=FALSE,
+			 batch, #fns,
+			 saveDate=TRUE) { #, outdir="."){
 	verbose <- FALSE
 	if(!is.null(arrayNames)) {
 		pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
