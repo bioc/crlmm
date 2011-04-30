@@ -21,12 +21,20 @@
 
 \section{Methods}{
   \describe{
-    \item{Ns}{\code{signature(object="AssayData")}: ...}
-    \item{corr}{\code{signature(object="AssayData")}: ...}
-    \item{mads}{\code{signature(x="AssayData")}: ...}
-    \item{medians}{\code{signature(object="AssayData")}: ...}
-    \item{tau2}{\code{signature(object="AssayData")}: ...}
-	 }
+    \item{Ns}{\code{signature(object="AssayData")}:  Accessor for genotype
+  frequencies}
+    \item{corr}{\code{signature(object="AssayData")}: Accessor for the correlation of the
+  log-transformed normalized intensities within the diallelic genotype clusters}
+    \item{mads}{\code{signature(x="AssayData")}: Accessor for the median
+  absolute deviation of the  normalized intensities within the
+  diallelic genotype clusters }
+    \item{medians}{\code{signature(object="AssayData")}: Accessor for
+  the posterior mean of the normalized intensity within the diallelic genotype
+  clusters.}
+    \item{tau2}{\code{signature(object="AssayData")}: Accessor for the
+  median absolute deviation of the log-transformed intensities within
+  the diallelic genotype clusters}
+  }
 }
 
 \seealso{

@@ -100,6 +100,7 @@ construct <- function(filenames,
 }
 
 constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
+	stopifnot(length(sns)==length(batch))
 	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
 	if(!is.lds) stop("this function now requires that the ff package be loaded")
 	if(missing(cdfName)) stop("must specify cdfName")

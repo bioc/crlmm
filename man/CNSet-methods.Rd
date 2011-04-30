@@ -33,17 +33,24 @@
 
 \section{Methods}{
   \describe{
-    \item{CA}{\code{signature(object="CNSet")}: ...}
-    \item{CB}{\code{signature(object="CNSet")}: ...}
-    \item{lines}{\code{signature(x="CNSet")}: ...}
-    \item{totalCopynumber}{\code{signature(object="CNSet")}: ...}
-    \item{rawCopynumber}{\code{signature(object="CNSet")}: ...}
-    \item{nuA}{\code{signature(object="CNSet")}: ...}
-    \item{nuB}{\code{signature(object="CNSet")}: ...}
-    \item{phiA}{\code{signature(object="CNSet")}: ...}
-    \item{phiB}{\code{signature(object="CNSet")}: ...}
-    \item{Ns}{\code{signature(object="CNSet")}: ...}
-    \item{corr}{\code{signature(object="CNSet")}: ...}
+    \item{CA}{\code{signature(object="CNSet")}: calculates raw copy number
+  for allele A}
+    \item{CB}{\code{signature(object="CNSet")}: calculates raw copy
+  number for allele B}
+    \item{lines}{\code{signature(x="CNSet")}: plot ellipses (95th
+  percentile) for prediction regions}
+    \item{totalCopynumber}{\code{signature(object="CNSet")}: calculates
+  total raw copy number}
+    \item{rawCopynumber}{\code{signature(object="CNSet")}: same as totalCopynumber}
+    \item{nuA}{\code{signature(object="CNSet")}: estimate of mean
+  background (intensity-scale) for allele A}
+    \item{nuB}{\code{signature(object="CNSet")}: estimate of mean
+  background (intensity-scale) for allele A}
+    \item{phiA}{\code{signature(object="CNSet")}: estimate of slope coefficient (intensity-scale) for allele A}
+    \item{phiB}{\code{signature(object="CNSet")}: estimate of slope coefficient (intensity-scale) for allele B}
+    \item{Ns}{\code{signature(object="CNSet")}: genotype frequencies }
+    \item{corr}{\code{signature(object="CNSet")}: correlation of
+  log-transformed normalized intensities within the genotype clusters}
     \item{mads}{\code{signature(x="CNSet")}: ...}
     \item{medians}{\code{signature(object="CNSet")}: ...}
     \item{tau2}{\code{signature(object="CNSet")}: ...}
