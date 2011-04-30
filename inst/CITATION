@@ -45,8 +45,6 @@ citEntry(entry="article",
                       "A multilevel model to address batch effects in copy number estimation using SNP arrays",
 		      "Biostatistics. 2010."))
 
-citHeader("To cite crlmm in publications use:")
-
 citEntry(entry = "Article",
   title        = "Using the {R} Package {crlmm} for Genotyping and Copy Number Estimation",
   author       = personList(as.person("Robert B. Scharpf"),
