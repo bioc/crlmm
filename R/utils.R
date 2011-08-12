@@ -165,7 +165,8 @@ validCdfNames <- function(){
 	  "humanomni1quadv1b",
           "humanomniexpress12v1b",
 	  "humanomni25quadv1b",
-          "humanimmuno12v1b")
+          "humanimmuno12v1b",
+          "humancytosnp12v2p1h")
 }
 isValidCdfName <- function(cdfName){
 	chipList <- validCdfNames()

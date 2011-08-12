@@ -413,7 +413,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 
   needToLoad <- !all(sapply(c('addressA', 'addressB', 'base'), isLoaded))
   if(needToLoad){
-	  chipList = c("human1mv1c",             # 1M
+	  chipList = c("human1mv1c",# 1M
 	  "human370v1c",            # 370CNV
 	  "human650v3a",            # 650Y
 	  "human610quadv1b",        # 610 quad
@@ -424,7 +424,8 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	  "humanomni1quadv1b",      # Omni1 quad
 	  "humanomni25quadv1b",     # Omni2.5 quad
 	  "humanomniexpress12v1b",  # Omni express 12
-	  "humanimmuno12v1b")       # Immuno chip 12
+	  "humanimmuno12v1b",       # Immuno chip 12
+          "humancytosnp12v2p1h")    # CytoSNP 12
 	  if(missing(chipType)){
 		  chipType = match.arg(annotation(RG), chipList)
 	  } else chipType = match.arg(chipType, chipList)
