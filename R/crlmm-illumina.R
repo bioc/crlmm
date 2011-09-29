@@ -161,13 +161,13 @@ readIDAT <- function(idatFile){
   }
 
   versionNumber <- readBin(tempCon, "integer", n=1, size=8,
-                           endian="little", signed=FALSE)
+                           endian="little")
 
   if(versionNumber<3)
 	  stop("Older style IDAT files not supported:  consider updating your scanner settings")
 
   nFields <- readBin(tempCon, "integer", n=1, size=4,
-                     endian="little", signed=FALSE)
+                     endian="little")
 
   fields <- matrix(0,nFields,3);
   colnames(fields) <- c("Field Code", "Byte Offset", "Bytes")
@@ -175,7 +175,7 @@ readIDAT <- function(idatFile){
     fields[i1,"Field Code"] <-
       readBin(tempCon, "integer", n=1, size=2, endian="little", signed=FALSE)
     fields[i1,"Byte Offset"] <-
-      readBin(tempCon, "integer", n=1, size=8, endian="little", signed=FALSE)
+      readBin(tempCon, "integer", n=1, size=8, endian="little")
   }
 
   knownCodes <- c(1000, 102, 103, 104, 107, 200, 300, 400,
@@ -214,11 +214,11 @@ readIDAT <- function(idatFile){
 
   seek(tempCon, fields["nSNPsRead", "Byte Offset"])
   nSNPsRead <- readBin(tempCon, "integer", n=1, size=4,
-                       endian="little", signed=FALSE)
+                       endian="little")
 
   seek(tempCon, fields["IlluminaID", "Byte Offset"])
   IlluminaID <- readBin(tempCon, "integer", n=nSNPsRead, size=4,
-                       endian="little", signed=FALSE)
+                       endian="little")
 
   seek(tempCon, fields["SD", "Byte Offset"])
   SD <- readBin(tempCon, "integer", n=nSNPsRead, size=2,
@@ -233,13 +233,13 @@ readIDAT <- function(idatFile){
 
   seek(tempCon, fields["MidBlock", "Byte Offset"])
   nMidBlockEntries <- readBin(tempCon, "integer", n=1, size=4,
-                              endian="little", signed=FALSE)
+                              endian="little")
   MidBlock <- readBin(tempCon, "integer", n=nMidBlockEntries, size=4,
-                      endian="little", signed=FALSE)
+                      endian="little")
 
   seek(tempCon, fields["RunInfo", "Byte Offset"])
   nRunInfoBlocks <- readBin(tempCon, "integer", n=1, size=4,
-                            endian="little", signed=FALSE)
+                            endian="little")
   RunInfo <- matrix(NA, nRunInfoBlocks, 5)
   colnames(RunInfo) <- c("RunTime", "BlockType", "BlockPars",
                          "BlockCode", "CodeVersion")
@@ -252,7 +252,7 @@ readIDAT <- function(idatFile){
 
   seek(tempCon, fields["RedGreen", "Byte Offset"])
   RedGreen <- readBin(tempCon, "numeric", n=1, size=4,
-                      endian="little", signed=FALSE)
+                      endian="little")
   #RedGreen <- readBin(tempCon, "integer", n=4, size=1,
   #                    endian="little", signed=FALSE)
 
@@ -346,7 +346,7 @@ readBPM <- function(bpmFile){
   ## should be 1
 
   versionNumber <-
-    readBin(tempCon, "integer", n=1, size=4, endian="little", signed=FALSE)
+    readBin(tempCon, "integer", n=1, size=4, endian="little")
   ## should be 4
 
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
@@ -358,13 +358,13 @@ readBPM <- function(bpmFile){
 
   entriesByteOffset <- seek(tempCon);
   nEntries <- readBin(tempCon, "integer", n=1, size=4,
-                      endian="little", signed=FALSE)
+                      endian="little")
 
   if(FALSE){
 
     snpIndexByteOffset <- seek(tempCon)
     snpIndex <- readBin(tempCon, "integer", n=nEntries, size=4,
-                        endian="little", signed=FALSE)
+                        endian="little")
     ## for the 1M array, these are simply in order from 1 to 1072820.
 
     snpNamesByteOffset <- seek(tempCon)
