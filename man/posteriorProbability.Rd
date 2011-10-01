@@ -10,7 +10,7 @@
 }
 
 \usage{
-posteriorProbability(object, predictRegion, copyNumber = 0:4)
+posteriorProbability(object, predictRegion, copyNumber = 0:4, w)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -23,7 +23,12 @@ posteriorProbability(object, predictRegion, copyNumber = 0:4)
 }
   \item{copyNumber}{
     Integer vector.
-}
+  }
+
+  \item{w}{ numeric vector of prior probabilities for each of the copy
+    number states.  Must be the same length as \code{copyNumber} and sum
+    to 1.
+
 }
 \details{
 

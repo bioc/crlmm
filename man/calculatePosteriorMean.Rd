@@ -11,7 +11,7 @@
 }
 
 \usage{
-calculatePosteriorMean(object, posteriorProb, copyNumber = 0:4, w, ...)
+calculatePosteriorMean(object, posteriorProb, copyNumber = 0:4, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,9 +24,6 @@ calculatePosteriorMean(object, posteriorProb, copyNumber = 0:4, w, ...)
 
   \item{copyNumber}{
     Integer vector.
-}
-\item{w}{
-  The prior probability for the copy numbers in \code{copyNumber}
 }
   \item{\dots}{
     Ignored
