@@ -2476,12 +2476,16 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	#}
 	} else stop("type not available")
 	if(length(emit)==1) emit <- emit[[1]] else {
+		state.names <- dimnames(emit[[1]])[[3]]
 		tmp <- array(NA, dim=c(length(unlist(marker.list)), ncol(object), length(prior.prob)))
 		for(i in seq_along(marker.list)){
 			marker.index <- marker.list[[i]]
 			tmp[marker.index, , ] <- emit[[i]]
 		}
 		emit <- tmp
+		dimnames(emit) <- list(featureNames(object),
+				       sampleNames(object),
+				       state.names)
 	}#stop("need to rbind elements of emit list?")
 	##tmp <- do.call("rbind", emit)
 	match.index <- match(rownames(emit), featureNames(object))
