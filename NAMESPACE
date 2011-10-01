@@ -34,6 +34,8 @@ importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot, lines)
+importFrom(lattice, xyplot, simpleKey, panel.grid, panel.xyplot, lrect, ltext,
+	   lpoints, panel.number, lpolygon)
 
 importFrom(grDevices, grey)
 importFrom(affyio, read.celfile.header, read.celfile)
@@ -59,7 +61,6 @@ importClassesFrom(oligoClasses, ff_matrix, ffdf)
 ##---------------------------------------------------------------------------
 ##import(panel.number, panel.grid, panel.xyplot, lpoints, lsegments, lrect, ltext)
 
-
 exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
@@ -74,6 +75,6 @@ export(crlmm,
        genotype2, genotypeLD,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
-export(genotypes, totalCopynumber, rawCopynumber)
-exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads)
-export(constructInf, preprocessInf, genotypeInf)
+export(genotypes, totalCopynumber, rawCopynumber, xyplot)
+exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads, xyplot)
+export(ABpanel, constructInf, preprocessInf, genotypeInf)

@@ -20,7 +20,8 @@ Imports: affyio (>= 1.19.2),
          splines,
          stats,
          SNPchip,
-         utils
+         utils,
+	 lattice
 Suggests: hapmapsnp6,
           genomewidesnp6Crlmm (>= 1.0.4),
           snpMatrix,
