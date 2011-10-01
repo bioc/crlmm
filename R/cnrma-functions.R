@@ -2483,7 +2483,7 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 			tmp[marker.index, , ] <- emit[[i]]
 		}
 		emit <- tmp
-		dimnames(emit) <- list(featureNames(object),
+		dimnames(emit) <- list(featureNames(object)[unlist(marker.list)],
 				       sampleNames(object),
 				       state.names)
 	}#stop("need to rbind elements of emit list?")
