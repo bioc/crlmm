@@ -1,5 +1,6 @@
 \name{xyplot}
 \alias{xyplot}
+\alias{xyplot,formula,CNSet-method}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Plot prediction regions and normalized intensities.}
 \description{

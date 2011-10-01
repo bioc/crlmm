@@ -68,6 +68,15 @@ rawCopynumber(object,...)
 
 	totalCopynumber (or rawCopynumber) returns a matrix of CA+CB.
 
+      }
+
+\note{
+
+Subsetting the \code{CNSet} object before extracting copy number can be
+very inefficient when the data set is very large, particularly if using
+ff objects.  The \code{[] method will subset all of the assay data
+elements and all of the elements in the LinearModelParameter slot.
+
 }
 
 \seealso{
@@ -107,17 +116,8 @@ all.equal(cn4, cn2)
 ## markers 1-5, all samples
 cn5 <- totalCopynumber(sample.CNSet, i=1:5)
 ## all markers, samples 1-5
-cn6 <- totalCopynumber(sample.CNSet, j=1:5)
+cn6 <- totalCopynumber(sample.CNSet, j=1:2)
 
-## NOTE: subsetting the object before extracting copy number
-##       can be very inefficient when the data set is very large,
-##       particularly if using ff objects.  IN particular, subsetting
-##       the CNSet object will subset all of the assay data elements
-##       and all of the elements in the LinearModelParameter slot
-\dontrun{
-        ## do not do the following
-	cn <- CA(sample.CNSet[1:5, ], "A")
-}
 }
 \keyword{manip}
 
