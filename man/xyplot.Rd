@@ -38,14 +38,18 @@ data(sample.CNSet2)
 table(batch(sample.CNSet2))
 sample.index <- which(batch(sample.CNSet2) == "CUPID")
 ## A single SNP
-pr <- predictionRegion(sample.CNSet2[1, sample.index], copyNumber=0:4)
-gt <- as.integer(calls(sample.CNSet2[1, sample.index]))
-xyplot(B~A, data=sample.CNSet2[1, sample.index],
-       predictRegion=pr,
+pr <- predictionRegion(sample.CNSet2[1:50, sample.index], copyNumber=0:4)
+gt <- calls(sample.CNSet2[1:50, sample.index])
+lim <- c(6,13)
+for(i in 1:50){
+res <- xyplot(B~A, data=sample.CNSet2[i, sample.index],
+       predictRegion=pr[i,],
        panel=ABpanel,
        pch=21,
-       fill=c("red", "blue", "green3")[gt],
-       xlim=c(6,12), ylim=c(6,12))
+       fill=c("red", "blue", "green3")[gt[i, ]],
+       xlim=lim, ylim=lim)
+print(res)
+}
 
 ## The posterior mean for the above markers
 pp <- posteriorProbability(sample.CNSet2[1, sample.index], predictRegion=pr, copyNumber=0:4)
