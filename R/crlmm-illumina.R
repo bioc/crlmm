@@ -254,7 +254,7 @@ readIDAT <- function(idatFile){
   RedGreen <- readBin(tempCon, "numeric", n=1, size=4,
                       endian="little")
   #RedGreen <- readBin(tempCon, "integer", n=4, size=1,
-  #                    endian="little", signed=FALSE)
+  #                    endian="little")
 
   seek(tempCon, fields["MostlyNull", "Byte Offset"])
   nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
