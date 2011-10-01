@@ -7,7 +7,7 @@
 }
 \usage{
 
-crlmmIllumina(RG, XY, stripNorm=TRUE, 
+crlmmIllumina(RG, XY, stripNorm=TRUE,
       useTarget=TRUE, row.names=TRUE, col.names=TRUE,
       probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5,
       gender=NULL, seed=1, mixtureSampleSize=10^5,
@@ -64,7 +64,7 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
 
 \references{
   Ritchie ME, Carvalho BS, Hetrick KN, Tavar\'{e} S, Irizarry RA.
-  R/Bioconductor software for Illumina's Infinium whole-genome 
+  R/Bioconductor software for Illumina's Infinium whole-genome
   genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
 
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
@@ -72,7 +72,7 @@ crlmmIllumina(RG, XY, stripNorm=TRUE,
   array data. Biostatistics. 2007 Apr;8(2):485-99. Epub 2006 Dec
   22. PMID: 17189563.
 
-  Carvalho BS, Louis TA, Irizarry RA. 
+  Carvalho BS, Louis TA, Irizarry RA.
   Quantifying uncertainty in genotype calls.
   Bioinformatics. 2010 Jan 15;26(2):242-9.
 }

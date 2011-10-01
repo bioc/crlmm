@@ -44,3 +44,7 @@ Collate: AllGenerics.R
 	 test_crlmm_package.R
 LazyLoad: yes
 biocViews: Microarray, Preprocessing, SNP, Bioinformatics, CopyNumberVariants
+<<<<<<< HEAD
+=======
+Packaged: 2011-04-30 17:10:59 UTC; biocbuild
+>>>>>>> crlmm on github
