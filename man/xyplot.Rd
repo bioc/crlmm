@@ -78,9 +78,21 @@ xyplot(B~A|snpid, data=sample.CNSet2[1:10, sample.index],
 
 
 ## nonpolymorphic markers
-np.index <- which(!isSnp(sample.CNSet2))
-sample.index <- which(batch(sample.CNSet2) %in% bns)
-pr <- predictionRegion(sample.CNSet2[np.index, sample.index], copyNumber=0:4)
+data(sample.CNSet2)
+tab <- table(batch(sample.CNSet2))
+bns <- names(tab)[tab > 50]
+sample.index <- which(batch(sample.CNSet2) %in% bns[1:3])
+np.index <- which(!isSnp(sample.CNSet2))[1:10]
+taus <- tau2(sample.CNSet)[np.index, , , ]
+trace(predictionRegion, browser, signature=c("CNSet", "integer"))
+pr <- predictionRegion(sample.CNSet2[np.index, sample.index],
+		       copyNumber=0:4)
+trace(posteriorProbability, browser, signature="CNSet")
+pp <- posteriorProbability(sample.CNSet2[np.index, sample.index],
+			   predictRegion=pr,
+			   copyNumber=0:4)
+pm <- calculatePosteriorMean(sample.CNSet2[np.index, sample.index], posteriorProb=pp)
+
 }
 
 \keyword{dplot}

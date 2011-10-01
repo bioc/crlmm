@@ -74,10 +74,11 @@ rawCopynumber(object,...)
 
 Subsetting the \code{CNSet} object before extracting copy number can be
 very inefficient when the data set is very large, particularly if using
-ff objects.  The \code{[] method will subset all of the assay data
+ff objects.  The \code{[} method will subset all of the assay data
 elements and all of the elements in the LinearModelParameter slot.
 
 }
+
 
 \seealso{
 

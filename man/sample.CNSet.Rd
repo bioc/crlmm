@@ -110,7 +110,7 @@ all.equal(cn4, cn2)
 
 ## markers 1-5, all samples
 cn5 <- totalCopynumber(sample.CNSet, i=1:5)
-## all markers, samples 1-5
-cn6 <- totalCopynumber(sample.CNSet, j=1:5)
+## all markers, samples 1-2
+cn6 <- totalCopynumber(sample.CNSet, j=1:2)
 }
 \keyword{datasets}

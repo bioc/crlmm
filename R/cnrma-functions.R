@@ -2675,15 +2675,25 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 ##  return(list2SnpSet(res2, returnParams=returnParams))
 ##}
 
-genotypes <- function(copyNumber){
+genotypes <- function(copyNumber, is.snp=TRUE){
 	stopifnot(copyNumber %in% 0:4)
 	cn <- paste("x", copyNumber, sep="")
-	switch(cn,
-	       x0="NULL",
-	       x1=LETTERS[1:2],
-	       x2=c("AA", "AB", "BB"),
-	       x3=c("AAA", "AAB", "ABB", "BBB"),
-	       x4=c("AAAA", "AAAB", "AABB", "ABBB", "BBBB"))
+	if(is.snp){
+		res <- switch(cn,
+			      x0="NULL",
+			      x1=LETTERS[1:2],
+			      x2=c("AA", "AB", "BB"),
+			      x3=c("AAA", "AAB", "ABB", "BBB"),
+			      x4=c("AAAA", "AAAB", "AABB", "ABBB", "BBBB"))
+	} else {
+		res <- switch(cn,
+			      x0="NULL",
+			      x1="A",
+			      x2="AA",
+			      x3="AAA",
+			      x4="AAAA")
+	}
+	return(res)
 }
 
 dbvn <- function(x, mu, Sigma){

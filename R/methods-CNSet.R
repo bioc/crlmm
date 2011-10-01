@@ -446,5 +446,9 @@ setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="lis
 	  })
 setMethod("xyplot", signature(x="formula", data="CNSet"),
 	  function(x, data, ...){
-		  xyplotcrlmm(x, data, ...)
+		  if("predictRegion" %in% names(list(...))){
+			  xyplotcrlmm(x, data, ...)
+		  } else{
+			  callNextMethod()
+		  }
 })
