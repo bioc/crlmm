@@ -23,6 +23,13 @@
 
 }
 \examples{
+\dontrun{
+      ## hapmap phase 3 data
+      data(hapmapSet, package="CnvScripts")
+      marker.index <- which(chromosome(hapmapSet) == 8)
+      sample.CNSet <- hapmapSet[marker.index, c(1168:1170)]
+      save(sample.CNSet, file="~/Software/crlmm/data/sample.CNSet.rda")
+}
 data(sample.CNSet)
 ## --------------------------------------------------
 ## accessors for the feature-level info
