@@ -27,7 +27,8 @@
       ## hapmap phase 3 data
       data(hapmapSet, package="CnvScripts")
       marker.index <- which(chromosome(hapmapSet) == 8)
-      sample.CNSet <- hapmapSet[marker.index, c(1168:1170)]
+      marker.index <- marker.index[1:60e3]
+      sample.CNSet <- hapmapSet[marker.index, c(1168:1169)]
       save(sample.CNSet, file="~/Software/crlmm/data/sample.CNSet.rda")
 }
 data(sample.CNSet)
