@@ -1,5 +1,6 @@
 \name{sample.CNSet}
 \alias{sample.CNSet}
+\alias{sample.CNSet2}
 \alias{cnSet}
 \docType{data}
 \title{
@@ -13,7 +14,12 @@
 \details{
   This object was created from the copynumber vignette in inst/scripts.
 }
-\usage{data(sample.CNSet)}
+\usage{
+
+data(sample.CNSet)
+data(sample.CNSet2)
+
+}
 \format{
   The data illustrates the \code{CNSet-class}, with
 	\code{assayData} containing the quantile-normalized
