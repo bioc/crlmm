@@ -32,6 +32,6 @@ pull
 copynumber.R
 runcopynumber.R
 runillumina.R
-inst/scripts/SmoothingRawCn.pdf
+inst/scripts/SmoothingRawCN.pdf
 inst/scripts/test
 .gitignore
