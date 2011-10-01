@@ -528,3 +528,69 @@ setMethod("xyplot", signature(x="formula", data="CNSet"),
 			  callNextMethod()
 		  }
 })
+
+setMethod("calculateRBaf", signature(object="CNSet"),
+	  function(object, batch.name){
+	if(missing(batch.name)) batch.name <- batchNames(object)[1]
+	stopifnot(batch.name %in% batchNames(object))
+	if(length(batch.name) > 1){
+		warning("only the first batch in batch.name processed")
+		batch.name <- batch.name[1]
+	}
+	RTheta.aa <- calculateRTheta(object, "AA", batch.name)
+	RTheta.ab <- calculateRTheta(object, "AB", batch.name)
+	RTheta.bb <- calculateRTheta(object, "BB", batch.name)
+
+	theta.aa <- matrix(RTheta.aa[, "theta"], nrow(object), ncol(object), byrow=FALSE)
+	theta.ab <- matrix(RTheta.ab[, "theta"], nrow(object), ncol(object), byrow=FALSE)
+	theta.bb <- matrix(RTheta.bb[, "theta"], nrow(object), ncol(object), byrow=FALSE)
+
+	J <- which(batch(object) == batch.name)
+	a <- A(object)[, J, drop=FALSE]
+	b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
+	dimnames(a) <- dimnames(b) <- NULL
+	obs.theta <- atan2(b, a)*2/pi
+
+	lessAA <- obs.theta < theta.aa
+	lessAB <- obs.theta < theta.ab
+	lessBB <- obs.theta < theta.bb
+	grAA <- !lessAA
+	grAB <- !lessAB
+	grBB <- !lessBB
+	not.na <- !is.na(theta.aa)
+	I1 <- grAA & lessAB & not.na
+	I2 <- grAB & lessBB & not.na
+
+	bf <- matrix(NA, nrow(object), ncol(a))
+	bf[I1] <- 0.5 * ((obs.theta-theta.aa)/(theta.ab-theta.aa))[I1]
+	bf[I2] <- (.5 * (obs.theta - theta.ab) / (theta.bb - theta.ab))[I2] + 0.5
+	bf[lessAA] <- 0
+	bf[grBB] <- 1
+
+	r.expected <- matrix(NA, nrow(object), ncol(a))
+	r.aa <- matrix(RTheta.aa[, "R"], nrow(object), ncol(object), byrow=FALSE)
+	r.ab <- matrix(RTheta.ab[, "R"], nrow(object), ncol(object), byrow=FALSE)
+	r.bb <- matrix(RTheta.bb[, "R"], nrow(object), ncol(object), byrow=FALSE)
+	rm(RTheta.aa, RTheta.ab, RTheta.bb); gc()
+	obs.r <- a+b
+
+	lessAA <- lessAA & not.na
+	grBB <- grBB & not.na
+	tmp <- ((obs.theta - theta.aa) * (r.ab-r.aa)/(theta.ab-theta.aa))[I1] + r.aa[I1]
+	r.expected[I1] <- tmp
+	tmp <- ((obs.theta - theta.ab) * (r.bb - r.ab)/(theta.bb-theta.ab))[I2] + r.ab[I2]
+	r.expected[I2] <- tmp
+	r.expected[lessAA] <- r.aa[lessAA]
+	r.expected[grBB] <- r.bb[grBB]
+
+	index.np <- which(!isSnp(object))
+	a.np <- A(object)[index.np, ]
+	meds <- rowMedians(a.np, na.rm=TRUE)
+	r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
+	lrr <- log2(obs.r/r.expected)
+
+	dimnames(bf) <- dimnames(lrr) <- dimnames(a)
+	res <- list(baf=bf,
+		    lrr=lrr)
+	return(res)
+})

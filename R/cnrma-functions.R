@@ -1306,6 +1306,8 @@ imputeCenter <- function(muA, muB, index.complete, index.missing){
 			betahat <- solve(crossprod(X), crossprod(X,Y))
 			X <- cbind(1, mnA[index[[j]],  -j, drop=FALSE],  mnB[index[[j]],  -j, drop=FALSE])
 			mus <- X %*% betahat
+			## threshold imputed intensities that are very small
+			mus[mus < 64] <- 64
 			muA[index[[j]], j] <- mus[, 1]
 			muB[index[[j]], j] <- mus[, 2]
 		}
@@ -2763,6 +2765,25 @@ ABpanel <- function(x, y, predictRegion,
 		}
 	}
 }
+
+calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
+	genotype <- match.arg(genotype)
+	j <- match(batch.name, batchNames(cnSet))
+	centers <- medians(cnSet, i=snp.index, j)
+	theta <- matrix(NA, nrow(cnSet), 2)
+	colnames(theta) <- c("theta", "R")
+	x <- centers[, "A", genotype, 1]
+	y <- centers[, "B", genotype, 1]
+	## small imputed values -- should fix imputeCenter
+	x[x < 64] <- 64
+	y[y < 64] <- 64
+	theta[, "theta"] <- atan2(y, x)*2/pi
+	theta[, "R"] <- x+y
+	return(theta)
+}
+
+
+
 
 calculateBAFandLRR <- function(cnSet) {
   ## Calculates B allele frequency and log2 R ratio for all snps for a given cnSet

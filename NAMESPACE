@@ -64,6 +64,7 @@ export(crlmm,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
-exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads, xyplot)
+exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads,
+	      xyplot, calculateRBaf)
 export(ABpanel, constructInf, preprocessInf, genotypeInf)
 exportClasses(PredictionRegion)
