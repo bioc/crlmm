@@ -1,6 +1,6 @@
 %\VignetteIndexEntry{Copy number estimation}
 %\VignetteDepends{}
-%\VignetteKeywords{crlmm, SNP 6, copy number}
+%\VignetteKeywords{crlmm, SNP 6, copy number, cnv}
 %\VignettePackage{crlmm}
 
 %%% The real .Rnw is under inst/scripts.
