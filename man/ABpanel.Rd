@@ -29,7 +29,7 @@ ABpanel(x, y, predictRegion, copyNumber = 0:4, fill, ..., subscripts)
     certain point symbols.  See \code{points}.
 }
   \item{\dots}{
-    Additional arguments to \code{panel.xyplot} and \code{\lpolygon}.
+    Additional arguments to \code{panel.xyplot} and \code{lpolygon}.
 }
   \item{subscripts}{
     See \code{xyplot} in the \pkg{lattice} package.
