@@ -9,6 +9,18 @@ getProtocolData.Affy <- function(filenames){
 			                           row.names=colnames(scanDates)))
 	return(protocoldata)
 }
+
+setMethod("snpNames", signature(object="character"),
+	  function(object){
+		  nm <- grep("Crlmm", object)
+		  if(length(nm)==0){
+			  pkgname <- paste(object, "Crlmm", sep="")
+		  } else pkgname <- object
+		  loader("preprocStuff.rda", .crlmmPkgEnv, object)
+		  gns <- getVarInEnv("gns")
+		  return(gns)
+	  })
+
 getFeatureData <- function(cdfName, copynumber=FALSE){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	if(!require(pkgname, character.only=TRUE)){

@@ -2,7 +2,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                      col.names=NULL, probs=c(1/3, 1/3, 1/3), DF=6,
                      SNRMin=5, recallMin=10, recallRegMin=1000,
                      gender=NULL, desctrucitve=FALSE, verbose=TRUE,
-                     returnParams=FALSE, badSNP=.7, snp.names){
+                     returnParams=FALSE, badSNP=.7){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 	open(SNR)
@@ -18,11 +18,14 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		stopifnot(nrow(A) == length(gns))
 		index <- seq(length=nrow(A))
 	}
-	if(!missing(snp.names)){
-		stopifnot(!is.null(rownames(A)))
-		##verify that A has only snps.  otherwise, calling function must pass rownames
-		index <- match(snp.names, rownames(A))
-	}
+	snp.names <- snpNames(pkgname)
+	stopifnot(!is.null(rownames(A)))
+	index <- match(snp.names, rownames(A))
+##	if(!missing(snp.names)){
+##
+##		##verify that A has only snps.  otherwise, calling function must pass rownames
+##		index <- match(snp.names, rownames(A))
+##	}
 	snpBatches <- splitIndicesByLength(index, ocProbesets())
 	NR <- length(unlist(snpBatches))
 	if(verbose) message("Calling ", NR, " SNPs for recalibration... ")
