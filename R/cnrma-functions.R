@@ -22,7 +22,11 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 	loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
 	loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
 	gns <- getVarInEnv("gns")
-	path <- system.file("extdata", package=paste(cdfName, "Crlmm", sep=""))
+	nm <- grep("Crlmm", pkgname)
+	if(length(nm)==0){
+		pkgname <- paste(pkgname, "Crlmm", sep="")
+	}
+	path <- system.file("extdata", package=pkgname)
 	load(file.path(path, "snpProbes.rda"))
 	snpProbes <- get("snpProbes")
 	if(copynumber){
@@ -147,7 +151,7 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 		     callProbability=callPr,
 		     featureData=featureData,
 		     annotation=cdfName,
-		     batch=batch)
+		     batch=as.character(batch))
 	if(!missing(sns)){
 		sampleNames(cnSet) <- sns
 	} else {
@@ -186,6 +190,7 @@ snprmaAffy <- function(cnSet, filenames,
 	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
 	return(mixtureParams)
 }
+
 genotype <- function(filenames,
 		     cdfName,
 		     batch,
@@ -202,6 +207,7 @@ genotype <- function(filenames,
 		     gender=NULL,
 		     returnParams=TRUE,
 		     badSNP=0.7){
+	stopifnot(require("ff"))
 	cnSet <- constructAffy(filenames=filenames,
 			       cdfName=cdfName,
 			       batch=batch, verbose=verbose)
@@ -210,11 +216,14 @@ genotype <- function(filenames,
 				    eps=eps,
 				    seed=seed,
 				    verbose=verbose)
-	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames, cdfName=cdfName, seed=seed,
+	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames,
+			cdfName=annotation(cnSet), seed=seed,
 			verbose=verbose)
 	stopifnot(ok)
-	ok <- genotypeAffy(cnSet=cnSet, mixtureParams=mixtureParams,
-			   SNRMin=SNRMin, recallMin=recallMin,
+	ok <- genotypeAffy(cnSet=cnSet,
+			   mixtureParams=mixtureParams,
+			   SNRMin=SNRMin,
+			   recallMin=recallMin,
 			   recallRegMin=recallRegMin,
 			   gender=gender,
 			   badSNP=badSNP,
@@ -1239,17 +1248,16 @@ cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 		 A=A,
 		 seed=seed,
 		 pkgname=pkgname,
-		 cdfName=cdfName,
 		 neededPkgs=c("crlmm", pkgname))
 	##list(sns=sns, gns=row.names, SKW=SKW, cdfName=cdfName)
 	return(A)
 }
 
-processCEL2 <- function(i, filenames, row.names, A, seed, cdfName, pkgname){
-	if(cdfName=="genomewidesnp6"){
+processCEL2 <- function(i, filenames, row.names, A, seed, pkgname){
+	if(pkgname=="genomewidesnp6Crlmm"){
 		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
 	}
-	if(cdfName=="genomewidesnp5"){
+	if(pkgname=="genomewidesnp5Crlmm"){
 		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
 	}
 	reference <- getVarInEnv("reference")

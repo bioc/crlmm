@@ -97,6 +97,35 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   gender[gender == "female"] <- 2
   gender[gender == "male"] <- 1
   \dontrun{  (crlmmOutput <- crlmm(cels, gender=gender))}
+
+  \dontrun{
+	  ## we need the A and B intensities
+	  stopifnot(require("ff"))
+	  path <- system.file("celFiles", package="hapmapsnp6")
+	  cels <- list.celfiles(path, full.names=TRUE)
+	  gtSet <- genotype(cels, batch=rep(1L,3))
+	  XIndex <- which(chromosome(gtSet)==23 & isSnp(gtSet))
+	  YIndex <- which(chromosome(gtSet)==24 & isSnp(gtSet))
+	  A.X <- log2(A(gtSet)[XIndex,,drop=FALSE])
+	  B.X <- log2(B(gtSet)[XIndex,,drop=FALSE])
+	  meds.X <- apply(A.X+B.X, 2, median)/2
+	  A.Y <- log2(A(gtSet)[YIndex,,drop=FALSE])
+	  B.Y <- log2(B(gtSet)[YIndex,,drop=FALSE])
+	  meds.Y <- apply(A.Y+B.Y, 2, median)/2
+	  R <- meds.X - meds.Y
+	  SNR <- gtSet$SNR[]
+	  SNRMin <- 5
+	  gender <- kmeans(R, c(min(R[SNR[]>SNRMin]), max(R[SNR[]>SNRMin])))[["cluster"]]
+	  plot(seq_along(R), R, pch=21, bg=c("royalblue", "red")[gender],
+	       xlim=c(0, 4), xaxt='n', xlab="sample index")
+	  legend("topright", fill=c("royalblue", "red"), legend=c("male", "female"))
+	  delete(A(gtSet))
+	  delete(B(gtSet))
+	  delete(calls(gtSet))
+	  delete(assayDataElement(gtSet, "snpCallProbability"))
+	  ff.filenames <- list.files(".", pattern=".ff")
+	  unlink(ff.filename)
+  }
 }
 
 \dontrun{
