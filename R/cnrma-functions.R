@@ -2547,8 +2547,16 @@ numberGenotypes <- function(CT){
 		       tau2B,
 		       sig2A,
 		       sig2B,
+		       nuA,
+		       nuB,
+		       phiA,
+		       phiB,
+		       corrAA,
+		       corrAB,
+		       corrBB,
 		       a,
-		       b){
+		       b,
+		       scale.sd){
 	## 5: AAAAA, AAAAB, AAABB, AABBB, ABBBB, BBBBB
 	##CN=4
 	## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
@@ -2604,7 +2612,7 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
 	index <- index.list[[stratum]]
 	test <- tryCatch(open(A(object)), error=function(e) NULL)
-	if(!is.null(test)) .open(object)
+	if(!is.null(test)) invisible(.open(object))
 	a <- log2(as.matrix(A(object)[index, ]))
 	b <- log2(as.matrix(B(object)[index, ]))
 	NN <- Ns(object, i=index)[, , 1]
@@ -2619,7 +2627,7 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 	phiA <- as.matrix(phiA(object)[index, ])
 	nuB <- as.matrix(nuB(object)[index, ])
 	phiB <- as.matrix(phiB(object)[index, ])
-	if(!is.null(test)) .close(object)
+	if(!is.null(test)) invisible(.close(object))
 	S <- length(prior.prob)
 	emit <- array(NA, dim=c(nrow(a), ncol(a), S))##SNPs x sample x 'truth'
 	sample.index <- split(1:ncol(object), batch(object))
@@ -2630,13 +2638,21 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		probs <- array(NA, dim=c(nrow(a), length(J), S))
 		for(k in seq_along(CN)){
 			##CT <- CN[k]
-			probs[, , k] <- .posterior(CN[k],
-						   tau2A,
-						   tau2B,
-						   sig2A,
-						   sig2B,
-						   a[, J],
-						   b[, J])
+			probs[, , k] <- .posterior(CT=CN[k],
+						   tau2A=tau2A,
+						   tau2B=tau2B,
+						   sig2A=sig2A,
+						   sig2B=sig2B,
+						   nuA=nuA,
+						   nuB=nuB,
+						   phiA=phiA,
+						   phiB=phiB,
+						   corrAA=corrAA,
+						   corrAB=corrAB,
+						   corrBB=corrBB,
+						   a=a[, J],
+						   b=b[, J],
+						   scale.sd=scale.sd)
 			##probs[, , k] <- do.call("sum", f.x.y)
 			##if none of the states are likely (outlier), assign NA
 			##		emit[, , counter] <- f.x.y
