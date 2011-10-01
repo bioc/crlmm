@@ -248,7 +248,7 @@ genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
 			 recallRegMin=1000,
 			 gender=NULL, badSNP=0.7, returnParams=TRUE,
 			 verbose=TRUE){
-	snp.index <- which(isSnp(cnSet))
+	##snp.index <- which(isSnp(cnSet))
 	tmp <- crlmmGT2(A=calls(cnSet),
 			B=snpCallProbability(cnSet),
 			SNR=cnSet$SNR,
@@ -262,8 +262,8 @@ genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
 			gender=gender,
 			verbose=verbose,
 			returnParams=returnParams,
-			badSNP=badSNP,
-			snp.names=featureNames(cnSet)[snp.index])
+			badSNP=badSNP)
+##			snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	open(cnSet$gender)
 	cnSet$gender[,] <- tmp[["gender"]]
