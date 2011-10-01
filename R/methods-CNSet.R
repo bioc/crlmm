@@ -433,6 +433,7 @@ setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="lis
 			     gt.conf=as.numeric(confs(data)),
 			     snpid=fns)#, snp=snpId)
 		  df <- as.data.frame(df)
+		  df$snpid <- factor(df$snpid, levels=unique(df$snpid), ordered=TRUE)
 		  bns <- batchNames(data)
 		  predictRegion <- lapply(predictRegion, function(x, bns){
 			  batch.index <- match(bns, dimnames(x$mu)[[3]])
@@ -440,7 +441,6 @@ setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="lis
 			  x$cov <- x$cov[, , batch.index, drop=FALSE]
 			  return(x)
 		  }, bns=bns)
-		  df$snpid <- as.character(df$snpid)
 		  ##df <- as.data.frame(data)
 		  xyplot(x, df, predictRegion=predictRegion, ...)
 	  })
