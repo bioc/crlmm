@@ -27,7 +27,7 @@ posteriorProbability(object, predictRegion, copyNumber = 0:4, w)
 
   \item{w}{ numeric vector of prior probabilities for each of the copy
     number states.  Must be the same length as \code{copyNumber} and sum
-    to 1.
+    to 1.}
 
 }
 \details{

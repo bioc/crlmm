@@ -62,9 +62,9 @@ rawCopynumber(object,...)
 \value{
 
 	nu[A/B] and phi[A/B] return matrices of the intercept and
-	slope coefficients, respectively.  
+	slope coefficients, respectively.
 
-	CA and CB return matrices of allele-specific copy number.  
+	CA and CB return matrices of allele-specific copy number.
 
 	totalCopynumber (or rawCopynumber) returns a matrix of CA+CB.
 
@@ -79,35 +79,35 @@ rawCopynumber(object,...)
 \examples{
 ## Version 1.6* of crlmm used CNSetLM objects.
 data(sample.CNSet)
-all(isCurrent(cnSet)) ## is the cnSet object current?
+all(isCurrent(sample.CNSet)) ## is the cnSet object current?
 
 ## --------------------------------------------------
 ## calculating allele-specific copy number
 ## --------------------------------------------------
 ## copy number for allele A, first 5 markers, first 2 samples
-(ca <- CA(cnSet, i=1:5, j=1:2))
+(ca <- CA(sample.CNSet, i=1:5, j=1:2))
 ## copy number for allele B, first 5 markers, first 2 samples
-(cb <- CB(cnSet, i=1:5, j=1:2))
+(cb <- CB(sample.CNSet, i=1:5, j=1:2))
 ## total copy number for first 5 markers, first 2 samples
 (cn1 <- ca+cb)
 
 ## total copy number at first 5 nonpolymorphic loci
-index <- which(!isSnp(cnSet))[1:5]
-cn2 <- CA(cnSet, i=index, j=1:2)
+index <- which(!isSnp(sample.CNSet))[1:5]
+cn2 <- CA(sample.CNSet, i=index, j=1:2)
 ## note, cb is NA at nonpolymorphic loci
-(cb <- CB(cnSet, i=index, j=1:2))
+(cb <- CB(sample.CNSet, i=index, j=1:2))
 ## note, ca+cb will give NAs at nonpolymorphic loci
-CA(cnSet, i=index, j=1:2) + cb
+CA(sample.CNSet, i=index, j=1:2) + cb
 ## A shortcut for total copy number
-cn3 <- totalCopynumber(cnSet, i=1:5, j=1:2)
+cn3 <- totalCopynumber(sample.CNSet, i=1:5, j=1:2)
 all.equal(cn3, cn1)
-cn4 <- totalCopynumber(cnSet, i=index, j=1:2)
+cn4 <- totalCopynumber(sample.CNSet, i=index, j=1:2)
 all.equal(cn4, cn2)
 
 ## markers 1-5, all samples
-cn5 <- totalCopynumber(cnSet, i=1:5)
+cn5 <- totalCopynumber(sample.CNSet, i=1:5)
 ## all markers, samples 1-5
-cn6 <- totalCopynumber(cnSet, j=1:5)
+cn6 <- totalCopynumber(sample.CNSet, j=1:5)
 
 ## NOTE: subsetting the object before extracting copy number
 ##       can be very inefficient when the data set is very large,
@@ -116,7 +116,7 @@ cn6 <- totalCopynumber(cnSet, j=1:5)
 ##       and all of the elements in the LinearModelParameter slot
 \dontrun{
         ## do not do the following
-	cn <- CA(cnSet[1:5, ], "A")
+	cn <- CA(sample.CNSet[1:5, ], "A")
 }
 }
 \keyword{manip}

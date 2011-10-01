@@ -1,6 +1,6 @@
 \name{genotypes}
 \alias{genotypes}
-%- Also NEED an '\alias' for EACH other topic documented here.
+
 \title{
   The possible genotypes for an integer copy number.
 }
@@ -10,15 +10,12 @@
 \usage{
 genotypes(copyNumber)
 }
-%- maybe also 'usage' for other objects documented here.
+
 \arguments{
   \item{copyNumber}{
-    Integer (0-4 allowed).
+    Integer (0-4 allowed).}
 }
-}
-\details{
 
-}
 \value{
   Character vector.
 }
@@ -27,11 +24,10 @@ genotypes(copyNumber)
 R. Scharpf
 }
 
-
 \examples{
+
 for(i in 0:4) print(genotypes(i))
+
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+
 \keyword{manip}
-x

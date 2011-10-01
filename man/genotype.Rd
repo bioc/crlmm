@@ -13,8 +13,6 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
          verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3),
          DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
          gender = NULL, returnParams = TRUE, badSNP = 0.7)
-
-
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}
@@ -34,7 +32,8 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
   \item{recallRegMin}{Minimum number of SNP's for regression.}
   \item{gender}{  integer vector (  male = 1, female =2 ) or missing,
   with same length as filenames.  If missing, the gender is predicted.}
-  \item{returnParams}{'logical'. Return recalibrated parameters from crlmm.}
+  \item{returnParams}{'logical'. Return recalibrated parameters from
+    crlmm.}
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
 }
 
@@ -91,7 +90,6 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
-
   ## Note: one would need at least 10 CEL files for copy number estimation
   ## To use less RAM, specify a smaller argument to ocProbesets
   ocProbesets(50e3)
@@ -108,9 +106,6 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   gender <- c("female", "female", "male")
   gender[gender == "female"] <- 2
   gender[gender == "male"] <- 1
-\dontrun{
-  cnSet2 <- (cnSet <- genotype(cels, cdfName="genomewidesnp6", batch=batch, gender=as.integer(gender)))
-}
   dim(cnSet)
   table(isSnp(cnSet))
 }

@@ -27,6 +27,7 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
 		  "A<-", "B<-", open, close, flags,
+		  openff, closeff,
 		  batchStatistics, "batchStatistics<-", updateObject)
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
@@ -46,21 +47,7 @@ importFrom(genefilter, rowSds)
 importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
-## It is important not to import these classes from oligoClasses
-## Doing so causes the following errors:
-## N.AA(container)[index, ] <- someMatrix
-##Error in function (classes, fdef, mtable)  :
-##  unable to find an inherited method for function "medianA.AA<-", for signature "CNSet", "ff_matrix"
-##importClassesFrom(oligoClasses, ffdf, ff_matrix)
 importClassesFrom(oligoClasses, ff_matrix, ffdf)
-## Important to export these classes
-##exportClasses(ff_or_matrix, ff_matrix, ffdf)
-##exportClasses(ff_or_matrix)
-##---------------------------------------------------------------------------
-## lattice imports
-##---------------------------------------------------------------------------
-##import(panel.number, panel.grid, panel.xyplot, lpoints, lsegments, lrect, ltext)
-
 exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
