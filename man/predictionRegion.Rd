@@ -54,13 +54,17 @@ predictionRegion(object, copyNumber)
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-
+  \code{\link{calculatePosteriorMean}},
+  \code{\link{posteriorProbability}}, \code{\link{genotypes}}
 }
 \examples{
 data(sample.CNSet)
-pr <- predictionRegion(cnSet, copyNumber=0:4)
+pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
+names(pr)
+## bivariate normal prediction region for NULL genotype (homozygous deletion)
+str(pr[["NULL"]])
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{distribution}
+\keyword{list}
