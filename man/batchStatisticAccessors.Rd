@@ -28,16 +28,12 @@ Ns(object,...)
 
 \arguments{
   \item{object}{  An object of class \code{CNSet}.}
-  \item{\dots}{
-  An additional argument named 'i' can be passed to subset the markers
-  and an argument 'j' can be passed to subset the batches.  Other
-  arguments are ignored.
-  }
+  \item{\dots}{Ignored}
 }
 
 \value{
-	
-An array with dimension R x A x G x C, or R x G x C.  
+
+An array with dimension R x A x G x C, or R x G x C.
 
 R: number of markers
 A: number of alleles (2)
@@ -78,11 +74,10 @@ log-scale the variance is rougly constant for CA, CB > 0).
 
 \examples{
 data(sample.CNSet)
-## All NAs. Need to replace sample.CNSet with a HapMap example
-Ns(cnSet, i=1:5, j=1:2)
-corr(cnSet, i=1:5, j=1:2)
-medians(cnSet, i=1:5, j=1:2)
-mads(cnSet, i=1:5, j=1:2)
-tau2(cnSet, i=1:5, j=1:2)
+Ns(sample.CNSet)[1:5, , ]
+corr(sample.CNSet)[1:5, , ]
+meds <- medians(sample.CNSet)
+mads(sample.CNSet)[1:5, , ,]
+tau2(sample.CNSet)[1:5, , ,]
 }
 \keyword{manip}
