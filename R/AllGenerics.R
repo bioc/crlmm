@@ -102,3 +102,5 @@ setGeneric("calculatePosteriorMean", function(object, posteriorProb, copyNumber=
 
 setGeneric("predictionRegion", function(object, copyNumber=0:4)
 	   standardGeneric("predictionRegion"))
+setGeneric("xyplot", useAsDefault=function(x, data, ...) lattice::xyplot(x, data,...))
+setGeneric("xyplotcrlmm", function(x, data, predictRegion,...) standardGeneric("xyplotcrlmm"))

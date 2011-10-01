@@ -1,13 +1,4 @@
-getNu <- function(object){
-	nu.a <- nuA(object)
-	nu.b <- nuB(object)
-	cbind(nu.a, nu.b)
-}
-getPhi <- function(object){
-	phi.a <- phiA(object)
-	phi.b <- phiB(object)
-	cbind(phi.a, phi.b)
-}
+
 
 getSigma2 <- function(object){
 	phi.a <- phiA(object)
@@ -17,7 +8,7 @@ getSigma2 <- function(object){
 
 getCor <- function(object, gt){
 	if(gt =="NULL") return(rep(0, nrow(object)))
-	as.numeric(assayDataElement(batchStatistics(object), paste("corr", gt, sep="")))
+	assayDataElement(batchStatistics(object), paste("corr", gt, sep=""))
 }
 
 getTau2 <- function(object, gt){
@@ -31,7 +22,7 @@ getTau2 <- function(object, gt){
 
 getVar <- function(object, nm){
 	bs <- batchStatistics(object)
-	as.numeric(assayDataElement(bs, nm))
+	assayDataElement(bs, nm)
 }
 
 setMethod("nuA", signature=signature(object="CNSet"), function(object) nu(object, "A"))

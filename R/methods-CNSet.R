@@ -345,19 +345,38 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 		  ## mu: features x genotype x allele
 		  ## Sigma: features x genotype x covariance
 		  stopifnot(all(copyNumber %in% 0:4))
+		  getNu <- function(object){
+			  nu[, 1, ] <- nuA(object)
+			  nu[, 2, ] <- nuB(object)
+			  nu
+		  }
+		  getPhi <- function(object){
+			  phi[,1,] <- phiA(object)
+			  phi[,2,] <- phiB(object)
+			  phi
+		  }
 		  gts <- lapply(as.list(copyNumber), genotypes)
 		  nms <- unlist(gts)
 		  res <- vector("list", length(nms))
 		  ##names(res) <- paste("copyNumber", copyNumber, sep="")
 		  names(res) <- nms
+		  bnms <- batchNames(object)
+		  nu <- array(NA, dim=c(nrow(object), 2, length(bnms)))
+		  phi <- array(NA, dim=c(nrow(object), 2, length(bnms)))
 		  nu <- getNu(object)
 		  phi <- getPhi(object)
-		  mus <- matrix(NA, nrow(nu), 2, dimnames=list(NULL, LETTERS[1:2]))
-		  Sigma <- matrix(NA, nrow(nu), 3)
+		  ##mus <- matrix(NA, nrow(nu), 2, dimnames=list(NULL, LETTERS[1:2]))
+		  mus <- array(NA, dim=c(nrow(nu), 2, length(bnms)),
+			       dimnames=list(NULL, LETTERS[1:2],
+			       bnms))
+		  ## Sigma <- matrix(NA, nrow(nu), 3)
+		  Sigma <- array(NA, dim=c(nrow(nu), 3, length(bnms)),
+				 dimnames=list(NULL, c("varA", "cor", "varB"),
+				 bnms))
 		  bivariateCenter <- function(nu, phi){
 			  ##  lexical scope for mus, CA, CB
-			  mus[,1] <- log2(nu[1] + CA * phi[1])
-			  mus[,2] <- log2(nu[2] + CB * phi[2])
+			  mus[,1, ] <- log2(nu[, 1, ] + CA * phi[, 1, ])
+			  mus[,2, ] <- log2(nu[, 2, ] + CB * phi[, 2, ])
 			  mus
 		  }
 		  for(i in seq_along(copyNumber)){
@@ -372,12 +391,24 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 				  gt.corr <- genotypeCorrelation(gt)
 				  nma <- ifelse(CA == 0, "tau2A.BB", "tau2A.AA")
 				  nmb <- ifelse(CB == 0, "tau2B.AA", "tau2B.BB")
-				  Sigma[,1] <- getVar(object, nma)
-				  Sigma[,3] <- getVar(object, nmb)
-				  Sigma[,2] <- getCor(object, gt.corr)
+				  Sigma[, 1, ] <- getVar(object, nma)
+				  Sigma[, 3, ] <- getVar(object, nmb)
+				  Sigma[, 2, ] <- getCor(object, gt.corr)
 				  res[[gt]]$mu <- bivariateCenter(nu, phi)
 				  res[[gt]]$cov <- Sigma
 			  }
 		  }
 		  return(res)
 	  })
+
+
+setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="list"),
+	  function(x, data, predictRegion, ...){
+		  df <- data.frame(A=log2(A(data)), B=log2(B(data)), gt=calls(data), gt.conf=confs(data))#, snp=snpId)
+		  ##df <- as.data.frame(data)
+		  xyplot(x, df, predictRegion=predictRegion, ...)
+	  })
+setMethod("xyplot", signature(x="formula", data="CNSet"),
+	  function(x, data, ...){
+		  xyplotcrlmm(x, data, ...)
+})
