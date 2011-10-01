@@ -2702,24 +2702,16 @@ dbvn <- function(x, mu, Sigma){
 
 ABpanel <- function(x, y, predictRegion,
 		    copyNumber=0:4,
-		    object,
-##		    x.axis,
-##		    line.col,
-##		    line.lwd,
-##		    shades,
+		    fill,
 		    ...,
 		    subscripts){
-##		    data.last=FALSE,
-##		    highlight.index=NULL){
-	##if(length(scale.sd)==1) scale.sd <- rep(scale.sd,3)
 	panel.grid(h=5, v=5)
-	panel.xyplot(x, y, ...)
-##	if(!is.null(highlight.index)){
-##		##ii <- subscripts[highlight.index]
-##		ii <- highlight.index
-##		lpoints(x[ii], y[ii], pch="X", cex=1.5, col="black")
-##	}
-	i <- panel.number()
+	if(!missing(fill)){
+		panel.xyplot(x, y, fill=fill[subscripts], ...)
+	} else {
+		panel.xyplot(x, y, ...)
+	}
+	pn <- panel.number()
 	for(CN in copyNumber){
 		gts <- genotypes(CN)
 		index <- match(gts, names(predictRegion))
@@ -2727,65 +2719,15 @@ ABpanel <- function(x, y, predictRegion,
 		for(i in seq_along(pr)){
 			## scale?
 			pr2 <- pr[[i]]
-			mu <- pr2$mu
-			Sigma <- pr2$cov
+			mu <- pr2$mu[pn, , , drop=FALSE] ## pn=panel number
+			Sigma <- pr2$cov[pn, , ,drop=FALSE]
 			for(j in seq_len(dim(mu)[3])){
 				dat.ellipse <- ellipse(x=Sigma[, 2, j],
-						       centre=mu[, , j],
-						       scale=c(sqrt(Sigma[,1,j]),
+						       centre=mu[ , , j],
+						       scale=c(sqrt(Sigma[ , 1, j]),
 						       sqrt(Sigma[, 3, j])))
 				lpolygon(dat.ellipse[,1], dat.ellipse[,2], ...)
 			}
-##			} else {
-##				dat.ellipse <- ellipse(x=rho, centre=c(log2(nuB+CB*phB), log2(nuA+CA*phA)), scale=rev(scale))
-##			}
-##			lpolygon(dat.ellipse[, 1], dat.ellipse[, 2], border=line.col[k], col=shades[k], ...)
 		}
 	}
-##	nuB <- as.numeric(nu(object, "B"))[i]
-##	phB <- as.numeric(phi(object, "B"))[i]
-##	nuA <- as.numeric(nu(object, "A"))[i]
-##	phA <- as.numeric(phi(object, "A"))[i]
-##	taus <- tau2(object, i=i)[, , , 1]
-##	cors <- corr(object, i=i)[, , 1]
-##	t2A <- taus["A", "BB"]
-##	t2B <- taus["B", "AA"]
-##	s2A <- taus["A", "AA"]
-##	s2B <- taus["B", "BB"]
-##	corrAB <- cors["AB"]
-##	corrAA <- cors["AA"]
-##	corrBB <- cors["BB"]
-##	k <- 1
-##	for(CN in copynumber){
-##		for(CA in 0:CN){
-##			CB <- CN-CA
-##			A.scale <- sqrt(t2A*(CA==0) + s2A*(CA > 0))
-##			B.scale <- sqrt(t2B*(CB==0) + s2B*(CB > 0))
-##			if(CA == 0 | CB == 0){
-##				A.scale <- A.scale*scale.sd[1]
-##				B.scale <- B.scale*scale.sd[1]
-##			} else { ## both greater than zero
-##				A.scale <- A.scale*scale.sd[2]
-##				B.scale <- B.scale*scale.sd[2]
-##			}
-##			scale <- c(A.scale, B.scale)
-##			if(CA == 0 & CB > 0) rho <- corrBB
-##			if(CA > 0 & CB == 0) rho <- corrAA
-##			if(CA > 0 & CB > 0) rho <- corrAB
-##			if(CA == 0 & CB == 0) rho <- 0
-##			if(x.axis=="A"){
-##				dat.ellipse <- ellipse(x=rho, centre=c(log2(nuA+CA*phA), log2(nuB+CB*phB)), scale=scale)
-##			} else {
-##				dat.ellipse <- ellipse(x=rho, centre=c(log2(nuB+CB*phB), log2(nuA+CA*phA)), scale=rev(scale))
-##			}
-##			lpolygon(dat.ellipse[, 1], dat.ellipse[, 2], border=line.col[k], col=shades[k], ...)
-##		}
-##		k <- k+1
-##	}
-##	if(data.last) {
-##		panel.xyplot(x, y, ...)
-##		if(!is.null(highlight.index)){
-##			lpoints(x[ii], y[ii], pch="X", cex=1.5, col="black")
-##		}
-##	}
 }
