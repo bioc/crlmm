@@ -1,4 +1,8 @@
 .auto*
+CopyNumberOverview.pdf
+test.*
+debug.*
+tmp.*
 *.aux
 *.dvi
 cnvignette.org
