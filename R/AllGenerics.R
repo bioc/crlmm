@@ -95,9 +95,9 @@ setGeneric("flags<-", function(object, value) standardGeneric("flags<-"))
 setGeneric("posteriorMean", function(object) standardGeneric("posteriorMean"))
 setGeneric("posteriorMean<-", function(object, value) standardGeneric("posteriorMean<-"))
 
-setGeneric("posteriorProbability", function(object, predictRegion, copyNumber=0:4)
+setGeneric("posteriorProbability", function(object, predictRegion, copyNumber=0:4, w)
 	   standardGeneric("posteriorProbability"))
-setGeneric("calculatePosteriorMean", function(object, posteriorProb, copyNumber=0:4, w, ...)
+setGeneric("calculatePosteriorMean", function(object, posteriorProb, copyNumber=0:4, ...)
 	   standardGeneric("calculatePosteriorMean"))
 
 setGeneric("predictionRegion", function(object, copyNumber=0:4)

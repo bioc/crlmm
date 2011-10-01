@@ -284,7 +284,9 @@ setMethod("totalCopynumber", signature=signature(object="CNSet"),
 rawCopynumber <- totalCopynumber
 
 setMethod("posteriorProbability", signature(object="CNSet"),
-	  function(object, predictRegion, copyNumber=0:4){
+	  function(object, predictRegion, copyNumber=0:4, w){
+		  if(missing(w)) w <- rep(1/length(copyNumber),length(copyNumber))
+		  stopifnot(sum(w)==1)
 		  logI <- array(NA, dim=c(nrow(object), ncol(object), 2), dimnames=list(NULL, NULL, LETTERS[1:2]))
 		  getIntensity <- function(object){
 			  logI[, , 1] <- log2(A(object))
@@ -295,38 +297,56 @@ setMethod("posteriorProbability", signature(object="CNSet"),
 		  ##gts <- lapply(as.list(0:4), genotypes)
 		  prob <- array(NA, dim=c(nrow(object), ncol(object), length(copyNumber)),
 				dimnames=list(NULL,NULL, paste("copynumber",copyNumber, sep="")))
+		  bns <- batchNames(object)
 		  for(i in seq_along(copyNumber)){
 			  G <- genotypes(copyNumber[i])
 			  P <- array(NA, dim=c(nrow(object), ncol(object), length(G)),
 				     dimnames=list(NULL,NULL,G))
 			  for(g in seq_along(G)){
 				  gt <- G[g]
-				  P[, , gt] <- dbvn(x=logI, mu=predictRegion[[gt]]$mu, Sigma=predictRegion[[gt]]$cov)
+				  for(j in seq_along(bns)){
+					  this.batch <- bns[j]
+					  sample.index <- which(batch(object) == this.batch)
+					  mu <- predictRegion[[gt]]$mu[, , this.batch, drop=FALSE]
+					  dim(mu) <- dim(mu)[1:2]
+					  if(all(is.na(mu))){
+						  P[, sample.index, gt] <- NA
+					  } else {
+						  Sigma <- predictRegion[[gt]]$cov[, , this.batch, drop=FALSE]
+						  dim(Sigma) <- dim(Sigma)[1:2]
+						  P[, sample.index, gt] <- dbvn(x=logI[, sample.index, , drop=FALSE], mu=mu, Sigma=Sigma)
+					  }
+				  }
 			  }
 			  ## the marginal probability for the total copy number
 			  ##  -- integrate out the probability for the different genotypes
 			  for(j in 1:ncol(P)){
-				  prob[, j, i] <- rowSums(as.matrix(P[, j, ]), na.rm=TRUE)
+				  PP <- P[, j, , drop=FALSE]
+				  dim(PP) <- dim(PP)[c(1, 3)]
+				  prob[, j, i] <- rowSums(PP, na.rm=TRUE)
 			  }
 		  }
-		  ## divide by normalizing constant.  Probs across copy number states must sum to one.
-		  ##nc <- apply(prob, c(1,3), sum, na.rm=TRUE)
+
+		  ## scale by prior weights and divide by normalizing
+		  ##constant.  Probs across copy number states must
+		  ##sum to one.  nc <- apply(prob, c(1,3), sum,
+		  ##na.rm=TRUE)
+		  wm <- matrix(w, nrow(object), length(copyNumber), byrow=TRUE)
 		  nc <- matrix(NA, nrow(object), ncol(object))
 		  for(j in seq_len(ncol(object))){
-			  nc <- rowSums(as.matrix(prob[,j, ]), na.rm=TRUE)
-			  prob[, j, ] <- prob[, j, ]/nc
+			  pp <- prob[, j, ] * wm
+			  nc <- rowSums(pp, na.rm=TRUE)
+			  prob[, j, ] <- pp/nc
 		  }
 		  return(prob)
 	  })
 
 setMethod("calculatePosteriorMean", signature(object="CNSet"),
-	  function(object, posteriorProb, copyNumber=0:4, w, ...){
-		  if(missing(w)) w <- rep(1/length(copyNumber),length(copyNumber))
-		  stopifnot(sum(w)==1)
+	  function(object, posteriorProb, copyNumber=0:4, ...){
 		  stopifnot(dim(posteriorProb)[[3]] == length(copyNumber))
 		  pm <- matrix(0, nrow(object), ncol(object))
 		  for(i in seq_along(copyNumber)){
-			  pm <- pm + posteriorProb[, , i] * copyNumber[i] * w[i]
+			  pm <- pm + posteriorProb[, , i] * copyNumber[i]
 		  }
 		  return(pm)
 	  })
@@ -404,7 +424,23 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 
 setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="list"),
 	  function(x, data, predictRegion, ...){
-		  df <- data.frame(A=log2(A(data)), B=log2(B(data)), gt=calls(data), gt.conf=confs(data))#, snp=snpId)
+		  fns <- featureNames(data)
+		  fns <- matrix(fns, nrow(data), ncol(data), byrow=FALSE)
+		  fns <- as.character(fns)
+		  df <- list(A=as.numeric(log2(A(data))),
+			     B=as.numeric(log2(B(data))),
+			     gt=as.integer(calls(data)),
+			     gt.conf=as.numeric(confs(data)),
+			     snpid=fns)#, snp=snpId)
+		  df <- as.data.frame(df)
+		  bns <- batchNames(data)
+		  predictRegion <- lapply(predictRegion, function(x, bns){
+			  batch.index <- match(bns, dimnames(x$mu)[[3]])
+			  x$mu <- x$mu[, , batch.index, drop=FALSE]
+			  x$cov <- x$cov[, , batch.index, drop=FALSE]
+			  return(x)
+		  }, bns=bns)
+		  df$snpid <- as.character(df$snpid)
 		  ##df <- as.data.frame(data)
 		  xyplot(x, df, predictRegion=predictRegion, ...)
 	  })
