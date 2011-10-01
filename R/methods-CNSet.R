@@ -298,36 +298,69 @@ setMethod("posteriorProbability", signature(object="CNSet"),
 		  prob <- array(NA, dim=c(nrow(object), ncol(object), length(copyNumber)),
 				dimnames=list(NULL,NULL, paste("copynumber",copyNumber, sep="")))
 		  bns <- batchNames(object)
-		  for(i in seq_along(copyNumber)){
-			  G <- genotypes(copyNumber[i])
-			  P <- array(NA, dim=c(nrow(object), ncol(object), length(G)),
-				     dimnames=list(NULL,NULL,G))
-			  for(g in seq_along(G)){
-				  gt <- G[g]
-				  for(j in seq_along(bns)){
-					  this.batch <- bns[j]
-					  sample.index <- which(batch(object) == this.batch)
-					  mu <- predictRegion[[gt]]$mu[, , this.batch, drop=FALSE]
-					  dim(mu) <- dim(mu)[1:2]
-					  if(all(is.na(mu))){
-						  P[, sample.index, gt] <- NA
-					  } else {
-						  Sigma <- predictRegion[[gt]]$cov[, , this.batch, drop=FALSE]
-						  dim(Sigma) <- dim(Sigma)[1:2]
-						  P[, sample.index, gt] <- dbvn(x=logI[, sample.index, , drop=FALSE], mu=mu, Sigma=Sigma)
+		  snp.index <- which(isSnp(object))
+		  if(length(snp.index) > 0){
+			  for(i in seq_along(copyNumber)){
+				  G <- genotypes(copyNumber[i])
+				  P <- array(NA, dim=c(length(snp.index), ncol(object), length(G)),
+					     dimnames=list(NULL,NULL,G))
+				  for(g in seq_along(G)){
+					  gt <- G[g]
+					  for(j in seq_along(bns)){
+						  this.batch <- bns[j]
+						  sample.index <- which(batch(object) == this.batch)
+						  mu <- predictRegion[[gt]]$mu[snp.index, , this.batch, drop=FALSE]
+						  dim(mu) <- dim(mu)[1:2]
+						  if(all(is.na(mu))){
+							  P[, sample.index, gt] <- NA
+						  } else {
+							  Sigma <- predictRegion[[gt]]$cov[snp.index, , this.batch, drop=FALSE]
+							  dim(Sigma) <- dim(Sigma)[1:2]
+							  P[, sample.index, gt] <- dbvn(x=logI[snp.index, sample.index, , drop=FALSE], mu=mu, Sigma=Sigma)
+						  }
 					  }
 				  }
+				  ## the marginal probability for the total copy number
+				  ##  -- integrate out the probability for the different genotypes
+				  for(j in 1:ncol(P)){
+					  PP <- P[, j, , drop=FALSE]
+					  dim(PP) <- dim(PP)[c(1, 3)]
+					  prob[snp.index, j, i] <- rowSums(PP, na.rm=TRUE)
+				  }
 			  }
-			  ## the marginal probability for the total copy number
-			  ##  -- integrate out the probability for the different genotypes
-			  for(j in 1:ncol(P)){
-				  PP <- P[, j, , drop=FALSE]
-				  dim(PP) <- dim(PP)[c(1, 3)]
-				  prob[, j, i] <- rowSums(PP, na.rm=TRUE)
-			  }
-		  }
-
-		  ## scale by prior weights and divide by normalizing
+		  } ## length(snp.index) > 0
+		  ##---------------------------------------------------------------------------
+		  ##
+		  ##  nonpolymorphic markers
+		  ##
+		  ##---------------------------------------------------------------------------
+		  np.index <- which(!isSnp(object))
+		  if(length(np.index) > 0){
+			  for(i in seq_along(copyNumber)){
+				  G <- genotypes(copyNumber[i], is.snp=FALSE)
+				  P <- array(NA, dim=c(length(np.index), ncol(object), length(G)),
+					     dimnames=list(NULL,NULL,G))
+				  for(g in seq_along(G)){
+					  gt <- G[g]
+					  for(j in seq_along(bns)){
+						  this.batch <- bns[j]
+						  sample.index <- which(batch(object) == this.batch)
+						  mu <- predictRegion[[gt]]$mu[np.index, 1, this.batch, drop=FALSE]
+						  dim(mu) <- dim(mu)[1]
+						  if(all(is.na(mu))){
+							  P[, sample.index, gt] <- NA
+						  } else {
+							  Sigma <- predictRegion[[gt]]$cov[np.index, 1, this.batch, drop=FALSE]
+							  dim(Sigma) <- dim(Sigma)[1]
+							  P[, sample.index, gt] <- dnorm(logI[np.index, sample.index, 1], mean=mu, sd=Sigma)
+						  }
+					  } ## j in seq_along(bns)
+				  } ## g in seq_along(G)
+				  ## the marginal probability for the total copy number
+				  ##  -- integrate out the probability for the different genotypes
+				  prob[np.index, , i] <- P
+			  } ## seq_along(copyNumber)
+		  } ## length(np.index) > 0
 		  ##constant.  Probs across copy number states must
 		  ##sum to one.  nc <- apply(prob, c(1,3), sum,
 		  ##na.rm=TRUE)
@@ -399,6 +432,7 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 			  mus[,2, ] <- log2(nu[, 2, ] + CB * phi[, 2, ])
 			  mus
 		  }
+		  np.index <- which(!isSnp(object))
 		  for(i in seq_along(copyNumber)){
 			  G <- genotypes(copyNumber[i])
 			  tmp <- vector("list", length(G))
@@ -414,6 +448,10 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 				  Sigma[, 1, ] <- getVar(object, nma)
 				  Sigma[, 3, ] <- getVar(object, nmb)
 				  Sigma[, 2, ] <- getCor(object, gt.corr)
+				  if(length(np.index) > 0){
+					  Sigma[, 1, ] <- getVar(object, "tau2A.AA")
+					  Sigma[np.index, 2, ] <- NA
+				  }
 				  res[[gt]]$mu <- bivariateCenter(nu, phi)
 				  res[[gt]]$cov <- Sigma
 			  }
