@@ -425,7 +425,7 @@ rowCovs <- function(x, y, ...){
 }
 
 rowMAD <- function(x, y, ...){
-	notna <- !is.na(x)
+	##notna <- !is.na(x)
 	mad <- 1.4826*rowMedians(abs(x-rowMedians(x, ...)), ...)
 	return(mad)
 }
