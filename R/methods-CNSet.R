@@ -384,6 +384,36 @@ setMethod("calculatePosteriorMean", signature(object="CNSet"),
 		  return(pm)
 	  })
 
+		  .bivariateCenter <- function(nu, phi){
+			  ##  lexical scope for mus, CA, CB
+			  if(CA <= 2 & CB <= 2 & (CA+CB) < 4){
+				  mus[,1, ] <- log2(nu[, 1, ] + CA *
+						    phi[, 1, ])
+				  mus[,2, ] <- log2(nu[, 2, ] + CB *
+						    phi[, 2, ])
+			  } else { ## CA > 2
+				  if(CA > 2){
+					  theta <- pi/4*Sigma[,2,]
+					  shiftA <- CA/4*phi[, 1, ] * cos(theta)
+					  shiftB <- CA/4*phi[, 1, ] * sin(theta)
+					  mus[, 1, ] <- log2(nu[, 1, ] + 2 * phi[,1,]+shiftA)
+					  mus[, 2, ] <- log2(nu[, 2, ] + CB *phi[,2,]+shiftB)
+				  }
+				  if(CB > 2){
+					  ## CB > 2
+					  theta <- pi/2-pi/4*Sigma[,2,]
+					  shiftA <- CB/4*phi[, 2, ] * cos(theta)
+					  shiftB <- CB/4*phi[, 2, ] * sin(theta)
+					  mus[, 1, ] <- log2(nu[, 1, ] + CA*phi[,1,]+shiftA)
+					  mus[, 2, ] <- log2(nu[, 2, ]+ 2*phi[,2,]+shiftB)
+				  }
+				  if(CA == 2 & CB == 2){
+					  mus[, 1, ] <- log2(nu[, 1, ] + 1/2*CA*phi[,1,])
+					  mus[, 2, ] <- log2(nu[, 2, ]+ 1/2*CB*phi[,2,])
+				  }
+			  }
+			  mus
+		  }
 
 ## for a given copy number, return a named list of bivariate normal prediction regions
 ##   - elements of list are named by genotype
@@ -428,9 +458,11 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 				 bnms))
 		  bivariateCenter <- function(nu, phi){
 			  ##  lexical scope for mus, CA, CB
-			  mus[,1, ] <- log2(nu[, 1, ] + CA * phi[, 1, ])
-			  mus[,2, ] <- log2(nu[, 2, ] + CB * phi[, 2, ])
-			  mus
+			  mus[,1, ] <- log2(nu[, 1, ] + CA *
+					    phi[, 1, ])
+			  mus[,2, ] <- log2(nu[, 2, ] + CB *
+					    phi[, 2, ])
+			  return(mus)
 		  }
 		  np.index <- which(!isSnp(object))
 		  for(i in seq_along(copyNumber)){
@@ -452,12 +484,18 @@ setMethod("predictionRegion", signature(object="CNSet", copyNumber="integer"),
 					  Sigma[, 1, ] <- getVar(object, "tau2A.AA")
 					  Sigma[np.index, 2, ] <- NA
 				  }
-				  res[[gt]]$mu <- bivariateCenter(nu, phi)
+				  res[[gt]]$mu <- bivariateCenter(nu,phi)
+				  ## adjust correlation
+##				  if(CA == 0 | CB == 0){
+##					  Sigma[,2,] <- 0
+##				  }
 				  res[[gt]]$cov <- Sigma
 			  }
 		  }
+		  res <- as(res, "PredictionRegion")
 		  return(res)
 	  })
+
 
 
 setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="list"),
@@ -479,7 +517,7 @@ setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="lis
 			  x$cov <- x$cov[, , batch.index, drop=FALSE]
 			  return(x)
 		  }, bns=bns)
-		  ##df <- as.data.frame(data)
+		  ##predictRegion is an argument of ABpanel
 		  xyplot(x, df, predictRegion=predictRegion, ...)
 	  })
 setMethod("xyplot", signature(x="formula", data="CNSet"),
