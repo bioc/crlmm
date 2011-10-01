@@ -52,7 +52,15 @@ R. Scharpf
 data(sample.CNSet)
 pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
 pp <- posteriorProbability(sample.CNSet, predictRegion=pr)
-pm <- calculatePosteriorMean(sample.CNSet, posteriorProb=pp, w=rep(1/5, 5))
+pm <- calculatePosteriorMean(sample.CNSet, posteriorProb=pp)
+
+## multiple batches
+data(sample.CNSet2)
+pr <- predictionRegion(sample.CNSet2, copyNumber=0:4)
+pp <- posteriorProbability(sample.CNSet2, predictRegion=pr)
+## prediction regions not available for some batches
+pm <- calculatePosteriorMean(sample.CNSet2, posteriorProb=pp)
+
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

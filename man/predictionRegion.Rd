@@ -36,10 +36,10 @@ predictionRegion(object, copyNumber)
 
   A list named by the genotype.  `NULL' refers to copy number zero, `A'
   is a hemizygous deletion, etc. Each element is a list of the means
-  (mu) and covariance (cov) for each marker.  The covariance for each
-  marker is stored as a vector in the order variance A, correlation,
-  variance B. For nonpolymorphic markers, only the first mu and the
-  first variance are used.
+  (mu) and covariance (cov) for each marker stored as an array.  For
+  `mu', the dimensions of the array are marker x allele (A or B) x
+  batch.  For `cov', the dimensions of the array are marker x 3
+  (varA, cor, and varB) x batch.
 
 }
 

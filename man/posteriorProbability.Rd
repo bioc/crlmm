@@ -49,6 +49,11 @@ data(sample.CNSet)
 pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
 pp <- posteriorProbability(sample.CNSet, predictRegion=pr)
 dim(pp)
+
+## multiple batches
+data(sample.CNSet2)
+pr <- predictionRegion(sample.CNSet2, copyNumber=0:4)
+pp <- posteriorProbability(sample.CNSet2, predictRegion=pr)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
