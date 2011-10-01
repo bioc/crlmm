@@ -47,7 +47,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## FIXME: XIndex may be greater than ocProbesets()
 	if(is.null(gender)){
 		if(verbose) message("Determining gender.")
-		##    XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+		##   XMedian <- apply(log2(A[XIndex,, drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
 		XMedian <- ocLapply(splitIndicesByNode(1:NC), predictGender, theA=A, theB=B, XIndex=XIndex, neededPkgs="crlmm")
 		XMedian <- unlist(XMedian)
 		if(sum(SNR[] > SNRMin)==1){
