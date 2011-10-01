@@ -2741,3 +2741,61 @@ ABpanel <- function(x, y, predictRegion,
 		}
 	}
 }
+
+calculateBAFandLRR <- function(cnSet) {
+  ## Calculates B allele frequency and log2 R ratio for all snps for a given cnSet
+  ## Returns a 3-D array of size Num Of Snps x Num of Samples x 2
+  ## where result[,,1] is B allele frequency and result[,,2] is log2 R ratio
+
+  snp.index <- which(isSnp(cnSet))
+  b <- (B(cnSet))[snp.index, ]
+  a <- (A(cnSet))[snp.index, ]
+  centers<-medians(cnSet, i=snp.index, j=1:length(unique(batch(cnSet))))
+  bafAndLrr <- array(NA_integer_, dim=c(length(snp.index), length(sampleNames(cnSet)), 2), dimnames=list(featureNames(cnSet)[snp.index], sampleNames(cnSet),c("baf", "lrr")))
+
+  for (batch in unique(batch(cnSet))) {
+
+    ## get batch- and snp-specific centers
+    center.aa.x <- centers[, 1, 1, batch]
+    center.aa.y <- centers[, 2, 1, batch]
+    center.ab.x <- centers[, 1, 2, batch]
+    center.ab.y <- centers[, 2, 2, batch]
+    center.bb.x <- centers[, 1, 3, batch]
+    center.bb.y <- centers[, 2, 3, batch]
+    theta.aa <- atan2(center.aa.y, center.aa.x) * 2 / pi
+    r.aa <- center.aa.x + center.aa.y
+    theta.ab <- atan2(center.ab.y, center.ab.x) * 2 / pi
+    r.ab <- center.ab.x + center.ab.y
+    theta.bb <- atan2(center.bb.y, center.bb.x) * 2 / pi
+    r.bb <- center.bb.x + center.bb.y
+
+    index.sample <- which(batch(cnSet) %in% batch)
+    for (i in index.sample) {
+      theta <- atan2(b[, i], a[, i]) * 2 / pi
+      r <- a[, i] + b[, i]
+
+      baf <- vector(mode="numeric", length=length(theta))
+      baf[theta < theta.aa] <- 0
+      baf[theta >= theta.bb] <- 1
+      idx.ab <- which(theta >= theta.aa & theta < theta.ab)
+      baf[idx.ab] <- .5 * (theta[idx.ab] - theta.aa[idx.ab]) / (theta.ab[idx.ab] - theta.aa[idx.ab])
+      idx.bb <- which(theta >= theta.ab & theta < theta.bb)
+      baf[idx.bb] <- .5 * (theta[idx.bb] - theta.ab[idx.bb]) / (theta.bb[idx.bb] - theta.ab[idx.bb]) + .5
+      bafAndLrr[, i ,1] <- baf
+
+      r.expected <- vector(mode="numeric", length=length(r))
+      r.expected[theta < theta.aa] <- r.aa[theta < theta.aa]
+      r.expected[theta >= theta.bb] <- r.bb[theta >= theta.bb]
+
+      idx.ab <- which(theta >= theta.aa & theta < theta.ab)
+      r.expected[idx.ab] <- (theta[idx.ab] - theta.aa[idx.ab]) * (r.ab[idx.ab]-r.aa[idx.ab]) /
+        (theta.ab[idx.ab] - theta.aa[idx.ab]) + r.aa[idx.ab]
+      idx.bb <- which(theta >= theta.ab & theta < theta.bb)
+      r.expected[idx.bb] <- (theta[idx.bb] - theta.ab[idx.bb]) * (r.bb[idx.bb]-r.ab[idx.bb])/
+        (theta.bb[idx.bb] - theta.ab[idx.bb]) + r.ab[idx.bb]
+      bafAndLrr[, i, 2] <- log2(r / r.expected)
+
+    }
+  }
+  return(bafAndLrr)
+}
