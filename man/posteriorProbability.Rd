@@ -45,6 +45,10 @@ R. Scharpf
   \code{\link{predictionRegion}}, \code{\link{genotypes}}, \code{\link{calculatePosteriorMean}}
 }
 \examples{
+data(sample.CNSet)
+pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
+pp <- posteriorProbability(sample.CNSet, predictRegion=pr)
+dim(pp)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
