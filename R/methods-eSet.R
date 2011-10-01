@@ -15,21 +15,22 @@ setMethod("cnNames", "eSet", function(object) {
   })
 
 
-setMethod("snpIndex", "eSet", function(object){
-	index <- match(snpNames(object), featureNames(object), nomatch=0)
-	index[index != 0]
-})
+##setMethod("snpIndex", "eSet", function(object){
+##	index <- match(snpNames(object), featureNames(object), nomatch=0)
+##	index[index != 0]
+##})
+##
+##setMethod("snpNames", "eSet", function(object){
+##	path <- system.file("extdata", package=paste(annotation(object), "Crlmm", sep=""))
+##	load(file.path(path, "snpProbes.rda"))
+##	snpProbes <- get("snpProbes")
+##	snps <- rownames(snpProbes)
+##	snps <- snps[snps %in% featureNames(object)]
+##	index <- match(snps, featureNames(object), nomatch=0)
+##	index <- index[index != 0]
+##	featureNames(object)[index]
+##})
 
-setMethod("snpNames", "eSet", function(object){
-	path <- system.file("extdata", package=paste(annotation(object), "Crlmm", sep=""))
-	load(file.path(path, "snpProbes.rda"))
-	snpProbes <- get("snpProbes")
-	snps <- rownames(snpProbes)
-	snps <- snps[snps %in% featureNames(object)]
-	index <- match(snps, featureNames(object), nomatch=0)
-	index <- index[index != 0]
-	featureNames(object)[index]
-})
 ##setMethod("combine", signature=signature(x="eSet", y="eSet"),
 ##	  function(x, y, ...){
 ##		  ##Check that both x and y are valid objects

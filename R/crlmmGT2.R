@@ -12,20 +12,14 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## expect objects to be ff
 	keepIndex <- which( SNR[] > SNRMin)
 	if(length(keepIndex)==0) stop("No arrays above quality threshold!")
+	loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	gns <- getVarInEnv("gns", .crlmmPkgEnv)
 	if(is.null(rownames(A))){
-		loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
-		gns <- getVarInEnv("gns", .crlmmPkgEnv)
 		stopifnot(nrow(A) == length(gns))
-		index <- seq(length=nrow(A))
+		index <- seq_len(nrow(A))
+	} else {
+		index <- match(gns, rownames(A))
 	}
-	snp.names <- snpNames(pkgname)
-	stopifnot(!is.null(rownames(A)))
-	index <- match(snp.names, rownames(A))
-##	if(!missing(snp.names)){
-##
-##		##verify that A has only snps.  otherwise, calling function must pass rownames
-##		index <- match(snp.names, rownames(A))
-##	}
 	snpBatches <- splitIndicesByLength(index, ocProbesets())
 	NR <- length(unlist(snpBatches))
 	if(verbose) message("Calling ", NR, " SNPs for recalibration... ")

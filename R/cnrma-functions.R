@@ -10,16 +10,16 @@ getProtocolData.Affy <- function(filenames){
 	return(protocoldata)
 }
 
-setMethod("snpNames", signature(object="character"),
-	  function(object){
-		  nm <- grep("Crlmm", object)
-		  if(length(nm)==0){
-			  pkgname <- paste(object, "Crlmm", sep="")
-		  } else pkgname <- object
-		  loader("preprocStuff.rda", .crlmmPkgEnv, object)
-		  gns <- getVarInEnv("gns")
-		  return(gns)
-	  })
+##setMethod("snpNames", signature(object="character"),
+##	  function(object){
+##		  nm <- grep("Crlmm", object)
+##		  if(length(nm)==0){
+##			  pkgname <- paste(object, "Crlmm", sep="")
+##		  } else pkgname <- object
+##		  loader("preprocStuff.rda", .crlmmPkgEnv, object)
+##		  gns <- getVarInEnv("gns")
+##		  return(gns)
+##	  })
 
 getFeatureData <- function(cdfName, copynumber=FALSE){
 	pkgname <- getCrlmmAnnotationName(cdfName)
@@ -219,10 +219,12 @@ genotype <- function(filenames,
 		     gender=NULL,
 		     returnParams=TRUE,
 		     badSNP=0.7){
-	stopifnot(require("ff"))
 	cnSet <- constructAffy(filenames=filenames,
 			       cdfName=cdfName,
 			       batch=batch, verbose=verbose)
+	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
+		stop("The ff package is required for this function.")
+	}
 	mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
 				    mixtureSampleSize=mixtureSampleSize,
 				    eps=eps,

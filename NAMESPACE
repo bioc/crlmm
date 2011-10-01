@@ -29,7 +29,7 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "A<-", "B<-", open, close, flags,
 		  openff, closeff,
 		  batchStatistics, "batchStatistics<-", updateObject,
-		  order, checkOrder, snpNames)
+		  order, checkOrder)
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
 
