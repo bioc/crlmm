@@ -37,7 +37,8 @@ setMethod("corr", signature(object="AssayData"),
 		  if(!missing.j) j <- list(...)[["j"]]
 		  batchnames <- sampleNames(object)
 		  if(!missing.j) batchnames <- batchnames[j]
-		  if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
+
+		  ##if(missing.i & missing.j) stop("Must specify either the rows i or batches j")
 		  is.ff <- is(assayDataElement(object, "corrAA"), "ff") | is(assayDataElement(object, "corrAA"), "ffdf")
 		  if(is.ff){
 			  open(assayDataElement(object, "corrAA"))

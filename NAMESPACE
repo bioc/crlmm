@@ -74,6 +74,6 @@ export(crlmm,
        genotype2, genotypeLD,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
-export(totalCopynumber, rawCopynumber)
-exportMethods(A, B, nuA, nuB, phiA, phiB, corr, tau2, Ns, medians, mads)
+export(genotypes, totalCopynumber, rawCopynumber)
+exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads)
 export(constructInf, preprocessInf, genotypeInf)

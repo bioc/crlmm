@@ -2346,79 +2346,79 @@ imputeAcrossBatch <- function(N.AA, N.AB, N.BB,
 }
 
 
-calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
-				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
-				   CN=0:4, scale.sd=1){
-	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
-	stopifnot(sum(prior.prob)==1)
-	stopifnot(length(CN) == length(prior.prob))
-	batch <- batch(object)
-	is.snp <- isSnp(object)
-	is.autosome <- chromosome(object) < 23
-	is.annotated <- !is.na(chromosome(object))
-	is.X <- chromosome(object) == 23
-	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
-	if(is.lds) stopifnot(isPackageLoaded("ff"))
-	samplesPerBatch <- table(as.character(batch(object)))
-	if(!"posteriorMean" %in% assayDataElementNames(object)){
-		message("adding <posteriorMean> slot to assayData")
-		pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
-		tmp <- assayDataNew(alleleA=A(object),
-				    alleleB=B(object),
-				    call=calls(object),
-				    callProbability=snpCallProbability(object),
-				    posteriorMean=pM)
-		assayData(object) <- tmp
-	}
-	## add new assay data element for posterior probabilities
-	mylabel <- function(marker.type){
-		switch(marker.type,
-		       SNP="autosomal SNPs",
-		       NP="autosomal nonpolymorphic markers",
-		       X.SNP="chromosome X SNPs",
-		       X.NP="chromosome X nonpolymorphic markers")
-	}
-	if(type=="SNP"){
-		if(verbose) message(paste("...", mylabel(type)))
-		marker.index <- whichMarkers("SNP",
-					     is.snp,
-					     is.autosome,
-					     is.annotated,
-					     is.X)
-		marker.list <- splitIndicesByLength(marker.index, ocProbesets())
-		emit <- ocLapply(seq_along(marker.list),
-				 posteriorMean.snp,
-				 object=object,
-				 index.list=marker.list,
-				 verbose=verbose,
-				 prior.prob=prior.prob,
-				 CN=CN,
-				 scale.sd=scale.sd)
-		#for(i in seq_along(marker.list)){
-		#index <- marker.list[[i]]
-
-	#}
-	} else stop("type not available")
-	if(length(emit)==1) emit <- emit[[1]] else {
-		state.names <- dimnames(emit[[1]])[[3]]
-		tmp <- array(NA, dim=c(length(unlist(marker.list)), ncol(object), length(prior.prob)))
-		for(i in seq_along(marker.list)){
-			marker.index <- marker.list[[i]]
-			tmp[marker.index, , ] <- emit[[i]]
-		}
-		emit <- tmp
-		dimnames(emit) <- list(featureNames(object)[unlist(marker.list)],
-				       sampleNames(object),
-				       state.names)
-	}#stop("need to rbind elements of emit list?")
-	##tmp <- do.call("rbind", emit)
-	match.index <- match(rownames(emit), featureNames(object))
-	S <- length(prior.prob)
-	pM <- matrix(0, length(match.index), ncol(object), dimnames=list(featureNames(object)[match.index], sampleNames(object)))
-	for(i in 1:S) pM <- pM + CN[i]*emit[, , i]
-	posteriorMean(object)[match.index, ] <- pM
-	return(object)
-}
+##calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"), verbose=TRUE,
+##				   prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7),
+##				   CN=0:4, scale.sd=1){
+##	stopifnot(type %in% c("SNP", "NP", "X.SNP", "X.NP"))
+##	stopifnot(sum(prior.prob)==1)
+##	stopifnot(length(CN) == length(prior.prob))
+##	batch <- batch(object)
+##	is.snp <- isSnp(object)
+##	is.autosome <- chromosome(object) < 23
+##	is.annotated <- !is.na(chromosome(object))
+##	is.X <- chromosome(object) == 23
+##	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
+##	if(is.lds) stopifnot(isPackageLoaded("ff"))
+##	samplesPerBatch <- table(as.character(batch(object)))
+##	if(!"posteriorMean" %in% assayDataElementNames(object)){
+##		message("adding <posteriorMean> slot to assayData")
+##		pM <- matrix(NA, nrow(object), ncol(object), dimnames=list(featureNames(object), sampleNames(object)))
+##		tmp <- assayDataNew(alleleA=A(object),
+##				    alleleB=B(object),
+##				    call=calls(object),
+##				    callProbability=snpCallProbability(object),
+##				    posteriorMean=pM)
+##		assayData(object) <- tmp
+##	}
+##	## add new assay data element for posterior probabilities
+##	mylabel <- function(marker.type){
+##		switch(marker.type,
+##		       SNP="autosomal SNPs",
+##		       NP="autosomal nonpolymorphic markers",
+##		       X.SNP="chromosome X SNPs",
+##		       X.NP="chromosome X nonpolymorphic markers")
+##	}
+##	if(type=="SNP"){
+##		if(verbose) message(paste("...", mylabel(type)))
+##		marker.index <- whichMarkers("SNP",
+##					     is.snp,
+##					     is.autosome,
+##					     is.annotated,
+##					     is.X)
+##		marker.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		emit <- ocLapply(seq_along(marker.list),
+##				 posteriorMean.snp,
+##				 object=object,
+##				 index.list=marker.list,
+##				 verbose=verbose,
+##				 prior.prob=prior.prob,
+##				 CN=CN,
+##				 scale.sd=scale.sd)
+##		#for(i in seq_along(marker.list)){
+##		#index <- marker.list[[i]]
+##
+##	#}
+##	} else stop("type not available")
+##	if(length(emit)==1) emit <- emit[[1]] else {
+##		state.names <- dimnames(emit[[1]])[[3]]
+##		tmp <- array(NA, dim=c(length(unlist(marker.list)), ncol(object), length(prior.prob)))
+##		for(i in seq_along(marker.list)){
+##			marker.index <- marker.list[[i]]
+##			tmp[marker.index, , ] <- emit[[i]]
+##		}
+##		emit <- tmp
+##		dimnames(emit) <- list(featureNames(object)[unlist(marker.list)],
+##				       sampleNames(object),
+##				       state.names)
+##	}#stop("need to rbind elements of emit list?")
+##	##tmp <- do.call("rbind", emit)
+##	match.index <- match(rownames(emit), featureNames(object))
+##	S <- length(prior.prob)
+##	pM <- matrix(0, length(match.index), ncol(object), dimnames=list(featureNames(object)[match.index], sampleNames(object)))
+##	for(i in 1:S) pM <- pM + CN[i]*emit[, , i]
+##	posteriorMean(object)[match.index, ] <- pM
+##	return(object)
+##}
 
 .open <- function(object){
 		open(B(object))
@@ -2527,6 +2527,29 @@ numberGenotypes <- function(CT){
 	}
 	res <- do.call("sum", f.x.y)
 	return(res)
+}
+
+
+
+
+
+genotypeCorrelation <- function(genotype){
+	switch(genotype,
+	       NULL="NULL",
+	       A="AA",
+	       B="BB",
+	       AA="AA",
+	       AB="AB",
+	       BB="BB",
+	       AAA="AA",
+	       AAB="AB",
+	       ABB="AB",
+	       BBB="BB",
+	       AAAA="AA",
+	       AAAB="AB",
+	       AABB="AB",
+	       ABBB="AB",
+	       BBBB="BB")
 }
 
 posteriorMean.snp <- function(stratum, object, index.list, CN,
@@ -2651,3 +2674,28 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 ##  res2[["SKW"]] <- res[["SKW"]]
 ##  return(list2SnpSet(res2, returnParams=returnParams))
 ##}
+
+genotypes <- function(copyNumber){
+	stopifnot(copyNumber %in% 0:4)
+	cn <- paste("x", copyNumber, sep="")
+	switch(cn,
+	       x0="NULL",
+	       x1=LETTERS[1:2],
+	       x2=c("AA", "AB", "BB"),
+	       x3=c("AAA", "AAB", "ABB", "BBB"),
+	       x4=c("AAAA", "AAAB", "AABB", "ABBB", "BBBB"))
+}
+
+dbvn <- function(x, mu, Sigma){
+	##stopifnot(ncol(x)==2)
+	logA <- x[, , "A"]
+	logB <- x[, , "B"]
+	sigma2A <- Sigma[,1]
+	sigma2B <- Sigma[,3]
+	sigmaAB <- sqrt(sigma2A*sigma2B)
+	rho <- Sigma[,2]
+	muA <- mu[, "A"]
+	muB <- mu[, "B"]
+	Q.x.y <- 1/(1-rho^2)*((logA - muA)^2/sigma2A + (logB - muB)^2/sigma2B - (2*rho*((logA - muA)*(logB - muB)))/sigmaAB)
+	f.x.y <- 1/(2*pi*sigmaAB*sqrt(1-rho^2))*exp(-0.5*Q.x.y)
+}
