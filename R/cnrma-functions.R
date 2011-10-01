@@ -2542,6 +2542,61 @@ numberGenotypes <- function(CT){
 		cn5=6, NULL)
 }
 
+.posterior <- function(CT,
+		       tau2A,
+		       tau2B,
+		       sig2A,
+		       sig2B,
+		       a,
+		       b){
+	## 5: AAAAA, AAAAB, AAABB, AABBB, ABBBB, BBBBB
+	##CN=4
+	## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
+	##CN=3
+	##  AAA, AAB, ABB, BBB ; L = 4
+	## CN=2
+	##  AA, AB, BB; L=3
+	## CN = 1: A, B; L=2
+	## CN = 0: null; L=1
+	L <- numberGenotypes(CT)
+	stopifnot(!is.null(L))
+	f.x.y <- vector("list", L)
+	for(i in seq_along(f.x.y)){
+		CA <- (0:CT)[i]
+		CB <- CT-CA
+		A.scale <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
+		B.scale <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
+		if(CA == 0 | CB == 0){## possibly homozygous BB and AA, respectively
+			A.scale <- A.scale*scale.sd[1]
+			B.scale <- B.scale*scale.sd[1]
+		} else { ## one or both greater than zero
+			if(length(scale.sd) == 1) scale.sd <- rep(scale.sd, 2)
+			A.scale <- A.scale*scale.sd[2]
+			B.scale <- B.scale*scale.sd[2]
+		}
+		A.scale <- as.numeric(A.scale)
+		B.scale <- as.numeric(B.scale)
+		A.scale2 <- A.scale^2
+		B.scale2 <- B.scale^2
+		if(CA == 0 & CB == 0) rho <- 0
+		if(CA == 0 & CB > 0) rho <- corrBB
+		if(CA > 0 & CB == 0) rho <- corrAA
+		if(CA > 0 & CB > 0) rho <- corrAB
+		rho <- as.numeric(rho)
+		meanA <- as.numeric(log2(nuA+CA*phiA))
+		meanB <- as.numeric(log2(nuB+CB*phiB))
+		covs <- rho*A.scale*B.scale
+		##x <- a[, J]
+		x <- a
+		y <- b
+		Q.x.y <- 1/(1-rho^2)*((x - meanA)^2/A.scale2 + (y - meanB)^2/B.scale2 - (2*rho*((x - meanA)*(y - meanB)))/(A.scale*B.scale))
+		f.x.y[[i]] <- 1/(2*pi*A.scale*B.scale*sqrt(1-rho^2))*exp(-0.5*Q.x.y)
+		class(f.x.y[[i]]) <- "mymatrix"
+	}
+	res <- do.call("sum", f.x.y)
+	return(res)
+}
+
 posteriorMean.snp <- function(stratum, object, index.list, CN,
 			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE,
 			      scale.sd=1){
@@ -2574,51 +2629,15 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		J <- sample.index[[j]]
 		probs <- array(NA, dim=c(nrow(a), length(J), S))
 		for(k in seq_along(CN)){
-			CT <- CN[k]
-			## 5: AAAAA, AAAAB, AAABB, AABBB, ABBBB, BBBBB
-			##CN=4
-			## AAAA, AAAB, AABB, ABBB, BBBB:  L = 4
-			##CN=3
-			##  AAA, AAB, ABB, BBB ; L = 4
-			## CN=2
-			##  AA, AB, BB; L=3
-			## CN = 1: A, B; L=2
-			## CN = 0: null; L=1
-			L <- numberGenotypes(CT)
-			stopifnot(!is.null(L))
-			f.x.y <- vector("list", L)
-			for(i in seq_along(f.x.y)){
-				CA <- (0:CT)[i]
-				CB <- CT-CA
-				A.scale <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
-				B.scale <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
-				if(CA == 0 | CB == 0){## possibly homozygous BB and AA, respectively
-					A.scale <- A.scale*scale.sd[1]
-					B.scale <- B.scale*scale.sd[1]
-				} else { ## one or both greater than zero
-					if(length(scale.sd) == 1) scale.sd <- rep(scale.sd, 2)
-					A.scale <- A.scale*scale.sd[2]
-					B.scale <- B.scale*scale.sd[2]
-				}
-				A.scale <- as.numeric(A.scale)
-				B.scale <- as.numeric(B.scale)
-				A.scale2 <- A.scale^2
-				B.scale2 <- B.scale^2
-				if(CA == 0 & CB == 0) rho <- 0
-				if(CA == 0 & CB > 0) rho <- corrBB
-				if(CA > 0 & CB == 0) rho <- corrAA
-				if(CA > 0 & CB > 0) rho <- corrAB
-				rho <- as.numeric(rho)
-				meanA <- as.numeric(log2(nuA+CA*phiA))
-				meanB <- as.numeric(log2(nuB+CB*phiB))
-				covs <- rho*A.scale*B.scale
-				x <- a[, J]
-				y <- b[, J]
-				Q.x.y <- 1/(1-rho^2)*((x - meanA)^2/A.scale2 + (y - meanB)^2/B.scale2 - (2*rho*((x - meanA)*(y - meanB)))/(A.scale*B.scale))
-				f.x.y[[i]] <- 1/(2*pi*A.scale*B.scale*sqrt(1-rho^2))*exp(-0.5*Q.x.y)
-				class(f.x.y[[i]]) <- "mymatrix"
-			}
-			probs[, , k] <- do.call("sum", f.x.y)
+			##CT <- CN[k]
+			probs[, , k] <- .posterior(CN[k],
+						   tau2A,
+						   tau2B,
+						   sig2A,
+						   sig2B,
+						   a[, J],
+						   b[, J])
+			##probs[, , k] <- do.call("sum", f.x.y)
 			##if none of the states are likely (outlier), assign NA
 			##		emit[, , counter] <- f.x.y
 			##		counter <- counter+1
