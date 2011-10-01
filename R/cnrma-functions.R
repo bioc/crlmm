@@ -2475,7 +2475,14 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 
 	#}
 	} else stop("type not available")
-	if(length(emit)==1) emit <- emit[[1]] else stop("need to rbind elements of emit list?")
+	if(length(emit)==1) emit <- emit[[1]] else {
+		tmp <- array(NA, dim=c(length(unlist(marker.list)), ncol(object), length(prior.prob)))
+		for(i in seq_along(marker.list)){
+			marker.index <- marker.list[[i]]
+			tmp[marker.index, , ] <- emit[[i]]
+		}
+		emit <- tmp
+	}#stop("need to rbind elements of emit list?")
 	##tmp <- do.call("rbind", emit)
 	match.index <- match(rownames(emit), featureNames(object))
 	S <- length(prior.prob)
@@ -2485,14 +2492,7 @@ calculatePosteriorMean <- function(object, type=c("SNP", "NP", "X.SNP", "X.NP"),
 	return(object)
 }
 
-posteriorMean.snp <- function(stratum, object, index.list, CN,
-			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE,
-			      scale.sd=1){
-	if(length(scale.sd) == 1) rep(scale.sd,2)
-	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
-	index <- index.list[[stratum]]
-	test <- tryCatch(open(A(object)), error=function(e) NULL)
-	if(!is.null(test)){
+.open <- function(object){
 		open(B(object))
 		open(tau2A.AA(object))
 		open(tau2B.BB(object))
@@ -2505,7 +2505,47 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 		open(nuB(object))
 		open(phiA(object))
 		open(phiB(object))
-	}
+}
+.close <- function(object){
+	close(A(object))
+	close(B(object))
+	close(tau2A.AA(object))
+	close(tau2B.BB(object))
+	close(tau2A.BB(object))
+	close(tau2B.AA(object))
+	close(corrAA(object))
+	close(corrAB(object))
+	close(corrBB(object))
+	close(nuA(object))
+	close(nuB(object))
+	close(phiA(object))
+	close(phiB(object))
+}
+
+sum.mymatrix <- function(...){
+	x <- list(...)
+	return(x[[1]] + do.call(sum, x[-1]))
+}
+numberGenotypes <- function(CT){
+	stopifnot(length(CT)==1)
+	copynumber <- paste("cn", CT, sep="")
+	switch(copynumber,
+		cn0=1,
+		cn1=2,
+		cn2=3,
+		cn3=4,
+		cn4=4,
+		cn5=6, NULL)
+}
+
+posteriorMean.snp <- function(stratum, object, index.list, CN,
+			      prior.prob=c(1/7, 1/7, 3/7, 1/7, 1/7), is.lds=TRUE, verbose=TRUE,
+			      scale.sd=1){
+	if(length(scale.sd) == 1) rep(scale.sd,2)
+	if(verbose) message("Probe stratum ", stratum, " of ", length(index.list))
+	index <- index.list[[stratum]]
+	test <- tryCatch(open(A(object)), error=function(e) NULL)
+	if(!is.null(test)) .open(object)
 	a <- log2(as.matrix(A(object)[index, ]))
 	b <- log2(as.matrix(B(object)[index, ]))
 	NN <- Ns(object, i=index)[, , 1]
@@ -2520,39 +2560,10 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 	phiA <- as.matrix(phiA(object)[index, ])
 	nuB <- as.matrix(nuB(object)[index, ])
 	phiB <- as.matrix(phiB(object)[index, ])
-	if(!is.null(test)){
-		close(A(object))
-		close(B(object))
-		close(tau2A.AA(object))
-		close(tau2B.BB(object))
-		close(tau2A.BB(object))
-		close(tau2B.AA(object))
-		close(corrAA(object))
-		close(corrAB(object))
-		close(corrBB(object))
-		close(nuA(object))
-		close(nuB(object))
-		close(phiA(object))
-		close(phiB(object))
-	}
+	if(!is.null(test)) .close(object)
 	S <- length(prior.prob)
 	emit <- array(NA, dim=c(nrow(a), ncol(a), S))##SNPs x sample x 'truth'
 	sample.index <- split(1:ncol(object), batch(object))
-	sum.mymatrix <- function(...){
-		x <- list(...)
-		return(x[[1]] + do.call(sum, x[-1]))
-	}
-	numberGenotypes <- function(CT){
-		stopifnot(length(CT)==1)
-		copynumber <- paste("cn", CT, sep="")
-		switch(copynumber,
-		       cn0=1,
-		       cn1=2,
-		       cn2=3,
-		       cn3=4,
-		       cn4=4,
-		       cn5=6, NULL)
-	}
 	##emit <- vector("list", length(sample.index))
 	for(j in seq_along(sample.index)){
 		cat("batch ", j, "\n")
@@ -2577,10 +2588,11 @@ posteriorMean.snp <- function(stratum, object, index.list, CN,
 				CB <- CT-CA
 				A.scale <- sqrt(tau2A*(CA==0) + sig2A*(CA > 0))
 				B.scale <- sqrt(tau2B*(CB==0) + sig2B*(CB > 0))
-				if(CA == 0 | CB == 0){
+				if(CA == 0 | CB == 0){## possibly homozygous BB and AA, respectively
 					A.scale <- A.scale*scale.sd[1]
 					B.scale <- B.scale*scale.sd[1]
 				} else { ## one or both greater than zero
+					if(length(scale.sd) == 1) scale.sd <- rep(scale.sd, 2)
 					A.scale <- A.scale*scale.sd[2]
 					B.scale <- B.scale*scale.sd[2]
 				}
