@@ -28,7 +28,8 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  chromosome, position, A, B,
 		  "A<-", "B<-", open, close, flags,
 		  openff, closeff,
-		  batchStatistics, "batchStatistics<-", updateObject)
+		  batchStatistics, "batchStatistics<-", updateObject,
+		  order, checkOrder)
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
 
@@ -65,3 +66,4 @@ export(crlmm,
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
 exportMethods(A, B, calculatePosteriorMean, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads, xyplot)
 export(ABpanel, constructInf, preprocessInf, genotypeInf)
+exportClasses(PredictionRegion)
