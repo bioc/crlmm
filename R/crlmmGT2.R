@@ -50,7 +50,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## FIXME: XIndex may be greater than ocProbesets()
 	if(is.null(gender)){
 		if(verbose) message("Determining gender.")
-		gender <- imputeGender(A, B, XIndex, YIndex)
+		gender <- imputeGender(A, B, XIndex, YIndex, SNR, SNRMin)
 	}
 	##
 	Indexes <- list(autosomeIndex, XIndex, YIndex)

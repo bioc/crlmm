@@ -89,6 +89,9 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
   (crlmmOutput <- crlmm(cels))
+  invisible(open(crlmmOutput$gender))
+  stopifnot(all(crlmmOutput$gender[] == c(2,2,1)))
+  invisible(close(crlmmOutput$gender))
 
   ## If gender is known, one should check that the assigned gender is
   ## correct, or pass the integer coding of gender as an argument to the
@@ -104,6 +107,12 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
 	  path <- system.file("celFiles", package="hapmapsnp6")
 	  cels <- list.celfiles(path, full.names=TRUE)
 	  gtSet <- genotype(cels, batch=rep(1L,3))
+
+          gt1 <- calls(crlmmOutput)
+          gt2 <- calls(gtSet)[isSnp(gtSet), ]
+          gt2 <- gt2[match(rownames(gt2), rownames(gt1)), ]
+	  stopifnot(all.equal(gt1, gt2))
+
 	  XIndex <- which(chromosome(gtSet)==23 & isSnp(gtSet))
 	  YIndex <- which(chromosome(gtSet)==24 & isSnp(gtSet))
 	  A.X <- log2(A(gtSet)[XIndex,,drop=FALSE])

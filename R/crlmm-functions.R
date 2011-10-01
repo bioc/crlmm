@@ -85,7 +85,7 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   ##IF gender not provide, we predict
   if(is.null(gender)){
 	  if(verbose) message("Determining gender.")
-	  gender <- imputeGender(A, B, XIndex, YIndex)
+	  gender <- imputeGender(A, B, XIndex, YIndex, SNR, SNRMin)
   }
 
   Indexes <- list(autosomeIndex, XIndex, YIndex)
@@ -311,7 +311,7 @@ crlmm2 <- function(filenames, row.names=TRUE, col.names=TRUE,
   return(list2SnpSet(res2, returnParams=returnParams))
 }
 
-imputeGender <- function(A, B, XIndex, YIndex){
+imputeGender <- function(A, B, XIndex, YIndex, SNR, SNRMin){
 	##XMedian <- apply(log2(A[XIndex,,
 	##drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
 	a <- log2(A[XIndex,,drop=FALSE])
