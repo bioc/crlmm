@@ -118,11 +118,6 @@ construct <- function(filenames,
 constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 	stopifnot(!missing(filenames))
 	if(missing(sns)) sns <- basename(filenames)
-	stopifnot(length(sns)==length(batch))
-	is.lds <- ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-	if(!is.lds) stop("this function now requires that the ff package be loaded")
-	if(missing(cdfName)) stop("must specify cdfName")
-	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	stopifnot(!missing(batch))
 	##---------------------------------------------------------------------------
 	##
@@ -219,6 +214,7 @@ genotype <- function(filenames,
 		     gender=NULL,
 		     returnParams=TRUE,
 		     badSNP=0.7){
+	stopifnot(require("ff"))
 	cnSet <- constructAffy(filenames=filenames,
 			       cdfName=cdfName,
 			       batch=batch, verbose=verbose)

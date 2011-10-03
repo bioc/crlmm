@@ -142,6 +142,54 @@ void mad_median(double *datavec, int *classvec, int class, double trim, int cols
   Free(buffer);
 }
 
+SEXP normalizeBAF(SEXP theta, SEXP cTheta){
+  /*
+    ARGUMENTS:
+    theta.: N x C matrix with estimated \theta
+    cTheta: N x 3 matrix with canonical \thetas (AA, AB, BB)
+
+    VALUE:
+    baf: N x C matrix with normalized \theta
+  */
+
+  SEXP baf;
+  double *p2baf, *p2theta, *p2ctheta;
+  int i, j, idx, rowsT, rowsCT, colsT, colsCT;
+  rowsT = INTEGER(getAttrib(theta, R_DimSymbol))[0];
+  rowsCT = INTEGER(getAttrib(cTheta, R_DimSymbol))[0];
+  if (rowsT != rowsCT)
+    error("Number of rows of 'theta' must match number of rows of 'cTheta'\n");
+  colsCT = INTEGER(getAttrib(cTheta, R_DimSymbol))[1];
+  if (colsCT != 3)
+    error("'cTheta' must have 3 columns: AA, AB and BB\n");
+  colsT = INTEGER(getAttrib(theta, R_DimSymbol))[1];
+
+  PROTECT(baf = allocMatrix(REALSXP, rowsT, colsT));
+  p2baf = NUMERIC_POINTER(baf);
+  p2theta = NUMERIC_POINTER(theta);
+  p2ctheta = NUMERIC_POINTER(cTheta);
+  for (i=0; i < rowsT; i++){
+    for (j=0; j < colsT; j++){
+      idx = i + j*rowsT;
+      if (ISNA(p2theta[idx]) || ISNA(p2ctheta[i]) || ISNA(p2ctheta[i+rowsT]) || ISNA(p2ctheta[i+2*rowsT])){
+	p2baf[idx] = NA_REAL;
+      }else if (p2theta[idx] < p2ctheta[i]){
+	p2baf[idx] = 0;
+      }else if (p2theta[idx] >= p2ctheta[i] & p2theta[idx] < p2ctheta[i + rowsT]){
+	p2baf[idx] = .5*(p2theta[idx]-p2ctheta[i])/(p2ctheta[i+rowsT]-p2ctheta[i]);
+      }else if(p2theta[idx] >= p2ctheta[i+rowsT] & p2theta[idx] < p2ctheta[i + 2*rowsT]){
+	p2baf[idx] = .5+.5*(p2theta[idx]-p2ctheta[i+rowsT])/(p2ctheta[i+2*rowsT]-p2ctheta[i+rowsT]);
+      }else{
+	p2baf[idx] = 1;
+      }
+    }
+  }
+
+  UNPROTECT(1);
+  return(baf);
+}
+
+
 /* Pieces below are for testing */
 
 static void mad_stats(double *data, double *m1, double *m2, double *m3, int *class, int rows, int cols, double *trim){

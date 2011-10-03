@@ -211,3 +211,7 @@ loadObject <- function(filename, load.it){
 
 setMethod("annotatedDataFrameFrom", "ff_matrix", Biobase:::annotatedDataFrameFromMatrix)
 setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatrix)
+
+## Document this...
+getBAF <- function(theta, canonicalTheta)
+    .Call('normalizeBAF', theta, ct)

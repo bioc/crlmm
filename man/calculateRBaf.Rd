@@ -43,6 +43,8 @@ data(sample.CNSet)
 baf.lrr <- calculateRBaf(sample.CNSet, "SHELF")
 hist(baf.lrr[["baf"]], breaks=100)
 hist(baf.lrr[["lrr"]], breaks=100)
+
+
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
