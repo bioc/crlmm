@@ -1245,8 +1245,9 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			  gender=gender,
 			  verbose=verbose,
 			  returnParams=returnParams,
-			  badSNP=badSNP,
-			  snp.names=featureNames(cnSet)[snp.index])
+			  badSNP=badSNP)#,
+	##RS:  I changed the API for crlmmGT2 to be consistent with crlmmGT
+	## snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	open(cnSet$gender)
 	cnSet$gender[,] = tmp$gender
