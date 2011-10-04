@@ -101,7 +101,7 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   gender[gender == "male"] <- 1
   \dontrun{
 	  ## we need the A and B intensities
-	  stopifnot(require("ff"))
+     if(require("ff")){
 	  path <- system.file("celFiles", package="hapmapsnp6")
 	  cels <- list.celfiles(path, full.names=TRUE)
 	  gtSet <- genotype(cels, batch=rep(1L,3))
@@ -132,6 +132,7 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
 	  delete(assayDataElement(gtSet, "snpCallProbability"))
 	  ff.filenames <- list.files(".", pattern=".ff")
 	  unlink(ff.filename)
+     } ## end if(require("ff"))
   }
 }
 
