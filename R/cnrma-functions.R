@@ -2766,7 +2766,8 @@ ABpanel <- function(x, y, predictRegion,
 calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
 	genotype <- match.arg(genotype)
 	j <- match(batch.name, batchNames(cnSet))
-	centers <- medians(cnSet, i=snp.index, j)
+	##centers <- medians(cnSet, i=snp.index, j)
+	centers <- medians(cnSet, i=seq_len(nrow(cnSet)), j)
 	theta <- matrix(NA, nrow(cnSet), 2)
 	colnames(theta) <- c("theta", "R")
 	x <- centers[, "A", genotype, 1]
