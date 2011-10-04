@@ -157,9 +157,9 @@ readIDAT <- function(idatFile){
 
   tempCon <- file(idatFile,"rb")
   prefixCheck <- readChar(tempCon,4)
-  if(prefixCheck != "IDAT"){
-
-  }
+#  if(prefixCheck != "IDAT"){
+#       warning("May need to check format of ", idatFile)
+#  }
 
   versionNumber <- readBin(tempCon, "integer", n=1, size=8, endian="little")
 
