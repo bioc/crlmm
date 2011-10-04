@@ -48,3 +48,4 @@ Thanks to Keith Baggerly who providing this code.
 #idatdata$Quants[1:5,]
 }
 \keyword{IO}
+
