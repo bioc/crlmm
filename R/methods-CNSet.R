@@ -547,6 +547,7 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 	J <- which(batch(object) == batch.name)
 	a <- A(object)[, J, drop=FALSE]
 	b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
+	dns <- dimnames(a)
 	dimnames(a) <- dimnames(b) <- NULL
 	obs.theta <- atan2(b, a)*2/pi
 
@@ -588,7 +589,7 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 	r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
 	lrr <- log2(obs.r/r.expected)
 
-	dimnames(bf) <- dimnames(lrr) <- dimnames(a)
+	dimnames(bf) <- dimnames(lrr) <- dns
 	res <- list(baf=bf,
 		    lrr=lrr)
 	return(res)
