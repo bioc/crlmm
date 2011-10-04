@@ -76,7 +76,7 @@ void trimmed_stats(double *data, double *m1, double *m2, double *m3, int *class,
     n1=0;
     n2=0;
     n3=0;
-    
+
     for (j=0; j < cols; j++){
       if (class[j*rows + i] == 1){
 	datvec[j]=data[j*rows + i];
@@ -201,7 +201,7 @@ static void mad_stats(double *data, double *m1, double *m2, double *m3, int *cla
     n1=0;
     n2=0;
     n3=0;
-    
+
     for (j=0; j < cols; j++){
       if (class[j*rows + i] == 1){
 	datvec[j]=data[j*rows + i];
@@ -239,7 +239,7 @@ SEXP test_mad_median(SEXP X, SEXP Y, SEXP trim){
   PROTECT(dim1 = getAttrib(X,R_DimSymbol));
   rows = INTEGER(dim1)[0];
   cols = INTEGER(dim1)[1];
-  
+
   Xptr = NUMERIC_POINTER(AS_NUMERIC(X));
   Yptr = INTEGER_POINTER(AS_INTEGER(Y));
   Tptr = NUMERIC_POINTER(AS_NUMERIC(trim));
@@ -247,11 +247,11 @@ SEXP test_mad_median(SEXP X, SEXP Y, SEXP trim){
   PROTECT(estimates1 = allocMatrix(REALSXP, rows, 3));
   PROTECT(estimates2 = allocMatrix(REALSXP, rows, 3));
   PROTECT(estimates3 = allocMatrix(REALSXP, rows, 3));
-  
+
   Mptr1 = NUMERIC_POINTER(estimates1);
   Mptr2 = NUMERIC_POINTER(estimates2);
   Mptr3 = NUMERIC_POINTER(estimates3);
-  
+
   mad_stats(Xptr, Mptr1, Mptr2, Mptr3, Yptr, rows, cols, Tptr);
 
   PROTECT(output = allocVector(VECSXP,3));
@@ -260,6 +260,6 @@ SEXP test_mad_median(SEXP X, SEXP Y, SEXP trim){
   SET_VECTOR_ELT(output, 2, estimates3);
 
   UNPROTECT(5);
-  
+
   return output;
 }

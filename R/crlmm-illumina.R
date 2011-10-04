@@ -271,7 +271,7 @@ readIDAT <- function(idatFile){
                  MostlyNull <- readChar(tempCon, nChars)
                  MostlyNull
              },
-             "Barcode" = {                 
+             "Barcode" = {
                  seek(tempCon, fields["Barcode", "Byte Offset"])
                  nChars <- readBin(tempCon, "integer", n=1, size=1, signed=FALSE)
                  Barcode <- readChar(tempCon, nChars)
@@ -334,7 +334,7 @@ readIDAT <- function(idatFile){
 
   readFields <- setdiff(rownames(fields), "nSNPsRead")
   names(readFields) <- readFields
-  
+
   allFields <- lapply(readFields, readBlock)
 
   close(tempCon)
@@ -350,7 +350,7 @@ readIDAT <- function(idatFile){
 
   InfoNames <- c("MidBlock", "RunInfo", "RedGreen", "Barcode", "ChipType")
   Info <- allFields[intersect(names(allFields), InfoNames)]
-  
+
   idatValues <-
     list(fileSize=fileSize,
          versionNumber=versionNumber,

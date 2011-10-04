@@ -12,3 +12,4 @@ SEXP gtypeCallerPart2(SEXP *, SEXP *, SEXP *, SEXP *,
                       SEXP *, SEXP *, SEXP *);
 
 SEXP normalizeBAF(SEXP *, SEXP *);
+

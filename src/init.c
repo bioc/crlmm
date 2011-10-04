@@ -10,5 +10,5 @@ static const R_CallMethodDef CallEntries[] = {
 };
 
 void R_init_crlmm(DllInfo *dll){
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);    
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
 }

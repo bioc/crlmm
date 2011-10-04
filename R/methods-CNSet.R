@@ -20,7 +20,6 @@ linearParamElementReplace <- function(obj, elt, value) {
 }
 
 ## parameters
-
 ## allele A
 ##   autosome SNPs
 ##   autosome NPs

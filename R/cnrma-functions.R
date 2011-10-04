@@ -221,6 +221,7 @@ genotype <- function(filenames,
 	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
 		stop("The ff package is required for this function.")
 	}
+
 	mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
 				    mixtureSampleSize=mixtureSampleSize,
 				    eps=eps,

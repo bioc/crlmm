@@ -215,3 +215,5 @@ setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatr
 ## Document this...
 getBAF <- function(theta, canonicalTheta)
     .Call('normalizeBAF', theta, ct)
+
+

@@ -36,14 +36,12 @@ data(sample.CNSet2)
       marker.index <- marker.index[1:60e3]
       sample.CNSet <- hapmapSet[marker.index, c(1168:1169)]
       ## 2 samples, many markers
-      save(sample.CNSet, file="~/Software/crlmm/data/sample.CNSet.rda")
 
       ## all samples, a few markers
       snp.index <- which(isSnp(hapmapSet))[1:100]
       np.index <- which(!isSnp(hapmapSet))[1:100]
       marker.index <- c(snp.index, np.index)
       sample.CNSet2 <- hapmapSet[marker.index, ]
-      save(sample.CNSet2, file="~/Software/crlmm/data/sample.CNSet2.rda")
 }
 data(sample.CNSet)
 ## --------------------------------------------------
@@ -92,10 +90,6 @@ phi(sample.CNSet, "A")[1:5, ]
 (ca <- CA(sample.CNSet, i=1:5, j=1:2))
 ## copy number for allele B, first 5 markers, first 2 samples
 (cb <- CB(sample.CNSet, i=1:5, j=1:2))
-## total copy number for first 5 markers, first 2 samples
-(cn1 <- ca+cb)
-
-## total copy number at first 5 nonpolymorphic loci
 index <- which(!isSnp(sample.CNSet))[1:5]
 cn2 <- CA(sample.CNSet, i=index, j=1:2)
 ## note, cb is NA at nonpolymorphic loci
@@ -112,5 +106,23 @@ all.equal(cn4, cn2)
 cn5 <- totalCopynumber(sample.CNSet, i=1:5)
 ## all markers, samples 1-2
 cn6 <- totalCopynumber(sample.CNSet, j=1:2)
+=======
+index <- which(!isSnp(cnSet))[1:5]
+cn2 <- CA(cnSet, i=index, j=1:2)
+## note, cb is NA at nonpolymorphic loci
+(cb <- CB(cnSet, i=index, j=1:2))
+## note, ca+cb will give NAs at nonpolymorphic loci
+CA(cnSet, i=index, j=1:2) + cb
+## A shortcut for total copy number
+cn3 <- totalCopynumber(cnSet, i=1:5, j=1:2)
+all.equal(cn3, cn1)
+cn4 <- totalCopynumber(cnSet, i=index, j=1:2)
+all.equal(cn4, cn2)
+
+## markers 1-5, all samples
+cn5 <- totalCopynumber(cnSet, i=1:5)
+## all markers, samples 1-5
+cn6 <- totalCopynumber(cnSet, j=1:5)
+>>>>>>> crlmm on github
 }
 \keyword{datasets}

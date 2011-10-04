@@ -30,12 +30,14 @@ importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  openff, closeff,
 		  batchStatistics, "batchStatistics<-", updateObject,
 		  order, checkOrder)
+
 importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
            copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
 
 
 importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
            polygon, rect, segments, text, points, boxplot, lines)
+
 importFrom(lattice, xyplot, simpleKey, panel.grid, panel.xyplot, lrect, ltext,
 	   lpoints, panel.number, lpolygon)
 
@@ -48,6 +50,7 @@ importFrom(genefilter, rowSds)
 importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
+
 importClassesFrom(oligoClasses, ff_matrix, ffdf)
 exportMethods(lines)
 exportMethods(CA, CB)

@@ -99,8 +99,6 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   gender <- c("female", "female", "male")
   gender[gender == "female"] <- 2
   gender[gender == "male"] <- 1
-  \dontrun{  (crlmmOutput <- crlmm(cels, gender=gender))}
-
   \dontrun{
 	  ## we need the A and B intensities
 	  stopifnot(require("ff"))
