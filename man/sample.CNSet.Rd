@@ -29,7 +29,9 @@ data(sample.CNSet2)
 
 }
 \examples{
+\dontshow{
 \dontrun{
+
       ## hapmap phase 3 data
       data(hapmapSet, package="CnvScripts")
       marker.index <- which(chromosome(hapmapSet) == 8)
@@ -42,6 +44,7 @@ data(sample.CNSet2)
       np.index <- which(!isSnp(hapmapSet))[1:100]
       marker.index <- c(snp.index, np.index)
       sample.CNSet2 <- hapmapSet[marker.index, ]
+}
 }
 data(sample.CNSet)
 ## --------------------------------------------------
@@ -57,11 +60,11 @@ table(isSnp(sample.CNSet))
 varLabels(sample.CNSet)
 ## accessors for sample-level statistics
 ## The signal to noise ratio (SNR)
-sample.CNSet$SNR[1:5]
+sample.CNSet$SNR[]
 ## the skew
-sample.CNSet$SKW[1:5]
+sample.CNSet$SKW[]
 ## the gender (gender is imputed unless specified in the call to crlmm)
-table(sample.CNSet$gender)  ## 1=male, 2=female
+table(sample.CNSet$gender[])  ## 1=male, 2=female
 ## --------------------------------------------------
 ## batchStatistics
 ## -------------------------------------------------- estimate of
@@ -75,30 +78,20 @@ nu(sample.CNSet, "A")[1:5, ]
 nu(sample.CNSet, "B")[1:5, ]
 ## the slope
 phi(sample.CNSet, "A")[1:5, ]
-## correlation within genotype cluster AA
-##corr(sample.CNSet, "AA")[1:5, ]
-#### correlation within genotype cluster AB
-##corr(sample.CNSet, "AB")[1:5, ]
-#### correlation within genotype cluster BB
-##corr(sample.CNSet, "BB")[1:5, ]
-## --------------------------------------------------
 
 ## --------------------------------------------------
 ## calculating allele-specific copy number
 ## --------------------------------------------------
-## copy number for allele A, first 5 markers, first 2 samples
 (ca <- CA(sample.CNSet, i=1:5, j=1:2))
 ## copy number for allele B, first 5 markers, first 2 samples
 (cb <- CB(sample.CNSet, i=1:5, j=1:2))
 index <- which(!isSnp(sample.CNSet))[1:5]
 cn2 <- CA(sample.CNSet, i=index, j=1:2)
-## note, cb is NA at nonpolymorphic loci
-(cb <- CB(sample.CNSet, i=index, j=1:2))
-## note, ca+cb will give NAs at nonpolymorphic loci
-CA(sample.CNSet, i=index, j=1:2) + cb
+## note, cb is 0 at nonpolymorphic loci
+CB(sample.CNSet, i=index, j=1:2)
 ## A shortcut for total copy number
 cn3 <- totalCopynumber(sample.CNSet, i=1:5, j=1:2)
-all.equal(cn3, cn1)
+all.equal(cn3, ca+cb)
 cn4 <- totalCopynumber(sample.CNSet, i=index, j=1:2)
 all.equal(cn4, cn2)
 
@@ -106,23 +99,5 @@ all.equal(cn4, cn2)
 cn5 <- totalCopynumber(sample.CNSet, i=1:5)
 ## all markers, samples 1-2
 cn6 <- totalCopynumber(sample.CNSet, j=1:2)
-=======
-index <- which(!isSnp(cnSet))[1:5]
-cn2 <- CA(cnSet, i=index, j=1:2)
-## note, cb is NA at nonpolymorphic loci
-(cb <- CB(cnSet, i=index, j=1:2))
-## note, ca+cb will give NAs at nonpolymorphic loci
-CA(cnSet, i=index, j=1:2) + cb
-## A shortcut for total copy number
-cn3 <- totalCopynumber(cnSet, i=1:5, j=1:2)
-all.equal(cn3, cn1)
-cn4 <- totalCopynumber(cnSet, i=index, j=1:2)
-all.equal(cn4, cn2)
-
-## markers 1-5, all samples
-cn5 <- totalCopynumber(cnSet, i=1:5)
-## all markers, samples 1-5
-cn6 <- totalCopynumber(cnSet, j=1:5)
->>>>>>> crlmm on github
 }
 \keyword{datasets}
