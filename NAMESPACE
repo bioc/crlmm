@@ -52,7 +52,7 @@ importFrom(ellipse, ellipse)
 importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 
 importClassesFrom(oligoClasses, ff_matrix, ffdf)
-exportMethods(lines)
+##exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
        crlmmIllumina,
