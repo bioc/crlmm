@@ -34,14 +34,14 @@ R. Scharpf
 }
 
 \examples{
-data(sample.CNSet2)
-table(batch(sample.CNSet2))
-sample.index <- which(batch(sample.CNSet2) == "CUPID")
+data(cnSetExample2)
+table(batch(cnSetExample2))
+sample.index <- which(batch(cnSetExample2) == "CUPID")
 ## A single SNP
-pr <- predictionRegion(sample.CNSet2[1:4, sample.index], copyNumber=0:4)
-gt <- calls(sample.CNSet2[1:4, sample.index])
+pr <- predictionRegion(cnSetExample2[1:4, sample.index], copyNumber=0:4)
+gt <- calls(cnSetExample2[1:4, sample.index])
 lim <- c(6,13)
-xyplot(B~A|snpid, data=sample.CNSet2[1:4, sample.index],
+xyplot(B~A|snpid, data=cnSetExample2[1:4, sample.index],
        predictRegion=pr,
        panel=ABpanel,
        pch=21,
@@ -50,12 +50,12 @@ xyplot(B~A|snpid, data=sample.CNSet2[1:4, sample.index],
 
 ## multiple SNPs, prediction regions for 3 batches
 \dontrun{
-	tab <- table(batch(sample.CNSet2))
+	tab <- table(batch(cnSetExample2))
 	bns <- names(tab)[tab > 50]
-	sample.index <- which(batch(sample.CNSet2) %in% bns[1:3])
-	pr <- predictionRegion(sample.CNSet2[1:10, sample.index], copyNumber=0:4)
-	gt <- as.integer(calls(sample.CNSet2[1:10, sample.index]))
-	xyplot(B~A|snpid, data=sample.CNSet2[1:10, sample.index],
+	sample.index <- which(batch(cnSetExample2) %in% bns[1:3])
+	pr <- predictionRegion(cnSetExample2[1:10, sample.index], copyNumber=0:4)
+	gt <- as.integer(calls(cnSetExample2[1:10, sample.index]))
+	xyplot(B~A|snpid, data=cnSetExample2[1:10, sample.index],
 	       predictRegion=pr,
 	       panel=ABpanel,
 	       pch=21,
@@ -63,20 +63,17 @@ xyplot(B~A|snpid, data=sample.CNSet2[1:4, sample.index],
 	       xlim=c(6,12), ylim=c(6,12))
 
 	## nonpolymorphic markers
-	data(sample.CNSet2)
-	tab <- table(batch(sample.CNSet2))
+	data(cnSetExample2)
+	tab <- table(batch(cnSetExample2))
 	bns <- names(tab)[tab > 50]
-	sample.index <- which(batch(sample.CNSet2)%in%bns[1:3])
-	np.index <- which(!isSnp(sample.CNSet2))[1:10]
-	taus <- tau2(sample.CNSet)[np.index, , , ]
-	##trace(predictionRegion, browser, signature=c("CNSet", "integer"))
-	pr <- predictionRegion(sample.CNSet2[np.index, sample.index],
+	sample.index <- which(batch(cnSetExample2)%in%bns[1:3])
+	np.index <- which(!isSnp(cnSetExample2))[1:10]
+	taus <- tau2(cnSetExample)[np.index, , , ]
+	pr <- predictionRegion(cnSetExample2[np.index, sample.index],
 			       copyNumber=0:4)
-	##trace(posteriorProbability, browser, signature="CNSet")
-	pp <- posteriorProbability(sample.CNSet2[np.index, sample.index],
+	pp <- posteriorProbability(cnSetExample2[np.index, sample.index],
 				   predictRegion=pr,
 				   copyNumber=0:4)
-	pm <- calculatePosteriorMean(sample.CNSet2[np.index, sample.index], posteriorProb=pp)
 }
 }
 \keyword{dplot}

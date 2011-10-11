@@ -39,8 +39,8 @@ calculateRBaf(object, batch.name)
 
 \examples{
 
-data(sample.CNSet)
-baf.lrr <- calculateRBaf(sample.CNSet, "SHELF")
+data(cnSetExample)
+baf.lrr <- calculateRBaf(cnSetExample, "SHELF")
 hist(baf.lrr[["baf"]], breaks=100)
 hist(baf.lrr[["lrr"]], breaks=100)
 

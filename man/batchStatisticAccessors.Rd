@@ -73,11 +73,11 @@ log-scale the variance is rougly constant for CA, CB > 0).
 }
 
 \examples{
-data(sample.CNSet)
-Ns(sample.CNSet)[1:5, , ]
-corr(sample.CNSet)[1:5, , ]
-meds <- medians(sample.CNSet)
-mads(sample.CNSet)[1:5, , ,]
-tau2(sample.CNSet)[1:5, , ,]
+data(cnSetExample)
+Ns(cnSetExample)[1:5, , ]
+corr(cnSetExample)[1:5, , ]
+meds <- medians(cnSetExample)
+mads(cnSetExample)[1:5, , ,]
+tau2(cnSetExample)[1:5, , ,]
 }
 \keyword{manip}

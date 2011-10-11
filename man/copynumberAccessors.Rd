@@ -88,36 +88,36 @@ elements and all of the elements in the LinearModelParameter slot.
 
 \examples{
 ## Version 1.6* of crlmm used CNSetLM objects.
-data(sample.CNSet)
-all(isCurrent(sample.CNSet)) ## is the cnSet object current?
+data(cnSetExample)
+all(isCurrent(cnSetExample)) ## is the cnSet object current?
 
 ## --------------------------------------------------
 ## calculating allele-specific copy number
 ## --------------------------------------------------
 ## copy number for allele A, first 5 markers, first 2 samples
-(ca <- CA(sample.CNSet, i=1:5, j=1:2))
+(ca <- CA(cnSetExample, i=1:5, j=1:2))
 ## copy number for allele B, first 5 markers, first 2 samples
-(cb <- CB(sample.CNSet, i=1:5, j=1:2))
+(cb <- CB(cnSetExample, i=1:5, j=1:2))
 ## total copy number for first 5 markers, first 2 samples
 (cn1 <- ca+cb)
 
 ## total copy number at first 5 nonpolymorphic loci
-index <- which(!isSnp(sample.CNSet))[1:5]
-cn2 <- CA(sample.CNSet, i=index, j=1:2)
+index <- which(!isSnp(cnSetExample))[1:5]
+cn2 <- CA(cnSetExample, i=index, j=1:2)
 ## note, cb is NA at nonpolymorphic loci
-(cb <- CB(sample.CNSet, i=index, j=1:2))
+(cb <- CB(cnSetExample, i=index, j=1:2))
 ## note, ca+cb will give NAs at nonpolymorphic loci
-CA(sample.CNSet, i=index, j=1:2) + cb
+CA(cnSetExample, i=index, j=1:2) + cb
 ## A shortcut for total copy number
-cn3 <- totalCopynumber(sample.CNSet, i=1:5, j=1:2)
+cn3 <- totalCopynumber(cnSetExample, i=1:5, j=1:2)
 all.equal(cn3, cn1)
-cn4 <- totalCopynumber(sample.CNSet, i=index, j=1:2)
+cn4 <- totalCopynumber(cnSetExample, i=index, j=1:2)
 all.equal(cn4, cn2)
 
 ## markers 1-5, all samples
-cn5 <- totalCopynumber(sample.CNSet, i=1:5)
+cn5 <- totalCopynumber(cnSetExample, i=1:5)
 ## all markers, samples 1-5
-cn6 <- totalCopynumber(sample.CNSet, j=1:2)
+cn6 <- totalCopynumber(cnSetExample, j=1:2)
 
 }
 \keyword{manip}
