@@ -30,9 +30,11 @@ posteriorProbability(object, predictRegion, copyNumber = 0:4, w)
     to 1.}
 
 }
-\details{
 
+\details{
+This is currently under development.
 }
+
 \value{
 An array (features x samples x copy number)
 }
@@ -40,25 +42,26 @@ An array (features x samples x copy number)
 \author{
 R. Scharpf
 }
+
 \note{
-  %Remark about nonpolymorphic probes
+  This is under development. Use at your own risk.
 }
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-  \code{\link{predictionRegion}}, \code{\link{genotypes}}, \code{\link{calculatePosteriorMean}}
+  \code{\link{predictionRegion}}, \code{\link{genotypes}} %\code{\link{calculatePosteriorMean}}
 }
 \examples{
-data(sample.CNSet)
-pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
-pp <- posteriorProbability(sample.CNSet, predictRegion=pr)
+data(cnSetExample)
+pr <- predictionRegion(cnSetExample, copyNumber=0:4)
+pp <- posteriorProbability(cnSetExample, predictRegion=pr)
 dim(pp)
 
 ## multiple batches
-data(sample.CNSet2)
-pr <- predictionRegion(sample.CNSet2, copyNumber=0:4)
-pp <- posteriorProbability(sample.CNSet2, predictRegion=pr)
+data(cnSetExample2)
+pr <- predictionRegion(cnSetExample2, copyNumber=0:4)
+pp <- posteriorProbability(cnSetExample2, predictRegion=pr)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

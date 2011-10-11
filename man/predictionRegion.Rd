@@ -54,12 +54,12 @@ predictionRegion(object, copyNumber)
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-  \code{\link{calculatePosteriorMean}},
+%  \code{\link{calculatePosteriorMean}},
   \code{\link{posteriorProbability}}, \code{\link{genotypes}}
 }
 \examples{
-data(sample.CNSet)
-pr <- predictionRegion(sample.CNSet, copyNumber=0:4)
+data(cnSetExample)
+pr <- predictionRegion(cnSetExample, copyNumber=0:4)
 names(pr)
 ## bivariate normal prediction region for NULL genotype (homozygous deletion)
 str(pr[["NULL"]])
