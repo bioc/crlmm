@@ -35,8 +35,7 @@ data(cnSetExample2)
       data(hapmapSet, package="CnvScripts")
       marker.index <- which(chromosome(hapmapSet) == 8)
       marker.index <- marker.index[1:60e3]
-      sample.CNSet <- hapmapSet[marker.index, c(1168:1169)]
-      cnSetExample <- sample.CNSet
+      cnSetExample <- hapmapSet[marker.index, c(1168:1169)]
       save(cnSetExample, file="~/Software/crlmm/data/cnSetExample.rda")
       ## 2 samples, many markers
 
@@ -44,11 +43,10 @@ data(cnSetExample2)
       snp.index <- which(isSnp(hapmapSet))[1:100]
       np.index <- which(!isSnp(hapmapSet))[1:100]
       marker.index <- c(snp.index, np.index)
-      sample.CNSet2 <- hapmapSet[marker.index, ]
-      sample.CNSet2$gender <- sample.CNSet2$gender[]
-      sample.CNSet2$SKW <- sample.CNSet2$SKW[]
-      sample.CNSet2$SNR <- sample.CNSet2$SNR[]
-      cnSetExample2 <- sample.CNSet2
+      cnSetExample2 <- hapmapSet[marker.index, ]
+      cnSetExample2$gender <- cnSetExample2$gender[]
+      cnSetExample2$SKW <- cnSetExample2$SKW[]
+      cnSetExample2$SNR <- cnSetExample2$SNR[]
       save(cnSetExample2, file="~/Software/crlmm/data/cnSetExample2.rda")
 }
 }
