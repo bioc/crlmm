@@ -443,6 +443,91 @@ readBPM <- function(bpmFile){
 }
 
 
+readGenCallOutput = function(file, path=".", cdfName, verbose=FALSE) {
+    if(verbose)
+  	  cat("Reading", file, "\n")
+	tmp=readLines(file.path(path,file),n=15)
+	s=c("\t",",")
+    a=unlist(strsplit(tmp[10][1],s[1]))
+	if(length(a)!=1){
+		sepp=s[1]
+      	a1=unlist(strsplit(tmp[10][1],s[1]))
+    }
+	if(length(a)==1){
+		sepp=s[2]
+		a1=unlist(strsplit(tmp[10][1],s[2]))
+    }
+	
+	b=c("Sample ID","SNP Name","Allele1 - Forward","Allele2 - Forward","GC Score","X Raw","Y Raw")
+	b2=c("GC Score","X Raw","Y Raw")
+	
+	m1=m=match(a1,b)
+	m2=match(a1,b2)
+	m[is.na(m)==FALSE]<-list(character(0))
+	m[is.na(m2)==FALSE]<-list(numeric(0))
+	m[is.na(m)==TRUE]<-list(NULL)
+	names(m)<-paste(b[m1],names(m),sep='')
+	
+    fc = file(file.path(path, file), open="r")
+	
+	dat = scan(fc, what=m, skip=10,sep=sepp)
+	close(fc)
+	
+	samples = unique(dat$"Sample ID")
+	nsamples = length(samples)
+	snps = unique(dat$"SNP Name")
+	nsnps = length(snps)
+	if(verbose)
+   	  cat("Check ordering for samples","\n")
+    
+	X = Y = zeroes = matrix(0, nsnps, nsamples)
+	
+	for(i in 1:length(samples)) {
+		ind = dat$"Sample ID"==samples[i]
+		if(sum(dat$"SNP Name"[ind]==snps)==nsnps) {
+		    if(verbose)
+	          cat(paste("Correct ordering for sample", samples[i], "\n"))
+			X[,i] = dat$"X Raw"[ind]
+			Y[,i] = dat$"Y Raw"[ind]
+			gc()
+		}
+		if(sum(dat$"SNP Name"[ind]==snps)!=nsnps) {
+		    if(verbose)
+			  cat("Reordering sample ", samples[i],"\n")
+			m=match(snps,dat$"SNP Name"[ind])
+			X[,i]= dat$"X Raw"[ind][m]
+			Y[,i]= dat$"Y Raw"[ind][m]
+		}
+	}
+	
+#	samplenamescorrect = gsub("(_R.)|(_R$)", "", samples)
+    zeroes=(X=="0"|Y=="0")
+	colnames(X) = colnames(Y) =  colnames(zeroes) = samples #namescorrect
+	rownames(X) = rownames(Y) = snps
+    
+	if(verbose)      
+      cat("Creating NChannelSet object\n")
+   
+#	if (getRversion() < "2.13.0") {
+#      rpath <- getRversion()
+# 	  outdir <- paste(path, "/illumina_vignette", sep = "")
+#	  ldPath(outdir)
+#	  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
+#	}
+        
+    XY = new("NChannelSet", X = initializeBigMatrix(name = "X", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=X),
+			 Y = initializeBigMatrix(name = "Y", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=Y),
+			 zero = initializeBigMatrix(name = "zero", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=zeroes),
+			 annotation = cdfName, storage.mode = "environment")
+	sampleNames(XY)=colnames(X)
+	
+    if(verbose)
+      cat("Done\n")
+	  
+    XY
+}
+
+
 RGtoXY = function(RG, chipType, verbose=TRUE) {
 
   needToLoad <- !all(sapply(c('addressA', 'addressB', 'base'), isLoaded))
