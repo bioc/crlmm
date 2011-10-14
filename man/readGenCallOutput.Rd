@@ -19,10 +19,9 @@ readGenCallOutput(file, path=".", cdfName, colnames=list("SampleID"="Sample ID",
     ('human370v1c', human550v3b', 'human650v3a', 'human1mv1c',
     'human370quadv3c', 'human610quadv1b', 'human660quadv1a',
     'human1mduov3b', 'humanomni1quadv1b', 'humanomniexpress12v1b', 'humancytosnp12v2p1h')}
-  \item{cdfName}{'character' defining the chip annotation (manifest) to use
   \item{colnames}{list containing elements 'SampleID', 'SNPID', 'XRaw' and 'YRaw', which specify the column names from
-     in 'file' that pertain to these variables.  The default should suffice in most situations. 
-  \item{type}{list containing data types for the columns to be read in.  The default should be fine in most situations.
+     in 'file' that pertain to these variables.  The default should suffice in most situations.}
+  \item{type}{list containing data types for the columns to be read in.  The default should be fine in most situations.}
   \item{verbose}{'logical'.  Should processing information be displayed as data is read in?}
 }
 
@@ -45,10 +44,8 @@ The function crlmmillumina() can be run on the output of the \code{readGenCallOu
 \author{Cynthia Liu and Matt Ritchie}
 
 \examples{
-
 #XY = readGenCallOutput(file="Hap650Yv3_Final_Report.txt", cdfName="human650v3a")
 #crlmmOut = crlmmIllumina(XY=XY)
-
 }
 
 \keyword{IO}
