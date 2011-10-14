@@ -28,9 +28,8 @@ readGenCallOutput(file, path=".", cdfName, colnames=list("SampleID"="Sample ID",
 
 \details{
 This function returns an \code{NChannelSet} containing raw intensity data (X and Y) from GenCall final report file. 
-It assumes that the data is in the format where the GenCall results are listed sample by sample below the one and other,
-an that the columns 'X Raw' and 'Y Raw' are available in the file.
-The function crlmmillumina() can be run on the output of the \code{readGenCallOutyputis function. 
+It assumes the GenCall output is formatted to have samples listed one below the other, and that the columns 'X Raw' and 'Y Raw' are available in the file.
+The function crlmmillumina() can be run on the output of the \code{readGenCallOutput} function. 
 }
 
 \value{

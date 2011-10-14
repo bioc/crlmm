@@ -443,83 +443,78 @@ readBPM <- function(bpmFile){
 }
 
 
-readGenCallOutput = function(file, path=".", cdfName, verbose=FALSE) {
+readGenCallOutput = function(file, path=".", cdfName,
+    colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"), 
+    type=list("SampleID"="character", "SNPID"="character", "XRaw"="integer", "YRaw"="integer"), verbose=FALSE) {
+
+    if(!identical(names(type), names(colnames)))
+       stop("The arguments 'colnames' and 'type' must have consistent names")
     if(verbose)
-  	  cat("Reading", file, "\n")
-	tmp=readLines(file.path(path,file),n=15)
-	s=c("\t",",")
+  	cat("Reading", file, "\n")
+    tmp=readLines(file.path(path,file),n=15)
+    s=c("\t",",")
     a=unlist(strsplit(tmp[10][1],s[1]))
-	if(length(a)!=1){
-		sepp=s[1]
+    if(length(a)!=1){
+	sepp=s[1]
       	a1=unlist(strsplit(tmp[10][1],s[1]))
     }
-	if(length(a)==1){
-		sepp=s[2]
-		a1=unlist(strsplit(tmp[10][1],s[2]))
+    if(length(a)==1){
+	sepp=s[2]
+	a1=unlist(strsplit(tmp[10][1],s[2]))
     }
-	
-	b=c("Sample ID","SNP Name","Allele1 - Forward","Allele2 - Forward","GC Score","X Raw","Y Raw")
-	b2=c("GC Score","X Raw","Y Raw")
-	
-	m1=m=match(a1,b)
-	m2=match(a1,b2)
-	m[is.na(m)==FALSE]<-list(character(0))
-	m[is.na(m2)==FALSE]<-list(numeric(0))
-	m[is.na(m)==TRUE]<-list(NULL)
-	names(m)<-paste(b[m1],names(m),sep='')
-	
+    
+    if(sum(is.na(match(colnames,a1)))!=0)
+	stop("Cannot find required columns: ", colnames[is.na(match(colnames,a1))], " in ", file, "\nPlease check whether this data was exported.") 
+
+    m1=m=match(a1,colnames)
+    m[is.na(m1)==FALSE] =type[m1[!is.na(m1)]]
+    m[is.na(m)==TRUE] = list(NULL)
+    names(m) = names(colnames)[m1]
+
     fc = file(file.path(path, file), open="r")
 	
-	dat = scan(fc, what=m, skip=10,sep=sepp)
-	close(fc)
+    dat = scan(fc, what=m, skip=10,sep=sepp)
+    close(fc)
 	
-	samples = unique(dat$"Sample ID")
-	nsamples = length(samples)
-	snps = unique(dat$"SNP Name")
-	nsnps = length(snps)
-	if(verbose)
-   	  cat("Check ordering for samples","\n")
+    samples = unique(dat$"SampleID")
+    nsamples = length(samples)
+    snps = unique(dat$"SNPID")
+    nsnps = length(snps)
+    if(verbose)
+        cat("Check ordering for samples","\n")
     
-	X = Y = zeroes = matrix(0, nsnps, nsamples)
+    X = Y = zeroes = matrix(0, nsnps, nsamples)
 	
-	for(i in 1:length(samples)) {
-		ind = dat$"Sample ID"==samples[i]
-		if(sum(dat$"SNP Name"[ind]==snps)==nsnps) {
-		    if(verbose)
-	          cat(paste("Correct ordering for sample", samples[i], "\n"))
-			X[,i] = dat$"X Raw"[ind]
-			Y[,i] = dat$"Y Raw"[ind]
-			gc()
-		}
-		if(sum(dat$"SNP Name"[ind]==snps)!=nsnps) {
-		    if(verbose)
-			  cat("Reordering sample ", samples[i],"\n")
-			m=match(snps,dat$"SNP Name"[ind])
-			X[,i]= dat$"X Raw"[ind][m]
-			Y[,i]= dat$"Y Raw"[ind][m]
-		}
-	}
+    for(i in 1:length(samples)) {
+        ind = dat$"SampleID"==samples[i]
+	    if(sum(dat$"SNPID"[ind]==snps)==nsnps) {
+#           if(verbose)
+#	            cat(paste("Correct ordering for sample", samples[i], "\n"))
+			X[,i] = dat$"XRaw"[ind]
+	        Y[,i] = dat$"YRaw"[ind]
+	    }
+        if(sum(dat$"SNPID"[ind]==snps)!=nsnps) {
+	        if(verbose)
+                cat("Reordering sample ", samples[i],"\n")
+            m=match(snps,dat$"SNPID"[ind])
+            X[,i]= dat$"XRaw"[ind][m]
+            Y[,i]= dat$"YRaw"[ind][m]
+        }
+        gc()
+    }
 	
-#	samplenamescorrect = gsub("(_R.)|(_R$)", "", samples)
     zeroes=(X=="0"|Y=="0")
-	colnames(X) = colnames(Y) =  colnames(zeroes) = samples #namescorrect
-	rownames(X) = rownames(Y) = snps
+    colnames(X) = colnames(Y) =  colnames(zeroes) = samples
+    rownames(X) = rownames(Y) = snps
     
-	if(verbose)      
-      cat("Creating NChannelSet object\n")
+    if(verbose)      
+        cat("Creating NChannelSet object\n")
    
-#	if (getRversion() < "2.13.0") {
-#      rpath <- getRversion()
-# 	  outdir <- paste(path, "/illumina_vignette", sep = "")
-#	  ldPath(outdir)
-#	  dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
-#	}
-        
     XY = new("NChannelSet", X = initializeBigMatrix(name = "X", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=X),
 			 Y = initializeBigMatrix(name = "Y", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=Y),
 			 zero = initializeBigMatrix(name = "zero", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=zeroes),
 			 annotation = cdfName, storage.mode = "environment")
-	sampleNames(XY)=colnames(X)
+    sampleNames(XY)=colnames(X)
 	
     if(verbose)
       cat("Done\n")
@@ -860,6 +855,16 @@ crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7) {
+				  
+if(missing(cdfName)) {
+   if(!missing(RG))
+      cdfName = annotation(RG)
+   if(!missing(XY))
+      cdfName = annotation(XY)
+}
+if(!isValidCdfName(cdfName))
+   stop("cdfName not valid.  see validCdfNames")
+     
 #  if (save.it & (missing(snpFile) | missing(cnFile)))
 #    stop("'snpFile' and/or 'cnFile' is missing and you chose to save.it")
 #  if (load.it & missing(snpFile))
