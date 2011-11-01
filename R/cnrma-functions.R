@@ -2776,6 +2776,8 @@ calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
 	x[x < 64] <- 64
 	y[y < 64] <- 64
 	theta[, "theta"] <- atan2(y, x)*2/pi
+	## so that 'R' is available for NP probes
+	y[is.na(y)] <- 0
 	theta[, "R"] <- x+y
 	return(theta)
 }
