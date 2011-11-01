@@ -74,7 +74,8 @@ pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
 if(getRversion() < "2.13.0"){
 	rpath <- getRversion()
 } else rpath <- "trunk"
-outdir <- paste("/amber1/archive/oncbb/rscharpf/crlmm_vignette/", rpath, sep="")
+##outdir <- paste("/amber1/archive/oncbb/rscharpf/crlmm_vignette/", rpath, sep="")
+outdir <- paste("/amber1/archive/oncbb/rscharpf/crlmm_vignette/", rpath, "/gw6v1.5/", sep="")
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 

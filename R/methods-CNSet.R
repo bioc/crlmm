@@ -540,11 +540,12 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 	RTheta.ab <- calculateRTheta(object, "AB", batch.name)
 	RTheta.bb <- calculateRTheta(object, "BB", batch.name)
 
-	theta.aa <- matrix(RTheta.aa[, "theta"], nrow(object), ncol(object), byrow=FALSE)
-	theta.ab <- matrix(RTheta.ab[, "theta"], nrow(object), ncol(object), byrow=FALSE)
-	theta.bb <- matrix(RTheta.bb[, "theta"], nrow(object), ncol(object), byrow=FALSE)
-
 	J <- which(batch(object) == batch.name)
+
+	theta.aa <- matrix(RTheta.aa[, "theta"], nrow(object), length(J), byrow=FALSE)
+	theta.ab <- matrix(RTheta.ab[, "theta"], nrow(object), length(J), byrow=FALSE)
+	theta.bb <- matrix(RTheta.bb[, "theta"], nrow(object), length(J), byrow=FALSE)
+
 	a <- A(object)[, J, drop=FALSE]
 	b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
 	dns <- dimnames(a)

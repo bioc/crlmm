@@ -63,7 +63,8 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		M[index, "isSnp"] <- 0L
 	}
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
-	M[is.na(M[, "chromosome"]), "isSnp"] <- 1L
+	if(any(is.na(M[, "chromosome"])))
+		M[is.na(M[, "chromosome"]), "isSnp"] <- 1L
 	M <- data.frame(M)
 	return(new("AnnotatedDataFrame", data=M))
 }
@@ -1383,9 +1384,6 @@ imputeCenterX <- function(muA, muB, Ns, index.complete, MIN.OBS){
 }
 
 
-
-
-
 ## constructors for Illumina platform
 constructIlluminaFeatureData <- function(gns, cdfName){
 	pkgname <- paste(cdfName, "Crlmm", sep="")
@@ -1406,6 +1404,8 @@ constructIlluminaFeatureData <- function(gns, cdfName){
 	    data=data.frame(mapping),
 	    varMetadata=data.frame(labelDescription=colnames(mapping)))
 }
+
+
 constructIlluminaAssayData <- function(np, snp, object, storage.mode="environment", nr){
 	stopifnot(identical(snp$gns, featureNames(object)))
 	gns <- c(featureNames(object), np$gns)
@@ -1669,7 +1669,8 @@ summarizeSnps <- function(strata,
 			  index.list,
 			  object,
 			  GT.CONF.THR,
-			  verbose, CHR.X, ...){
+			  verbose,
+			  CHR.X, ...){
 ##	if(is.lds) {
 ##		physical <- get("physical")
 ##		open(object)
@@ -2776,6 +2777,9 @@ calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
 	x[x < 64] <- 64
 	y[y < 64] <- 64
 	theta[, "theta"] <- atan2(y, x)*2/pi
+	if(any(is.na(theta))){
+		stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
+	}
 	## so that 'R' is available for NP probes
 	y[is.na(y)] <- 0
 	theta[, "R"] <- x+y
