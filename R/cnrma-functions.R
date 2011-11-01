@@ -2771,8 +2771,8 @@ calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
 	centers <- medians(cnSet, i=seq_len(nrow(cnSet)), j)
 	theta <- matrix(NA, nrow(cnSet), 2)
 	colnames(theta) <- c("theta", "R")
-	x <- centers[, "A", genotype, 1]
-	y <- centers[, "B", genotype, 1]
+	x <- centers[, "A", genotype, j]
+	y <- centers[, "B", genotype, j]
 	## small imputed values -- should fix imputeCenter
 	x[x < 64] <- 64
 	y[y < 64] <- 64
