@@ -147,6 +147,19 @@ confidence score for the genotype calls.  The function
 cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName)
 @
 
+Segment faults that occur with the above step can often be traced to a
+corrupt cel file. To check if any of the files are corrupt, try
+reading the files in one at a time:
+
+<<checkcorrupt,eval=FALSE>>=
+require(affyio)
+for(i in seq_along(celFiles)) {
+	cat("Reading ", i, "\n")
+	invisible(read.celfile(celFiles[i], intensity.means.only=TRUE))
+}
+@
+
+
 The value returned by genotype is an instance of the class
 \Robject{CNSet}.  The normalized intensities, genotype calls, and
 confidence scores are stored as \verb+ff+ objects in the
