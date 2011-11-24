@@ -96,6 +96,18 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   batch <- as.factor(rep("A", length(cels)))
   (cnSet <- genotype(cels, cdfName="genomewidesnp6", batch=batch))
 
+Segment faults that occur with the above step can often be traced to a
+corrupt cel file. To check if any of the files are corrupt, try reading
+the files in one at a time:
+
+\dontrun{
+require(affyio)
+for(i in seq_along(cels)) {
+	cat("Reading ", i, "\n")
+	invisible(read.celfile(cels[i], intensity.means.only=TRUE))
+}
+}
+
   ## when gender is not specified (as in the above example), crlmm tries
   ## to predict the gender from SNPs on chromosome X
   cnSet$gender
