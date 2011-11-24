@@ -2744,21 +2744,23 @@ ABpanel <- function(x, y, predictRegion,
 		panel.xyplot(x, y, ...)
 	}
 	pn <- panel.number()
-	for(CN in copyNumber){
-		gts <- genotypes(CN)
-		index <- match(gts, names(predictRegion))
-		pr <- predictRegion[index]
-		for(i in seq_along(pr)){
-			## scale?
-			pr2 <- pr[[i]]
-			mu <- pr2$mu[pn, , , drop=FALSE] ## pn=panel number
-			Sigma <- pr2$cov[pn, , ,drop=FALSE]
-			for(j in seq_len(dim(mu)[3])){
-				dat.ellipse <- ellipse(x=Sigma[, 2, j],
-						       centre=mu[ , , j],
-						       scale=c(sqrt(Sigma[ , 1, j]),
-						       sqrt(Sigma[, 3, j])))
-				lpolygon(dat.ellipse[,1], dat.ellipse[,2], ...)
+	if(!is.null(copyNumber)){
+		for(CN in copyNumber){
+			gts <- genotypes(CN)
+			index <- match(gts, names(predictRegion))
+			pr <- predictRegion[index]
+			for(i in seq_along(pr)){ ## for each genotype
+				## scale?
+				pr2 <- pr[[i]]
+				mu <- pr2$mu[pn, , , drop=FALSE] ## pn=panel number
+				Sigma <- pr2$cov[pn, , ,drop=FALSE]
+				for(j in seq_len(dim(mu)[3])){  ## for each batch
+					dat.ellipse <- ellipse(x=Sigma[, 2, j],
+							       centre=mu[ , , j],
+							       scale=c(sqrt(Sigma[ , 1, j]),
+							       sqrt(Sigma[, 3, j])))
+					lpolygon(dat.ellipse[,1], dat.ellipse[,2], ...)
+				}
 			}
 		}
 	}
@@ -2777,12 +2779,16 @@ calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
 	x[x < 64] <- 64
 	y[y < 64] <- 64
 	theta[, "theta"] <- atan2(y, x)*2/pi
-	if(any(is.na(theta[, "theta"]))){
-		stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
-	}
+##	if(any(is.na(theta[, "theta"]))){
+##		##stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
+##	}
 	## so that 'R' is available for NP probes
 	y[is.na(y)] <- 0
 	theta[, "R"] <- x+y
+	theta[!isSnp(cnSet), 1] <- 1
+	if(any(is.na(theta[, "theta"]))){
+		stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
+	}
 	return(theta)
 }
 

@@ -519,6 +519,7 @@ setMethod("xyplotcrlmm", signature(x="formula", data="CNSet", predictRegion="lis
 		  ##predictRegion is an argument of ABpanel
 		  xyplot(x, df, predictRegion=predictRegion, ...)
 	  })
+
 setMethod("xyplot", signature(x="formula", data="CNSet"),
 	  function(x, data, ...){
 		  if("predictRegion" %in% names(list(...))){
@@ -552,6 +553,8 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 
 		  a <- A(object)[, J, drop=FALSE]
 		  b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
+		  is.np <- !isSnp(object)
+		  b[is.np, ] <- a[is.np, ]
 		  dns <- dimnames(a)
 		  dimnames(a) <- dimnames(b) <- NULL
 		  obs.theta <- atan2(b, a)*2/pi
@@ -588,7 +591,7 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 		  r.expected[lessAA] <- r.aa[lessAA]
 		  r.expected[grBB] <- r.bb[grBB]
 
-		  index.np <- which(!isSnp(object))
+		  index.np <- which(is.np)
 		  a.np <- A(object)[index.np, ]
 		  meds <- rowMedians(a.np, na.rm=TRUE)
 		  r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
