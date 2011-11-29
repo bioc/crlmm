@@ -576,9 +576,9 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 		  bf[grBB] <- 1
 
 		  r.expected <- matrix(NA, nrow(object), ncol(a))
-		  r.aa <- matrix(RTheta.aa[, "R"], nrow(object), ncol(object), byrow=FALSE)
-		  r.ab <- matrix(RTheta.ab[, "R"], nrow(object), ncol(object), byrow=FALSE)
-		  r.bb <- matrix(RTheta.bb[, "R"], nrow(object), ncol(object), byrow=FALSE)
+		  r.aa <- matrix(RTheta.aa[, "R"], nrow(object), length(J), byrow=FALSE)
+		  r.ab <- matrix(RTheta.ab[, "R"], nrow(object), length(J), byrow=FALSE)
+		  r.bb <- matrix(RTheta.bb[, "R"], nrow(object), length(J), byrow=FALSE)
 		  rm(RTheta.aa, RTheta.ab, RTheta.bb); gc()
 		  obs.r <- a+b
 
