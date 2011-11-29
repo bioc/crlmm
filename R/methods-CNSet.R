@@ -592,9 +592,11 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 		  r.expected[grBB] <- r.bb[grBB]
 
 		  index.np <- which(is.np)
-		  a.np <- A(object)[index.np, ]
-		  meds <- rowMedians(a.np, na.rm=TRUE)
-		  r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
+		  if(length(index.np) > 0){
+			  a.np <- A(object)[index.np, J]
+			  meds <- rowMedians(a.np, na.rm=TRUE)
+			  r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
+		  }
 		  lrr <- log2(obs.r/r.expected)
 
 		  dimnames(bf) <- dimnames(lrr) <- dns
