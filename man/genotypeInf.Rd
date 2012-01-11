@@ -15,7 +15,9 @@
 
 }
 \usage{
-genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5, recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams = TRUE, badSNP = 0.7, gender = NULL, DF = 6)
+genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5,
+recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams =
+TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -37,7 +39,9 @@ genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5, recallMin = 1
   \item{gender}{  integer vector (  male = 1, female =2 ) or missing,
   with same length as filenames.  If missing, the gender is
   predicted.}
-  \item{DF}{'integer' with number of degrees of freedom to use with t-distribution.}
+  \item{DF}{'integer' with number of degrees of freedom to use with
+    t-distribution.}
+  \item{cdfName}{\code{character} string indicating the annotation package}
 }
 
 \details{
@@ -69,7 +73,8 @@ confidence scores can be retrieved using accessors for the
 R. Scharpf
 }
 \seealso{
-	\code{\link{crlmm}}, \code{\link{snpCall}}, \code{\link{snpCallProbability}}
+	\code{\link{crlmm}}, \code{\link{snpCall}},
+	\code{\link{snpCallProbability}}, \code{\link{annotationPackages}}
 }
 \examples{
 	## See the 'illumina_copynumber' vignette in inst/scripts of

@@ -11,8 +11,8 @@
 genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
       highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
-      cdfName, copynumber=TRUE, batch, saveDate=TRUE, stripNorm=TRUE, useTarget=TRUE, 
-      mixtureSampleSize=10^5, fitMixture=TRUE, eps =0.1, verbose = TRUE, seed = 1, 
+      cdfName, copynumber=TRUE, batch, saveDate=TRUE, stripNorm=TRUE, useTarget=TRUE,
+      mixtureSampleSize=10^5, fitMixture=TRUE, eps =0.1, verbose = TRUE, seed = 1,
       sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
       gender = NULL, returnParams = TRUE, badSNP = 0.7)
 }
@@ -42,8 +42,9 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
-  \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.} 
-  \item{batch}{ batch variable. See details.}
+  \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.}
+  \item{batch}{ character vector indicating the batch variable. Must be
+	the same length as the number of samples. See details.}
   \item{saveDate}{'logical'.  Should the dates from each .idat be saved
     with sample information?}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
@@ -82,16 +83,17 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	number probes (if present) are also quantile-normalized and (2)
 	the class of object returned by this function, \code{CNSet}, is
 	needed for subsequent copy number estimation.  Note that the
-	batch variable that must be passed to this function has no
-	effect on the normalization or genotyping steps.  Rather,
-	\code{batch} is required in order to initialize a \code{CNSet}
-	container with the appropriate dimensions.
-}
+	batch variable (a character string) that must be passed to this
+	function has no effect on the normalization or genotyping steps.
+	Rather, \code{batch} is required in order to initialize a
+	\code{CNSet} container with the appropriate dimensions.
+
+      }
 
 \value{	A \code{SnpSuperSet} instance.}
 \references{
   Ritchie ME, Carvalho BS, Hetrick KN, Tavar\'{e} S, Irizarry RA.
-  R/Bioconductor software for Illumina's Infinium whole-genome 
+  R/Bioconductor software for Illumina's Infinium whole-genome
   genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
 
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
@@ -110,7 +112,7 @@ this will greatly reduce the RAM required for big jobs.  See
 \code{ldPath} and \code{ocSamples}.}
 
 \seealso{
-	\code{\link{crlmmIlluminaV2}}, 
+	\code{\link{crlmmIlluminaV2}},
 	\code{\link[oligoClasses]{ocSamples}},
 	\code{\link[oligoClasses]{ldOpts}}
 }

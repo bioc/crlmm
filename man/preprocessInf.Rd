@@ -16,7 +16,12 @@
 
 }
 \usage{
-preprocessInf(cnSet, sampleSheet=NULL, arrayNames = NULL, ids = NULL, path = ".", arrayInfoColNames = list(barcode = "SentrixBarcode_A", position = "SentrixPosition_A"), highDensity = TRUE, sep = "_", fileExt = list(green = "Grn.idat", red = "Red.idat"), saveDate = TRUE, stripNorm = TRUE, useTarget = TRUE, mixtureSampleSize = 10^5, fitMixture = TRUE, eps = 0.1, verbose = TRUE, seed = 1)
+preprocessInf(cnSet, sampleSheet=NULL, arrayNames = NULL, ids = NULL,
+path = ".", arrayInfoColNames = list(barcode = "SentrixBarcode_A",
+position = "SentrixPosition_A"), highDensity = TRUE, sep = "_", fileExt
+= list(green = "Grn.idat", red = "Red.idat"), saveDate = TRUE, stripNorm
+= TRUE, useTarget = TRUE, mixtureSampleSize = 10^5, fitMixture = TRUE,
+eps = 0.1, verbose = TRUE, seed = 1, cdfName)
 }
 
 \arguments{
@@ -65,6 +70,8 @@ preprocessInf(cnSet, sampleSheet=NULL, arrayNames = NULL, ids = NULL, path = "."
   \item{verbose}{  'logical.'  Whether to print descriptive messages during processing.}
   \item{seed}{ Seed to be used when sampling. Useful for
     reproducibility}
+  \item{cdfName}{\code{character} string indicating the annotation
+    package to load.}
 }
 \details{
 
@@ -91,7 +98,7 @@ R. Scharpf
 }
 \seealso{
 	\code{\link{CNSet-class}}, \code{\link{A}}, \code{\link{B}},
-	\code{\link{constructInf}}, \code{\link{genotypeInf}}
+	\code{\link{constructInf}}, \code{\link{genotypeInf}}, \code{\link{annotationPackages}}
 }
 \examples{
 	## See the 'illumina_copynumber' vignette in inst/scripts of

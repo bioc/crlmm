@@ -444,7 +444,7 @@ readBPM <- function(bpmFile){
 
 
 readGenCallOutput = function(file, path=".", cdfName,
-    colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"), 
+    colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"),
     type=list("SampleID"="character", "SNPID"="character", "XRaw"="integer", "YRaw"="integer"), verbose=FALSE) {
 
     if(!identical(names(type), names(colnames)))
@@ -462,9 +462,9 @@ readGenCallOutput = function(file, path=".", cdfName,
 	sepp=s[2]
 	a1=unlist(strsplit(tmp[10][1],s[2]))
     }
-    
+
     if(sum(is.na(match(colnames,a1)))!=0)
-	stop("Cannot find required columns: ", colnames[is.na(match(colnames,a1))], " in ", file, "\nPlease check whether this data was exported.") 
+	stop("Cannot find required columns: ", colnames[is.na(match(colnames,a1))], " in ", file, "\nPlease check whether this data was exported.")
 
     m1=m=match(a1,colnames)
     m[is.na(m1)==FALSE] =type[m1[!is.na(m1)]]
@@ -472,19 +472,19 @@ readGenCallOutput = function(file, path=".", cdfName,
     names(m) = names(colnames)[m1]
 
     fc = file(file.path(path, file), open="r")
-	
+
     dat = scan(fc, what=m, skip=10,sep=sepp)
     close(fc)
-	
+
     samples = unique(dat$"SampleID")
     nsamples = length(samples)
     snps = unique(dat$"SNPID")
     nsnps = length(snps)
     if(verbose)
         cat("Check ordering for samples","\n")
-    
+
     X = Y = zeroes = matrix(0, nsnps, nsamples)
-	
+
     for(i in 1:length(samples)) {
         ind = dat$"SampleID"==samples[i]
 	    if(sum(dat$"SNPID"[ind]==snps)==nsnps) {
@@ -502,23 +502,23 @@ readGenCallOutput = function(file, path=".", cdfName,
         }
         gc()
     }
-	
+
     zeroes=(X=="0"|Y=="0")
     colnames(X) = colnames(Y) =  colnames(zeroes) = samples
     rownames(X) = rownames(Y) = snps
-    
-    if(verbose)      
+
+    if(verbose)
         cat("Creating NChannelSet object\n")
-   
+
     XY = new("NChannelSet", X = initializeBigMatrix(name = "X", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=X),
 			 Y = initializeBigMatrix(name = "Y", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=Y),
 			 zero = initializeBigMatrix(name = "zero", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=zeroes),
 			 annotation = cdfName, storage.mode = "environment")
     sampleNames(XY)=colnames(X)
-	
+
     if(verbose)
       cat("Done\n")
-	  
+
     XY
 }
 
@@ -855,7 +855,7 @@ crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
                   mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
                   cdfName, sns, recallMin=10, recallRegMin=1000,
                   returnParams=FALSE, badSNP=.7) {
-				  
+
 if(missing(cdfName)) {
    if(!missing(RG))
       cdfName = annotation(RG)
@@ -864,7 +864,7 @@ if(missing(cdfName)) {
 }
 if(!isValidCdfName(cdfName))
    stop("cdfName not valid.  see validCdfNames")
-     
+
 #  if (save.it & (missing(snpFile) | missing(cnFile)))
 #    stop("'snpFile' and/or 'cnFile' is missing and you chose to save.it")
 #  if (load.it & missing(snpFile))
@@ -1251,7 +1251,7 @@ preprocessInf <- function(cnSet,
 		       fitMixture=TRUE,
 		       eps=0.1,
 		       verbose=TRUE,
-		       seed=1){
+		       seed=1, cdfName){
 	stopifnot(all(c("gender", "SNR", "SKW") %in% varLabels(cnSet)))
 	open(A(cnSet))
 	open(B(cnSet))
@@ -1304,7 +1304,8 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			returnParams=TRUE,
 			badSNP=0.7,
 			gender=NULL,
-			DF=6){
+			DF=6,
+			cdfName){
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 ##	narrays = ncol(cnSet)
@@ -1379,6 +1380,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	if(missing(cdfName)) stop("must specify cdfName")
 	if(!isValidCdfName(cdfName)) stop("cdfName not valid.  see validCdfNames")
 	stopifnot(!missing(batch))
+	if(is(batch, "factor")) batch <- as.character(batch)
         pkgname <- getCrlmmAnnotationName(cdfName)
 	message("Instantiate CNSet container.")
 	cnSet <- constructInf(sampleSheet=sampleSheet,
@@ -1408,7 +1410,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 				    fitMixture=fitMixture,
 				    eps=eps,
 				    verbose=verbose,
-				    seed=seed)
+				    seed=seed,
+				       cdfName=cdfName)
 	message("Preprocessing complete.  Begin genotyping...")
 	genotypeInf(cnSet=cnSet, mixtureParams=mixtureParams,
 		   probs=probs,
@@ -1419,7 +1422,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		   returnParams=returnParams,
 		   badSNP=badSNP,
 		   gender=gender,
-		   DF=DF)
+		   DF=DF,
+		    cdfName=cdfName)
 	return(cnSet)
 }
 
