@@ -35,9 +35,7 @@ ABpanel(x, y, predictRegion, copyNumber = 0:4, fill, ..., subscripts)
     See \code{xyplot} in the \pkg{lattice} package.
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
   Not applicable
 }

@@ -216,3 +216,14 @@ setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatr
 getBAF <- function(theta, canonicalTheta)
     .Call('normalizeBAF', theta, ct)
 
+
+validCEL <- function(celfiles){
+	for(i in seq_along(celfiles)){
+		res <- tryCatch(read.celfile(celfiles[i], intensity.means.only=TRUE), error=function(e) NULL)
+		if(is.null(res)) {
+			msg <- message("Problem reading ", celfiles[i])
+			stop(msg)
+		}
+	}
+	return("Successfully read all cel files")
+}

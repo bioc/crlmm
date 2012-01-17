@@ -38,13 +38,10 @@ calculateRBaf(object, batch.name)
 \author{Lynn Mireless}
 
 \examples{
-
 data(cnSetExample)
 baf.lrr <- calculateRBaf(cnSetExample, "SHELF")
 hist(baf.lrr[["baf"]], breaks=100)
 hist(baf.lrr[["lrr"]], breaks=100)
-
-
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

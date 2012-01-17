@@ -5,6 +5,7 @@
 \documentclass{article}
 \usepackage{graphicx}
 \usepackage{natbib}
+\usepackage{amsmath}
 \usepackage[margin=1in]{geometry}
 \newcommand{\crlmm}{\Rpackage{crlmm}}
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
@@ -84,15 +85,15 @@ ocProbesets(150e3)
 ocSamples(500)
 @
 
-\section{Initializing a container for storing processed data}
-
-This section will initialize a container for storing processed forms
-of the data, including the normalized intensities for the A and B
-alleles and the CRLMM genotype calls and confidence scores.  In
-addition, the container will store information on the markers
-(physical position, chromosome, and a SNP indicator), the batch, and
-the samples (e.g., gender).  To construct this container for Infinium
-platforms, several steps are required.
+%\section{Initializing a container for storing processed data}
+%
+%This section will initialize a container for storing processed forms
+%of the data, including the normalized intensities for the A and B
+%alleles and the CRLMM genotype calls and confidence scores.  In
+%addition, the container will store information on the markers
+%(physical position, chromosome, and a SNP indicator), the batch, and
+%the samples (e.g., gender).  To construct this container for Infinium
+%platforms, several steps are required.
 
 We begin by specifying the path containing the raw IDAT files for a
 set of samples from the Infinium 370k platform.
@@ -143,129 +144,140 @@ processed at similar times (e.g., within a few weeks).
 batch <- rep("1", nrow(samplesheet))
 @
 
-Finally, we initialize an object of class \Robject{CNSet} using the
-function \Rfunction{constructInf}.
-
-<<container,cache=TRUE>>=
-cnSet <- constructInf(sampleSheet=samplesheet,
-		      arrayNames=arrayNames,
-		      batch=batch,
-		      arrayInfoColNames=arrayInfo,
-		      cdfName=cdfName,
-		      verbose=TRUE,
-		      saveDate=TRUE)
-@
-
-A concise summary of the object's contents can be viewed with the
-\Rfunction{print} function.
-
-<<cnset>>=
-print(cnSet)
-@
-
-Note that the above object does not yet contain any processed data
-(only \verb+NA+'s).  As the elements of the \verb+assayData+ slot are
-\Robject{ff} objects (not matrices), several \verb+.ff+ files now
-appear in the \verb+outdir+. The \verb+.ff+ files should not be
-removed and can be listed using the \R{} function
-\Rfunction{list.files}.  %For the most part, the \emph{appearance} that
+%Finally, we initialize an object of class \Robject{CNSet} using the
+%function \Rfunction{constructInf}.
+%
+%<<container,cache=TRUE>>=
+%cnSet <- constructInf(sampleSheet=samplesheet,
+%		      arrayNames=arrayNames,
+%		      batch=batch,
+%		      arrayInfoColNames=arrayInfo,
+%		      cdfName=cdfName,
+%		      verbose=TRUE,
+%		      saveDate=TRUE)
+%@
+%
+%A concise summary of the object's contents can be viewed with the
+%\Rfunction{print} function.
+%
+%<<cnset>>=
+%print(cnSet)
+%@
+%
+%Note that the above object does not yet contain any processed data
+%(only \verb+NA+'s).  As the elements of the \verb+assayData+ slot are
+%\Robject{ff} objects (not matrices), several \verb+.ff+ files now
+%appear in the \verb+outdir+. The \verb+.ff+ files should not be
+%removed and can be listed using the \R{} function
+%\Rfunction{list.files}.  %For the most part, the \emph{appearance} that
 %the data is stored in memory is preserved.
-
-<<listff>>=
-sapply(assayData(cnSet), function(x) class(x)[1])
-list.files(outdir, pattern=".ff")[1:5]
-@
-
-\section{Preprocessing}
+%
+%<<listff>>=
+%sapply(assayData(cnSet), function(x) class(x)[1])
+%list.files(outdir, pattern=".ff")[1:5]
+%@
+%
+\section{Preprocessing and genotyping}
 
 The raw intensities from the Infinium IDAT files are read and
 normalized using the function \Rfunction{preprocessInf}.  The function
 \Rfunction{preprocessInf} returns a \Robject{ff} object containing the
 parameters for the mixture model used by the CRLMM genotyping
-algorithm.
+algorithm.  Following preprocessing, the \Rfunction{genotypeInf}
+genotypes the samples. The function \Rfunction{genotype.Illumina} is a
+wrapper to the above functions and returns an object of class
+\Rclass{CNSet}.
 
-<<preprocess,cache=TRUE, results=hide>>=
-mixtureParams <- preprocessInf(cnSet=cnSet, sampleSheet=samplesheet, arrayNames=arrayNames, arrayInfoColNames=arrayInfo)
-@
-
-<<showMixtureParams>>=
-invisible(open(mixtureParams))
-str(mixtureParams[])
-invisible(close(mixtureParams))
-@
-
-Note that the normalized intensities for the A and B alleles are no
-longer \verb+NA+s and can be inspected using the methods \Rfunction{A}
-and \Rfunction{B}, respectively.
-
-<<intensities>>=
-invisible(open(A(cnSet)))
-invisible(open(B(cnSet)))
-as.matrix(A(cnSet)[1:5, 1:5])
-as.matrix(B(cnSet)[1:5, 1:5])
-invisible(close(A(cnSet)))
-invisible(close(B(cnSet)))
-@
-
-\section{Genotyping}
-
-CRLMM genotype calls and confidence scores are estimated using the
-function \Rfunction{genotypeInf}.
-
-<<genotype,cache=TRUE>>=
-updated <- genotypeInf(cnSet, mixtureParams=mixtureParams)
-@
-\vspace{-0.5em}
-<<>>=
-updated
-@
-
-\textbf{Wrapper:} As an alternative to calling the functions
-\Rfunction{constructInf}, \Rfunction{preprocessInf} and
-\Rfunction{genotypeInf} in sequence, a convenience function called
-\Rfunction{genotype.Illumina} is a wrapper for the above functions and
-produces identical results.
+%<<preprocess,cache=TRUE, results=hide>>=
+%mixtureParams <- preprocessInf(cnSet=cnSet, sampleSheet=samplesheet,
+%			       arrayNames=arrayNames,
+%			       arrayInfoColNames=arrayInfo,
+%			       cdfName=cdfName)
+%@
+%
+%<<showMixtureParams>>=
+%invisible(open(mixtureParams))
+%str(mixtureParams[])
+%invisible(close(mixtureParams))
+%@
+%
+%Note that the normalized intensities for the A and B alleles are no
+%longer \verb+NA+s and can be inspected using the methods \Rfunction{A}
+%and \Rfunction{B}, respectively.
+%
+%<<intensities>>=
+%invisible(open(A(cnSet)))
+%invisible(open(B(cnSet)))
+%as.matrix(A(cnSet)[1:5, 1:5])
+%as.matrix(B(cnSet)[1:5, 1:5])
+%invisible(close(A(cnSet)))
+%invisible(close(B(cnSet)))
+%@
+%
+%\section{Genotyping}
+%
+%CRLMM genotype calls and confidence scores are estimated using the
+%function \Rfunction{genotypeInf}.
+%
+%<<genotype,cache=TRUE>>=
+%updated <- genotypeInf(cnSet, mixtureParams=mixtureParams, cdfName=cdfName)
+%@
+%\vspace{-0.5em}
+%<<>>=
+%updated
+%@
+%
+%\textbf{Wrapper:} As an alternative to calling the functions
+%\Rfunction{constructInf}, \Rfunction{preprocessInf} and
+%\Rfunction{genotypeInf} in sequence, a convenience function called
+%\Rfunction{genotype.Illumina} is a wrapper for the above functions and
+%produces identical results.
 
 <<genotype.Illumina,cache=TRUE,results=hide>>=
-cnSet2 <- genotype.Illumina(sampleSheet=samplesheet,
+cnSet <- genotype.Illumina(sampleSheet=samplesheet,
 			    arrayNames=arrayNames,
 			    arrayInfoColNames=arrayInfo,
 			    cdfName="human370v1c",
 			    batch=batch)
 @
 
-<<checkIdenticalCalls>>=
-invisible(open(calls(cnSet)))
-invisible(open(calls(cnSet2)))
-snp.index <- which(isSnp(cnSet))
-identical(calls(cnSet)[snp.index, 1:20], calls(cnSet2)[snp.index, 1:20])
-invisible(close(calls(cnSet)))
-invisible(close(calls(cnSet2)))
-@
 
-To fully remove the data associated with the \Robject{cnSet2} object,
-one should use the \Rfunction{delete} function in the \Rpackage{ff}
-package followed by the \Rfunction{rm} function.  The following code
-is not evaluated is it would change the results of the cached
-computations in the previous code chunk.
+Note, to fully remove the data associated with the \Robject{cnSet2}
+object, one should use the \Rfunction{delete} function in the
+\Rpackage{ff} package followed by the \Rfunction{rm} function.  The
+following code is not evaluated is it would change the results of the
+cached computations in the previous code chunk.
 
 <<delete, eval=FALSE>>=
-lapply(assayData(cnSet2), delete)
-lapply(batchStatistics(cnSet2), delete)
-delete(cnSet2$gender)
-delete(cnSet2$SNR)
-delete(cnSet2$SKW)
-rm(cnSet2)
+lapply(assayData(cnSet), delete)
+lapply(batchStatistics(cnSet), delete)
+delete(cnSet$gender)
+delete(cnSet$SNR)
+delete(cnSet$SKW)
+rm(cnSet)
 @
 
-Users can proceed to the \verb+copynumber+ vignette for copy number
-analyses.  See the \verb+Infrastructure+ vignette for additional
-details on the \Robject{CNSet} class, including an overview of the
-available accessors.
+%\section{Copy number estimation}
+
+\SweaveInput{copynumber}
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
 toLatex(sessionInfo())
 @
+
+\begin{figure}[f]
+  \begin{center}
+  \includegraphics[width=0.6\textwidth]{IlluminaPreprocessCN-snr.pdf}
+  \caption{The signal to noise ratio (SNR) for 180 HapMap samples. For
+    Affymetrix platforms, SNR values below 5 can indicate possible
+    problems with sample quality.  In some circumstances, it may be
+    more helpful to exclude samples with poor DNA quality.}
+\end{center}
+\end{figure}
+
+
+\bibliography{refs}
+\bibliographystyle{plain}
 
 \end{document}

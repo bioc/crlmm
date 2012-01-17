@@ -88,7 +88,7 @@ R. Scharpf
 	\code{\link{ldPath}}, \code{\link{ocSamples}}, \code{\link{ocProbesets}}, \code{\link{CNSet-class}}, \code{\link{preprocessInf}}, \code{\link{genotypeInf}}
 }
 \examples{
-## See the illumina_copynumber.Rnw vignette in inst/scripts of the
+## See the Illumina vignettes in inst/scripts of the
 ## source package for an example
 }
 \keyword{manip}

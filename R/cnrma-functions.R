@@ -53,9 +53,9 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 	index <- match(rownames(snpProbes), rownames(M)) #only snp probes in M get assigned position
 	M[index, "position"] <- snpProbes[, grep("pos", colnames(snpProbes))]
 	M[index, "chromosome"] <- chromosome2integer(snpProbes[, grep("chr", colnames(snpProbes))])
-	M[index, "isSnp"] <- 1L
-	##index <- which(is.na(M[, "isSnp"]))
 	##M[index, "isSnp"] <- 1L
+	index <- which(is.na(M[, "isSnp"]))
+	M[index, "isSnp"] <- 1L
 	if(copynumber){
 		index <- match(rownames(cnProbes), rownames(M)) #only snp probes in M get assigned position
 		M[index, "position"] <- cnProbes[, grep("pos", colnames(cnProbes))]
@@ -65,9 +65,14 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 	##A few of the snpProbes do not match -- I think it is chromosome Y.
 	if(any(is.na(M[, "chromosome"])))
 		M[is.na(M[, "chromosome"]), "isSnp"] <- 1L
-	M <- data.frame(M)
-	return(new("AnnotatedDataFrame", data=M))
+	##return(new("AnnotatedDataFrame", data=M))
+	new("GenomeAnnotatedDataFrame",
+	    position=as.integer(M[, "position"]),
+	    chromosome=as.integer(M[, "chromosome"]),
+	    isSnp=as.logical(M[, "isSnp"]),
+	    row.names=featurenames)
 }
+
 getFeatureData.Affy <- getFeatureData
 
 construct <- function(filenames,
@@ -188,12 +193,18 @@ snprmaAffy <- function(cnSet, filenames,
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
 	sampleBatches <- splitIndicesByNode(seq(along=filenames))
-	ocLapply(sampleBatches, rsprocessCEL, filenames=filenames,
-		 fitMixture=TRUE, A=A(cnSet), B=B(cnSet), C=calls(cnSet),
+	ocLapply(sampleBatches,
+		 rsprocessCEL,
+		 filenames=filenames,
+		 fitMixture=TRUE,
+		 A=A(cnSet), B=B(cnSet), C=calls(cnSet),
 		 D=snpCallProbability(cnSet),
 		 SKW=cnSet$SKW, SNR=cnSet$SNR,
-		 mixtureParams=mixtureParams, eps=eps, seed=seed,
-		 mixtureSampleSize=mixtureSampleSize, pkgname=pkgname,
+		 mixtureParams=mixtureParams,
+		 eps=eps,
+		 seed=seed,
+		 mixtureSampleSize=mixtureSampleSize,
+		 pkgname=pkgname,
 		 neededPkgs=c("crlmm", pkgname))
 	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
 	return(mixtureParams)
@@ -215,15 +226,14 @@ genotype <- function(filenames,
 		     gender=NULL,
 		     returnParams=TRUE,
 		     badSNP=0.7){
-	stopifnot(require("ff"))
+	stopifnot(isPackageLoaded("ff"))
 	cnSet <- constructAffy(filenames=filenames,
 			       cdfName=cdfName,
 			       batch=batch, verbose=verbose)
 	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
 		stop("The ff package is required for this function.")
 	}
-
-	mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
+	cnSet@mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
 				    mixtureSampleSize=mixtureSampleSize,
 				    eps=eps,
 				    seed=seed,
@@ -233,7 +243,7 @@ genotype <- function(filenames,
 			verbose=verbose)
 	stopifnot(ok)
 	ok <- genotypeAffy(cnSet=cnSet,
-			   mixtureParams=mixtureParams,
+			   mixtureParams=cnSet@mixtureParams,
 			   SNRMin=SNRMin,
 			   recallMin=recallMin,
 			   recallRegMin=recallRegMin,

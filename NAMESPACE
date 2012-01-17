@@ -1,4 +1,5 @@
 useDynLib("crlmm", .registration=TRUE)
+
 ##---------------------------------------------------------------------------
 ## Biobase
 ##---------------------------------------------------------------------------
@@ -22,7 +23,7 @@ importFrom(Biobase, assayDataElement, assayDataElementNames,
 ##---------------------------------------------------------------------------
 ## oligoClasses
 ##---------------------------------------------------------------------------
-importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)
+importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)##, ff_or_matrix)
 importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
 		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
 		  chromosome, position, A, B,
@@ -49,9 +50,9 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, updat
 importFrom(genefilter, rowSds)
 importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
-importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
+##importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 
-importClassesFrom(oligoClasses, ff_matrix, ffdf)
+##importClassesFrom(oligoClasses, ff_matrix, ffdf)
 ##exportMethods(lines)
 exportMethods(CA, CB)
 export(crlmm,
@@ -70,5 +71,5 @@ export(crlmm,
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
 exportMethods(A, B, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads,
 	      xyplot, calculateRBaf)
-export(ABpanel, constructInf, preprocessInf, genotypeInf)
+export(ABpanel, constructInf, preprocessInf, genotypeInf, validCEL, celDates)
 exportClasses(PredictionRegion)

@@ -89,17 +89,9 @@ if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## very useful when genotyping samples not in the working directory
   cels <- list.celfiles(path, full.names=TRUE)
   (crlmmOutput <- crlmm(cels))
-  invisible(open(crlmmOutput$gender))
-  stopifnot(all(crlmmOutput$gender[] == c(2,2,1)))
-  invisible(close(crlmmOutput$gender))
-
   ## If gender is known, one should check that the assigned gender is
   ## correct, or pass the integer coding of gender as an argument to the
   ## crlmm function as done below
-  gender <- c("female", "female", "male")
-  gender[gender == "female"] <- 2
-  gender[gender == "male"] <- 1
-
 }
 
 \dontrun{
@@ -115,7 +107,6 @@ setCluster(8, "SOCK")
 path <- system.file("celFiles", package="hapmapsnp6")
 cels <- list.celfiles(path, full.names=TRUE)
 crlmmOutput <- crlmm2(cels)
-
 }
 
 }

@@ -18,7 +18,10 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
   \item{filenames}{ complete path to CEL files}
   \item{cdfName}{  annotation package  (see also
   \code{validCdfNames})}
-  \item{batch}{ batch variable. See details. }
+  \item{batch}{ vector of class \code{character} denoting the batch for
+    each sample in \code{filenames}. The
+    \code{batch} vector must be the same length as the number of
+    samples. See details. }
   \item{mixtureSampleSize}{    Sample size to be use when fitting the mixture model.}
  \item{eps}{   Stop criteria.}
   \item{verbose}{  Logical.  Whether to print descriptive messages during processing.}
@@ -55,7 +58,8 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
 	batch variable that must be passed to this function has no
 	effect on the normalization or genotyping steps.  Rather,
 	\code{batch} is required in order to initialize a \code{CNSet}
-	container with the appropriate dimensions.
+	container with the appropriate dimensions and is used directly
+	when estimating copy number.
 }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -85,7 +89,7 @@ this will greatly reduce the RAM required for big jobs.  See
 }
 \examples{
 if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
-
+  ldPath(tempdir())
   path <- system.file("celFiles", package="hapmapsnp6")
   ## the filenames with full path...
   ## very useful when genotyping samples not in the working directory
@@ -93,19 +97,16 @@ if (require(ff) & require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   ## Note: one would need at least 10 CEL files for copy number estimation
   ## To use less RAM, specify a smaller argument to ocProbesets
   ocProbesets(50e3)
-  batch <- as.factor(rep("A", length(cels)))
+  batch <- rep("A", length(cels))
   (cnSet <- genotype(cels, cdfName="genomewidesnp6", batch=batch))
 
-Segment faults that occur with the above step can often be traced to a
-corrupt cel file. To check if any of the files are corrupt, try reading
-the files in one at a time:
+##Segment faults that occur with the above step can often be traced to a
+##corrupt cel file. To check if any of the files are corrupt, try
+##reading the files in one at a time:
 
 \dontrun{
 require(affyio)
-for(i in seq_along(cels)) {
-	cat("Reading ", i, "\n")
-	invisible(read.celfile(cels[i], intensity.means.only=TRUE))
-}
+validCEL(cels)
 }
 
   ## when gender is not specified (as in the above example), crlmm tries
@@ -120,45 +121,6 @@ for(i in seq_along(cels)) {
   gender[gender == "male"] <- 1
   dim(cnSet)
   table(isSnp(cnSet))
-  \dontrun{
-          ##---------------------------------------------------------------------------
-          ##
-	  ## Genotype Imputation
-          ##
-          ##---------------------------------------------------------------------------
-     if(require("ff")){
-	  path <- system.file("celFiles", package="hapmapsnp6")
-	  cels <- list.celfiles(path, full.names=TRUE)
-	  gtSet <- genotype(cels, batch=rep(1L,3))
-
-          gt1 <- calls(crlmmOutput)
-          gt2 <- calls(gtSet)[isSnp(gtSet), ]
-          gt2 <- gt2[match(rownames(gt2), rownames(gt1)), ]
-	  stopifnot(all.equal(gt1, gt2))
-
-	  XIndex <- which(chromosome(gtSet)==23 & isSnp(gtSet))
-	  YIndex <- which(chromosome(gtSet)==24 & isSnp(gtSet))
-	  A.X <- log2(A(gtSet)[XIndex,,drop=FALSE])
-	  B.X <- log2(B(gtSet)[XIndex,,drop=FALSE])
-	  meds.X <- apply(A.X+B.X, 2, median)/2
-	  A.Y <- log2(A(gtSet)[YIndex,,drop=FALSE])
-	  B.Y <- log2(B(gtSet)[YIndex,,drop=FALSE])
-	  meds.Y <- apply(A.Y+B.Y, 2, median)/2
-	  R <- meds.X - meds.Y
-	  SNR <- gtSet$SNR[]
-	  SNRMin <- 5
-	  gender <- kmeans(R, c(min(R[SNR[]>SNRMin]), max(R[SNR[]>SNRMin])))[["cluster"]]
-	  plot(seq_along(R), R, pch=21, bg=c("royalblue", "red")[gender],
-	       xlim=c(0, 4), xaxt='n', xlab="sample index")
-	  legend("topright", fill=c("royalblue", "red"), legend=c("male", "female"))
-	  delete(A(gtSet))
-	  delete(B(gtSet))
-	  delete(calls(gtSet))
-	  delete(assayDataElement(gtSet, "snpCallProbability"))
-	  ff.filenames <- list.files(".", pattern=".ff")
-	  unlink(ff.filename)
-     } ## end if(require("ff"))
-  }
 }
 }
 \keyword{ classif }

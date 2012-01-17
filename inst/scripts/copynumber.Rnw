@@ -1,35 +1,3 @@
-%\VignetteIndexEntry{crlmm copy number Vignette}
-%\VignetteDepends{crlmm, genomewidesnp6Crlmm}
-%\VignetteKeywords{crlmm, SNP 6}
-%\VignettePackage{crlmm}
-\documentclass{article}
-\usepackage{graphicx}
-\usepackage{natbib}
-\usepackage{url}
-\usepackage{amsmath,amssymb}
-\newcommand{\Rfunction}[1]{{\texttt{#1}}}
-\newcommand{\Rmethod}[1]{{\texttt{#1}}}
-\newcommand{\Rcode}[1]{{\texttt{#1}}}
-\newcommand{\Robject}[1]{{\texttt{#1}}}
-\newcommand{\Rpackage}[1]{{\textsf{#1}}}
-\newcommand{\Rclass}[1]{{\textit{#1}}}
-\newcommand{\oligo}{\Rpackage{oligo }}
-\newcommand{\R}{\textsf{R}}
-\newcommand{\crlmm}{\Rpackage{crlmm}}
-\usepackage[margin=1in]{geometry}
-
-\begin{document}
-\title{Copy number estimation with \Rpackage{crlmm}}
-\date{\today}
-\author{Rob Scharpf}
-\maketitle
-
-<<setup, echo=FALSE, results=hide>>=
-options(continue=" ", width=70)
-@
-
-\begin{abstract}
-
   Copy number routines in the \crlmm{} package are available for
   Affymetrix 5.0 and 6.0 platforms, as well as several Illumina
   platforms.  This vignette assumes that the arrays have already been
@@ -43,35 +11,6 @@ options(continue=" ", width=70)
   addition, a compendium describing copy number analysis using the
   \crlmm{} package is available from the author's website:
   \url{http://www.biostat.jhsph.edu/~rscharpf/crlmmCompendium/index.html}.
-
-\end{abstract}
-
-\section{Set up}
-
-<<libraries,results=hide>>=
-library(ff)
-library(crlmm)
-library(lattice)
-library(cacheSweave)
-if(getRversion() < "2.13.0"){
-	rpath <- getRversion()
-} else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
-@
-
-<<ram>>=
-ldPath(outdir)
-setCacheDir(outdir)
-ocProbesets(150e3)
-ocSamples(200)
-@
-
-We begin by loading the \Robject{cnSet} object created by the
-\verb+AffymetrixPreprocessCN+ vignette.
-
-<<loadcnset>>=
-if(!exists("cnSet")) load(file.path(outdir, "cnSet.rda"))
-@
 
 
 \textbf{Limitations:} While a minimum number of samples is not
@@ -100,24 +39,16 @@ quality.  The following code chunk makes a histogram of the SNR values
 for the HapMap samples.
 
 <<snr,fig=TRUE,include=FALSE,width=6, height=4>>=
+library(lattice)
 invisible(open(cnSet$SNR))
 snr <- cnSet$SNR[]
 close(cnSet$SNR)
-print(histogram(~snr, panel=function(...){
-	panel.histogram(...)
-	panel.abline(v=5, col="grey",lty=2)
-},
-		breaks=25,xlim=c(4.5,10), xlab="SNR"))
+print(histogram(~snr,
+		panel=function(...){
+			panel.histogram(...)},
+		breaks=25, xlim=range(snr), xlab="SNR"))
 @
-\begin{figure}[t!]
-  \begin{center}
-  \includegraphics[width=0.6\textwidth]{copynumber-snr.pdf}
-  \caption{The signal to noise ratio (SNR) for 180 HapMap samples. For
-    Affymetrix platforms, SNR values below 5 can indicate possible
-    problems with sample quality.  In some circumstances, it may be
-    more helpful to exclude samples with poor DNA quality.}
-\end{center}
-\end{figure}
+
 
 
 \section{Copy number estimation}
@@ -149,29 +80,17 @@ computed for subsets of the markers to reduce the required RAM. Note
 that the value returned by the \Rfunction{crlmmCopynumber} function in
 the above example is \verb+TRUE+.  The reason the function returns
 \verb+TRUE+ in the above example is that the elements of the
-\verb+batchStatistics+ slot have the class \Rclass{ff\_matrix}.  Rather
-than keep the statistical summaries in memory, the summaries are
-written to files on disk using protocols described in the
+\verb+batchStatistics+ slot have the class \Rclass{ff\_matrix}.
+Rather than keep the statistical summaries in memory, the summaries
+are written to files on disk using protocols described in the
 \Rpackage{ff} package. Hence, while the \Robject{cnSet} object itself
 is unchanged as a result of the \Rfunction{crlmmCopynumber} function,
 the data on disk is updated accordingly.  Users that are interested in
 accessing these low-level summaries can refer to the
-\verb+Infrastructure+ vignette.  Computation of the raw copy number
-estimates for each allele is described in the following section.
-
-For users that are interested in the analysis of a specific chromosome
-(subset of markers) or a s
-
-pointers to files on disk, are stored in the \verb+batchStatistics+
-slot of the class \Rclass{CNSet}.  Using the default settings for the
-\Rfunction{crlmmCopynumber} function, only an object of class
-\Rclass{CNSet} is required.  %(See \verb+AffyPreprocessCN+ or
-%\verb+IlluminaPreprocessCN+ vignettes for details.)
-
-Note that depends on whether the elements of the \verb+batchStatistics+
-slot are \Robject{ff} objects or ordinary matrices.  In this example,
-the elements of \verb+batchStatistics+ have the class
-\Rclass{ff\_matrix}.
+\verb+Infrastructure+ vignette.  Note that the data structure depends
+on whether the elements of the \verb+batchStatistics+ slot are
+\Robject{ff} objects or ordinary matrices.  In this example, the
+elements of \verb+batchStatistics+ have the class \Rclass{ff\_matrix}.
 
 <<classes>>=
 nms <- ls(batchStatistics(cnSet))
@@ -186,10 +105,8 @@ described in the \R{} package \Rpackage{ff}. The value returned by
 \Rfunction{crlmmCopynumber} is \verb+TRUE+, indicating that the files
 on disk have been successfully updated.  Note that while the
 \Robject{cnSet} object is unchanged, the values on disk are different.
-
-
-\noindent On the other hand, subsetting the \Robject{cnSet} with the
-`[' method coerces all of the elements to class \Rclass{matrix}. The
+On the other hand, subsetting the \Robject{cnSet} with the `[' method
+coerces all of the elements to class \Rclass{matrix}. The
 batch-specific summaries are now ordinary matrices stored in RAM. The
 object returned by \Robject{crlmmCopynumber} is an object of class
 \Rclass{CNSet} with the matrices in the \verb+batchStatistics+ slot
@@ -219,14 +136,18 @@ class(cnSet3)
 rm(cnSet2); gc()
 @
 
-\subsection{Raw copy number}
+\subsection{Marker-specific estimates}
+%\subsection{Raw copy number}
 
+%\paragraph{Log R ratios and B allele frequencies.}
+
+\paragraph{Raw total copy number.}
 Several functions are available that will compute relatively quickly
 the allele-specific, \emph{raw} copy number estimates. At allele $k$,
 marker $i$, sample $j$, and batch $p$, the estimate of allele-specific
 copy number is computed by subtracting the estimated background from
-the normalized intensity and scaling by the slope coefficient. More formally,
-\newcommand{\A}{A} \newcommand{\B}{B}
+the normalized intensity and scaling by the slope coefficient. More
+formally, \newcommand{\A}{A} \newcommand{\B}{B}
 \begin{eqnarray}
   \label{eq:cnK}
 {\hat c}_{k,ijp} &=& \mbox{max}\left\{\frac{1}{{\hat
@@ -246,9 +167,9 @@ at all markers for the first 2 samples, and the total copy number for
 chromosome 20 for the first 50 samples.
 
 <<totalCopynumber>>=
-tmp <- totalCopynumber(cnSet, i=1:nrow(cnSet), j=1:2)
+tmp <- totalCopynumber(cnSet, i=seq_len(nrow(cnSet)), j=1:2)
 dim(tmp)
-tmp2 <- totalCopynumber(cnSet, i=which(chromosome(cnSet) == 20), j=1:50)
+tmp2 <- totalCopynumber(cnSet, i=which(chromosome(cnSet) == 20), j=seq_len(ncol(cnSet)))
 dim(tmp2)
 @
 
@@ -258,98 +179,12 @@ chunk computes the allele-specific summaries at all polymorphic loci.
 
 <<ca>>=
 snp.index <- which(isSnp(cnSet) & !is.na(chromosome(cnSet)))
-ca <- CA(cnSet, i=snp.index, j=1:5)
-cb <- CB(cnSet, i=snp.index, j=1:5)
+ca <- CA(cnSet, i=snp.index, j=seq_len(ncol(cnSet)))
+cb <- CB(cnSet, i=snp.index, j=seq_len(ncol(cnSet)))
 @
 
-\noindent Note the equivalence of the following calculations.
 
-<<totalCopynumber>>=
-ct <- ca+cb
-ct2 <- totalCopynumber(cnSet, i=snp.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
-@
-
-At nonpolymorphic loci, \Rfunction{CA} function returns the total copy
-number and, by construction, the \Rfunction{CB} function returns 0.
-
-<<nonpolymorphicAutosomes>>=
-marker.index <- which(!isSnp(cnSet))
-ct <- CA(cnSet, i=marker.index, j=1:5)
-## all zeros
-stopifnot(all(CB(cnSet, i=marker.index, j=1:5) == 0))
-ct2 <- totalCopynumber(cnSet, i=marker.index, j=1:5)
-stopifnot(all.equal(ct, ct2))
-@
-
-In the following code chunk, we extract estimates of the total copy
-number at nonpolymorphic markers on chromosome X.
-
-<<npx>>=
-set.seed(123)
-npx.index <- which(chromosome(cnSet)==23 & !isSnp(cnSet))
-M <- sample(which(cnSet$gender[]==1), 5)
-F <- sample(which(cnSet$gender[]==2), 5)
-cn.M <- CA(cnSet, i=npx.index, j=M)
-cn.F <- CA(cnSet, i=npx.index, j=F)
-@
-
-\noindent Again, the function \Rfunction{totalCopynumber} is
-equivalent.
-
-<<npx2>>=
-cnX <- cbind(cn.M, cn.F)
-cnX2 <- totalCopynumber(cnSet, i=npx.index, j=c(M, F))
-stopifnot(all.equal(cnX, cnX2))
-@
-
-<<nonpolymorphicX,fig=TRUE,include=FALSE, echo=FALSE, eval=FALSE>>=
-df <- data.frame(cn=as.numeric(cnX), id=factor(rep(sampleNames(cnSet)[c(M,F)], each=nrow(cnX)), levels=sampleNames(cnSet)[c(M,F)], ordered=T))
-library(RColorBrewer)
-cols <- brewer.pal(8, "Accent")[c(1, 5)]
-print(bwplot(cn~id,df, panel=function(x,y,...){
-	panel.grid(v=-10,h=0)
-	panel.bwplot(x,y, ...)
-	panel.abline(h=1:2, col="grey70",lwd=2)
-},
-	scales=list(x=list(rot=90)), cex=0.5, ylab="total copy number", main="Chr X SNPs",
-       fill=cols[cnSet$gender[c(M,F)]], key=mykey))
-@
-
-%\begin{figure}[t!]
-% \centering
-% \includegraphics[width=0.5\textwidth]{copynumber-nonpolymorphicX}
-% \caption{Copy number estimates for nonpolymorphic loci on chromosome
-%   X (5 men, 5 women).  We assume that the median copy number across
-%   samples at a given marker on X is 1 for men and 2 for women.}
-%\end{figure}
-
-Polymorphic markers on chromosome X:
-
-<<polymorphicX,fig=TRUE,include=FALSE>>=
-library(RColorBrewer)
-cols <- brewer.pal(8, "Accent")[c(1, 5)]
-X.markers <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
-cnX <- totalCopynumber(cnSet, i=X.markers, j=c(M,F))
-df <- data.frame(cn=as.numeric(cnX), id=factor(rep(sampleNames(cnSet)[c(M,F)], each=length(X.markers)), levels=sampleNames(cnSet)[c(M,F)], ordered=T))
-mykey <- simpleKey(c("male", "female"), points=FALSE,col=cols)
-print(bwplot(cn~id,df, panel=function(x,y,...){
-	panel.grid(v=-10,h=0)
-	panel.bwplot(x,y, ...)
-	panel.abline(h=1:2, col="grey70",lwd=2)
-},
-	scales=list(x=list(rot=90)), cex=0.5, ylab="total copy number", main="Chr X SNPs",
-       fill=cols[cnSet$gender[c(M,F)]], key=mykey))
-@
-\begin{figure}[t!]
- \centering
- \includegraphics[width=0.5\textwidth]{copynumber-polymorphicX}
- \caption{Copy number estimates for polymorphic markers on chromosome
-   X. crlmm assumes that the median copy number across samples at a
-   given marker on X is 1 for men and 2 for women.}
-\end{figure}
-
-\subsection{A container for raw copy number}
+\subsection{Container for raw copy number}
 
 A useful container for storing the \crlmm{} genotypes, genotype
 confidence scores, and the total copy number at each marker is the
@@ -361,28 +196,6 @@ confidence scores, and the total copy number at each marker is the
 instantiated \Rclass{oligoSnpSet} will also be \Rpackage{ff}-dervied
 objects (a new \verb+total_cn*.ff+ file will be created in the
 \verb+ldPath()+ directory).
-
-%The advantage of this approach is that the raw copy number estimates
-%can be computed for all markers and all samples simultaneously without
-%excessive RAM.  The disadvantage is that such a step creates
-%additional I/O for reading and writing the raw copy number estimates
-%from disk.  For very large data sets (1000+ samples), the time
-%required for I/O may outweigh the benefits.  The alternative is to
-%perform downstream processing (such as smoothing) on the total copy
-%number for subsets of markers and/or samples.  As indicated
-%previously, the subset `[' method applied to an object of class
-%\Robject{CNSet} will return an object of the same class with simple
-%matrices instead of \Rpackage{ff} objects.  Therefore, one can
-%instantiate a \Rpackage{oligoSnpSet} object from a \Robject{CNSet}
-%object without the I/O overhead for storing the total copy number
-%estimates by first subsetting the \Rclass{CNSet} object.  One could
-%then smooth the raw copy number estimates and store a summary copy
-%number for the interval, thereby substantially reducing the
-%dimensionality of the copy number estimates.  Examples of smoothing
-%applications such as circular binary segmentation implemented in the
-%\Rpackage{DNAcopy} package or a hidden Markov model implemented in the
-%\Rpackage{VanillaICE} package are provided in the \verb+SmoothingCN+
-%vignette.
 
 <<oligoSnpSet>>=
 open(cnSet3)
@@ -398,19 +211,6 @@ the \Rfunction{totalCopynumber} function defined over the same row and
 column indices.
 
 <<testEqual>>=
-total.cn3 <- totalCopynumber(cnSet3, i=1:nrow(cnSet3), j=1:ncol(cnSet3))
+total.cn3 <- totalCopynumber(cnSet3, i=1:nrow(cnSet3), j=seq_len(ncol(cnSet3)))
 all.equal(copyNumber(oligoSet), total.cn3)
 @
-
-
-\section{Session information}
-<<sessionInfo, results=tex>>=
-toLatex(sessionInfo())
-@
-
-%\begin{bibliography}
-  \bibliographystyle{plain}
-  \bibliography{refs}
-%\end{bibliography}
-
-\end{document}

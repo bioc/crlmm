@@ -87,7 +87,7 @@ elements and all of the elements in the LinearModelParameter slot.
 }
 
 \examples{
-## Version 1.6* of crlmm used CNSetLM objects.
+\dontrun{
 data(cnSetExample)
 all(isCurrent(cnSetExample)) ## is the cnSet object current?
 
@@ -118,7 +118,7 @@ all.equal(cn4, cn2)
 cn5 <- totalCopynumber(cnSetExample, i=1:5)
 ## all markers, samples 1-5
 cn6 <- totalCopynumber(cnSetExample, j=1:2)
-
+}
 }
 \keyword{manip}
 
