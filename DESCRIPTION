@@ -13,8 +13,8 @@ Depends: R (>= 2.13.0),
          oligoClasses (>= 1.15.41)
 Imports: affyio (>= 1.19.2),
          ellipse,
-         ff (>= 2.2-1),
          genefilter (>= 1.33.0),
+	 ff (>= 2.2-1),
          mvtnorm,
          preprocessCore (>= 1.13.4),
          splines,
@@ -27,7 +27,7 @@ Suggests: hapmapsnp6,
           snpStats,
 	  ellipse,
 	  RUnit,
-	  ff
+	  ff (>= 2.2-1)
 Collate: AllGenerics.R
 	 AllClasses.R
 	 methods-AssayData.R
