@@ -554,7 +554,8 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 		  a <- A(object)[, J, drop=FALSE]
 		  b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
 		  is.np <- !isSnp(object)
-		  b[is.np, ] <- a[is.np, ]
+		  ##b[is.np, ] <- a[is.np, ]
+		  b[is.np, ] <- 0L
 		  dns <- dimnames(a)
 		  dimnames(a) <- dimnames(b) <- NULL
 		  obs.theta <- atan2(b, a)*2/pi
