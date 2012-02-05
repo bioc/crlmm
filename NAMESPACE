@@ -52,9 +52,15 @@ importFrom(mvtnorm, dmvnorm)
 importFrom(ellipse, ellipse)
 ##importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
 
-##importClassesFrom(oligoClasses, ff_matrix, ffdf)
-##exportMethods(lines)
-exportMethods(CA, CB)
+##----------------------------------------------------------------------------
+## export
+##----------------------------------------------------------------------------
+exportClasses(PredictionRegion)
+exportMethods(CA, CB, coerce,
+	      A, B, corr, nuA, nuB, phiA, phiB,
+	      predictionRegion, posteriorProbability,
+	      tau2, Ns, medians, mads,
+	      xyplot, calculateRBaf)
 export(crlmm,
        crlmmIllumina,
        crlmmIlluminaV2,
@@ -69,7 +75,4 @@ export(crlmm,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
-exportMethods(A, B, corr, nuA, nuB, phiA, phiB, predictionRegion, posteriorProbability, tau2, Ns, medians, mads,
-	      xyplot, calculateRBaf)
 export(ABpanel, constructInf, preprocessInf, genotypeInf, validCEL, celDates)
-exportClasses(PredictionRegion)

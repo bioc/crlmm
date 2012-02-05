@@ -1,6 +1,62 @@
 setMethod("posteriorMean", signature(object="CNSet"), function(object) assayDataElement(object, "posteriorMean"))
 setReplaceMethod("posteriorMean", signature(object="CNSet", value="matrix"), function(object, value) assayDataElementReplace(object, "posteriorMean", value))
 
+setAs("CNSet", "oligoSnpSet", function(from, to){
+	cnSet2oligoSnpSet(from)
+})
+
+cnSet2oligoSnpSet <- function(object){
+	row.index <- seq_len(nrow(object))
+	col.index <- seq_len(ncol(object))
+	is.lds <- ifelse(is(calls(object), "ff_matrix") | is(calls(object), "ffdf"), TRUE, FALSE)
+	if(is.lds) stopifnot(isPackageLoaded("ff"))
+	b.r <- calculateRBaf(object)
+##	if(is.lds){
+##		## initialize a big matrix for raw copy number
+##		message("creating an ff object for storing total copy number")
+##		tcn <- initializeBigMatrix(name="total_cn", nrow(object), ncol(object), vmode="double")
+##		for(j in 1:ncol(object)){
+##			tcn[, j] <- totalCopynumber(object, i=row.index, j=j)
+##		}
+##	} else {
+##		if(ncol(object) > 5){
+##			##this can be memory intensive, so we try to be careful
+##			col.index <- splitIndicesByLength(seq(length=ncol(object)), 5)
+##			tcn <- matrix(NA, nrow(object), ncol(object))
+##			dimnames(tcn) <- list(featureNames(object), sampleNames(object))
+##			rows <- 1:nrow(object)
+##			for(i in seq_along(col.index)){
+##				cat(".")
+##				j <- col.index[[i]]
+##				cnSet <- object[, j]
+##				tcn[, j] <- totalCopynumber(cnSet, i=row.index, j=1:ncol(cnSet))
+##				rm(cnSet); gc()
+##			}
+##			cat("\n")
+##		} else {
+##			tcn <- totalCopynumber(object, i=row.index, j=col.index)
+##		}
+##	}
+##	message("Transforming copy number to log2 scale")
+##	tcn[tcn < 0.1] <- 0.1
+##	tcn[tcn > 8] <- 8
+##	log.tcn <- log2(tcn)
+	tmp <- new("oligoSnpSet",
+		   ##copyNumber=log.tcn,
+		   copyNumber=b.r[[2]],
+		   ##baf=b.r[[1]],
+		   call=calls(object),
+		   callProbability=snpCallProbability(object),
+		   annotation=annotation(object),
+		   featureData=featureData(object),
+		   phenoData=phenoData(object),
+		   experimentData=experimentData(object),
+		   protocolData=protocolData(object))
+	tmp <- assayDataElementReplace(tmp, "baf", b.r[[1]])
+	return(tmp)
+}
+
+
 linearParamElementReplace <- function(obj, elt, value) {
     storage.mode <- storageMode(batchStatistics(obj))
     switch(storage.mode,
