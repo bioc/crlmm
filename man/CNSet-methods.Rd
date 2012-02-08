@@ -1,6 +1,7 @@
 \name{CNSet-methods}
 \Rdversion{1.1}
 \docType{methods}
+\alias{coerce,CNSet,oligoSnpSet-method}
 \alias{CA,CNSet-method}
 \alias{CB,CNSet-method}
 \alias{lines,CNSet-method}
@@ -33,8 +34,11 @@
 
 \section{Methods}{
   \describe{
+    \item{}{\code{as(from, "oligoSnpSet")}: Method for coercing object
+      \code{from} (class \code{CNSet}) to an object of class
+      \code{oligoSnpSet}.}
     \item{CA}{\code{signature(object="CNSet")}: calculates raw copy number
-  for allele A}
+      for allele A}
     \item{CB}{\code{signature(object="CNSet")}: calculates raw copy
   number for allele B}
     \item{lines}{\code{signature(x="CNSet")}: plot ellipses (95th
