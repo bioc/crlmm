@@ -42,17 +42,16 @@ cnSet2oligoSnpSet <- function(object){
 ##	tcn[tcn > 8] <- 8
 ##	log.tcn <- log2(tcn)
 	tmp <- new("oligoSnpSet",
-		   ##copyNumber=log.tcn,
-		   copyNumber=b.r[[2]],
-		   ##baf=b.r[[1]],
+		   copyNumber=integerMatrix(b.r[[2]], scale=100),
 		   call=calls(object),
 		   callProbability=snpCallProbability(object),
 		   annotation=annotation(object),
 		   featureData=featureData(object),
 		   phenoData=phenoData(object),
 		   experimentData=experimentData(object),
-		   protocolData=protocolData(object))
-	tmp <- assayDataElementReplace(tmp, "baf", b.r[[1]])
+		   protocolData=protocolData(object),
+		   is.integer=FALSE)
+	tmp <- assayDataElementReplace(tmp, "baf", integerMatrix(b.r[[1]], scale=1000))
 	return(tmp)
 }
 

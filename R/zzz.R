@@ -6,7 +6,7 @@ THISPKG <- "crlmm"
 ##}
 
 .onAttach <- function(libname, pkgname) {
-	packageStartupMessage("Welcome to crlmm version ", packageDescription(THISPKG, field="Version"))
+	packageStartupMessage("Welcome to crlmm version ", packageDescription(THISPKG, fields="Version"))
 }
 
 .onUnload <- function( libpath ){
