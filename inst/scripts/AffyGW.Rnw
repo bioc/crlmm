@@ -72,10 +72,7 @@ files to the path indicated by \verb+outdir+.
 
 <<setup>>=
 pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
-if(getRversion() < "2.13.0"){
-	rpath <- getRversion()
-} else rpath <- "trunk"
-outdir <- paste("/amber1/archive/oncbb/rscharpf/crlmm_vignette/", rpath, "/gw6/", sep="")
+outdir <- paste("/local_data/r00/crlmm/", getRversion(), "/affy_vignette", sep="")
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 

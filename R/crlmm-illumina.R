@@ -108,7 +108,7 @@ readIdatFiles = function(sampleSheet=NULL,
 		       if(!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)){
 		            sampleNames(RG) = sampleSheet$Sample_ID
 		       } else  sampleNames(RG) = arrayNames
-		       gc()
+		       gc(verbose=FALSE)
 	       }
 	       if(length(ids)==length(idsG)) {
 		       if(sum(ids==idsG)==nprobes) {
@@ -121,7 +121,7 @@ readIdatFiles = function(sampleSheet=NULL,
 		       zeroG = G$Quants[indG, "NBeads"]==0
 	       }
 	       rm(G)
-	       gc()
+	       gc(verbose=FALSE)
 	       if(verbose) {
                       cat(paste(sep, fileExt$red, sep=""), "\n")
 	       }
@@ -140,7 +140,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       }
 	       RG@assayData$zero[,i] = zeroG | zeroR
 	       rm(R, zeroG, zeroR)
-	       gc()
+	       gc(verbose=FALSE)
        }
        if(saveDate) {
 	       protocolData(RG)[["ScanDate"]] = dates$scan
@@ -500,7 +500,7 @@ readGenCallOutput = function(file, path=".", cdfName,
             X[,i]= dat$"XRaw"[ind][m]
             Y[,i]= dat$"YRaw"[ind][m]
         }
-        gc()
+        gc(verbose=FALSE)
     }
 
     zeroes=(X=="0"|Y=="0")
@@ -597,7 +597,8 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   sampleNames(XY) = sampleNames(RG)
   ## RS
   rm(list=c("bord", "infI", "aids", "bids", "ids", "snpbase"))
-  print(gc())
+#  print(gc())
+  gc(verbose=FALSE)
   # Need to initialize - matrices filled with NAs to begin with
 #  XY@assayData$X[1:nsnps,] = 0
 #  XY@assayData$Y[1:nsnps,] = 0
@@ -611,17 +612,18 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   ##r <- as.matrix(exprs(channel(RG, "R"))[not.na.aord,]) # mostly red
   r <- as.matrix(assayData(RG)[["R"]][not.na.aord, ])
   XY@assayData$X[not.na,] <- r
-  rm(r);gc()
+  rm(r);gc(verbose=FALSE)
   g <- as.matrix(assayData(RG)[["G"]][not.na.aord,]) # mostly green
   XY@assayData$Y[not.na,] <- g
-  rm(g); gc()
+  rm(g); gc(verbose=FALSE)
   ##z <- as.matrix(exprs(channel(RG, "zero"))[not.na.aord,]) # mostly green
   z <- as.matrix(assayData(RG)[["zero"]][not.na.aord, ])
   XY@assayData$zero[not.na,] <- z
-  rm(z); gc()
+  rm(z); gc(verbose=FALSE)
   ##RS added
   rm(RG)
-  print(gc())
+#  print(gc())
+  gc(verbose=FALSE)
   ## Warning - not 100% sure that the code below is correct - could be more complicated than this
 #  infIRR = infI & (snpbase=="[A/T]" | snpbase=="[T/A]" | snpbase=="[a/t]" | snpbase=="[t/a]")
 
@@ -638,7 +640,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 #  XY@assayData$X[infI,] = 0
 #  XY@assayData$Y[infI,] = 0
 #  XY@assayData$zero[infI,] = 0
-#  gc()
+#  gc(verbose=FALSE)
   XY
 }
 
@@ -685,7 +687,7 @@ stripNormalize = function(XY, useTarget=TRUE, verbose=TRUE) {
     XY@assayData$X[sel,] = matrix(as.integer(tmp[,1:(ncol(tmp)/2)]+16), nrow(tmp), ncol(tmp)/2)
     XY@assayData$Y[sel,] = matrix(as.integer(tmp[,(ncol(tmp)/2+1):ncol(tmp)]+16), nrow(tmp), ncol(tmp)/2)
     rm(subX, subY, tmp, sel)
-    gc()
+    gc(verbose=FALSE)
   }
   if(verbose)
     cat("\n")
@@ -755,7 +757,8 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 		##      t0 <- proc.time()-t0
 		##      if(verbose) message("Used ", round(t0[3],1), " seconds to save ", cnFile, ".")
 		rm(A, B, zero)
-		print(gc())
+#		print(gc())
+		gc(verbose=FALSE)
 	}
   # next process snp probes
   nprobes = length(snpIndex)
@@ -805,7 +808,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 		  else cat(".")
 	  }
 	  ## run garbage collection every now and then
-	  if(i %% 100 == 0) gc();
+	  if(i %% 100 == 0) gc(verbose=FALSE);
   }
   if (verbose) {
 	  if (getRversion() > '2.7.0') close(pb)
@@ -888,8 +891,8 @@ if(!isValidCdfName(cdfName))
 			       seed=seed, eps=eps, cdfName=cdfName, sns=sns,
 			       stripNorm=stripNorm, useTarget=useTarget) #,
 #                        save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-    is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-
+#    is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
+     is.lds = FALSE
 
 #    if(is.lds) {
 #      open(res[["A"]])
@@ -902,7 +905,7 @@ if(!isValidCdfName(cdfName))
 #    phenD = XY@phenoData
 #    protD = XY@protocolData
 #    rm(XY)
-#    gc()
+#    gc(verbose=FALSE)
 #    if(verbose) message("Initializing container for alleleA, alleleB, call, callProbability")
 #    callSet <- new("SnpSuperSet",
 #                    alleleA=initializeBigMatrix(name="A", nr=nrow(res[[1]]), nc=length(sns)),
@@ -932,7 +935,7 @@ if(!isValidCdfName(cdfName))
 #    pData(callSet)$SKW <- res$SKW
 #    pData(callSet)$SNR <- res$SNR
 #    mixtureParams <- res$mixtureParams
-#    rm(res); gc()
+#    rm(res); gc(verbose=FALSE)
   if(row.names) row.names=res$gns else row.names=NULL
   if(col.names) col.names=res$sns else col.names=NULL
   FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
@@ -976,14 +979,14 @@ if(!isValidCdfName(cdfName))
 #                  verbose=verbose,
 #                  returnParams=returnParams,
 #                  badSNP=badSNP)
-#    rm(res); gc()
+#    rm(res); gc(verbose=FALSE)
 #    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
 #    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
 #    callSet$gender[j] <- tmp$gender
 #    suppressWarnings(snpCall(callSet)[snp.index,] <- tmp[["calls"]])
 #    suppressWarnings(snpCallProbability(callSet)[snp.index,] <- tmp[["confs"]])
 #    callSet$gender <- tmp$gender
-#    rm(tmp); gc()
+#    rm(tmp); gc(verbose=FALSE)
 #    return(callSet)
 
   res2[["SNR"]] = res[["SNR"]]
@@ -994,7 +997,7 @@ if(!isValidCdfName(cdfName))
 #    delete(res[["SNR"]])
 #    delete(res[["mixtureParams"]])
 #  }
-  rm(res); gc()
+  rm(res); gc(verbose=FALSE)
   return(list2SnpSet(res2, returnParams=returnParams))
 }
 
@@ -1037,7 +1040,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #      open(RG@assayData$R); open(RG@assayData$G); open(RG@assayData$zero)
 #      delete(RG@assayData$R); delete(RG@assayData$G); delete(RG@assayData$zero)
 #    }
-    rm(RG); gc()
+    rm(RG); gc(verbose=FALSE)
 
     if (missing(sns)) { sns = sampleNames(XY)
     }
@@ -1049,7 +1052,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 #      open(XY@assayData$X); open(XY@assayData$Y); open(XY@assayData$zero)
 #      delete(XY@assayData$X); delete(XY@assayData$Y); delete(XY@assayData$zero)
 #    }
-    rm(XY); gc()
+    rm(XY); gc(verbose=FALSE)
 
     if(row.names) row.names=res$gns else row.names=NULL
     if(col.names) col.names=res$sns else col.names=NULL
@@ -1088,7 +1091,7 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
  #    delete(res[["A"]]); delete(res[["B"]])
  #    delete(res[["SKW"]]); delete(res[["SNR"]]); delete(res[["mixtureParams"]])
  #  }
-    rm(res); gc()
+    rm(res); gc(verbose=FALSE)
     return(list2SnpSet(res2, returnParams=returnParams))
 }
 
@@ -1123,7 +1126,7 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 	       scanDates$ScanDate[i] = G$RunInfo[1, 1]
 	       scanDates$DecodeDate[i] = G$RunInfo[2, 1]
 	       rm(G)
-	       gc()
+	       gc(verbose=FALSE)
        }
        protocoldata = new("AnnotatedDataFrame",
 			    data=scanDates,
@@ -1260,7 +1263,8 @@ preprocessInf <- function(cnSet,
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 	narrays = ncol(cnSet)
-	sampleBatches <- splitIndicesByLength(seq(length=ncol(cnSet)), ocSamples())
+#	sampleBatches <- splitIndicesByLength(seq(length=ncol(cnSet)), ocSamples())
+	sampleBatches <- splitIndicesByNode(seq(length=ncol(cnSet)))
 	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
 	ocLapply(seq_along(sampleBatches),
 		 processIDAT,
@@ -1460,12 +1464,12 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
                        highDensity=highDensity, sep=sep, fileExt=fileExt, saveDate=saveDate, verbose=verbose)
         XY = RGtoXY(RG, chipType=cdfName)
         rm(RG)
-        gc()
+        gc(verbose=FALSE)
         if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)
         res = preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
                                seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget) #, outdir=outdir)
         rm(XY)
-        gc()
+        gc(verbose=FALSE)
 	if(verbose) message("Finished preprocessing.")
         snp.index = which(is.snp)
 	np.index = which(!is.snp)
@@ -1507,6 +1511,6 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
         close(SNR); close(SKW)
         close(mixtureParams)
         rm(res)
-	gc()
+	gc(verbose=FALSE)
         TRUE
       }

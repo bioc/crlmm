@@ -88,6 +88,8 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	Rather, \code{batch} is required in order to initialize a
 	\code{CNSet} container with the appropriate dimensions.
 
+
+
       }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -106,10 +108,14 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   Bioinformatics. 2010 Jan 15;26(2):242-9.
 
 }
+
 \author{Matt Ritchie}
-\note{For large datasets, load the 'ff' package prior to genotyping --
-this will greatly reduce the RAM required for big jobs.  See
-\code{ldPath} and \code{ocSamples}.}
+
+  \note{For large datasets, load the 'ff' package prior to genotyping
+-- this will greatly reduce the RAM required for big jobs.  See
+\code{ldPath} and \code{ocSamples}.  The function
+\code{genotype.Illumina} supports parallelization, as the (not run)
+example below indicates.}
 
 \seealso{
 	\code{\link{crlmmIlluminaV2}},
@@ -117,6 +123,27 @@ this will greatly reduce the RAM required for big jobs.  See
 	\code{\link[oligoClasses]{ldOpts}}
 }
 \examples{
-  ##
+\dontrun{
+	library(ff)
+	library(crlmm)
+	## to enable paralellization, set to TRUE
+	if(FALSE){
+		library(snow)
+		## 10 workers
+		setCluster(10, "SOCK")
+	}
+	## path to idat files
+	datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+	## read in your samplesheet
+	samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
+	samplesheet <- samplesheet[-c(28:46,61:75,78:79), ]
+	arrayNames <- file.path(datadir, unique(samplesheet[, "SentrixPosition"]))
+	arrayInfo <- list(barcode=NULL, position="SentrixPosition")
+	cnSet <- genotype.Illumina(sampleSheet=samplesheet,
+				   arrayNames=arrayNames,
+				   arrayInfoColNames=arrayInfo,
+				   cdfName="human370v1c",
+				   batch=rep("1", nrow(samplesheet)))
+}
 }
 \keyword{classif}

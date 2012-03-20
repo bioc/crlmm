@@ -60,10 +60,7 @@ calls.
 
 <<ldpath,results=hide>>=
 library(ff)
-if(getRversion() < "2.13.0"){
-	rpath <- getRversion()
-} else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/illumina_vignette", sep="")
+outdir <- paste("/local_data/r00/crlmm/", getRversion(), "/illumina_vignette", sep="")
 ldPath(outdir)
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @

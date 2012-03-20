@@ -1540,7 +1540,10 @@ shrinkSummary <- function(object,
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	if(is.lds){
-		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+			index.list <- splitIndicesByNode(marker.index)
+		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 shrinkGenotypeSummaries,
 			 index.list=index.list,
@@ -1591,7 +1594,10 @@ genotypeSummary <- function(object,
 	myf <- summaryFxn(type[[1]])
 	FUN <- get(myf)
 	if(is.lds){
-		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+			index.list <- splitIndicesByNode(marker.index)
+		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
@@ -2110,7 +2116,9 @@ estimateCnParameters <- function(object,
 	myfun <- lmFxn(type[[1]])
 	FUN <- get(myfun)
 	if(is.lds){
-		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+			index.list <- splitIndicesByNode(marker.index)
+		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
