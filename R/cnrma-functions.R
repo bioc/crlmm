@@ -1541,7 +1541,7 @@ shrinkSummary <- function(object,
 	}
 	if(is.lds){
 		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+		if(parStatus()){
 			index.list <- splitIndicesByNode(marker.index)
 		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
@@ -1595,7 +1595,7 @@ genotypeSummary <- function(object,
 	FUN <- get(myf)
 	if(is.lds){
 		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+		if(parStatus()){
 			index.list <- splitIndicesByNode(marker.index)
 		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
@@ -2116,7 +2116,7 @@ estimateCnParameters <- function(object,
 	myfun <- lmFxn(type[[1]])
 	FUN <- get(myfun)
 	if(is.lds){
-		if(!is.null(getCluster()) & isPackageLoaded("snow")){
+		if(parStatus()){
 			index.list <- splitIndicesByNode(marker.index)
 		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),

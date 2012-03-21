@@ -129,8 +129,10 @@ example below indicates.}
 	## to enable paralellization, set to TRUE
 	if(FALSE){
 		library(snow)
-		## 10 workers
-		setCluster(10, "SOCK")
+		library(doSNOW)
+		## with 10 workers
+		cl <- makeCluster(10, type="SOCK")
+		registerDoSNOW(cl)
 	}
 	## path to idat files
 	datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"

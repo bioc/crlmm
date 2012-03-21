@@ -75,4 +75,4 @@ export(crlmm,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
-export(ABpanel, constructInf, preprocessInf, genotypeInf, validCEL, celDates)
+export(ABpanel, validCEL, celDates)

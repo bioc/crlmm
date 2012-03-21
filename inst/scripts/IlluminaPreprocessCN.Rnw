@@ -60,6 +60,7 @@ calls.
 
 <<ldpath,results=hide>>=
 library(ff)
+options(ffcaching="ffeachflush")
 outdir <- paste("/local_data/r00/crlmm/", getRversion(), "/illumina_vignette", sep="")
 ldPath(outdir)
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)

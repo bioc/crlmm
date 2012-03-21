@@ -102,7 +102,10 @@ library(crlmm)
 ## genotype 50K SNPs at a time
 ocProbesets(50000)
 ## setup cluster - 8 cores on the machine
-setCluster(8, "SOCK")
+library(doSNOW)
+cl <- makeCluster(8, "SOCK")
+registerDoSNOW(cl)
+##setCluster(8, "SOCK")
 
 path <- system.file("celFiles", package="hapmapsnp6")
 cels <- list.celfiles(path, full.names=TRUE)

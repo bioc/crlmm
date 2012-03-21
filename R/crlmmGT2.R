@@ -99,7 +99,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 				   mIndex=mIndex, params=params,
 				   cIndexes=cIndexes, SMEDIAN=SMEDIAN,
 				   theKnots=theKnots, DF=DF, probs=probs,
-				   batchSize=ocProbesets())
+				   batchSize=ocProbesets(),
+				   neededPkgs="crlmm")
 	newparams <- vector("list", 3)
 	names(newparams) <- c("centers", "scales", "N")
 	newparams[["centers"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 1))
@@ -227,7 +228,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		 A=A, B=B, mixtureParams=mixtureParams, fIndex=fIndex,
 		 mIndex=mIndex, params=params, cIndexes=cIndexes,
 		 SMEDIAN=SMEDIAN, theKnots=theKnots, DF=DF, probs=probs,
-		 regionInfo=regionInfo, batchSize=ocProbesets())
+		 regionInfo=regionInfo, batchSize=ocProbesets(),
+		 neededPkgs="crlmm")
 	##  END MOVE TO C#######
 	## ##################
 	##
