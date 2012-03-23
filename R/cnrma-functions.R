@@ -1896,85 +1896,85 @@ isCall <- function(G, call){
 	G.call
 }
 
-computeSummary <- function(object, G.call, call, I, allele, Ns, index){
-	k <- match("grandMean", batchNames(object))
-	stats <- summaryStats(G.call, I, FUNS=c("rowMedians", "rowMAD"))
-	Ns[, k] <- rowSums(G.call, na.rm=TRUE)
-	updateStats(stats, Ns, object, call, allele, index)
-	gc()
-	return()
-}
+##computeSummary <- function(object, G.call, call, I, allele, Ns, index){
+##	k <- match("grandMean", batchNames(object))
+##	stats <- summaryStats(G.call, I, FUNS=c("rowMedians", "rowMAD"))
+##	Ns[, k] <- rowSums(G.call, na.rm=TRUE)
+##	updateStats(stats, Ns, object, call, allele, index)
+##	gc()
+##	return()
+##}
 
-updateTau <- function(object, tau2, G.call, call, I, allele, index){
-	k <- match("grandMean", batchNames(object))
-	logI <- log2(I)
-	rm(I); gc()
-	tau2[, k] <- summaryStats(G.call, logI, FUNS="rowMAD")^2
-	if(call==1 & allele=="A"){
-		tau2A.AA(object)[index, ] <- tau2
-	}
-	if(call==1 & allele=="B"){
-		tau2B.AA(object)[index, ] <- tau2
-	}
-	if(call==3 & allele=="A"){
-		tau2A.BB(object)[index, ] <- tau2
-	}
-	if(call==3 & allele=="B"){
-		tau2B.BB(object)[index, ] <- tau2
-	}
-	NULL
-}
+##updateTau <- function(object, tau2, G.call, call, I, allele, index){
+##	k <- match("grandMean", batchNames(object))
+##	logI <- log2(I)
+##	rm(I); gc()
+##	tau2[, k] <- summaryStats(G.call, logI, FUNS="rowMAD")^2
+##	if(call==1 & allele=="A"){
+##		tau2A.AA(object)[index, ] <- tau2
+##	}
+##	if(call==1 & allele=="B"){
+##		tau2B.AA(object)[index, ] <- tau2
+##	}
+##	if(call==3 & allele=="A"){
+##		tau2A.BB(object)[index, ] <- tau2
+##	}
+##	if(call==3 & allele=="B"){
+##		tau2B.BB(object)[index, ] <- tau2
+##	}
+##	NULL
+##}
 
-updateCors <- function(cors, G.call, I){
-	k <- match("grandMean", batchNames(object))
-	cors[, k] <- rowCors(I[[1]]*G.call, I[[2]]*G.call, na.rm=TRUE)
-	if(call==1){
-		corrAA(object)[index, ] <- cors
-	}
-	if(call==2){
-		corrAB(object)[index, ] <- cors
-	}
-	if(call==3){
-		corrBB(object)[index, ] <- cors
-	}
-}
+##updateCors <- function(cors, G.call, I){
+##	k <- match("grandMean", batchNames(object))
+##	cors[, k] <- rowCors(I[[1]]*G.call, I[[2]]*G.call, na.rm=TRUE)
+##	if(call==1){
+##		corrAA(object)[index, ] <- cors
+##	}
+##	if(call==2){
+##		corrAB(object)[index, ] <- cors
+##	}
+##	if(call==3){
+##		corrBB(object)[index, ] <- cors
+##	}
+##}
 
-updateStats <- function(stats, Ns, object, call, allele, tau2, index){
-	if(call==1){
-		Ns.AA(object)[index, ] <- Ns
-		if(allele=="A"){
-			medianA.AA(object)[index, k] <- stats[, 1]
-			madA.AA(object)[index, k] <- stats[, 2]
-			updateTau(object, tau2, G.call, call, I, allele, index)
-		} else {
-			medianB.AA(object)[index, k] <- stats[, 1]
-			madB.AA(object)[index, k] <- stats[, 2]
-			updateTau(object, tau2, G.call, call, I, allele, index)
-		}
-	}
-	if(call==2){
-		Ns.AB(object)[index, ] <- Ns
-		if(allele=="A"){
-			medianA.AB(object)[index, k] <- stats[, 1]
-			madA.AB(object)[index, k] <- stats[, 2]
-		} else {
-			medianB.AB(object)[index, k] <- stats[, 1]
-			madB.AB(object)[index, k] <- stats[, 2]
-		}
-	}
-	if(call==3){
-		Ns.BB(object)[index, ] <- Ns
-		if(allele=="A"){
-			medianA.BB(object)[index, k] <- stats[, 1]
-			madA.BB(object)[index, k] <- stats[, 2]
-			updateTau(object, tau2, G.call, call, I, allele, index)
-		} else {
-			medianB.BB(object)[index, k] <- stats[, 1]
-			madB.BB(object)[index, k] <- stats[, 2]
-			updateTau(object, tau2, G.call, call, I, allele, index)
-		}
-	}
-}
+##updateStats <- function(stats, Ns, object, call, allele, tau2, index){
+##	if(call==1){
+##		Ns.AA(object)[index, ] <- Ns
+##		if(allele=="A"){
+##			medianA.AA(object)[index, k] <- stats[, 1]
+##			madA.AA(object)[index, k] <- stats[, 2]
+##			updateTau(object, tau2, G.call, call, I, allele, index)
+##		} else {
+##			medianB.AA(object)[index, k] <- stats[, 1]
+##			madB.AA(object)[index, k] <- stats[, 2]
+##			updateTau(object, tau2, G.call, call, I, allele, index)
+##		}
+##	}
+##	if(call==2){
+##		Ns.AB(object)[index, ] <- Ns
+##		if(allele=="A"){
+##			medianA.AB(object)[index, k] <- stats[, 1]
+##			madA.AB(object)[index, k] <- stats[, 2]
+##		} else {
+##			medianB.AB(object)[index, k] <- stats[, 1]
+##			madB.AB(object)[index, k] <- stats[, 2]
+##		}
+##	}
+##	if(call==3){
+##		Ns.BB(object)[index, ] <- Ns
+##		if(allele=="A"){
+##			medianA.BB(object)[index, k] <- stats[, 1]
+##			madA.BB(object)[index, k] <- stats[, 2]
+##			updateTau(object, tau2, G.call, call, I, allele, index)
+##		} else {
+##			medianB.BB(object)[index, k] <- stats[, 1]
+##			madB.BB(object)[index, k] <- stats[, 2]
+##			updateTau(object, tau2, G.call, call, I, allele, index)
+##		}
+##	}
+##}
 
 crlmmCopynumber <- function(object,
 			    MIN.SAMPLES=10,

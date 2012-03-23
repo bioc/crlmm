@@ -214,7 +214,7 @@ setMethod("annotatedDataFrameFrom", "ffdf", Biobase:::annotatedDataFrameFromMatr
 
 ## Document this...
 getBAF <- function(theta, canonicalTheta)
-    .Call('normalizeBAF', theta, ct)
+    .Call('normalizeBAF', theta, canonicalTheta)
 
 
 validCEL <- function(celfiles){

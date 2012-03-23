@@ -31,6 +31,7 @@ R. Scharpf
 }
 
 \examples{
+library(oligoClasses)
 if(require(hapmapsnp6)){
   path <- system.file("celFiles", package="hapmapsnp6")
   cels <- list.celfiles(path, full.names=TRUE)

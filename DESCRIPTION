@@ -1,21 +1,21 @@
 Package: crlmm
 Type: Package
 Title: Genotype Calling (CRLMM) and Copy Number Analysis tool for Affymetrix SNP 5.0 and 6.0 and Illumina arrays.
-Version: 1.13.12
-Date: 2010-12-10
-Author: Benilton S Carvalho <Benilton.Carvalho@cancer.org.uk>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.edu.au>, Ingo Ruczinski <iruczins@jhsph.edu>, Rafael A Irizarry
+Version: 1.13.14
+Author: Benilton S Carvalho, Robert Scharpf, Matt Ritchie, Ingo Ruczinski, Rafael A Irizarry
 Maintainer: Benilton S Carvalho <Benilton.Carvalho@cancer.org.uk>, Robert Scharpf <rscharpf@jhsph.edu>, Matt Ritchie <mritchie@wehi.EDU.AU>
 Description: Faster implementation of CRLMM specific to SNP 5.0 and 6.0 arrays, as well as a copy number tool specific to 5.0, 6.0, and Illumina platforms
 License: Artistic-2.0
-Depends: R (>= 2.13.0),
-         methods,
-         Biobase (>= 2.15.0),
-         oligoClasses (>= 1.17.34)
-Imports: affyio (>= 1.19.2),
+Depends: R (>= 2.14.0)
+Imports: methods,
+         Biobase (>= 2.15.4),
+         oligoClasses (>= 1.17.36),
+         BiocGenerics,
+         affyio (>= 1.23.2),
          ellipse,
-         genefilter (>= 1.33.0),
+         genefilter (>= 1.37.1),
          mvtnorm,
-         preprocessCore (>= 1.13.4),
+         preprocessCore (>= 1.17.7),
          splines,
          stats,
          SNPchip,
@@ -41,10 +41,8 @@ Collate: AllGenerics.R
 	 crlmmGT2.R
          crlmm-illumina.R
 	 snprma-functions.R
-	 cn-functions.R
          utils.R
          zzz.R
 	 test_crlmm_package.R
 LazyLoad: yes
 biocViews: Microarray, Preprocessing, SNP, Bioinformatics, CopyNumberVariants
-Packaged: 2011-04-30 17:10:59 UTC; biocbuild

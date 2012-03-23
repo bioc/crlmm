@@ -14,7 +14,7 @@ getCor <- function(object, gt){
 getTau2 <- function(object, gt){
 	bs <- batchStatistics(object)
 	nma <- paste("tau2A", gt, sep=".")
-	nma <- paste("tau2B", gt, sep=".")
+	nmb <- paste("tau2B", gt, sep=".")
 	tau2.a <- assayDataElement(bs, nma)
 	tau2.b <- assayDataElement(bs, nmb)
 	cbind(tau2.a, tau2.b)

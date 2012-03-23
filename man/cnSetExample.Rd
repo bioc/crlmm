@@ -11,7 +11,9 @@
 
 }
 \details{
-  This object was created from the copynumber vignette in inst/scripts.
+  This object was created from the copynumber vignette in
+  inst/scripts. A subset of markers was selected to keep the package
+  size small.
 }
 \usage{
 

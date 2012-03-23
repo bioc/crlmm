@@ -82,6 +82,7 @@ crlmm2(filenames, row.names=TRUE, col.names=TRUE,
 }
 \examples{
 ## this can be slow
+library(oligoClasses)
 if (require(genomewidesnp6Crlmm) & require(hapmapsnp6)){
   path <- system.file("celFiles", package="hapmapsnp6")
 

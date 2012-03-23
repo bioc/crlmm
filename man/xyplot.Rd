@@ -34,6 +34,7 @@ R. Scharpf
 }
 
 \examples{
+library(oligoClasses)
 data(cnSetExample2)
 table(batch(cnSetExample2))
 sample.index <- which(batch(cnSetExample2) == "CUPID")

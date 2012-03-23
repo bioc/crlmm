@@ -1,56 +1,68 @@
 useDynLib("crlmm", .registration=TRUE)
 
-##---------------------------------------------------------------------------
-## Biobase
-##---------------------------------------------------------------------------
-importClassesFrom(Biobase, AnnotatedDataFrame, AssayData, eSet, SnpSet,
-		  NChannelSet, MIAME, Versioned, VersionedBiobase,
-		  Versions)
-importMethodsFrom(Biobase, annotation, "annotation<-",
-                  annotatedDataFrameFrom, assayData, "assayData<-",
-                  combine, dims, experimentData, "experimentData<-",
-                  fData, featureData, "featureData<-", featureNames,
-                  fvarMetadata, fvarLabels, pData, "pData<-", phenoData,
-                  "phenoData<-", protocolData, "protocolData<-",
-                  pubMedIds, rowMedians, sampleNames, snpCall,
-                  snpCallProbability,
-		  "snpCall<-", "snpCallProbability<-", storageMode,
-                  "storageMode<-", updateObject, varLabels)
-importFrom(Biobase, assayDataElement, assayDataElementNames,
-           assayDataElementReplace, assayDataNew, classVersion,
-           validMsg)
+importClassesFrom(Biobase, AssayData, eSet)
 
-##---------------------------------------------------------------------------
-## oligoClasses
-##---------------------------------------------------------------------------
-importClassesFrom(oligoClasses, SnpSuperSet, AlleleSet, CNSet)##, ff_or_matrix)
-importMethodsFrom(oligoClasses, allele, calls, "calls<-", confs,
-		  "confs<-", cnConfidence, "cnConfidence<-", isSnp,
-		  chromosome, position, A, B,
-		  "A<-", "B<-", open, close, flags,
-		  openff, closeff,
-		  batchStatistics, "batchStatistics<-", updateObject,
-		  checkOrder)
+importClassesFrom(methods, ANY, character, formula, integer, list,
+                  matrix, oldClass)
+importFrom(methods, setOldClass)
 
-importFrom(oligoClasses, chromosome2integer, celfileDate, list.celfiles,
-           copyNumber, initializeBigMatrix, initializeBigVector, isPackageLoaded)
+## importClassesFrom(oligoClasses, CNSet, CNSetLM, ff_matrix,
+##                   ff_or_matrix, oligoSnpSet)
+importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix)
+##setOldClass(ff_or_matrix)
 
+importMethodsFrom(Biobase, annotatedDataFrameFrom, annotation,
+                  assayData, experimentData, featureData,
+                  "featureData<-", featureNames, "featureNames<-",
+                  pData, "pData<-", phenoData, "phenoData<-",
+                  protocolData, "protocolData<-", rowMedians,
+                  sampleNames, snpCall, "snpCall<-",
+                  snpCallProbability, "snpCallProbability<-",
+                  storageMode, "storageMode<-", varLabels)
 
-importFrom(graphics, abline, axis, layout, legend, mtext, par, plot,
-           polygon, rect, segments, text, points, boxplot, lines)
+importMethodsFrom(BiocGenerics, cbind, colnames, Filter, get,
+                  intersect, lapply, ncol, NCOL, nrow, NROW, order,
+                  paste, pmax, pmin, rbind, rownames, sapply, setdiff,
+                  table, union, unique)
 
-importFrom(lattice, xyplot, simpleKey, panel.grid, panel.xyplot, lrect, ltext,
-	   lpoints, panel.number, lpolygon)
+importMethodsFrom(genefilter, show)
 
-importFrom(grDevices, grey)
-importFrom(affyio, read.celfile.header, read.celfile)
-importFrom(preprocessCore, normalize.quantiles.use.target, normalize.quantiles)
-importFrom(utils, data, packageDescription, setTxtProgressBar, txtProgressBar)
-importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile, sd, update)
-importFrom(genefilter, rowSds)
-importFrom(mvtnorm, dmvnorm)
+importMethodsFrom(oligoClasses, A, "A<-", B, batch, batchNames,
+                  batchStatistics, "batchStatistics<-", calls,
+                  chromosome, close, confs, flags, isSnp, mean, nu,
+                  open, phi, "sampleNames<-")
+
+importFrom(affyio, read.celfile, read.celfile.header)
+
+importFrom(Biobase, assayDataElement, assayDataElementReplace,
+           assayDataNew, copyEnv)
+
 importFrom(ellipse, ellipse)
-##importFrom(ff, ffdf, physical.ff, physical.ffdf, ffrowapply)
+
+importFrom(genefilter, rowSds)
+
+importFrom(lattice, lpolygon, panel.grid, panel.number, panel.xyplot,
+           xyplot)
+
+importFrom(methods, "@<-", as, callNextMethod, is, new, validObject)
+
+importFrom(mvtnorm, rmvnorm)
+
+importFrom(oligoClasses, celfileDate, chromosome2integer, i2p,
+           initializeBigMatrix, initializeBigVector, integerMatrix,
+	   isPackageLoaded,
+           ldPath, ocLapply, ocProbesets, ocSamples,
+	   parStatus,
+           splitIndicesByLength, splitIndicesByNode)
+
+importFrom(preprocessCore, normalize.quantiles,
+           normalize.quantiles.use.target)
+
+importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
+           sd)
+
+importFrom(utils, packageDescription, setTxtProgressBar,
+           txtProgressBar)
 
 ##----------------------------------------------------------------------------
 ## export
