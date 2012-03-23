@@ -2,10 +2,10 @@ All: vignettes clean
 
 ## all pdfs must be generated from the first target of the Makefile
 vignettes: AffyGW.tex
-	cp ../scripts/AffyGW.pdf .
-	cp ../scripts/IlluminaPreprocessCN.pdf .
-	cp ../scripts/Infrastructure.pdf .
-	cp ../scripts/crlmmDownstream.pdf .
+	cp ../inst/scripts/AffyGW.pdf .
+	cp ../inst/scripts/IlluminaPreprocessCN.pdf .
+	cp ../inst/scripts/Infrastructure.pdf .
+	cp ../inst/scripts/gtypeDownstream.pdf .
 	texi2dvi --pdf genotyping.tex
 	texi2dvi --pdf CopyNumberOverview.tex
 
