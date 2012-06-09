@@ -1263,8 +1263,8 @@ preprocessInf <- function(cnSet,
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 	narrays = ncol(cnSet)
-#	sampleBatches <- splitIndicesByLength(seq(length=ncol(cnSet)), ocSamples())
-	sampleBatches <- splitIndicesByNode(seq(length=ncol(cnSet)))
+	sampleBatches <- splitIndicesByLength(seq_len(ncol(cnSet)), ocSamples()/getDoParWorkers())
+	##sampleBatches <- splitIndicesByNode(seq(length=ncol(cnSet)))
 	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
 	ocLapply(seq_along(sampleBatches),
 		 crlmm:::processIDAT,

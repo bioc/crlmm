@@ -192,7 +192,8 @@ snprmaAffy <- function(cnSet, filenames,
 	pkgname <- getCrlmmAnnotationName(annotation(cnSet))
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
-	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	##sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
 	ocLapply(sampleBatches,
 		 rsprocessCEL,
 		 filenames=filenames,
@@ -1260,7 +1261,8 @@ cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
 	if (missing(sns)) sns <- basename(filenames)
-	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	##sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
 	if(verbose) message("Processing nonpolymorphic probes for ", length(filenames), " files.")
 	## updates A
 	ocLapply(sampleBatches,
@@ -1541,9 +1543,10 @@ shrinkSummary <- function(object,
 	}
 	if(is.lds){
 		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets()/getDoParWorkers())
 		ocLapply(seq(along=index.list),
 			 shrinkGenotypeSummaries,
 			 index.list=index.list,
@@ -1595,9 +1598,10 @@ genotypeSummary <- function(object,
 	FUN <- get(myf)
 	if(is.lds){
 		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets()/getDoParWorkers())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
@@ -2116,9 +2120,10 @@ estimateCnParameters <- function(object,
 	myfun <- lmFxn(type[[1]])
 	FUN <- get(myfun)
 	if(is.lds){
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets()/getDoParWorkers())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,

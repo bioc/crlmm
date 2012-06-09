@@ -15,7 +15,9 @@ if( require( "RUnit", quietly=TRUE ) ) {
 	##xmap.clear.cache()
 
 	##Fail on warnings
-	options( warn=2 )
+	##options( warn=2 )
+	##Do not fail on warnings
+	options(warn=0)
 
 	## Get the pattern (if there is one?)
 	patt <- Sys.getenv( "RUNITFILEPATTERN" )

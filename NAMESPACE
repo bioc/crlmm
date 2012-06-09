@@ -64,6 +64,8 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
 importFrom(utils, packageDescription, setTxtProgressBar,
            txtProgressBar)
 
+importFrom(foreach, getDoParWorkers)
+
 ##----------------------------------------------------------------------------
 ## export
 ##----------------------------------------------------------------------------
