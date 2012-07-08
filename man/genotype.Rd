@@ -12,7 +12,7 @@
 genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
          verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3),
          DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
-         gender = NULL, returnParams = TRUE, badSNP = 0.7)
+         gender = NULL, returnParams = TRUE, badSNP = 0.7,  genome=c("hg19", "hg18"))
 }
 \arguments{
   \item{filenames}{ complete path to CEL files}
@@ -37,7 +37,10 @@ genotype(filenames, cdfName, batch, mixtureSampleSize = 10^5, eps =0.1,
   with same length as filenames.  If missing, the gender is predicted.}
   \item{returnParams}{'logical'. Return recalibrated parameters from
     crlmm.}
-  \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
+  \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects
+    batchQC)}
+  \item{genome}{character string indicating the UCSC genome build for
+    the SNP annotation}
 }
 
 \details{

@@ -38,12 +38,12 @@ citEntry(entry="article",
 		 "Aravinda Chakravarti and",
 		 "Rafael A Irizarry"),
   journal = "Biostatistics",
-  year = "2010",
-  volume="",
-  pages="",
+  year = "2011",
+  volume="12",
+  pages="33--50",
   textVersion = paste("Scharpf RB, Ruczinski I, Carvalho B, Doan B, Chakravarti A, Irizarry RA",
                       "A multilevel model to address batch effects in copy number estimation using SNP arrays",
-		      "Biostatistics. 2010."))
+		      "Biostatistics. 2011."))
 
 citEntry(entry = "Article",
   title        = "Using the {R} Package {crlmm} for Genotyping and Copy Number Estimation",

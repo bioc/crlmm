@@ -1,4 +1,4 @@
-# function below works OK provided all .idat files are in the current working directory
+					# function below works OK provided all .idat files are in the current working directory
 # - could add an option to allow files in Illumina directory structure to be handled
 # or to use the optional 'Path' column in sampleSheet
 # - there is a lot of header information that is currently discarded - could try and store this somewhere in the resulting NChannelSet
@@ -36,7 +36,7 @@ readIdatFiles = function(sampleSheet=NULL,
 		       }
 	       }
 	       pd = new("AnnotatedDataFrame", data = sampleSheet)
-	       sampleNames(pd) = basename(arrayNames)
+	       sampleNames(pd) = make.unique(basename(arrayNames))
        }
        if(is.null(arrayNames)) {
                arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -95,7 +95,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       if(i==1) {
 		       if(is.null(ids) && !is.null(G)){
 			       ids = idsG
-		       } else stop("Could not find probe IDs")
+		       } # else stop("Could not find probe IDs")
 		       nprobes = length(ids)
 		       narrays = length(arrayNames)
 		       RG = new("NChannelSet",
@@ -106,8 +106,8 @@ readIdatFiles = function(sampleSheet=NULL,
 				 phenoData=pd, storage.mode="environment")
 		       featureNames(RG) = ids
 		       if(!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)){
-		            sampleNames(RG) = sampleSheet$Sample_ID
-		       } else  sampleNames(RG) = arrayNames
+		            sampleNames(RG) = make.unique(sampleSheet$Sample_ID)
+		       } else  sampleNames(RG) = make.unique(basename(arrayNames))
 		       gc(verbose=FALSE)
 	       }
 	       if(length(ids)==length(idsG)) {
@@ -524,7 +524,6 @@ readGenCallOutput = function(file, path=".", cdfName,
 
 
 RGtoXY = function(RG, chipType, verbose=TRUE) {
-
   needToLoad <- !all(sapply(c('addressA', 'addressB', 'base'), isLoaded))
   if(needToLoad){
 	  chipList = c("human1mv1c",# 1M
@@ -537,12 +536,14 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	  "human1mduov3b",          # 1M Duo
 	  "humanomni1quadv1b",      # Omni1 quad
 	  "humanomni25quadv1b",     # Omni2.5 quad
+	  "humanomni258v1a",        # Omni2.5 8 sample
 	  "humanomniexpress12v1b",  # Omni express 12
 	  "humanimmuno12v1b",       # Immuno chip 12
           "humancytosnp12v2p1h")    # CytoSNP 12
+	  ## RS: added cleancdfname()
 	  if(missing(chipType)){
-		  chipType = match.arg(annotation(RG), chipList)
-	  } else chipType = match.arg(chipType, chipList)
+		  chipType = match.arg(cleancdfname(annotation(RG)), chipList)
+	  } else chipType = match.arg(cleancdfname(chipType), chipList)
 	  pkgname = getCrlmmAnnotationName(chipType)
 	  if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
 		  suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -1106,7 +1107,7 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
                          Position = rep(NA, narrays))
 
        scanDates = data.frame(ScanDate=rep(NA, narrays), DecodeDate=rep(NA, narrays))
-       rownames(scanDates) = gsub(paste(sep, fileExt, sep=""), "", filenames)
+       rownames(scanDates) <- make.unique(gsub(paste(sep, fileExt, sep=""), "", filenames))
        ## read in the data
        for(i in seq_along(filenames)) {
                if(verbose)
@@ -1132,7 +1133,7 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 			    data=scanDates,
 			    varMetadata=data.frame(labelDescription=colnames(scanDates),
 			                           row.names=colnames(scanDates)))
-	return(protocoldata)
+       return(protocoldata)
 }
 
 
@@ -1171,7 +1172,7 @@ constructInf <- function(sampleSheet=NULL,
 			}
 		}
 		pd = new("AnnotatedDataFrame", data = sampleSheet)
-		sampleNames(pd) = basename(arrayNames)
+		sampleNames(pd) = make.unique(basename(arrayNames))
 	}
 	if(is.null(arrayNames)) {
 		arrayNames = gsub(paste(sep, fileExt$green, sep=""), "", dir(pattern=fileExt$green, path=path))
@@ -1210,17 +1211,29 @@ constructInf <- function(sampleSheet=NULL,
 	if(verbose) message("Initializing container for genotyping and copy number estimation")
 	featureData = getFeatureData(cdfName, copynumber=TRUE)
 	nr = nrow(featureData); nc = narrays
+	sns <-  if (!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)) {
+		make.unique(sampleSheet$Sample_ID)
+        } else{
+		make.unique(basename(arrayNames))
+	}
+	biga <- initializeBigMatrix(name="A", nr, nc)
+	bigb <- initializeBigMatrix(name="B", nr, nc)
+	bigc <- initializeBigMatrix(name="call", nr, nc)
+	bigd <- initializeBigMatrix(name="callPr", nr,nc)
+	colnames(biga) <- colnames(bigb) <- colnames(bigc) <- colnames(bigd) <- sns
 	cnSet <- new("CNSet",
-		     alleleA=initializeBigMatrix(name="A", nr, nc),
-		     alleleB=initializeBigMatrix(name="B", nr, nc),
-		     call=initializeBigMatrix(name="call", nr, nc),
-		     callProbability=initializeBigMatrix(name="callPr", nr,nc),
+		     alleleA=biga,
+		     alleleB=bigb,
+		     call=bigc,
+		     callProbability=bigd,
 		     annotation=cdfName,
 		     featureData=featureData,
 		     batch=batch)
-        if (!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)) {
-	   	sampleNames(cnSet) = sampleSheet$Sample_ID
-        } else  sampleNames(cnSet) = arrayNames
+##        if (!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)) {
+##		sampleNames(cnSet) = make.unique(sampleSheet$Sample_ID)
+##        } else{
+##		sampleNames(cnSet) <- make.unique(basename(arrayNames))
+##	}
 	if(saveDate){
 		protocolData = getProtocolData.Illumina(grnidats, sep=sep, fileExt=fileExt$green, verbose=verbose)
 	} else{
@@ -1233,7 +1246,7 @@ constructInf <- function(sampleSheet=NULL,
 	cnSet$gender <- initializeBigVector("gender", ncol(cnSet), vmode="integer")
 	cnSet$SNR = initializeBigVector("crlmmSNR-", ncol(cnSet), "double")
 	cnSet$SKW = initializeBigVector("crlmmSKW-", ncol(cnSet), "double")
-	sampleNames(cnSet) <- basename(sampleNames(cnSet))
+	##sampleNames(cnSet) <- basename(sampleNames(cnSet))
 	return(cnSet)
 }
 construct.Illumina <- constructInf
@@ -1263,8 +1276,7 @@ preprocessInf <- function(cnSet,
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 	narrays = ncol(cnSet)
-#	sampleBatches <- splitIndicesByLength(seq(length=ncol(cnSet)), ocSamples())
-	sampleBatches <- splitIndicesByNode(seq(length=ncol(cnSet)))
+	sampleBatches <- splitIndicesByLength(seq_len(ncol(cnSet)), ocSamples()/getDoParWorkers())
 	mixtureParams = initializeBigMatrix("crlmmMixt-", 4, narrays, "double")
 	ocLapply(seq_along(sampleBatches),
 		 crlmm:::processIDAT,

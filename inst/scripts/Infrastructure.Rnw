@@ -129,11 +129,9 @@ directory to store output files and setting the \Rfunction{ldPath}
 function with this path.
 
 <<path>>=
-if(getRversion() < "2.13.0"){
-	rpath <- getRversion()
-} else rpath <- "trunk"
-outdir <- paste("/thumper/ctsa/snpmicroarray/rs/ProcessedData/crlmm/", rpath, "/copynumber_vignette", sep="")
+outdir <- paste("/local_data/r00/crlmm/", getRversion(), "/infrastructure", sep="")
 ldPath(outdir)
+if(!file.exists(outdir)) dir.create(outdir)
 @
 
 
@@ -258,6 +256,7 @@ is a SNP can be accessed through accessors defined for the
 \verb+featureData+.
 
 <<featuredataAccessors>>=
+library(Biobase)
 fvarLabels(exampleSet)
 position(exampleSet)[1:10]
 chromosome(exampleSet)[1:10]
@@ -554,7 +553,7 @@ estimates are missing for a given SNP.
 
 <<NAchromosomeX>>=
 ## start with first batch
-sample.index <- 1:90
+sample.index <- which(batch(cnSet)==batch(cnSet)[1])
 X.index <- which(isSnp(cnSet) & chromosome(cnSet) == 23)
 ca.X <- CA(cnSet, i=X.index, j=sample.index)
 missing.caX <- is.na(ca.X)

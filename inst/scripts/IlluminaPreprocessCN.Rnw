@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{natbib}
 \usepackage{amsmath}
+\usepackage{url}
 \usepackage[margin=1in]{geometry}
 \newcommand{\crlmm}{\Rpackage{crlmm}}
 \newcommand{\Rfunction}[1]{{\texttt{#1}}}
@@ -233,10 +234,10 @@ wrapper to the above functions and returns an object of class
 
 <<genotype.Illumina,cache=TRUE,results=hide>>=
 cnSet <- genotype.Illumina(sampleSheet=samplesheet,
-			    arrayNames=arrayNames,
-			    arrayInfoColNames=arrayInfo,
-			    cdfName="human370v1c",
-			    batch=batch)
+			   arrayNames=arrayNames,
+			   arrayInfoColNames=arrayInfo,
+			   cdfName="human370v1c",
+			   batch=batch)
 @
 
 

@@ -47,9 +47,11 @@ options(continue=" ", width=70)
 \section{Set up}
 
 <<cdfname, results=hide>>=
-library(crlmm)
-library(ff)
-library(cacheSweave)
+library(oligoClasses)
+library2(crlmm)
+library2(ff)
+if(!exists("useCache")) useCache <- TRUE
+if(useCache) library2(cacheSweave)
 @
 
 This vignette analyzes HapMap samples assayed on the Affymetrix 6.0
@@ -67,8 +69,11 @@ cdfName <- "genomewidesnp6"
 
 The HapMap CEL files are stored in a local directory assigned to
 \verb+pathToCels+ in the following code. The genotyping step will
-create several files with \verb+ff+ extensions. We will store these
-files to the path indicated by \verb+outdir+.
+create several files with \verb+ff+ extensions. The ff objects contain
+the low-level, normalized intensities as well as parameters used to
+subsequently estimate copy number and B allele frequencies. These
+files should not be deleted or moved.  We will store these files to
+the path indicated by \verb+outdir+.
 
 <<setup>>=
 pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
@@ -86,7 +91,7 @@ ldPath(outdir)
 
 % only needed if cacheing
 <<cachedir, echo=FALSE>>=
-setCacheDir(outdir)
+if(useCache) setCacheDir(outdir)
 @
 
 The \R{} functions \Rfunction{ocProbesets} and \Rfunction{ocSamples}
@@ -107,6 +112,10 @@ Yoruban ('Y') samples.
 <<celfiles>>=
 celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
+if(exists("file.index")){
+	celFiles <- celFiles[file.index]
+}
+##celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% "C"]
 @
 
 Finally, copy number analyses using \crlmm{} require specification of
@@ -140,7 +149,7 @@ confidence score for the genotype calls.  The function
 \Rfunction{genotype} performs both the preprocessing and genotyping.
 
 <<LDS_genotype, cache=TRUE>>=
-cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName)
+cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName, genome="hg19")
 @
 
 Segment faults that occur with the above step can often be traced to a
@@ -169,22 +178,10 @@ genotype calls are stored on disk rather than in active memory.
 print(object.size(cnSet), units="Mb")
 @
 
-We save the \Robject{cnSet} object in a local directory for subsequent
-copy number analysis in the \verb+copynumber+ vignette.
-
-<<save,cache=TRUE>>=
-saveObject <- function(outdir, cnSet) {
-	save(cnSet, file=file.path(outdir, "cnSet.rda"))
-	TRUE
-}
-(cnset.saved <- saveObject(outdir, cnSet))
-@
-
 %Users can proceed to the \verb+copynumber+ vignette for copy number
 %analyses.  See the \verb+Infrastructure+ vignette for additional
 %details on the \Robject{CNSet} class, including an overview of the
 %available accessors.
-
 \SweaveInput{copynumber}
 
 

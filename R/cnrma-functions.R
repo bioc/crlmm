@@ -21,7 +21,7 @@ getProtocolData.Affy <- function(filenames){
 ##		  return(gns)
 ##	  })
 
-getFeatureData <- function(cdfName, copynumber=FALSE){
+getFeatureData <- function(cdfName, copynumber=FALSE, genome=genome){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	if(!require(pkgname, character.only=TRUE)){
 		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -39,10 +39,15 @@ getFeatureData <- function(cdfName, copynumber=FALSE){
 		pkgname <- paste(pkgname, "Crlmm", sep="")
 	}
 	path <- system.file("extdata", package=pkgname)
-	load(file.path(path, "snpProbes.rda"))
+	multiple.builds <- length(grep("hg19", list.files(path)) > 0)
+	if(!multiple.builds)
+		load(file.path(path, "snpProbes.rda"))
+	else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
 	snpProbes <- get("snpProbes")
 	if(copynumber){
-		load(file.path(path, "cnProbes.rda"))
+		if(!multiple.builds)
+			load(file.path(path, "cnProbes.rda"))
+		else load(file.path(path, paste("cnProbes_", genome, ".rda", sep="")))
 		cnProbes <- get("cnProbes")
 		snpIndex <- seq(along=gns)
 		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex)
@@ -121,8 +126,8 @@ construct <- function(filenames,
 	return(cnSet)
 }
 
-constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
-	stopifnot(!missing(filenames))
+constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
+	##stopifnot(!missing(filenames))
 	if(missing(sns)) sns <- basename(filenames)
 	stopifnot(!missing(batch))
 	##---------------------------------------------------------------------------
@@ -131,7 +136,6 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 	## appropriate dimension for snps+nps
 	##
 	##---------------------------------------------------------------------------
-	if (missing(sns)) sns <- basename(filenames)
 	if (missing(cdfName))
 		cdfName <- read.celfile.header(filenames[1])[["cdfName"]]
 	pkgname <- getCrlmmAnnotationName(cdfName)
@@ -148,7 +152,7 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 	SNR <- initializeBigVector("crlmmSNR-", length(filenames), "double")
 	SKW <- initializeBigVector("crlmmSKW-", length(filenames), "double")
 	genderff <- initializeBigVector("gender", length(filenames), "integer")
-	featureData <- getFeatureData(cdfName, copynumber=TRUE)
+	featureData <- getFeatureData(cdfName, copynumber=TRUE, genome=genome)
 	nr <- nrow(featureData); nc <- length(sns)
 	A <- initializeBigMatrix("crlmmA-", nr, length(filenames), "integer")
 	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
@@ -164,18 +168,12 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE){
 		     callProbability=callPr,
 		     featureData=featureData,
 		     annotation=cdfName,
-		     batch=as.character(batch))
-	if(!missing(sns)){
-		sampleNames(cnSet) <- sns
-	} else {
-		sampleNames(cnSet) <- basename(filenames)
-	}
+		     batch=as.character(batch),
+		     genome=genome)
+	sampleNames(cnSet) <- sns
 	protocolData <- getProtocolData.Affy(filenames)
 	rownames(pData(protocolData)) <- sns
 	protocolData(cnSet) <- protocolData
-	##pd <- data.frame(matrix(NA, nc, 3), row.names=sns)
-	##colnames(pd)=c("SKW", "SNR", "gender")
-	##phenoData(cnSet) <- new("AnnotatedDataFrame", data=pd)
 	cnSet$SKW <- SKW
 	cnSet$SNR <- SNR
 	cnSet$gender <- genderff
@@ -192,7 +190,9 @@ snprmaAffy <- function(cnSet, filenames,
 	pkgname <- getCrlmmAnnotationName(annotation(cnSet))
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
-	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
+##	if(length(sampleBatches) < getDoParWorkers())
+##		sampleBatches <- splitIndicesByNode(seq_along(filenames))
 	ocLapply(sampleBatches,
 		 rsprocessCEL,
 		 filenames=filenames,
@@ -225,19 +225,25 @@ genotype <- function(filenames,
 		     recallRegMin=1000,
 		     gender=NULL,
 		     returnParams=TRUE,
-		     badSNP=0.7){
-	stopifnot(isPackageLoaded("ff"))
+		     badSNP=0.7,
+		     genome=c("hg19", "hg18")){
+	if(!isPackageLoaded("ff")) stop("ff package must be loaded")
+	if (missing(sns)) sns <- basename(filenames)
+	if (any(duplicated(sns))) stop("sample identifiers must be unique")
+	genome <- match.arg(genome)
 	cnSet <- constructAffy(filenames=filenames,
+			       sns=sns,
 			       cdfName=cdfName,
-			       batch=batch, verbose=verbose)
+			       batch=batch, verbose=verbose,
+			       genome=genome)
 	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
 		stop("The ff package is required for this function.")
 	}
 	cnSet@mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
-				    mixtureSampleSize=mixtureSampleSize,
-				    eps=eps,
-				    seed=seed,
-				    verbose=verbose)
+					  mixtureSampleSize=mixtureSampleSize,
+					  eps=eps,
+					  seed=seed,
+					  verbose=verbose)
 	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames,
 			cdfName=annotation(cnSet), seed=seed,
 			verbose=verbose)
@@ -697,6 +703,10 @@ fit.lm2 <- function(strata,
 	flags <- as.matrix(flags(object)[ii, batch.index])
 	fns <- featureNames(object)[ii]
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
+	if(length(fns.noflags) == 0) {
+		warning("All features in one of the probeset batches were flagged. The data is processed in probeset batches to reduce RAM, but the error suggests that increasing the size of the batches may help.  For example, ocProbesets(4*ocProbesets()) would increase the current size of the probeset batches by 4.")
+		fns.noflags <- featureNames(object)[marker.index] ## allow processing to continue
+	}
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 5000)
 	##
 	nuA.np <- as.matrix(nuA(object)[marker.index, batch.index])
@@ -1089,6 +1099,15 @@ fit.lm3 <- function(strata,
 	phiB(object)[marker.index, batch.index] <- phiB
 	phiPrimeA(object)[marker.index, batch.index] <- phiA2
 	phiPrimeB(object)[marker.index, batch.index] <- phiB2
+	##
+	if(enough.women){
+		medianA.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA.Flist, function(x) x[, 1]))
+		medianA.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA.Flist, function(x) x[, 2]))
+		medianA.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianA.Flist, function(x) x[, 3]))
+		medianB.AA(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB.Flist, function(x) x[, 1]))
+		medianB.AB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB.Flist, function(x) x[, 2]))
+		medianB.BB(object)[marker.index, batch.index] <- do.call("cbind", lapply(medianB.Flist, function(x) x[, 3]))
+	}
 	if(is.lds) {close(object); return(TRUE)} else return(object)
 }
 
@@ -1145,6 +1164,10 @@ fit.lm4 <- function(strata,
 	fns <- featureNames(object)[ii]
 	flags <- as.matrix(flags(object)[ii, batch.index])
 	fns.noflags <- fns[rowSums(flags, na.rm=T) == 0]
+	if(length(fns.noflags) == 0){
+		warning("All features in one of the probeset batches were flagged. The data is processed in probeset batches to reduce RAM, but the error suggests that increasing the size of the batches may help.  For example, ocProbesets(4*ocProbesets()) would increase the current size of the probeset batches by 4.")
+		fns.noflags <- featureNames(object)[marker.index] ## allow processing to continue
+	}
 	snp.index <- sample(match(fns.noflags, featureNames(object)), 10000)
 	##
 	N.AA <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
@@ -1260,7 +1283,7 @@ cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
 	if (missing(sns)) sns <- basename(filenames)
-	sampleBatches <- splitIndicesByNode(seq(along=filenames))
+	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
 	if(verbose) message("Processing nonpolymorphic probes for ", length(filenames), " files.")
 	## updates A
 	ocLapply(sampleBatches,
@@ -1540,10 +1563,10 @@ shrinkSummary <- function(object,
 		marker.index <- whichMarkers(type[[1]], is.snp, is.autosome, is.annotated, is.X)
 	}
 	if(is.lds){
-		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 shrinkGenotypeSummaries,
 			 index.list=index.list,
@@ -1594,10 +1617,10 @@ genotypeSummary <- function(object,
 	myf <- summaryFxn(type[[1]])
 	FUN <- get(myf)
 	if(is.lds){
-		##index.list <- splitIndicesByLength(marker.index, ocProbesets())
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
@@ -2116,9 +2139,10 @@ estimateCnParameters <- function(object,
 	myfun <- lmFxn(type[[1]])
 	FUN <- get(myfun)
 	if(is.lds){
-		if(parStatus()){
-			index.list <- splitIndicesByNode(marker.index)
-		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
+		index.list <- splitIndicesByLength(marker.index, ocProbesets())
+##		if(parStatus()){
+##			index.list <- splitIndicesByNode(marker.index)
+##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
@@ -2784,89 +2808,73 @@ ABpanel <- function(x, y, predictRegion,
 	}
 }
 
-calculateRTheta <- function(cnSet, genotype=c("AA", "AB", "BB"), batch.name){
-	genotype <- match.arg(genotype)
-	j <- match(batch.name, batchNames(cnSet))
-	##centers <- medians(cnSet, i=snp.index, j)
-	centers <- medians(cnSet, i=seq_len(nrow(cnSet)), j)
-	theta <- matrix(NA, nrow(cnSet), 2)
-	colnames(theta) <- c("theta", "R")
-	x <- centers[, "A", genotype, j]
-	y <- centers[, "B", genotype, j]
-	## small imputed values -- should fix imputeCenter
-	x[x < 64] <- 64
-	y[y < 64] <- 64
-	theta[, "theta"] <- atan2(y, x)*2/pi
-##	if(any(is.na(theta[, "theta"]))){
-##		##stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
-##	}
-	## so that 'R' is available for NP probes
-	y[is.na(y)] <- 0
-	theta[, "R"] <- x+y
-	theta[!isSnp(cnSet), 1] <- 1
-	if(any(is.na(theta[, "theta"]))){
-		stop("NA's in thetas.  Can not compute theta / R values for batches with fewer than 10 samples")
+calculateRTheta <- function(object, ##genotype=c("AA", "AB", "BB"),
+			    batch.name,
+			    feature.index){
+	index.np <- which(!(isSnp(object)[feature.index]))
+	j <- match(batch.name, batchNames(object))
+	if(missing(j)) stop("batch.name did not match in batchNames(object)")
+	CHR <- unique(chromosome(object)[feature.index])
+	isX <- CHR == "X"
+	centers <- getMedians(batchStatistics(object))
+	lapply(centers, open)
+	centersMatrix <- lapply(centers, function(x, i, j) x[i, j], j=j, i=feature.index)
+	lapply(centers, close)
+	centersMatrix <- do.call(cbind, centersMatrix)
+	centersA <- centersMatrix[, 1:3]
+	centersB <- centersMatrix[, 4:6]
+	rm(centers, centersMatrix); gc()
+	centersA[centersA < 64] <- 64
+	centersB[centersB < 64] <- 64
+	theta <- atan2(centersB, centersA) * 2/pi
+	centersA[is.na(centersA)] <- 0
+	centersB[is.na(centersB)] <- 0
+	if(length(index.np) > 0) theta[index.np, ] <- 1
+	##
+	r <- centersA+centersB
+	J <- which(batch(object)==batch.name)
+	open(A(object))
+	open(B(object))
+	a <- as.matrix(A(object)[feature.index, J, drop=FALSE])
+	b <- as.matrix(B(object)[feature.index, J, drop=FALSE])
+	close(A(object))
+	close(B(object))
+	if(length(index.np) > 0) b[index.np, ] <- 0L
+	obs.theta <- atan2(b, a)*2/pi
+	calculateBandR <- function(o, r, theta, not.na, M){
+		lessAA <- o < theta[, 1]
+		lessAB <- o < theta[, 2]
+		lessBB <- o < theta[, 3]
+		ii <- which(lessAA & not.na)
+		jj <- which(!lessBB & not.na)
+		i <- which(!lessAA & lessAB & not.na)
+		j <- which(!lessAB & lessBB & not.na)
+		M[i, 1] <- 0.5*(o[i]-theta[i,1])/(theta[i,2]-theta[i,1])
+		M[j, 1] <- 0.5*(o[j]-theta[j,2])/(theta[j,3]-theta[j,2]) + 0.5
+		M[ii, 1] <- 0
+		M[jj, 1] <- 1
+		M[i, 2] <- (o[i]-theta[i,1])*(r[i,2]-r[i,1])/(theta[i,2]-theta[i,1]) + r[i, 1]
+		M[j, 2] <- (o[j]-theta[j,2])*(r[j,3]-r[j,2])/(theta[j,3]-theta[j,2]) + r[j, 2]
+		M[ii, 2] <- r[ii, 1]
+		M[jj, 2] <- r[jj, 3]
+		return(M)
 	}
-	return(theta)
-}
-
-
-
-
-calculateBAFandLRR <- function(cnSet) {
-  ## Calculates B allele frequency and log2 R ratio for all snps for a given cnSet
-  ## Returns a 3-D array of size Num Of Snps x Num of Samples x 2
-  ## where result[,,1] is B allele frequency and result[,,2] is log2 R ratio
-
-  snp.index <- which(isSnp(cnSet))
-  b <- (B(cnSet))[snp.index, ]
-  a <- (A(cnSet))[snp.index, ]
-  centers<-medians(cnSet, i=snp.index, j=1:length(unique(batch(cnSet))))
-  bafAndLrr <- array(NA_integer_, dim=c(length(snp.index), length(sampleNames(cnSet)), 2), dimnames=list(featureNames(cnSet)[snp.index], sampleNames(cnSet),c("baf", "lrr")))
-
-  for (batch in unique(batch(cnSet))) {
-
-    ## get batch- and snp-specific centers
-    center.aa.x <- centers[, 1, 1, batch]
-    center.aa.y <- centers[, 2, 1, batch]
-    center.ab.x <- centers[, 1, 2, batch]
-    center.ab.y <- centers[, 2, 2, batch]
-    center.bb.x <- centers[, 1, 3, batch]
-    center.bb.y <- centers[, 2, 3, batch]
-    theta.aa <- atan2(center.aa.y, center.aa.x) * 2 / pi
-    r.aa <- center.aa.x + center.aa.y
-    theta.ab <- atan2(center.ab.y, center.ab.x) * 2 / pi
-    r.ab <- center.ab.x + center.ab.y
-    theta.bb <- atan2(center.bb.y, center.bb.x) * 2 / pi
-    r.bb <- center.bb.x + center.bb.y
-
-    index.sample <- which(batch(cnSet) %in% batch)
-    for (i in index.sample) {
-      theta <- atan2(b[, i], a[, i]) * 2 / pi
-      r <- a[, i] + b[, i]
-
-      baf <- vector(mode="numeric", length=length(theta))
-      baf[theta < theta.aa] <- 0
-      baf[theta >= theta.bb] <- 1
-      idx.ab <- which(theta >= theta.aa & theta < theta.ab)
-      baf[idx.ab] <- .5 * (theta[idx.ab] - theta.aa[idx.ab]) / (theta.ab[idx.ab] - theta.aa[idx.ab])
-      idx.bb <- which(theta >= theta.ab & theta < theta.bb)
-      baf[idx.bb] <- .5 * (theta[idx.bb] - theta.ab[idx.bb]) / (theta.bb[idx.bb] - theta.ab[idx.bb]) + .5
-      bafAndLrr[, i ,1] <- baf
-
-      r.expected <- vector(mode="numeric", length=length(r))
-      r.expected[theta < theta.aa] <- r.aa[theta < theta.aa]
-      r.expected[theta >= theta.bb] <- r.bb[theta >= theta.bb]
-
-      idx.ab <- which(theta >= theta.aa & theta < theta.ab)
-      r.expected[idx.ab] <- (theta[idx.ab] - theta.aa[idx.ab]) * (r.ab[idx.ab]-r.aa[idx.ab]) /
-        (theta.ab[idx.ab] - theta.aa[idx.ab]) + r.aa[idx.ab]
-      idx.bb <- which(theta >= theta.ab & theta < theta.bb)
-      r.expected[idx.bb] <- (theta[idx.bb] - theta.ab[idx.bb]) * (r.bb[idx.bb]-r.ab[idx.bb])/
-        (theta.bb[idx.bb] - theta.ab[idx.bb]) + r.ab[idx.bb]
-      bafAndLrr[, i, 2] <- log2(r / r.expected)
-
-    }
-  }
-  return(bafAndLrr)
+	not.na <- !is.na(theta[,1])
+	r.expected <- bf <- matrix(NA, length(feature.index), ncol(a))
+	M <- matrix(NA, length(feature.index), 2)
+	for(j in seq_len(ncol(a))){
+		tmp <- calculateBandR(obs.theta[, j], r=r, theta=theta, not.na=not.na, M=M)
+		bf[, j] <- tmp[,1]
+		r.expected[,j] <- tmp[,2]
+	}
+	bf[bf < 0] <- 0
+	bf[bf > 1] <- 1
+	if(length(index.np) > 0) r.expected[index.np, ] <- centersA[index.np, 1]
+	obs.r <- a+b
+	lrr <- log2(obs.r/r.expected)
+	dimnames(bf) <- dimnames(lrr) <- list(featureNames(object)[feature.index],
+					      sampleNames(object)[J])
+	bf <- integerMatrix(bf, 1000)
+	lrr <- integerMatrix(lrr, 100)
+	return(list(baf=bf, lrr=lrr))
 }

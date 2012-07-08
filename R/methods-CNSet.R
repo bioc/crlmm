@@ -1,63 +1,6 @@
 setMethod("posteriorMean", signature(object="CNSet"), function(object) assayDataElement(object, "posteriorMean"))
 setReplaceMethod("posteriorMean", signature(object="CNSet", value="matrix"), function(object, value) assayDataElementReplace(object, "posteriorMean", value))
 
-setAs("CNSet", "oligoSnpSet", function(from, to){
-	cnSet2oligoSnpSet(from)
-})
-
-cnSet2oligoSnpSet <- function(object){
-	row.index <- seq_len(nrow(object))
-	col.index <- seq_len(ncol(object))
-	is.lds <- ifelse(is(calls(object), "ff_matrix") | is(calls(object), "ffdf"), TRUE, FALSE)
-	if(is.lds) stopifnot(isPackageLoaded("ff"))
-	b.r <- calculateRBaf(object)
-	b <- integerMatrix(b.r[[1]], 1000)
-	r <- integerMatrix(b.r[[2]], 100)
-##	if(is.lds){
-##		## initialize a big matrix for raw copy number
-##		message("creating an ff object for storing total copy number")
-##		tcn <- initializeBigMatrix(name="total_cn", nrow(object), ncol(object), vmode="double")
-##		for(j in 1:ncol(object)){
-##			tcn[, j] <- totalCopynumber(object, i=row.index, j=j)
-##		}
-##	} else {
-##		if(ncol(object) > 5){
-##			##this can be memory intensive, so we try to be careful
-##			col.index <- splitIndicesByLength(seq(length=ncol(object)), 5)
-##			tcn <- matrix(NA, nrow(object), ncol(object))
-##			dimnames(tcn) <- list(featureNames(object), sampleNames(object))
-##			rows <- 1:nrow(object)
-##			for(i in seq_along(col.index)){
-##				cat(".")
-##				j <- col.index[[i]]
-##				cnSet <- object[, j]
-##				tcn[, j] <- totalCopynumber(cnSet, i=row.index, j=1:ncol(cnSet))
-##				rm(cnSet); gc()
-##			}
-##			cat("\n")
-##		} else {
-##			tcn <- totalCopynumber(object, i=row.index, j=col.index)
-##		}
-##	}
-##	message("Transforming copy number to log2 scale")
-##	tcn[tcn < 0.1] <- 0.1
-##	tcn[tcn > 8] <- 8
-##	log.tcn <- log2(tcn)
-	tmp <- new("oligoSnpSet",
-		   copyNumber=integerMatrix(b.r[[2]], scale=100),
-		   call=calls(object),
-		   callProbability=snpCallProbability(object),
-		   annotation=annotation(object),
-		   featureData=featureData(object),
-		   phenoData=phenoData(object),
-		   experimentData=experimentData(object),
-		   protocolData=protocolData(object),
-		   is.integer=FALSE)
-	tmp <- assayDataElementReplace(tmp, "baf", integerMatrix(b.r[[1]], scale=1000))
-	return(tmp)
-}
-
-
 linearParamElementReplace <- function(obj, elt, value) {
     storage.mode <- storageMode(batchStatistics(obj))
     switch(storage.mode,
@@ -185,7 +128,7 @@ ACN <- function(object, allele, i , j){
 	}
 	## Define batch.index and sample.index
 	if(!missing.j) {
-		batches <- unique(as.character(batch(object))[j])
+		batches <- unique(as.character(batch(object)[j]))
 		##batches <- as.character(batch(object)[j])
 		batch.index <- match(batches, batchNames(object))
 	} else {
@@ -587,78 +530,129 @@ setMethod("xyplot", signature(x="formula", data="CNSet"),
 })
 
 setMethod("calculateRBaf", signature(object="CNSet"),
-	  function(object, batch.name){
-		  all.autosomes <- all(chromosome(object) < 23)
-		  if(!all.autosomes){
-			  stop("method currently only defined for chromosomes 1-22")
-		  }
-		  if(missing(batch.name)) batch.name <- batchNames(object)[1]
-		  stopifnot(batch.name %in% batchNames(object))
-		  if(length(batch.name) > 1){
-			  warning("only the first batch in batch.name processed")
-			  batch.name <- batch.name[1]
-		  }
-		  RTheta.aa <- calculateRTheta(object, "AA", batch.name)
-		  RTheta.ab <- calculateRTheta(object, "AB", batch.name)
-		  RTheta.bb <- calculateRTheta(object, "BB", batch.name)
-
-		  J <- which(batch(object) == batch.name)
-
-		  theta.aa <- matrix(RTheta.aa[, "theta"], nrow(object), length(J), byrow=FALSE)
-		  theta.ab <- matrix(RTheta.ab[, "theta"], nrow(object), length(J), byrow=FALSE)
-		  theta.bb <- matrix(RTheta.bb[, "theta"], nrow(object), length(J), byrow=FALSE)
-
-		  a <- A(object)[, J, drop=FALSE]
-		  b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
-		  is.np <- !isSnp(object)
-		  ##b[is.np, ] <- a[is.np, ]
-		  b[is.np, ] <- 0L
-		  dns <- dimnames(a)
-		  dimnames(a) <- dimnames(b) <- NULL
-		  obs.theta <- atan2(b, a)*2/pi
-
-		  lessAA <- obs.theta < theta.aa
-		  lessAB <- obs.theta < theta.ab
-		  lessBB <- obs.theta < theta.bb
-		  grAA <- !lessAA
-		  grAB <- !lessAB
-		  grBB <- !lessBB
-		  not.na <- !is.na(theta.aa)
-		  I1 <- grAA & lessAB & not.na
-		  I2 <- grAB & lessBB & not.na
-
-		  bf <- matrix(NA, nrow(object), ncol(a))
-		  bf[I1] <- 0.5 * ((obs.theta-theta.aa)/(theta.ab-theta.aa))[I1]
-		  bf[I2] <- (.5 * (obs.theta - theta.ab) / (theta.bb - theta.ab))[I2] + 0.5
-		  bf[lessAA] <- 0
-		  bf[grBB] <- 1
-
-		  r.expected <- matrix(NA, nrow(object), ncol(a))
-		  r.aa <- matrix(RTheta.aa[, "R"], nrow(object), length(J), byrow=FALSE)
-		  r.ab <- matrix(RTheta.ab[, "R"], nrow(object), length(J), byrow=FALSE)
-		  r.bb <- matrix(RTheta.bb[, "R"], nrow(object), length(J), byrow=FALSE)
-		  rm(RTheta.aa, RTheta.ab, RTheta.bb); gc()
-		  obs.r <- a+b
-
-		  lessAA <- lessAA & not.na
-		  grBB <- grBB & not.na
-		  tmp <- ((obs.theta - theta.aa) * (r.ab-r.aa)/(theta.ab-theta.aa))[I1] + r.aa[I1]
-		  r.expected[I1] <- tmp
-		  tmp <- ((obs.theta - theta.ab) * (r.bb - r.ab)/(theta.bb-theta.ab))[I2] + r.ab[I2]
-		  r.expected[I2] <- tmp
-		  r.expected[lessAA] <- r.aa[lessAA]
-		  r.expected[grBB] <- r.bb[grBB]
-
-		  index.np <- which(is.np)
-		  if(length(index.np) > 0){
-			  a.np <- A(object)[index.np, J]
-			  meds <- rowMedians(a.np, na.rm=TRUE)
-			  r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
-		  }
-		  lrr <- log2(obs.r/r.expected)
-
-		  dimnames(bf) <- dimnames(lrr) <- dns
-		  res <- list(baf=bf,
-			      lrr=lrr)
-		  return(res)
+	  function(object, batch.name, chrom){
+		  calculateRBafCNSet(object, batch.name, chrom)
 	  })
+
+calculateRBafCNSet <- function(object, batch.name, chrom){
+	if(missing(batch.name)) batch.name <- batchNames(object)
+	if(missing(chrom)) chrom <- unique(chromosome(object))
+	if(!(all(batch.name %in% batchNames(object)))) stop("batch.name must be belong to batchNames(object)")
+	chr <- chromosome(object)
+	valid.chrs <- chr <= 23 & chr %in% chrom
+	index <- which(valid.chrs)
+	indexlist <- split(index, chr[index])
+	J <- which(batch(object) %in% batch.name)
+	sns <- sampleNames(object)[J]
+	sampleindex <- split(J, batch(object)[J])
+	if(!all(valid.chrs)) warning("Only computing log R ratios and BAFs for autosomes and chr X")
+	## if ff package is loaded, these will be ff objects
+	chr <- names(indexlist)
+	rlist <- blist <- vector("list", length(indexlist))
+	for(i in seq_along(indexlist)){
+		I <- indexlist[[i]]
+		nr <- length(I)
+		CHR <- names(indexlist)[i]
+		bafname <- paste("baf_chr", CHR, sep="")
+		rname <- paste("lrr_chr", CHR, sep="")
+		bmatrix <- initializeBigMatrix(bafname, nr=nr, nc=length(sns), vmode="integer")
+		rmatrix <- initializeBigMatrix(rname, nr=nr, nc=length(sns), vmode="integer")
+		colnames(rmatrix) <- colnames(bmatrix) <- sns
+		## put rownames in order of physical position
+		ix <- order(position(object)[I])
+		I <- I[ix]
+		rownames(rmatrix) <- rownames(bmatrix) <- featureNames(object)[I]
+		for(j in seq_along(sampleindex)){
+			bname <- batch.name[j]
+			J <- sampleindex[[j]]
+			res <- calculateRTheta(object=object,
+					       batch.name=bname,
+					       feature.index=I)
+			k <- match(sampleNames(object)[J], sns)
+			bmatrix[, k] <- res[["baf"]]
+			rmatrix[, k] <- res[["lrr"]]
+			##colnames(bmatrix)[J] <- colnames(rmatrix)[J] <- sampleNames(object)[J]
+		}
+		blist[[i]] <- bmatrix
+		rlist[[i]] <- rmatrix
+	}
+	res <- list(baf=blist,
+		    lrr=rlist)
+	return(res)
+}
+
+##setMethod("calculateRBaf", signature(object="CNSet"),
+##	  function(object, batch.name){
+##		  all.autosomes <- all(chromosome(object) < 23)
+##		  if(!all.autosomes){
+##			  stop("method currently only defined for chromosomes 1-22")
+##		  }
+##		  if(missing(batch.name)) batch.name <- batchNames(object)[1]
+##		  stopifnot(batch.name %in% batchNames(object))
+##		  if(length(batch.name) > 1){
+##			  warning("only the first batch in batch.name processed")
+##			  batch.name <- batch.name[1]
+##		  }
+##		  RTheta.aa <- calculateRTheta(object, "AA", batch.name)
+##		  RTheta.ab <- calculateRTheta(object, "AB", batch.name)
+##		  RTheta.bb <- calculateRTheta(object, "BB", batch.name)
+##
+##		  J <- which(batch(object) == batch.name)
+##
+##		  theta.aa <- matrix(RTheta.aa[, "theta"], nrow(object), length(J), byrow=FALSE)
+##		  theta.ab <- matrix(RTheta.ab[, "theta"], nrow(object), length(J), byrow=FALSE)
+##		  theta.bb <- matrix(RTheta.bb[, "theta"], nrow(object), length(J), byrow=FALSE)
+##
+##		  a <- A(object)[, J, drop=FALSE]
+##		  b <- B(object)[, J, drop=FALSE] ## NA's for b where nonpolymorphic
+##		  is.np <- !isSnp(object)
+##		  ##b[is.np, ] <- a[is.np, ]
+##		  b[is.np, ] <- 0L
+##		  dns <- dimnames(a)
+##		  dimnames(a) <- dimnames(b) <- NULL
+##		  obs.theta <- atan2(b, a)*2/pi
+##
+##		  lessAA <- obs.theta < theta.aa
+##		  lessAB <- obs.theta < theta.ab
+##		  lessBB <- obs.theta < theta.bb
+##		  grAA <- !lessAA
+##		  grAB <- !lessAB
+##		  grBB <- !lessBB
+##		  not.na <- !is.na(theta.aa)
+##		  I1 <- grAA & lessAB & not.na
+##		  I2 <- grAB & lessBB & not.na
+##
+##		  bf <- matrix(NA, nrow(object), ncol(a))
+##		  bf[I1] <- 0.5 * ((obs.theta-theta.aa)/(theta.ab-theta.aa))[I1]
+##		  bf[I2] <- (.5 * (obs.theta - theta.ab) / (theta.bb - theta.ab))[I2] + 0.5
+##		  bf[lessAA] <- 0
+##		  bf[grBB] <- 1
+##
+##		  r.expected <- matrix(NA, nrow(object), ncol(a))
+##		  r.aa <- matrix(RTheta.aa[, "R"], nrow(object), length(J), byrow=FALSE)
+##		  r.ab <- matrix(RTheta.ab[, "R"], nrow(object), length(J), byrow=FALSE)
+##		  r.bb <- matrix(RTheta.bb[, "R"], nrow(object), length(J), byrow=FALSE)
+##		  rm(RTheta.aa, RTheta.ab, RTheta.bb); gc()
+##		  obs.r <- a+b
+##
+##		  lessAA <- lessAA & not.na
+##		  grBB <- grBB & not.na
+##		  tmp <- ((obs.theta - theta.aa) * (r.ab-r.aa)/(theta.ab-theta.aa))[I1] + r.aa[I1]
+##		  r.expected[I1] <- tmp
+##		  tmp <- ((obs.theta - theta.ab) * (r.bb - r.ab)/(theta.bb-theta.ab))[I2] + r.ab[I2]
+##		  r.expected[I2] <- tmp
+##		  r.expected[lessAA] <- r.aa[lessAA]
+##		  r.expected[grBB] <- r.bb[grBB]
+##		  index.np <- which(is.np)
+##		  if(length(index.np) > 0){
+##			  a.np <- A(object)[index.np, J, drop=FALSE]
+##			  meds <- rowMedians(a.np, na.rm=TRUE)
+##			  r.expected[index.np, ] <- matrix(meds, length(index.np), ncol(a.np))
+##		  }
+##		  lrr <- log2(obs.r/r.expected)
+##
+##		  dimnames(bf) <- dimnames(lrr) <- dns
+##		  res <- list(baf=bf,
+##			      lrr=lrr)
+##		  return(res)
+##	  })

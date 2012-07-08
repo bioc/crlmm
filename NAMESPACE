@@ -53,7 +53,7 @@ importFrom(oligoClasses, celfileDate, chromosome2integer, i2p,
 	   isPackageLoaded,
            ldPath, ocLapply, ocProbesets, ocSamples,
 	   parStatus,
-           splitIndicesByLength, splitIndicesByNode)
+           splitIndicesByLength, splitIndicesByNode, AssayDataList)
 
 importFrom(preprocessCore, normalize.quantiles,
            normalize.quantiles.use.target)
@@ -64,11 +64,14 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
 importFrom(utils, packageDescription, setTxtProgressBar,
            txtProgressBar)
 
+## foreach
+import(foreach)
+
 ##----------------------------------------------------------------------------
 ## export
 ##----------------------------------------------------------------------------
 exportClasses(PredictionRegion)
-exportMethods(CA, CB, coerce,
+exportMethods(CA, CB,
 	      A, B, corr, nuA, nuB, phiA, phiB,
 	      predictionRegion, posteriorProbability,
 	      tau2, Ns, medians, mads,
@@ -87,4 +90,4 @@ export(crlmm,
        genotype.Illumina,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
-export(ABpanel, validCEL, celDates)
+export(ABpanel, validCEL, celDates, validCdfNames)

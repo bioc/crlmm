@@ -8,7 +8,7 @@ all: inst test
 inst: # Install package
 
 	cd ${TOP}/..;\
-	R CMD INSTALL ${PKG}
+	R CMD INSTALL --no-lock ${PKG}
 
 test: # Run unit tests
 	export RCMDCHECK=FALSE;\

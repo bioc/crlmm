@@ -50,6 +50,21 @@ setMethod("medians", signature(object="AssayData"),
 		  return(res)
 })
 
+getMedians <- function(object){
+	medianA.AA <- assayDataElement(object, "medianA.AA")
+	medianA.AB <- assayDataElement(object, "medianA.AB")
+	medianA.BB <- assayDataElement(object, "medianA.BB")
+	medianB.AA <- assayDataElement(object, "medianB.AA")
+	medianB.AB <- assayDataElement(object, "medianB.AB")
+	medianB.BB <- assayDataElement(object, "medianB.BB")
+	list(A.AA=medianA.AA,
+	     A.AB=medianA.AB,
+	     A.BB=medianA.BB,
+	     B.AA=medianB.AA,
+	     B.AB=medianB.AB,
+	     B.BB=medianB.BB)
+}
+
 setMethod("mads", signature(object="AssayData"),
 	  function(object, ...){
 		  batchnames <- sampleNames(object)

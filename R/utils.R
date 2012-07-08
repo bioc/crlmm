@@ -152,30 +152,39 @@ celDates <- function(celfiles){
 	return(celdts)
 }
 
-validCdfNames <- function(){
-	c("genomewidesnp6",
-	  "genomewidesnp5",
-	  "human370v1c",
-	  "human370quadv3c",
-	  "human550v3b",
-	  "human650v3a",
-	  "human610quadv1b",
-	  "human660quadv1a",
-	  "human1mduov3b",
-	  "humanomni1quadv1b",
-          "humanomniexpress12v1b",
-	  "humanomni25quadv1b",
-          "humanimmuno12v1b",
-          "humancytosnp12v2p1h")
+illuminaCdfNames <- function(){
+	c("human1mv1c",# 1M
+	  "human370v1c",            # 370CNV
+	  "human650v3a",            # 650Y
+	  "human610quadv1b",        # 610 quad
+	  "human660quadv1a",        # 660 quad
+	  "human370quadv3c",        # 370CNV quad
+	  "human550v3b",            # 550K
+	  "human1mduov3b",          # 1M Duo
+	  "humanomni1quadv1b",      # Omni1 quad
+	  "humanomni25quadv1b",     # Omni2.5 quad
+	  "humanomni258v1a",        # Omni2.5 8 sample
+	  "humanomniexpress12v1b",  # Omni express 12
+	  "humanimmuno12v1b",       # Immuno chip 12
+	  "humancytosnp12v2p1h")    # CytoSNP 12
 }
+
+affyCdfNames <- function(){
+	c("genomewidesnp6",
+	  "genomewidesnp5")
+}
+
+validCdfNames <- function(){
+	c(affyCdfNames(),
+	  illuminaCdfNames())
+}
+
+cleancdfname <- function(x) strsplit(x, "Crlmm")[[1]][[1]]
+
 isValidCdfName <- function(cdfName){
 	chipList <- validCdfNames()
-	result <- cdfName %in% chipList
-	if(!(result)){
-		warning("cdfName must be one of the following: ",
-			chipList)
-	}
-	return(result)
+	match.arg(cleancdfname(cdfName), chipList)
+	return(TRUE)
 }
 
 isPackageLoaded <- function(pkg){

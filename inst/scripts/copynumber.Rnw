@@ -154,7 +154,7 @@ formally, \newcommand{\A}{A} \newcommand{\B}{B}
     \phi}_{k,ip}}\left(I_{k,ijp}-{\hat \nu}_{k,ip}\right), ~0\right\}
 \mbox{~for~} k \in \{\A, \B\}.
 \end{eqnarray}
-\noindent See \cite{Scharpf2010} for details.
+\noindent See \cite{Scharpf2011} for details.
 
 The function \Rfunction{totalCopynumber} translates the normalized
 intensities to an estimate of raw copy number by adding the
@@ -175,42 +175,49 @@ dim(tmp2)
 
 Alternatively, the functions \Rfunction{CA} and \Rfunction{CB} compute
 the allele-specific copy number.  For instance, the following code
-chunk computes the allele-specific summaries at all polymorphic loci.
+chunk computes the allele-specific summaries at all polymorphic loci
+for the first 2 samples.
 
 <<ca>>=
 snp.index <- which(isSnp(cnSet) & !is.na(chromosome(cnSet)))
-ca <- CA(cnSet, i=snp.index, j=seq_len(ncol(cnSet)))
-cb <- CB(cnSet, i=snp.index, j=seq_len(ncol(cnSet)))
+ca <- CA(cnSet, i=snp.index, j=1:2)
+cb <- CB(cnSet, i=snp.index, j=1:2)
 @
 
 
-\subsection{Container for raw copy number}
+\subsection{Container for log R ratios and B allele frequencies}
 
 A useful container for storing the \crlmm{} genotypes, genotype
-confidence scores, and the total copy number at each marker is the
-\Rclass{oligoSnpSet} class.  Coercion of a \Rclass{CNSet} object to a
-\Rfunction{oligoSnpSet} object can be acheived by using the method
-\Rfunction{as} (as illustrated below). Users should note that if the
-\verb+assayData+ elements in the \Rclass{CNSet} instance are
-\Rpackage{ff} objects, the \verb+assayData+ elements of the
-instantiated \Rclass{oligoSnpSet} will also be \Rpackage{ff}-dervied
-objects (a new \verb+total_cn*.ff+ file will be created in the
-\verb+ldPath()+ directory).
+confidence scores, and the total or relative copy number at each
+marker is the \Rclass{oligoSetList} class.  Coercion of a
+\Rclass{CNSet} object to a \Rfunction{oligoSnpSet} object can be
+acheived by using the function \Rfunction{constructOligoSetFrom} as
+illustrated below. Users should note that if the \verb+assayData+
+elements in the \Rclass{CNSet} instance are \Rpackage{ff} objects, the
+\verb+assayData+ elements of each element in the \Rclass{oligoSetList}
+object will be \Rpackage{ff}-dervied objects (a new
+\verb+total_cn*.ff+ file will be created in the \verb+ldPath()+
+directory).
 
 <<oligoSnpSet>>=
+library(VanillaICE)
 open(cnSet3)
-oligoSet <- as(cnSet3, "oligoSnpSet")
+oligoSetList <- constructOligoSetListFrom(cnSet3, batch.name=batch(cnSet3)[1])
 close(cnSet3)
-class(copyNumber(oligoSet))
+show(oligoSetList)
+class(oligoSetList)
+## oligoSnpSet of first chromosome
+oligoSetList[[1]]
 @
 
-\noindent Note that the raw copy number estimates stored in the
-\Robject{oligoSnpSet} object can be retrieved by the
-\Rfunction{copyNumber} accessor and is equivalent to that returned by
-the \Rfunction{totalCopynumber} function defined over the same row and
-column indices.
+\noindent Note that log R ratios stored in the \Robject{oligoSnpSet}
+object can be retrieved by the \Rfunction{copyNumber} accessor.  B
+allele frequences are retrieved by the \Rfunction{baf} accessor.
 
 <<testEqual>>=
-total.cn3 <- totalCopynumber(cnSet3, i=1:nrow(cnSet3), j=seq_len(ncol(cnSet3)))
-all.equal(copyNumber(oligoSet), total.cn3)
+lrrList <- copyNumber(oligoSetList)
+class(lrrList)
+dim(lrrList[[1]]) ## log R ratios for chromosome 1.
+bafList <- baf(oligoSetList)
+dim(bafList[[1]]) ## B allele frequencies for chromosome 1
 @
