@@ -83,7 +83,6 @@ crlmmGT <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
   regionInfo <- getVarInEnv("regionInfo")
   params <- getVarInEnv("params")
 
-  ##IF gender not provide, we predict
   if(is.null(gender)){
 	  if(verbose) message("Determining gender.")
 	  gender <- imputeGender(A, B, XIndex, YIndex, SNR, SNRMin)

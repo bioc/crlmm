@@ -40,14 +40,16 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome=genome){
 	}
 	path <- system.file("extdata", package=pkgname)
 	multiple.builds <- length(grep("hg19", list.files(path)) > 0)
-	if(!multiple.builds)
+	if(!multiple.builds){
 		load(file.path(path, "snpProbes.rda"))
-	else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
+	} else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
 	snpProbes <- get("snpProbes")
+	## if we use a different build we may throw out a number of snps...
+	snpProbes <- snpProbes[rownames(snpProbes) %in% gns, ]
 	if(copynumber){
-		if(!multiple.builds)
+		if(!multiple.builds){
 			load(file.path(path, "cnProbes.rda"))
-		else load(file.path(path, paste("cnProbes_", genome, ".rda", sep="")))
+		} else load(file.path(path, paste("cnProbes_", genome, ".rda", sep="")))
 		cnProbes <- get("cnProbes")
 		snpIndex <- seq(along=gns)
 		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex)
@@ -126,7 +128,7 @@ construct <- function(filenames,
 	return(cnSet)
 }
 
-constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
+constructAffyCNSet <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
 	##stopifnot(!missing(filenames))
 	if(missing(sns)) sns <- basename(filenames)
 	stopifnot(!missing(batch))
@@ -158,8 +160,14 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
 	B <- initializeBigMatrix("crlmmB-", nr, length(filenames), "integer")
 	call <- initializeBigMatrix("call-", nr, length(filenames), "integer")
 	callPr <- initializeBigMatrix("callPr-", nr, length(filenames), "integer")
+	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
 	rownames(A) <- rownames(B) <- featureNames(featureData)
 	rownames(call) <- rownames(callPr) <- featureNames(featureData)
+	dirNames <- dirname(filenames)
+	unames <- unique(dirNames)
+	dirNames <- factor(dirNames, levels=unames)
+	dd <- split(seq_len(length(filenames)), dirNames)
+	datadir <- list(dirname=names(dd), n=as.integer(sapply(dd, length)))
 	if(verbose) message("Instantiating CNSet container")
 	cnSet <- new("CNSet",
 		     alleleA=A,
@@ -169,9 +177,12 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
 		     featureData=featureData,
 		     annotation=cdfName,
 		     batch=as.character(batch),
-		     genome=genome)
+		     genome=genome,
+		     datadir=datadir)
+	cnSet@mixtureParams <- mixtureParams
 	sampleNames(cnSet) <- sns
 	protocolData <- getProtocolData.Affy(filenames)
+	protocolData$filename <- basename(filenames)
 	rownames(pData(protocolData)) <- sns
 	protocolData(cnSet) <- protocolData
 	cnSet$SKW <- SKW
@@ -181,33 +192,84 @@ constructAffy <- function(filenames, sns, cdfName, batch, verbose=TRUE, genome){
 	return(cnSet)
 }
 
-snprmaAffy <- function(cnSet, filenames,
+snprmaAffy <- function(cnSet,
 		       mixtureSampleSize=10^5,
 		       eps=0.1,
 		       seed=1,
 		       verbose=TRUE){
+	filenames <- celfileName(cnSet)
 	if(verbose) message("Preprocessing ", length(filenames), " files.")
 	pkgname <- getCrlmmAnnotationName(annotation(cnSet))
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
-	mixtureParams <- initializeBigMatrix("crlmmMixt-", 4, length(filenames), "double")
-	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
-##	if(length(sampleBatches) < getDoParWorkers())
-##		sampleBatches <- splitIndicesByNode(seq_along(filenames))
-	ocLapply(sampleBatches,
-		 rsprocessCEL,
-		 filenames=filenames,
-		 fitMixture=TRUE,
-		 A=A(cnSet), B=B(cnSet), C=calls(cnSet),
-		 D=snpCallProbability(cnSet),
-		 SKW=cnSet$SKW, SNR=cnSet$SNR,
-		 mixtureParams=mixtureParams,
-		 eps=eps,
-		 seed=seed,
-		 mixtureSampleSize=mixtureSampleSize,
-		 pkgname=pkgname,
-		 neededPkgs=c("crlmm", pkgname))
+	sampleBatches <- splitIndicesByNode(seq_along(filenames))
+	mixtureParams <- cnSet@mixtureParams
+	obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
+	obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+	obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+	autosomeIndex <- getVarInEnv("autosomeIndex")
+	pnsa <- getVarInEnv("pnsa")
+	pnsb <- getVarInEnv("pnsb")
+	fid <- getVarInEnv("fid")
+	reference <- getVarInEnv("reference")
+	aIndex <- getVarInEnv("aIndex")
+	bIndex <- getVarInEnv("bIndex")
+	SMEDIAN <- getVarInEnv("SMEDIAN")
+	theKnots <- getVarInEnv("theKnots")
+	gns <- getVarInEnv("gns")
+	rm(list=c(obj1, obj2, obj3), envir=.crlmmPkgEnv)
+	rm(obj1, obj2, obj3)
+	## for mixture
+	set.seed(seed)
+	idx <- sort(sample(autosomeIndex, mixtureSampleSize))
+	##for skewness. no need to do everything
+	idx2 <- sample(length(fid), 10^5)
+	A <- A(cnSet)
+	B <- B(cnSet)
+	C <- calls(cnSet)
+	D <- snpCallProbability(cnSet)
+	SKW <- cnSet$SKW; SNR <- cnSet$SNR
+	open(A)
+	open(B)
+	open(C)
+	open(D)
+	open(SKW)
+	open(mixtureParams)
+	open(SNR)
 	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
-	return(mixtureParams)
+	## RS ADDED
+	index <- match(gns, rownames(A))
+	rsprocessCEL <- function(i){
+		for (k in i){
+			y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
+			x <- log2(y[idx2])
+			SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
+			rm(x)
+			y <- normalize.quantiles.use.target(y, target=reference)
+			## RS: add index for row assignment
+			A[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+			B[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+			C[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+			D[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+			rm(y)
+			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
+			M <- log2(A[idx, k])-log2(B[idx, k])
+			tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
+			rm(S, M)
+			mixtureParams[, k] <- tmp[["coef"]]
+			SNR[k] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
+			rm(tmp)
+		}
+		TRUE
+	}
+	ocLapply(sampleBatches, rsprocessCEL, neededPkgs="crlmm")
+	close(A)
+	close(B)
+	close(C)
+	close(D)
+	close(SKW)
+	close(mixtureParams)
+	close(SNR)
+	return()
 }
 
 genotype <- function(filenames,
@@ -231,25 +293,24 @@ genotype <- function(filenames,
 	if (missing(sns)) sns <- basename(filenames)
 	if (any(duplicated(sns))) stop("sample identifiers must be unique")
 	genome <- match.arg(genome)
-	cnSet <- constructAffy(filenames=filenames,
-			       sns=sns,
-			       cdfName=cdfName,
-			       batch=batch, verbose=verbose,
-			       genome=genome)
+	cnSet <- constructAffyCNSet(filenames=filenames,
+				    sns=sns,
+				    cdfName=cdfName,
+				    batch=batch, verbose=verbose,
+				    genome=genome)
 	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
 		stop("The ff package is required for this function.")
 	}
-	cnSet@mixtureParams <- snprmaAffy(cnSet, filenames=filenames,
-					  mixtureSampleSize=mixtureSampleSize,
-					  eps=eps,
-					  seed=seed,
-					  verbose=verbose)
-	ok <- cnrmaAffy(cnSet=cnSet, filenames=filenames,
+	cnSet <- snprmaAffy(cnSet,
+			    mixtureSampleSize=mixtureSampleSize,
+			    eps=eps,
+			    seed=seed,
+			    verbose=verbose)
+	ok <- cnrmaAffy(cnSet=cnSet,
 			cdfName=annotation(cnSet), seed=seed,
 			verbose=verbose)
 	stopifnot(ok)
 	ok <- genotypeAffy(cnSet=cnSet,
-			   mixtureParams=cnSet@mixtureParams,
 			   SNRMin=SNRMin,
 			   recallMin=recallMin,
 			   recallRegMin=recallRegMin,
@@ -260,15 +321,14 @@ genotype <- function(filenames,
 	return(cnSet)
 }
 
-genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
+genotypeAffy <- function(cnSet, SNRMin=5, recallMin=10,
 			 recallRegMin=1000,
 			 gender=NULL, badSNP=0.7, returnParams=TRUE,
 			 verbose=TRUE){
-	##snp.index <- which(isSnp(cnSet))
 	tmp <- crlmmGT2(A=calls(cnSet),
 			B=snpCallProbability(cnSet),
 			SNR=cnSet$SNR,
-			mixtureParams=mixtureParams,
+			mixtureParams=cnSet@mixtureParams,
 			cdfName=annotation(cnSet),
 			row.names=NULL,
 			col.names=sampleNames(cnSet),
@@ -279,7 +339,6 @@ genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
 			verbose=verbose,
 			returnParams=returnParams,
 			badSNP=badSNP)
-##			snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
 	open(cnSet$gender)
 	cnSet$gender[,] <- tmp[["gender"]]
@@ -287,91 +346,47 @@ genotypeAffy <- function(cnSet, mixtureParams, SNRMin=5, recallMin=10,
 	return(TRUE)
 }
 
-cnrmaAffy <- function(cnSet, filenames, cdfName, seed=1, verbose=TRUE){
-	snp.I <- isSnp(cnSet)
-	snp.index <- which(snp.I)
-	np.index <- which(!snp.I)
+cnrmaAffy <- function(cnSet, seed=1, verbose=TRUE){
+	filenames <- celfileName(cnSet)
+	np.index <- which(!isSnp(cnSet))
+	A <- A(cnSet)
+	cdfName <- annotation(cnSet)
 	if(verbose) message("Quantile normalizing nonpolymorphic markers")
-	cnrma2(A=A(cnSet),
-	       filenames=filenames,
-	       row.names=featureNames(cnSet)[np.index],
-	       cdfName=cdfName,
-	       sns=sampleNames(cnSet),
-	       seed=seed,
-	       verbose=verbose)
-	TRUE
-}
-
-rsprocessCEL <- function(i, filenames, fitMixture, A, B, C, D, SKW, SNR,
-			 mixtureParams, eps, seed, mixtureSampleSize,
-			 pkgname){
-	obj1 <- loader("preprocStuff.rda", .crlmmPkgEnv, pkgname)
-	obj2 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
-	obj3 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
-	autosomeIndex <- getVarInEnv("autosomeIndex")
-	pnsa <- getVarInEnv("pnsa")
-	pnsb <- getVarInEnv("pnsb")
-	fid <- getVarInEnv("fid")
-	reference <- getVarInEnv("reference")
-	aIndex <- getVarInEnv("aIndex")
-	bIndex <- getVarInEnv("bIndex")
-	SMEDIAN <- getVarInEnv("SMEDIAN")
-	theKnots <- getVarInEnv("theKnots")
-	gns <- getVarInEnv("gns")
-	rm(list=c(obj1, obj2, obj3), envir=.crlmmPkgEnv)
-	rm(obj1, obj2, obj3)
-
-	## for mixture
-	set.seed(seed)
-	idx <- sort(sample(autosomeIndex, mixtureSampleSize))
-	##for skewness. no need to do everything
-	idx2 <- sample(length(fid), 10^5)
-
-	open(A)
-	open(B)
-	open(C)
-	open(D)
-	open(SKW)
-	open(mixtureParams)
-	open(SNR)
-
-	## RS ADDED
-	index <- match(gns, rownames(A))
-
-	for (k in i){
-		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
-		x <- log2(y[idx2])
-		SKW[k] <- mean((x-mean(x))^3)/(sd(x)^3)
-		rm(x)
-		y <- normalize.quantiles.use.target(y, target=reference)
-		## RS: add index for row assignment
-		A[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-		B[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
-		C[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-		D[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
-		rm(y)
-		if(fitMixture){
-			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
-			M <- log2(A[idx, k])-log2(B[idx, k])
-			tmp <- fitAffySnpMixture56(S, M, theKnots, eps=eps)
-			rm(S, M)
-			mixtureParams[, k] <- tmp[["coef"]]
-			SNR[k] <- tmp[["medF1"]]^2/(tmp[["sigma1"]]^2+tmp[["sigma2"]]^2)
-			rm(tmp)
-		} else {
-			mixtureParams[, k] <- NA
-			SNR[k] <- NA
-		}
+	##if(missing(cdfName)) stop("must specify cdfName")
+	pkgname <- getCrlmmAnnotationName(cdfName)
+	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
+	sampleBatches <- splitIndicesByNode(seq_along(filenames))
+	if(verbose) message("Processing nonpolymorphic probes for ", length(filenames), " files.")
+	if(pkgname=="genomewidesnp6Crlmm"){
+		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
 	}
+	if(pkgname=="genomewidesnp5Crlmm"){
+		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
+	}
+	reference <- getVarInEnv("reference")
+        loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
+	fid <- getVarInEnv("npProbesFid")
+	row.names <- featureNames(cnSet)[np.index]
+	row.names <- row.names[row.names %in% names(fid)] ##removes chromosome Y
+	fid <- fid[match(row.names, names(fid))]
+	np.index <- match(row.names, rownames(A))
+	gns <- names(fid)
+	set.seed(seed)
+	## updates A
+	open(A)
+	processCEL2 <- function(i){
+		for (k in i){
+			y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
+			A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
+		}
+		return(TRUE)
+	}
+	ocLapply(sampleBatches, processCEL2, neededPkgs="crlmm")
 	close(A)
-	close(B)
-	close(SKW)
-	close(mixtureParams)
-	close(SNR)
-	rm(list=ls())
-	gc(verbose=FALSE)
 	TRUE
 }
+
+
 
 genotype2 <- function(){
 	.Defunct(msg="The genotype2 function has been deprecated. The function genotype should be used instead.  genotype will support large data using ff provided that the ff package is loaded.")
@@ -1251,79 +1266,9 @@ whichPlatform <- function(cdfName){
 	return(platform)
 }
 
-cnrma <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
-	if(missing(cdfName)) stop("must specify cdfName")
-	pkgname <- getCrlmmAnnotationName(cdfName)
-	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
-	if (missing(sns)) sns <- basename(filenames)
-	if(verbose) message("Loading annotations for nonpolymorphic probes")
-        loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
-	fid <- getVarInEnv("npProbesFid")
-	if(cdfName=="genomewidesnp6"){
-		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
-	}
-	if(cdfName=="genomewidesnp5"){
-		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
-	}
-	reference <- getVarInEnv("reference")
-	fid <- fid[match(row.names, names(fid))]
-	np.index <- match(row.names, rownames(A))
-	gns <- names(fid)
-	set.seed(seed)
-	##idx2 <- sample(length(fid), 10^5)
-	for (k in seq_along(filenames)){
-		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
-		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
-	}
-	return(A)
-}
-
 cnrma2 <- function(A, filenames, row.names, verbose=TRUE, seed=1, cdfName, sns){
-	if(missing(cdfName)) stop("must specify cdfName")
-	pkgname <- getCrlmmAnnotationName(cdfName)
-	require(pkgname, character.only=TRUE) || stop("Package ", pkgname, " not available")
-	if (missing(sns)) sns <- basename(filenames)
-	sampleBatches <- splitIndicesByLength(seq_along(filenames), ocSamples()/getDoParWorkers())
-	if(verbose) message("Processing nonpolymorphic probes for ", length(filenames), " files.")
-	## updates A
-	ocLapply(sampleBatches,
-		 processCEL2,
-		 row.names=row.names,
-		 filenames=filenames,
-		 A=A,
-		 seed=seed,
-		 pkgname=pkgname,
-		 neededPkgs=c("crlmm", pkgname))
-	##list(sns=sns, gns=row.names, SKW=SKW, cdfName=cdfName)
-	return(A)
-}
 
-processCEL2 <- function(i, filenames, row.names, A, seed, pkgname){
-	if(pkgname=="genomewidesnp6Crlmm"){
-		loader("1m_reference_cn.rda", .crlmmPkgEnv, pkgname)
-	}
-	if(pkgname=="genomewidesnp5Crlmm"){
-		loader("5.0_reference_cn.rda", .crlmmPkgEnv, pkgname)
-	}
-	reference <- getVarInEnv("reference")
-        loader("npProbesFid.rda", .crlmmPkgEnv, pkgname)
-	fid <- getVarInEnv("npProbesFid")
-	row.names <- row.names[row.names %in% names(fid)] ##removes chromosome Y
-	fid <- fid[match(row.names, names(fid))]
-	##stopifnot(all.equal(names(fid), row.names))
-	np.index <- match(row.names, rownames(A))
-	gns <- names(fid)
-	set.seed(seed)
-	open(A)
-	##idx2 <- sample(length(fid), 10^5)
-	for (k in i){
-		y <- as.matrix(read.celfile(filenames[k], intensity.means.only=TRUE)[["INTENSITY"]][["MEAN"]][fid])
-		A[np.index, k] <- as.integer(normalize.quantiles.use.target(y, target=reference))
-	}
-	close(A)
-	return(TRUE)
 }
-
 
 imputeCenter <- function(muA, muB, index.complete, index.missing){
 	index <- index.missing
@@ -1618,9 +1563,6 @@ genotypeSummary <- function(object,
 	FUN <- get(myf)
 	if(is.lds){
 		index.list <- splitIndicesByLength(marker.index, ocProbesets())
-##		if(parStatus()){
-##			index.list <- splitIndicesByNode(marker.index)
-##		} else index.list <- splitIndicesByLength(marker.index, ocProbesets())
 		ocLapply(seq(along=index.list),
 			 FUN,
 			 index.list=index.list,
@@ -1653,7 +1595,7 @@ whichMarkers <- function(type, is.snp, is.autosome, is.annotated, is.X){
 }
 
 summarizeNps <- function(strata, index.list, object, batchSize,
-			 GT.CONF.THR, verbose, CHR.X, ...){
+			 GT.CONF.THR, verbose=TRUE, CHR.X=FALSE, ...){
 	is.lds <- is(calls(object), "ffdf") | is(calls(object), "ff_matrix")
 	if(is.lds) {physical <- get("physical"); open(object)}
 	if(verbose) message("      Probe stratum ", strata, " of ", length(index.list))
@@ -1707,9 +1649,9 @@ summarizeNps <- function(strata, index.list, object, batchSize,
 summarizeSnps <- function(strata,
 			  index.list,
 			  object,
-			  GT.CONF.THR,
-			  verbose,
-			  CHR.X, ...){
+			  GT.CONF.THR=0.80,
+			  verbose=TRUE,
+			  CHR.X=FALSE, ...){
 ##	if(is.lds) {
 ##		physical <- get("physical")
 ##		open(object)
@@ -2012,7 +1954,8 @@ crlmmCopynumber <- function(object,
 			    MIN.NU=2^3,
 			    MIN.PHI=2^3,
 			    THR.NU.PHI=TRUE,
-			    type=c("SNP", "NP", "X.SNP", "X.NP")){
+			    type=c("SNP", "NP", "X.SNP", "X.NP"),
+			    fit.linearModel=TRUE){
 	typeof <- paste(type, collapse=",")
 	stopifnot(typeof %in% c("SNP", "NP", "SNP,NP", "SNP,X.SNP", "SNP,X.NP", "SNP,NP,X.SNP", "SNP,NP,X.SNP,X.NP"))
 	if(GT.CONF.THR >= 1 | GT.CONF.THR < 0) stop("GT.CONF.THR must be in [0,1)")
@@ -2070,33 +2013,34 @@ crlmmCopynumber <- function(object,
 		}
 	}
 	if(verbose) message("Estimating parameters for copy number")##SNPs only
-	for(i in seq_along(type)){
-		marker.type <- type[i]
-		message(paste("...", mylabel(marker.type)))
-		CHR.X <- ifelse(marker.type %in% c("X.SNP", "X.NP"), TRUE, FALSE)
-		marker.index <- whichMarkers(marker.type, is.snp,
-					     is.autosome, is.annotated, is.X)
-		if(length(marker.index) == 0) next()
-		res <- estimateCnParameters(object=object,
-					       type=marker.type,
-					       SNRMin=SNRMin,
-					       DF.PRIOR=DF.PRIOR,
-					       GT.CONF.THR=GT.CONF.THR,
-					       MIN.SAMPLES=MIN.SAMPLES,
-					       MIN.OBS=MIN.OBS,
-					       MIN.NU=MIN.NU,
-					       MIN.PHI=MIN.PHI,
-					       THR.NU.PHI=THR.NU.PHI,
-					       verbose=verbose,
-					       marker.index=marker.index,
-					       is.lds=is.lds,
-					       CHR.X=CHR.X)
-		##if(!is.lds) {object <- res; rm(res); gc()}
-		##if(!is.lds) {object <- res; rm(res); gc()}
+	if(fit.linearModel){
+		for(i in seq_along(type)){
+			marker.type <- type[i]
+			message(paste("...", mylabel(marker.type)))
+			CHR.X <- ifelse(marker.type %in% c("X.SNP", "X.NP"), TRUE, FALSE)
+			marker.index <- whichMarkers(marker.type, is.snp,
+						     is.autosome, is.annotated, is.X)
+			if(length(marker.index) == 0) next()
+			res <- estimateCnParameters(object=object,
+						    type=marker.type,
+						    SNRMin=SNRMin,
+						    DF.PRIOR=DF.PRIOR,
+						    GT.CONF.THR=GT.CONF.THR,
+						    MIN.SAMPLES=MIN.SAMPLES,
+						    MIN.OBS=MIN.OBS,
+						    MIN.NU=MIN.NU,
+						    MIN.PHI=MIN.PHI,
+						    THR.NU.PHI=THR.NU.PHI,
+						    verbose=verbose,
+						    marker.index=marker.index,
+						    is.lds=is.lds,
+						    CHR.X=CHR.X)
+		}
+		close(object)
 	}
-	close(object)
 	if(is.lds) return(TRUE) else return(object)
 }
+
 crlmmCopynumber2 <- function(){
 	.Defunct(msg="The crlmmCopynumber2 function has been deprecated. The function crlmmCopynumber should be used instead.  crlmmCopynumber will support large data using ff provided that the ff package is loaded.")
 }

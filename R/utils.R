@@ -11,7 +11,7 @@ changeToCrlmmAnnotationName <- function(x){
 }
 
 getCrlmmAnnotationName <- function(x){
-  paste(tolower(gsub("_", "", x)), "Crlmm", sep="")
+	paste(tolower(gsub("_", "", x)), "Crlmm", sep="")
 }
 
 medianSummaries <- function(mat, grps)

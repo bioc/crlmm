@@ -20,6 +20,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	} else {
 		index <- match(gns, rownames(A))
 	}
+	##snpBatches <- splitIndicesByLength(index, ocProbesets(), balance=TRUE)
 	snpBatches <- splitIndicesByLength(index, ocProbesets())
 	NR <- length(unlist(snpBatches))
 	if(verbose) message("Calling ", NR, " SNPs for recalibration... ")
@@ -39,14 +40,42 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	params <- getVarInEnv("params")
 	rm(list=c(obj1, obj2), envir=.crlmmPkgEnv)
 	rm(obj1, obj2)
-	##
-	## IF gender not provide, we predict
-	## FIXME: XIndex may be greater than ocProbesets()
-	if(is.null(gender)){
-		if(verbose) message("Determining gender.")
-		gender <- imputeGender(A, B, XIndex, YIndex, SNR, SNRMin)
+	## use lexical scope
+	imputeGender <- function(XIndex, YIndex){
+		if(length(YIndex) > 0){
+			a <- log2(A[XIndex,,drop=FALSE])
+			b <- log2(B[XIndex,,drop=FALSE])
+			meds.X <- (apply(a+b, 2, median))/2
+			a <- log2(A[YIndex,,drop=FALSE])
+			b <- log2(B[YIndex,,drop=FALSE])
+			meds.Y <- (apply(a+b, 2, median))/2
+			R <- meds.X - meds.Y
+			if(sum(SNR > SNRMin) == 1){
+				gender <- ifelse(R[SNR[] > SNRMin] > 0.5, 2L, 1L)
+			} else{
+				gender <- kmeans(R, c(min(R[SNR[]>SNRMin]), max(R[SNR[]>SNRMin])))[["cluster"]]
+			}
+		} else {
+			XMedian <- apply(log2(A[XIndex,,drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+			if(sum(SNR > SNRMin) == 1){
+				gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
+			} else{
+				gender <- kmeans(XMedian, c(min(XMedian[SNR[]>SNRMin]), max(XMedian[SNR[]>SNRMin])))[["cluster"]]
+			}
+		}
+		return(gender)
 	}
-	##
+	if(is.null(gender)){
+		if(ocProbesets() < length(XIndex)){
+			if(verbose) message("Using ", ocProbesets(), " SNPs on chrom X and Y to assign gender.")
+			XIndex2 <- sample(XIndex, ocProbesets(), replace=FALSE)
+		} else XIndex2 <- XIndex
+		if(ocProbesets() < length(YIndex)){
+			YIndex2 <- sample(YIndex, ocProbesets(), replace=FALSE)
+		} else YIndex2 <- YIndex
+		message("Imputing gender")
+		gender <- imputeGender(XIndex=XIndex2, YIndex=YIndex2)
+	}
 	Indexes <- list(autosomeIndex, XIndex, YIndex)
 	cIndexes <- list(keepIndex,
 			 keepIndex[which(gender[keepIndex]==2)],
@@ -56,16 +85,13 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	mIndex <- which(gender==1)
 	## different here
 	## use gtypeCallerR in batches
-	##snpBatches <- splitIndicesByLength(1:nrow(A), ocProbesets())
-	newparamsBatch <- vector("list", length(snpBatches))
-	process1 <- function(idxBatch, snpBatches, autosomeIndex, XIndex,
-			     YIndex, A, B, mixtureParams, fIndex, mIndex,
-			     params, cIndexes, SMEDIAN, theKnots, DF, probs, batchSize){
-		open(A)
-		open(B)
-		open(mixtureParams)
+	batchSize <- ocProbesets()
+	open(A)
+	open(B)
+	open(mixtureParams)
+	process1 <- function(idxBatch){
 		snps <- snpBatches[[idxBatch]]
-		rSnps <- range(snps)
+		##rSnps <- range(snps)
 		last <- (idxBatch-1)*batchSize
 		IndexesBatch <- list(autosomeIndex[autosomeIndex %in% snps]-last,
 				     XIndex[XIndex %in% snps]-last,
@@ -73,7 +99,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		IndexesBatch <- lapply(IndexesBatch, as.integer)
 		tmpA <- as.matrix(A[snps,])
 		tmpB <- as.matrix(B[snps,])
-		## newparamsBatch[[idxBatch]]
 		tmp <- gtypeCallerR(tmpA, tmpB, fIndex, mIndex,
 				    params[["centers"]][snps,],
 				    params[["scales"]][snps,],
@@ -82,25 +107,13 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 				    sapply(IndexesBatch, length),
 				    sapply(cIndexes, length), SMEDIAN,
 				    theKnots, mixtureParams[], DF, probs, 0.025)
-		rm(snps, rSnps, IndexesBatch, tmpA, tmpB, last)
-		gc(verbose=FALSE)
-		close(A)
-		close(B)
-		close(mixtureParams)
 		tmp
 	}
-	##
-	##if(verbose) message("Calling process1")
-	newparamsBatch <- ocLapply(seq(along=snpBatches), process1,
-				   snpBatches=snpBatches,
-				   autosomeIndex=autosomeIndex, XIndex=XIndex,
-				   YIndex=YIndex, A=A, B=B,
-				   mixtureParams=mixtureParams, fIndex=fIndex,
-				   mIndex=mIndex, params=params,
-				   cIndexes=cIndexes, SMEDIAN=SMEDIAN,
-				   theKnots=theKnots, DF=DF, probs=probs,
-				   batchSize=ocProbesets(),
-				   neededPkgs="crlmm")
+	## Lexical scope
+	gc(verbose=FALSE)
+	newparamsBatch <- ocLapply(seq(along=snpBatches), process1, neededPkgs="crlmm")
+	gc(verbose=FALSE)
+	if(verbose) message("finished process1")
 	newparams <- vector("list", 3)
 	names(newparams) <- c("centers", "scales", "N")
 	newparams[["centers"]] <- do.call("rbind", lapply(newparamsBatch, "[[", 1))
@@ -174,6 +187,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 			dev=1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev)
 		}
 	}
+
 	if (verbose) message("OK")
 	##
 	## BC: must keep SD
@@ -187,13 +201,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## ## MOVE TO C#######
 	##
 	## running in batches
-	process2 <- function(idxBatch, snpBatches, autosomeIndex, XIndex,
-			     YIndex, A, B, mixtureParams, fIndex, mIndex,
-			     params, cIndexes, SMEDIAN, theKnots, DF, probs,
-			     regionInfo, batchSize){
-		open(A)
-		open(B)
-		open(mixtureParams)
+	process2 <- function(idxBatch){
 		snps <- snpBatches[[idxBatch]]
 		tmpA <- as.matrix(A[snps,])
 		tmpB <- as.matrix(B[snps,])
@@ -216,20 +224,14 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 					which(regionInfo[snps, 1]))
 		A[snps,] <- tmpA
 		B[snps,] <- tmpB
-		rm(tmpA, tmpB, snps, rSnps, IndexesBatch, ImNull, last)
-		gc(verbose=FALSE)
-		close(A)
-		close(B)
-		close(mixtureParams)
 	}
-	##
-	ocLapply(seq(along=snpBatches), process2, snpBatches=snpBatches,
-		 autosomeIndex=autosomeIndex, XIndex=XIndex, YIndex=YIndex,
-		 A=A, B=B, mixtureParams=mixtureParams, fIndex=fIndex,
-		 mIndex=mIndex, params=params, cIndexes=cIndexes,
-		 SMEDIAN=SMEDIAN, theKnots=theKnots, DF=DF, probs=probs,
-		 regionInfo=regionInfo, batchSize=ocProbesets(),
-		 neededPkgs="crlmm")
+	gc(verbose=FALSE)
+	ocLapply(seq(along=snpBatches), process2, neededPkgs="crlmm")
+	close(A)
+	close(B)
+	close(mixtureParams)
+	gc(verbose=FALSE)
+	message("Done with process2")
 	##  END MOVE TO C#######
 	## ##################
 	##

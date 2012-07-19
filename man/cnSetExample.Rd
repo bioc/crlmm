@@ -29,9 +29,7 @@ data(cnSetExample2)
 
 }
 \examples{
-\dontrun{
-data(cnSetExample)
-data(cnSetExample2)
-}
+     data(cnSetExample)
+     data(cnSetExample2)
 }
 \keyword{datasets}
