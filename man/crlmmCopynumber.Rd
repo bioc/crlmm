@@ -11,7 +11,8 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
 	        DF.PRIOR = 50, bias.adj = FALSE,
                 prior.prob = rep(1/4, 4), seed = 1, verbose = TRUE,
                 GT.CONF.THR = 0.80, MIN.NU = 2^3, MIN.PHI = 2^3,
-                THR.NU.PHI = TRUE, type=c("SNP", "NP", "X.SNP", "X.NP"))
+                THR.NU.PHI = TRUE, type=c("SNP", "NP", "X.SNP", "X.NP"),
+                fit.linearModel=TRUE)
 }
 
 \arguments{
@@ -102,6 +103,11 @@ crlmmCopynumber(object, MIN.SAMPLES=10, SNRMin = 5, MIN.OBS = 1,
   \item{type}{ Character string vector that must be one or more of
     "SNP", "NP", "X.SNP", or "X.NP". Type refers to a set of
     markers. See details below}
+
+  \item{fit.linearModel}{Logical.  If TRUE, a linear model is fit to
+  estimate the parameters for computing the absolute copy number.  If
+  FALSE, we compute the batch-specific, within-genotype median and MAD
+  at polymorphic loci and the median and MAD at nonpolymorphic loci.}
 
  }
 

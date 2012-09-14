@@ -2,7 +2,9 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
                      col.names=NULL, probs=c(1/3, 1/3, 1/3), DF=6,
                      SNRMin=5, recallMin=10, recallRegMin=1000,
                      gender=NULL, desctrucitve=FALSE, verbose=TRUE,
-                     returnParams=FALSE, badSNP=.7){
+                     returnParams=FALSE, badSNP=.7,
+		     callsGt,
+		     callsPr){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	stopifnot(require(pkgname, character.only=TRUE, quietly=!verbose))
 	open(SNR)
@@ -20,7 +22,6 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	} else {
 		index <- match(gns, rownames(A))
 	}
-	##snpBatches <- splitIndicesByLength(index, ocProbesets(), balance=TRUE)
 	snpBatches <- splitIndicesByLength(index, ocProbesets())
 	NR <- length(unlist(snpBatches))
 	if(verbose) message("Calling ", NR, " SNPs for recalibration... ")
@@ -29,6 +30,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	if(verbose) message("Loading annotations.")
 	obj1 <- loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
 	obj2 <- loader("mixtureStuff.rda", .crlmmPkgEnv, pkgname)
+	##
 	## this is toget rid of the 'no visible binding' notes
 	## variable definitions
 	XIndex <- getVarInEnv("XIndex")
@@ -43,20 +45,21 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## use lexical scope
 	imputeGender <- function(XIndex, YIndex){
 		if(length(YIndex) > 0){
-			a <- log2(A[XIndex,,drop=FALSE])
-			b <- log2(B[XIndex,,drop=FALSE])
+			a <- log2(as.matrix(A[XIndex,,drop=FALSE]))
+			b <- log2(as.matrix(B[XIndex,,drop=FALSE]))
 			meds.X <- (apply(a+b, 2, median))/2
-			a <- log2(A[YIndex,,drop=FALSE])
-			b <- log2(B[YIndex,,drop=FALSE])
+			## Y
+			a <- log2(as.matrix(A[YIndex,,drop=FALSE]))
+			b <- log2(as.matrix(B[YIndex,,drop=FALSE]))
 			meds.Y <- (apply(a+b, 2, median))/2
 			R <- meds.X - meds.Y
-			if(sum(SNR > SNRMin) == 1){
+			if(sum(SNR[] > SNRMin) == 1){
 				gender <- ifelse(R[SNR[] > SNRMin] > 0.5, 2L, 1L)
 			} else{
 				gender <- kmeans(R, c(min(R[SNR[]>SNRMin]), max(R[SNR[]>SNRMin])))[["cluster"]]
 			}
 		} else {
-			XMedian <- apply(log2(A[XIndex,,drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+			XMedian <- apply(log2(as.matrix(A[XIndex,,drop=FALSE]))+log2(as.matrix(B[XIndex,, drop=FALSE])), 2, median)/2
 			if(sum(SNR > SNRMin) == 1){
 				gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
 			} else{
@@ -75,6 +78,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		} else YIndex2 <- YIndex
 		message("Imputing gender")
 		gender <- imputeGender(XIndex=XIndex2, YIndex=YIndex2)
+		cnSet$gender[,] <- gender
 	}
 	Indexes <- list(autosomeIndex, XIndex, YIndex)
 	cIndexes <- list(keepIndex,
@@ -186,8 +190,8 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 			dev=apply(DD,1,function(x) x%*%SSI%*%x)
 			dev=1/sqrt( (2*pi)^3*det(SS))*exp(-0.5*dev)
 		}
+		gc(verbose=FALSE)
 	}
-
 	if (verbose) message("OK")
 	##
 	## BC: must keep SD
@@ -201,6 +205,13 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	## ## MOVE TO C#######
 	##
 	## running in batches
+	callsGt.present <- !missing(callsGt)
+	callsPr.present <- !missing(callsPr)
+	overwriteAB <- !callsGt.present & !callsPr.present
+	if(overwriteAB){
+		open(callsGt)
+		open(callsPr)
+	}
 	process2 <- function(idxBatch){
 		snps <- snpBatches[[idxBatch]]
 		tmpA <- as.matrix(A[snps,])
@@ -222,14 +233,23 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 					DF, probs, 0.025,
 					which(regionInfo[snps, 2]),
 					which(regionInfo[snps, 1]))
-		A[snps,] <- tmpA
-		B[snps,] <- tmpB
+		if(overwriteAB){
+			A[snps,] <- tmpA
+			B[snps,] <- tmpB
+		} else {
+			callsGt[snps, ] <- tmpA
+			callsPr[snps, ] <- tmpB
+		}
 	}
 	gc(verbose=FALSE)
 	ocLapply(seq(along=snpBatches), process2, neededPkgs="crlmm")
 	close(A)
 	close(B)
 	close(mixtureParams)
+	if(overwriteAB){
+		close(callsGt)
+		close(callsPr)
+	}
 	gc(verbose=FALSE)
 	message("Done with process2")
 	##  END MOVE TO C#######

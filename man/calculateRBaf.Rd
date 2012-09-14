@@ -58,10 +58,16 @@ calculateRBaf(object, batch.name, chrom)
 \author{Lynn Mireless}
 
 \examples{
-data(cnSetExample)
-baf.lrr <- calculateRBaf(cnSetExample, "SHELF")
-hist(baf.lrr[["baf"]][[1]]/1000, breaks=100)
-hist(baf.lrr[["lrr"]][[1]]/100, breaks=100)
+	data(cnSetExample)
+	baf.lrr <- suppressWarnings(calculateRBaf(cnSetExample, "SHELF"))
+	hist(baf.lrr[["baf"]][[1]]/1000, breaks=100)
+	hist(baf.lrr[["lrr"]][[1]]/100, breaks=100)
+	\dontrun{
+		library(ff)
+		baf.lrr <- suppressWarnings(calculateRBaf(cnSetExample, "SHELF"))
+		class(baf.lrr[["baf"]][[1]]) ## ff_matrix
+		class(baf.lrr[["lrr"]][[1]]) ## ff_matrix
+	}
 }
 \keyword{list}
 \keyword{methods}

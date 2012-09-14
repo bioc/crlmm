@@ -535,7 +535,11 @@ setMethod("calculateRBaf", signature(object="CNSet"),
 	  })
 
 calculateRBafCNSet <- function(object, batch.name, chrom){
-	if(missing(batch.name)) batch.name <- batchNames(object)
+	if(missing(batch.name)) {
+		batch.name <- batchNames(object)
+		if("grandMean" %in% batch.name)
+			batch.name <- batch.name[-length(batch.name)]
+	}
 	if(missing(chrom)) chrom <- unique(chromosome(object))
 	if(!(all(batch.name %in% batchNames(object)))) stop("batch.name must be belong to batchNames(object)")
 	chr <- chromosome(object)
@@ -549,35 +553,42 @@ calculateRBafCNSet <- function(object, batch.name, chrom){
 	## if ff package is loaded, these will be ff objects
 	chr <- names(indexlist)
 	rlist <- blist <- vector("list", length(indexlist))
-	for(i in seq_along(indexlist)){
-		I <- indexlist[[i]]
-		nr <- length(I)
-		CHR <- names(indexlist)[i]
-		bafname <- paste("baf_chr", CHR, sep="")
-		rname <- paste("lrr_chr", CHR, sep="")
+	path <- ldPath()
+	processByChromosome <- function(i, chr, path){
+		ldPath(path)
+		nr <- length(i)
+		##CHR <- names(i)
+		bafname <- paste("baf_chr", chr, sep="")
+		rname <- paste("lrr_chr", chr, sep="")
 		bmatrix <- initializeBigMatrix(bafname, nr=nr, nc=length(sns), vmode="integer")
 		rmatrix <- initializeBigMatrix(rname, nr=nr, nc=length(sns), vmode="integer")
 		colnames(rmatrix) <- colnames(bmatrix) <- sns
 		## put rownames in order of physical position
-		ix <- order(position(object)[I])
-		I <- I[ix]
-		rownames(rmatrix) <- rownames(bmatrix) <- featureNames(object)[I]
+		ix <- order(position(object)[i])
+		i <- i[ix]
+		rownames(rmatrix) <- rownames(bmatrix) <- featureNames(object)[i]
 		for(j in seq_along(sampleindex)){
 			bname <- batch.name[j]
 			J <- sampleindex[[j]]
-			res <- calculateRTheta(object=object,
-					       batch.name=bname,
-					       feature.index=I)
+			res <- crlmm:::calculateRTheta(object=object,
+						       batch.name=bname,
+						       feature.index=i)
 			k <- match(sampleNames(object)[J], sns)
 			bmatrix[, k] <- res[["baf"]]
 			rmatrix[, k] <- res[["lrr"]]
-			##colnames(bmatrix)[J] <- colnames(rmatrix)[J] <- sampleNames(object)[J]
 		}
-		blist[[i]] <- bmatrix
-		rlist[[i]] <- rmatrix
+		list(bmatrix, rmatrix)
 	}
-	res <- list(baf=blist,
-		    lrr=rlist)
+	## calcualte R BAF by chromosome
+	if(isPackageLoaded("ff")){
+		pkgs <- c("oligoClasses", "ff", "Biobase", "crlmm")
+	} else pkgs <- c("oligoClasses", "Biobase", "crlmm")
+	res <- foreach(i=indexlist, chr=names(indexlist), .packages=pkgs) %dopar% {
+		processByChromosome(i, chr, path)
+	}
+	blist <- lapply(res, "[[", 1)
+	rlist <- lapply(res, "[[", 2)
+	res <- list(baf=blist, lrr=rlist)
 	return(res)
 }
 

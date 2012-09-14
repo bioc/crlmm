@@ -225,17 +225,12 @@ snprmaAffy <- function(cnSet,
 	idx2 <- sample(length(fid), 10^5)
 	A <- A(cnSet)
 	B <- B(cnSet)
-	C <- calls(cnSet)
-	D <- snpCallProbability(cnSet)
 	SKW <- cnSet$SKW; SNR <- cnSet$SNR
 	open(A)
 	open(B)
-	open(C)
-	open(D)
 	open(SKW)
 	open(mixtureParams)
 	open(SNR)
-	if(verbose) message("Cloning A and B matrices to store genotype calls and confidence scores.")
 	## RS ADDED
 	index <- match(gns, rownames(A))
 	rsprocessCEL <- function(i){
@@ -246,10 +241,10 @@ snprmaAffy <- function(cnSet,
 			rm(x)
 			y <- normalize.quantiles.use.target(y, target=reference)
 			## RS: add index for row assignment
-			A[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-			B[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
-			C[index, k] <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
-			D[index, k] <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+			ya <- intMedianSummaries(y[aIndex, 1, drop=FALSE], pnsa)
+			yb <- intMedianSummaries(y[bIndex, 1, drop=FALSE], pnsb)
+			A[index, k] <- ya
+			B[index, k] <- yb
 			rm(y)
 			S <- (log2(A[idx,k])+log2(B[idx, k]))/2 - SMEDIAN
 			M <- log2(A[idx, k])-log2(B[idx, k])
@@ -264,8 +259,6 @@ snprmaAffy <- function(cnSet,
 	ocLapply(sampleBatches, rsprocessCEL, neededPkgs="crlmm")
 	close(A)
 	close(B)
-	close(C)
-	close(D)
 	close(SKW)
 	close(mixtureParams)
 	close(SNR)
@@ -325,8 +318,10 @@ genotypeAffy <- function(cnSet, SNRMin=5, recallMin=10,
 			 recallRegMin=1000,
 			 gender=NULL, badSNP=0.7, returnParams=TRUE,
 			 verbose=TRUE){
-	tmp <- crlmmGT2(A=calls(cnSet),
-			B=snpCallProbability(cnSet),
+	## The passed arguments A and B currently contain the intensities
+	## (not calls and call probabilities)
+	tmp <- crlmmGT2(A=A(cnSet),
+			B=B(cnSet),
 			SNR=cnSet$SNR,
 			mixtureParams=cnSet@mixtureParams,
 			cdfName=annotation(cnSet),
@@ -338,11 +333,10 @@ genotypeAffy <- function(cnSet, SNRMin=5, recallMin=10,
 			gender=gender,
 			verbose=verbose,
 			returnParams=returnParams,
-			badSNP=badSNP)
-	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
-	open(cnSet$gender)
-	cnSet$gender[,] <- tmp[["gender"]]
-	close(cnSet$gender)
+			badSNP=badSNP,
+			callsGt=calls(cnSet),
+			callsPr=snpCallProbability(cnSet))
+	if(verbose) message("Genotyping finished.")
 	return(TRUE)
 }
 

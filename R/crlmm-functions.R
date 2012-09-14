@@ -313,20 +313,20 @@ crlmm2 <- function(filenames, row.names=TRUE, col.names=TRUE,
 
 imputeGender <- function(A, B, XIndex, YIndex, SNR, SNRMin){
 	if(length(YIndex) > 0){
-		a <- log2(A[XIndex,,drop=FALSE])
-		b <- log2(B[XIndex,,drop=FALSE])
+		a <- log2(as.matrix(A[XIndex,,drop=FALSE]))
+		b <- log2(as.matrix(B[XIndex,,drop=FALSE]))
 		meds.X <- (apply(a+b, 2, median))/2
-		a <- log2(A[YIndex,,drop=FALSE])
-		b <- log2(B[YIndex,,drop=FALSE])
+		a <- log2(as.matrix(A[YIndex,,drop=FALSE]))
+		b <- log2(as.matrix(B[YIndex,,drop=FALSE]))
 		meds.Y <- (apply(a+b, 2, median))/2
 		R <- meds.X - meds.Y
-		if(sum(SNR > SNRMin) == 1){
+		if(sum(SNR[] > SNRMin) == 1){
 			gender <- ifelse(R[SNR[] > SNRMin] > 0.5, 2L, 1L)
 		} else{
 			gender <- kmeans(R, c(min(R[SNR[]>SNRMin]), max(R[SNR[]>SNRMin])))[["cluster"]]
 		}
 	} else {
-		XMedian <- apply(log2(A[XIndex,,drop=FALSE])+log2(B[XIndex,, drop=FALSE]), 2, median)/2
+		XMedian <- apply(log2(as.matrix(A[XIndex,,drop=FALSE]))+log2(as.matrix(B[XIndex,, drop=FALSE])), 2, median)/2
 		if(sum(SNR > SNRMin) == 1){
 			gender <- which.min(c(abs(XMedian-8.9), abs(XMedian-9.5)))
 		} else{
