@@ -852,154 +852,54 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 }
 
 
-crlmmIllumina = function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
-                  row.names=TRUE, col.names=TRUE,
-                  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
-                  seed=1, # save.it=FALSE, load.it=FALSE, snpFile, cnFile,
-                  mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
-                  cdfName, sns, recallMin=10, recallRegMin=1000,
-                  returnParams=FALSE, badSNP=.7) {
-
-if(missing(cdfName)) {
-   if(!missing(RG))
-      cdfName = annotation(RG)
-   if(!missing(XY))
-      cdfName = annotation(XY)
-}
-if(!isValidCdfName(cdfName))
-   stop("cdfName not valid.  see validCdfNames")
-
-#  if (save.it & (missing(snpFile) | missing(cnFile)))
-#    stop("'snpFile' and/or 'cnFile' is missing and you chose to save.it")
-#  if (load.it & missing(snpFile))
-#    stop("'snpFile' is missing and you chose to load.it")
-#  if (!missing(snpFile))
-#    if (load.it & !file.exists(snpFile)){
-#      load.it <- FALSE
-#      message("File ", snpFile, " does not exist.")
-#      stop("Cannot load SNP data.")
-#  }
-#  if (!load.it){
-    if(!missing(RG)) {
-      if(missing(XY))
-        XY = RGtoXY(RG, chipType=cdfName)
-      else
-        stop("Both RG and XY specified - please use one or the other")
-    }
-    if (missing(sns)) sns = sampleNames(XY)
-    res <- preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize,
-			       fitMixture=TRUE, verbose=verbose,
-			       seed=seed, eps=eps, cdfName=cdfName, sns=sns,
-			       stripNorm=stripNorm, useTarget=useTarget) #,
-#                        save.it=save.it, snpFile=snpFile, cnFile=cnFile)
-#    is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-     is.lds = FALSE
-
-#    if(is.lds) {
-#      open(res[["A"]])
-#      open(res[["B"]])
-#      open(res[["SNR"]])
-#      open(res[["mixtureParams"]])
-#    }
-
-#    fD = featureData(XY)
-#    phenD = XY@phenoData
-#    protD = XY@protocolData
-#    rm(XY)
-#    gc(verbose=FALSE)
-#    if(verbose) message("Initializing container for alleleA, alleleB, call, callProbability")
-#    callSet <- new("SnpSuperSet",
-#                    alleleA=initializeBigMatrix(name="A", nr=nrow(res[[1]]), nc=length(sns)),
-#                    alleleB=initializeBigMatrix(name="B", nr=nrow(res[[1]]), nc=length(sns)),
-#                    call=initializeBigMatrix(name="call", nr=nrow(res[[1]]), nc=length(sns)),
-#                    callProbability=initializeBigMatrix(name="callPr", nr=nrow(res[[1]]), nc=length(sns)),
-#  	            annotation=cdfName, protocolData=protD, phenoData=phenD, featureData=fD)
-#    sampleNames(callSet) <- sns
-#    featureNames(callSet) <- res[["gns"]]
-#    pData(callSet)$SKW <- rep(NA, length(sns))
-#    pData(callSet)$SNR <- rep(NA, length(sns))
-#    pData(callSet)$gender <- rep(NA, length(sns))
-
-#  }else{
-#      if(verbose) message("Loading ", snpFile, ".")
-#        obj <- load(snpFile)
-#        if(verbose) message("Done.")
-#        if(!any(obj == "res"))
-#          stop("Object in ", snpFile, " seems to be invalid.")
-#  }
-
- #   rm(phenD, protD , fD)
-
-#    snp.index <- res$snpIndex #match(res$gns, featureNames(callSet))
-#    suppressWarnings(A(callSet) <- res[["A"]])
-#    suppressWarnings(B(callSet) <- res[["B"]])
-#    pData(callSet)$SKW <- res$SKW
-#    pData(callSet)$SNR <- res$SNR
-#    mixtureParams <- res$mixtureParams
-#    rm(res); gc(verbose=FALSE)
-  if(row.names) row.names=res$gns else row.names=NULL
-  if(col.names) col.names=res$sns else col.names=NULL
-  FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
-  ## genotyping
-  crlmmGTfxn = function(FUN,...){
-		switch(FUN,
-		       crlmmGT2=crlmmGT2(...),
-		       crlmmGT=crlmmGT(...))
-              }
-  res2 = crlmmGTfxn(FUN,
-                     A=res[["A"]],
-                     B=res[["B"]],
-                     SNR=res[["SNR"]],
-                     mixtureParams=res[["mixtureParams"]],
-                     cdfName=cdfName,
-                     row.names=row.names,
-                     col.names=col.names,
-                     probs=probs,
-                     DF=DF,
-                     SNRMin=SNRMin,
-                     recallMin=recallMin,
-                     recallRegMin=recallRegMin,
-                     gender=gender,
-                     verbose=verbose,
-                     returnParams=returnParams,
-                     badSNP=badSNP)
-
-#  res2 <- crlmmGT2(A=res[["A"]], #as.matrix(A(callSet)[snp.index,]), # j]),
-#                  B=res[["B"]], # as.matrix(B(callSet)[snp.index,]),  # j]),
-#                  SNR=res[["SNR"]], # callSet$SNR, # [j],
-#                  mixtureParams=res[["mixtureParams"]], #,
-#                  cdfName=res[["cdfName"]], # annotation(callSet),
-#                  row.names=row.names, # featureNames(callSet)[snp.index],
-#                  col.names=col.names, # sampleNames(callSet), #[j],
-#                  probs=probs,
-#                  DF=DF,
-#                  SNRMin=SNRMin,
-#                  recallMin=recallMin,
-#                  recallRegMin=recallRegMin,
-#                  gender=gender,
-#                  verbose=verbose,
-#                  returnParams=returnParams,
-#                  badSNP=badSNP)
-#    rm(res); gc(verbose=FALSE)
-#    suppressWarnings(snpCall(callSet)[snp.index, j] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index, j] <- tmp[["confs"]])
-#    callSet$gender[j] <- tmp$gender
-#    suppressWarnings(snpCall(callSet)[snp.index,] <- tmp[["calls"]])
-#    suppressWarnings(snpCallProbability(callSet)[snp.index,] <- tmp[["confs"]])
-#    callSet$gender <- tmp$gender
-#    rm(tmp); gc(verbose=FALSE)
-#    return(callSet)
-
-  res2[["SNR"]] = res[["SNR"]]
-  res2[["SKW"]] = res[["SKW"]]
-#  if(is.lds) {
-#    delete(res[["A"]])
-#    delete(res[["B"]])
-#    delete(res[["SNR"]])
-#    delete(res[["mixtureParams"]])
-#  }
-  rm(res); gc(verbose=FALSE)
-  return(list2SnpSet(res2, returnParams=returnParams))
+crlmmIllumina <- function(RG, XY, stripNorm=TRUE, useTarget=TRUE,
+			  row.names=TRUE, col.names=TRUE,
+			  probs=c(1/3, 1/3, 1/3), DF=6, SNRMin=5, gender=NULL,
+			  seed=1,
+			  mixtureSampleSize=10^5, eps=0.1, verbose=TRUE,
+			  cdfName, sns, recallMin=10, recallRegMin=1000,
+			  returnParams=FALSE, badSNP=.7) {
+	if(missing(cdfName)) {
+		if(!missing(RG))
+			cdfName = annotation(RG)
+		if(!missing(XY))
+			cdfName = annotation(XY)
+	}
+	if(!isValidCdfName(cdfName))
+		stop("cdfName not valid.  see validCdfNames")
+	if(!missing(RG)) {
+		if(missing(XY))
+			XY = RGtoXY(RG, chipType=cdfName)
+		else
+			stop("Both RG and XY specified - please use one or the other")
+	}
+	if (missing(sns)) sns = sampleNames(XY)
+	res <- preprocessInfinium2(XY, mixtureSampleSize=mixtureSampleSize,
+				   fitMixture=TRUE, verbose=verbose,
+				   seed=seed, eps=eps, cdfName=cdfName, sns=sns,
+				   stripNorm=stripNorm, useTarget=useTarget) #,
+	if(row.names) row.names=res$gns else row.names=NULL
+	if(col.names) col.names=res$sns else col.names=NULL
+	res2 <- crlmmGT(A=res[["A"]],
+			B=res[["B"]],
+			SNR=res[["SNR"]],
+			mixtureParams=res[["mixtureParams"]],
+			cdfName=cdfName,
+			row.names=row.names,
+			col.names=col.names,
+			probs=probs,
+			DF=DF,
+			SNRMin=SNRMin,
+			recallMin=recallMin,
+			recallRegMin=recallRegMin,
+			gender=gender,
+			verbose=verbose,
+			returnParams=returnParams,
+			badSNP=badSNP)
+	res2[["SNR"]] = res[["SNR"]]
+	res2[["SKW"]] = res[["SKW"]]
+	rm(res); gc(verbose=FALSE)
+	return(list2SnpSet(res2, returnParams=returnParams))
 }
 
 
@@ -1057,31 +957,67 @@ crlmmIlluminaV2 = function(sampleSheet=NULL,
 
     if(row.names) row.names=res$gns else row.names=NULL
     if(col.names) col.names=res$sns else col.names=NULL
+##
+##  if(is.lds){
+##	  res2 <- crlmmGT2(A=res[["A"]],
+##			   B=res[["B"]],
+##			   SNR=res[["SNR"]],
+##			   mixtureParams=res[["mixtureParams"]],
+##			   cdfName=cdfName,
+##			   row.names=row.names,
+##			   col.names=col.names,
+##			   probs=probs,
+##			   DF=DF,
+##			   SNRMin=SNRMin,
+##			   recallMin=recallMin,
+##			   recallRegMin=recallRegMin,
+##			   gender=gender,
+##			   verbose=verbose,
+##			   returnParams=returnParams,
+##			   badSNP=badSNP)
+##  } else {
+	  res2 <- crlmmGT(A=res[["A"]],
+			   B=res[["B"]],
+			   SNR=res[["SNR"]],
+			   mixtureParams=res[["mixtureParams"]],
+			   cdfName=cdfName,
+			   row.names=row.names,
+			   col.names=col.names,
+			   probs=probs,
+			   DF=DF,
+			   SNRMin=SNRMin,
+			   recallMin=recallMin,
+			   recallRegMin=recallRegMin,
+			   gender=gender,
+			   verbose=verbose,
+			   returnParams=returnParams,
+			   badSNP=badSNP)
+##  }
 
-    FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
-    ## genotyping
-    crlmmGTfxn = function(FUN,...){
-		switch(FUN,
-		       crlmmGT2=crlmmGT2(...),
-		       crlmmGT=crlmmGT(...))
-              }
-    res2 = crlmmGTfxn(FUN,
-                     A=res[["A"]],
-                     B=res[["B"]],
-                     SNR=res[["SNR"]],
-                     mixtureParams=res[["mixtureParams"]],
-                     cdfName=cdfName,
-                     row.names=row.names,
-                     col.names=col.names,
-                     probs=probs,
-                     DF=DF,
-                     SNRMin=SNRMin,
-                     recallMin=recallMin,
-                     recallRegMin=recallRegMin,
-                     gender=gender,
-                     verbose=verbose,
-                     returnParams=returnParams,
-                     badSNP=badSNP)
+##    FUN = ifelse(is.lds, "crlmmGT2", "crlmmGT")
+##    ## genotyping
+##    crlmmGTfxn = function(FUN,...){
+##		switch(FUN,
+##		       crlmmGT2=crlmmGT2(...),
+##		       crlmmGT=crlmmGT(...))
+##              }
+##    res2 = crlmmGTfxn(FUN,
+##                     A=res[["A"]],
+##                     B=res[["B"]],
+##                     SNR=res[["SNR"]],
+##                     mixtureParams=res[["mixtureParams"]],
+##                     cdfName=cdfName,
+##                     row.names=row.names,
+##                     col.names=col.names,
+##                     probs=probs,
+##                     DF=DF,
+##                     SNRMin=SNRMin,
+##                     recallMin=recallMin,
+##                     recallRegMin=recallRegMin,
+##                     gender=gender,
+##                     verbose=verbose,
+##                     returnParams=returnParams,
+##                     badSNP=badSNP)
 
 #    if(is.lds) {
 #      open(res[["SNR"]]); open(res[["SKW"]])
@@ -1134,6 +1070,16 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 			    varMetadata=data.frame(labelDescription=colnames(scanDates),
 			                           row.names=colnames(scanDates)))
        return(protocoldata)
+}
+
+getAvailableIlluminaGenomeBuild <- function(path){
+	snp.file <- list.files(path, pattern="snpProbes_hg")
+	if(length(snp.file) > 1){
+		## use hg19
+		message("genome build not specified. Using build hg19 for annotation.")
+		snp.file <- snp.file[1]
+	}
+	genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
 }
 
 
@@ -1209,7 +1155,10 @@ constructInf <- function(sampleSheet=NULL,
 	if(!all(file.exists(redidats))) stop("Missing some of the *Red.idat files")
 
 	if(verbose) message("Initializing container for genotyping and copy number estimation")
-	featureData = getFeatureData(cdfName, copynumber=TRUE)
+	pkgname <- getCrlmmAnnotationName(cdfName)
+	path <- system.file("extdata", package=pkgname)
+	genome <- getAvailableIlluminaGenomeBuild(path)
+	featureData = getFeatureData(cdfName, copynumber=TRUE, genome=genome)
 	nr = nrow(featureData); nc = narrays
 	sns <-  if (!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)) {
 		make.unique(sampleSheet$Sample_ID)
@@ -1228,7 +1177,8 @@ constructInf <- function(sampleSheet=NULL,
 		     callProbability=bigd,
 		     annotation=cdfName,
 		     featureData=featureData,
-		     batch=batch)
+		     batch=batch,
+		     genome=genome)
 ##        if (!is.null(sampleSheet) && !is.null(sampleSheet$Sample_ID)) {
 ##		sampleNames(cnSet) = make.unique(sampleSheet$Sample_ID)
 ##        } else{
@@ -1338,21 +1288,23 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 ##	message("Writing complete.  Begin genotyping...")
 ##	close(A(cnSet))
 ##	close(B(cnSet))
-	tmp <- crlmmGT2(A=snpCall(cnSet),
-			  B=snpCallProbability(cnSet),
-			  SNR=cnSet$SNR,
-			  mixtureParams=mixtureParams,
-			  cdfName=cdfName,
-			  col.names=sampleNames(cnSet),
-			  probs=probs,
-			  DF=DF,
-			  SNRMin=SNRMin,
-			  recallMin=recallMin,
-			  recallRegMin=recallRegMin,
-			  gender=gender,
-			  verbose=verbose,
-			  returnParams=returnParams,
-			  badSNP=badSNP)#,
+	tmp <- crlmmGT2(A=A(cnSet),
+			B=B(cnSet),
+			SNR=cnSet$SNR,
+			mixtureParams=mixtureParams,
+			cdfName=cdfName,
+			col.names=sampleNames(cnSet),
+			probs=probs,
+			DF=DF,
+			SNRMin=SNRMin,
+			recallMin=recallMin,
+			recallRegMin=recallRegMin,
+			gender=gender,
+			verbose=verbose,
+			returnParams=returnParams,
+			badSNP=badSNP,
+			callsGt=calls(cnSet),
+			callsPr=snpCallProbability(cnSet))#,
 	##RS:  I changed the API for crlmmGT2 to be consistent with crlmmGT
 	## snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.  Updating container with genotype calls and confidence scores.")
@@ -1430,7 +1382,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 				       cdfName=cdfName)
 	message("Preprocessing complete.  Begin genotyping...")
 	genotypeInf(cnSet=cnSet, mixtureParams=mixtureParams,
-		   probs=probs,
+		    probs=probs,
 		   SNRMin=SNRMin,
 		   recallMin=recallMin,
 		   recallRegMin=recallRegMin,

@@ -115,7 +115,6 @@ celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 if(exists("file.index")){
 	celFiles <- celFiles[file.index]
 }
-##celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% "C"]
 @
 
 Finally, copy number analyses using \crlmm{} require specification of
@@ -145,27 +144,70 @@ by a median.  For the nonpolymorphic markers on Affymetrix 6.0, only
 one probe per locus is available and the summarization step is not
 needed.  After preprocessing the arrays, the \crlmm{} package
 estimates the genotype using the CRLMM algorithm and provides a
-confidence score for the genotype calls.  The function
-\Rfunction{genotype} performs both the preprocessing and genotyping.
+confidence score for the genotype calls.   To begin, we initialize a
+container for the normalized intensities:
 
-<<LDS_genotype, cache=TRUE>>=
-cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName, genome="hg19")
+<<constructCNSet, cache=TRUE>>=
+cnSet <- constructAffyCNSet(celFiles, batch=plates,
+			    cdfName="genomewidesnp6",
+			    genome="hg19")
 @
 
-Segment faults that occur with the above step can often be traced to a
-corrupt cel file. To check if any of the files are corrupt, try
-reading the files in one at a time:
+
+We quantile normalize the SNPs and nonpolymorphic markers separately.
+Since the normalized intensities are ff objects, the functions
+\Rfunction{cnrmaAffy} and \Rfunction{snprmaAffy} write the normalized
+intensities to disk and nothing is returned.
+
+<<cnrmaAffy, cache=TRUE>>=
+cnrmaAffy(cnSet)
+@
+
+Any segment fault that occurs during the normalization can often be
+traced to a corrupt cel file. To check if any of the files are
+corrupt, one can use the function \Rfunction{validCEL} that tries to
+read each files as in the following unevaluated codechunk:
 
 <<checkcorrupt,eval=FALSE>>=
 validCEL(celFiles)
 @
 
+<<snprmaAffy, cache=TRUE>>=
+snprmaAffy(cnSet)
+@
 
-The value returned by genotype is an instance of the class
-\Robject{CNSet}.  The normalized intensities, genotype calls, and
-confidence scores are stored as \verb+ff+ objects in the
-\verb+assayData+ slot.  A concise summary of this object can be
-obtained throught the \Rfunction{print} or \Rfunction{show} methods.
+The function \Rfunction{genotypeAffy} performs performs the genotyping.
+
+<<genotypeAffy, cache=TRUE>>=
+genotypeAffy(cnSet, gender=NULL)
+@
+
+The above function also imputes the gender from the chromosome X and Y
+intensities when the argument gender is \texttt{NULL}. The imputed
+genders are
+
+<<gender>>=
+table(c("male", "female")[cnSet$gender[]])
+@
+
+<<genderCheck,echo=FALSE>>=
+if(any(is.na(cnSet$gender[]))) stop("missing genders")
+@
+
+%Parameters for determining log R ratios and B allele frequencies are
+%estimated using the function \Rfunction{crlmmCopynumber}:
+%
+%<<crlmmCopynumber>>=
+%crlmmCopynumber(cnSet, fit.linearModel=FALSE)
+%@
+%<<LDS_genotype, cache=TRUE>>=
+%cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName, genome="hg19")
+%@
+
+The normalized intensities, genotype calls, and confidence scores are
+stored as \verb+ff+ objects in the \verb+assayData+ slot.  A concise
+summary of this object can be obtained throught the \Rfunction{print}
+or \Rfunction{show} methods.
 
 <<show>>=
 print(cnSet)
@@ -184,6 +226,14 @@ print(object.size(cnSet), units="Mb")
 %available accessors.
 \SweaveInput{copynumber}
 
+A sample-specific estimate of the signal to noise ratio (SNR)
+measuring the overall separation of the genotypes provides a measure
+of sample quality.  Samples with SNRs below 5 typically indicate poor
+quality, and typically have genotypes with lower confidence scores and
+noisier copy number estimates.  The SNR is stored in the
+\Robject{phenoData} slot of the \Rclass{CNSet} class and can be
+accessed using the ``\$" operator.
+
 
 \section{Session information}
 <<sessionInfo, results=tex>>=
@@ -196,15 +246,14 @@ toLatex(sessionInfo())
   \includegraphics[width=0.6\textwidth]{AffyGW-snr.pdf}
   \caption{The signal to noise ratio (SNR) for 180 HapMap samples. For
     Affymetrix platforms, SNR values below 5 can indicate possible
-    problems with sample quality.  In some circumstances, it may be
-    more helpful to exclude samples with poor DNA quality.}
+    problems with sample quality.  }
 \end{center}
 \end{figure}
 
 
-\begin{bibliography}
+%\begin{bibliography}
   \bibliographystyle{plain}
   \bibliography{refs}
-\end{bibliography}
+%\end{bibliography}
 
 \end{document}

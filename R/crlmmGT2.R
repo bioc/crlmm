@@ -78,7 +78,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 		} else YIndex2 <- YIndex
 		message("Imputing gender")
 		gender <- imputeGender(XIndex=XIndex2, YIndex=YIndex2)
-		cnSet$gender[,] <- gender
+		##cnSet$gender[,] <- gender
 	}
 	Indexes <- list(autosomeIndex, XIndex, YIndex)
 	cIndexes <- list(keepIndex,

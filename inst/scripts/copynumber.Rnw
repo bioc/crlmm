@@ -63,7 +63,7 @@ object of class \Rclass{CNSet}.  See the appropriate
 preprocessing/genotyping vignette for the construction of an object of
 class \Rclass{CNSet}.
 <<LDS_copynumber,cache=TRUE>>=
-(cnSet.updated <- crlmmCopynumber(cnSet))
+crlmmCopynumber(cnSet)
 @
 
 The following steps were performed by the \Rfunction{crlmmCopynumber}

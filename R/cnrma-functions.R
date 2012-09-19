@@ -21,7 +21,8 @@ getProtocolData.Affy <- function(filenames){
 ##		  return(gns)
 ##	  })
 
-getFeatureData <- function(cdfName, copynumber=FALSE, genome=genome){
+
+getFeatureData <- function(cdfName, copynumber=FALSE, genome){
 	pkgname <- getCrlmmAnnotationName(cdfName)
 	if(!require(pkgname, character.only=TRUE)){
 		suggCall <- paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
@@ -39,17 +40,29 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome=genome){
 		pkgname <- paste(pkgname, "Crlmm", sep="")
 	}
 	path <- system.file("extdata", package=pkgname)
-	multiple.builds <- length(grep("hg19", list.files(path)) > 0)
-	if(!multiple.builds){
-		load(file.path(path, "snpProbes.rda"))
-	} else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
+	##multiple.builds <- length(grep("hg19", list.files(path)) > 0)
+	if(missing(genome)){
+		snp.file <- list.files(path, pattern="snpProbes_hg")
+		if(length(snp.file) > 1){
+			## use hg19
+			message("genome build not specified. Using build hg19 for annotation.")
+			snp.file <- snp.file[1]
+		}
+		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+	} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+##	if(!multiple.builds){
+##		load(file.path(path, "snpProbes.rda"))
+##	} else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
+	load(file.path(path, snp.file))
 	snpProbes <- get("snpProbes")
 	## if we use a different build we may throw out a number of snps...
 	snpProbes <- snpProbes[rownames(snpProbes) %in% gns, ]
 	if(copynumber){
-		if(!multiple.builds){
-			load(file.path(path, "cnProbes.rda"))
-		} else load(file.path(path, paste("cnProbes_", genome, ".rda", sep="")))
+		cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+		load(file.path(path, cn.file))
+		##		if(!multiple.builds){
+		##			load(file.path(path, "cnProbes.rda"))
+		##		} else load(file.path(path, paste("cnProbes_", genome, ".rda", sep="")))
 		cnProbes <- get("cnProbes")
 		snpIndex <- seq(along=gns)
 		npIndex <- seq(along=rownames(cnProbes)) + max(snpIndex)
@@ -300,7 +313,7 @@ genotype <- function(filenames,
 			    seed=seed,
 			    verbose=verbose)
 	ok <- cnrmaAffy(cnSet=cnSet,
-			cdfName=annotation(cnSet), seed=seed,
+			seed=seed,
 			verbose=verbose)
 	stopifnot(ok)
 	ok <- genotypeAffy(cnSet=cnSet,
@@ -336,6 +349,7 @@ genotypeAffy <- function(cnSet, SNRMin=5, recallMin=10,
 			badSNP=badSNP,
 			callsGt=calls(cnSet),
 			callsPr=snpCallProbability(cnSet))
+	cnSet$gender[] <- tmp$gender
 	if(verbose) message("Genotyping finished.")
 	return(TRUE)
 }

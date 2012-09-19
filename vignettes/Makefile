@@ -6,6 +6,7 @@ vignettes: AffyGW.tex
 	cp ../inst/scripts/IlluminaPreprocessCN.pdf .
 	cp ../inst/scripts/Infrastructure.pdf .
 	cp ../inst/scripts/gtypeDownstream.pdf .
+	cp ../inst/scripts/crlmmIllumina.pdf .
 	texi2dvi --pdf genotyping.tex
 	texi2dvi --pdf CopyNumberOverview.tex
 
