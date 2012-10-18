@@ -22,7 +22,7 @@
 options(width=60)
 options(continue=" ")
 options(prompt="R> ")
-@ 
+@
 
 \section{Quick intro to \Rpackage{crlmm}}
 
@@ -55,7 +55,7 @@ library(hapmapsnp6)
 path <- system.file("celFiles", package="hapmapsnp6")
 celFiles <- list.celfiles(path, full.names=TRUE)
 system.time(crlmmResult <- crlmm(celFiles, verbose=FALSE))
-@ 
+@
 
 The \Robject{crlmmResult} is a \Rclass{SnpSet} (see Biobase) object.
 \begin{itemize}
@@ -72,7 +72,7 @@ The \Robject{crlmmResult} is a \Rclass{SnpSet} (see Biobase) object.
 calls(crlmmResult)[1:10,]
 confs(crlmmResult)[1:10,]
 crlmmResult[["SNR"]]
-@ 
+@
 
 \section{Details}
 
@@ -80,7 +80,7 @@ This document was written using:
 
 <<>>=
 sessionInfo()
-@ 
+@
 
 
 \end{document}
