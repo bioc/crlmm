@@ -1072,6 +1072,16 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
        return(protocoldata)
 }
 
+##getAvailableIlluminaGenomeBuild <- function(path){
+##	snp.file <- list.files(path, pattern="snpProbes_hg")
+##	if(length(snp.file) > 1){
+##		## use hg19
+##		message("genome build not specified. Using build hg19 for annotation.")
+##		snp.file <- snp.file[1]
+##	}
+##	genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+##}
+
 getAvailableIlluminaGenomeBuild <- function(path){
 	snp.file <- list.files(path, pattern="snpProbes_hg")
 	if(length(snp.file) > 1){
@@ -1079,7 +1089,10 @@ getAvailableIlluminaGenomeBuild <- function(path){
 		message("genome build not specified. Using build hg19 for annotation.")
 		snp.file <- snp.file[1]
 	}
-	genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+	if(length(snp.file) == 1)
+		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+	if(length(snp.file)==0) genome <- ""
+	genome
 }
 
 

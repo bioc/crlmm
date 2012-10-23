@@ -41,15 +41,31 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome){
 	}
 	path <- system.file("extdata", package=pkgname)
 	##multiple.builds <- length(grep("hg19", list.files(path)) > 0)
-	if(missing(genome)){
-		snp.file <- list.files(path, pattern="snpProbes_hg")
-		if(length(snp.file) > 1){
-			## use hg19
-			message("genome build not specified. Using build hg19 for annotation.")
-			snp.file <- snp.file[1]
-		}
-		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
-	} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+##	if(missing(genome)){
+##		snp.file <- list.files(path, pattern="snpProbes_hg")
+##		if(length(snp.file) > 1){
+##			## use hg19
+##			message("genome build not specified. Using build hg19 for annotation.")
+##			snp.file <- snp.file[1]
+##		}
+##		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+##	} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+	snp.file <- list.files(path, pattern="snpProbes_hg")
+	if(length(snp.file)==0){
+		no.build <- TRUE
+		snp.file <- list.files(path, pattern="snpProbes.rda")
+	} else {
+		no.build <- FALSE
+		if(missing(genome)){
+			snp.file <- list.files(path, pattern="snpProbes_hg")
+			if(length(snp.file) > 1){
+				## use hg19
+				message("genome build not specified. Using build hg19 for annotation.")
+				snp.file <- snp.file[1]
+			}
+			genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+		} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+	}
 ##	if(!multiple.builds){
 ##		load(file.path(path, "snpProbes.rda"))
 ##	} else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
@@ -58,7 +74,10 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome){
 	## if we use a different build we may throw out a number of snps...
 	snpProbes <- snpProbes[rownames(snpProbes) %in% gns, ]
 	if(copynumber){
-		cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+##		cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+		if(!no.build){
+			cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+		} else cn.file <- "cnProbes.rda"
 		load(file.path(path, cn.file))
 		##		if(!multiple.builds){
 		##			load(file.path(path, "cnProbes.rda"))
