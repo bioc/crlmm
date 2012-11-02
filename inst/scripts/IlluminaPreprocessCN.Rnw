@@ -98,7 +98,8 @@ We begin by specifying the path containing the raw IDAT files for a
 set of samples from the Infinium 370k platform.
 
 <<datadir>>=
-datadir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+idatdir <- "/thumper/ctsa/snpmicroarray/illumina/IDATS/370k"
+ssdir <- system.file("extdata", package="crlmm")
 @
 
 For Infinium platforms, an Illumina sample sheet containing
@@ -108,7 +109,8 @@ information.  The following code reads in the samplesheet for the IDAT
 files on our local server.
 
 <<samplesheet>>=
-samplesheet = read.csv(file.path(datadir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
+samplesheet <- read.csv(file.path(ssdir, "HumanHap370Duo_Sample_Map.csv"), header=TRUE, as.is=TRUE)
+head(samplesheet)
 @
 
 For the purposes of this vignette, we indicate that we only wish to
