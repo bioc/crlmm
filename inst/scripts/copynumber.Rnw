@@ -2,7 +2,7 @@
   Affymetrix 5.0 and 6.0 platforms, as well as several Illumina
   platforms.  This vignette assumes that the arrays have already been
   successfully preprocessed and genotyped as per the instructions in
-  the \verb+AffymetrixPreprocessCN+ and \verb+IlluminaPreprocessCN+
+  the \verb+AffyGW+ and \verb+IlluminaPreprocessCN+
   vignettes for the Affymetrix and Illumina platforms,
   respectively. While this vignette uses Affymetrix 6.0 arrays for
   illustration, the steps at this point are identical for both
