@@ -110,7 +110,7 @@ the purposes of this vignette, we only analyze the CEPH ('C') and
 Yoruban ('Y') samples.
 
 <<celfiles>>=
-celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")
+celFiles <- list.celfiles(pathToCels, full.names=TRUE, pattern=".CEL")[1:10]
 celFiles <- celFiles[substr(basename(celFiles), 13, 13) %in% c("C", "Y")]
 if(exists("file.index")){
 	celFiles <- celFiles[file.index]

@@ -41,15 +41,22 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome){
 	}
 	path <- system.file("extdata", package=pkgname)
 	##multiple.builds <- length(grep("hg19", list.files(path)) > 0)
-	if(missing(genome)){
-		snp.file <- list.files(path, pattern="snpProbes_hg")
-		if(length(snp.file) > 1){
-			## use hg19
-			message("genome build not specified. Using build hg19 for annotation.")
-			snp.file <- snp.file[1]
-		}
-		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
-	} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+	snp.file <- list.files(path, pattern="snpProbes_hg")
+	if(length(snp.file)==0){
+		no.build <- TRUE
+		snp.file <- list.files(path, pattern="snpProbes.rda")
+	} else {
+		no.build <- FALSE
+		if(missing(genome)){
+			snp.file <- list.files(path, pattern="snpProbes_hg")
+			if(length(snp.file) > 1){
+				## use hg19
+				message("genome build not specified. Using build hg19 for annotation.")
+				snp.file <- snp.file[1]
+			}
+			genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+		} else snp.file <- paste("snpProbes_", genome, ".rda", sep="")
+	}
 ##	if(!multiple.builds){
 ##		load(file.path(path, "snpProbes.rda"))
 ##	} else load(file.path(path, paste("snpProbes_", genome, ".rda", sep="")))
@@ -58,7 +65,9 @@ getFeatureData <- function(cdfName, copynumber=FALSE, genome){
 	## if we use a different build we may throw out a number of snps...
 	snpProbes <- snpProbes[rownames(snpProbes) %in% gns, ]
 	if(copynumber){
-		cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+		if(!no.build){
+			cn.file <- paste("cnProbes_", genome, ".rda", sep="")
+		} else cn.file <- "cnProbes.rda"
 		load(file.path(path, cn.file))
 		##		if(!multiple.builds){
 		##			load(file.path(path, "cnProbes.rda"))
@@ -307,11 +316,11 @@ genotype <- function(filenames,
 	if(!(is(A(cnSet), "ff") || is(A(cnSet), "ffdf"))){
 		stop("The ff package is required for this function.")
 	}
-	cnSet <- snprmaAffy(cnSet,
-			    mixtureSampleSize=mixtureSampleSize,
-			    eps=eps,
-			    seed=seed,
-			    verbose=verbose)
+	ok <- snprmaAffy(cnSet,
+			 mixtureSampleSize=mixtureSampleSize,
+			 eps=eps,
+			 seed=seed,
+			 verbose=verbose)
 	ok <- cnrmaAffy(cnSet=cnSet,
 			seed=seed,
 			verbose=verbose)
@@ -434,17 +443,20 @@ rowCors <- function(x, y, ...){
 	return(covar/(sd.x*sd.y))
 }
 
-dqrlsWrapper <- function(x, y, wts, tol=1e-7){
-	n <- NROW(y)
-	p <- ncol(x)
-	ny <- NCOL(y)
-	.Fortran("dqrls", qr=x*wts, n=n, p=p, y=y * wts, ny=ny,
-		 tol=as.double(tol), coefficients=mat.or.vec(p, ny),
-		 residuals=y, effects=mat.or.vec(n, ny),
-		 rank=integer(1L), pivot=1L:p, qraux=double(p),
-		 work=double(2 * p), PACKAGE="base")[["coefficients"]]
-}
+## dqrlsWrapper <- function(x, y, wts, tol=1e-7){
+## 	n <- NROW(y)
+## 	p <- ncol(x)
+## 	ny <- NCOL(y)
+## 	.Fortran("dqrls", qr=x*wts, n=n, p=p, y=y * wts, ny=ny,
+## 		 tol=as.double(tol), coefficients=mat.or.vec(p, ny),
+## 		 residuals=y, effects=mat.or.vec(n, ny),
+## 		 rank=integer(1L), pivot=1L:p, qraux=double(p),
+## 		 work=double(2 * p), PACKAGE="base")[["coefficients"]]
+## }
 
+
+dqrlsWrapper <- function(x, y, wts, ...)
+    fastLmPure(X=x*wts, y=y*wts, method=3)[['coefficients']]
 
 fit.wls <- function(NN, sigma, allele, Y, autosome, X){
 	Np <- NN
@@ -730,7 +742,8 @@ fit.lm2 <- function(strata,
 		warning("All features in one of the probeset batches were flagged. The data is processed in probeset batches to reduce RAM, but the error suggests that increasing the size of the batches may help.  For example, ocProbesets(4*ocProbesets()) would increase the current size of the probeset batches by 4.")
 		fns.noflags <- featureNames(object)[marker.index] ## allow processing to continue
 	}
-	snp.index <- sample(match(fns.noflags, featureNames(object)), 5000)
+	index.flag <- match(fns.noflags, featureNames(object))
+	snp.index <- sample(index.flag, min(c(length(index.flag), 5000)))
 	##
 	nuA.np <- as.matrix(nuA(object)[marker.index, batch.index])
 	phiA.np <- as.matrix(phiA(object)[marker.index, batch.index])
@@ -1191,7 +1204,8 @@ fit.lm4 <- function(strata,
 		warning("All features in one of the probeset batches were flagged. The data is processed in probeset batches to reduce RAM, but the error suggests that increasing the size of the batches may help.  For example, ocProbesets(4*ocProbesets()) would increase the current size of the probeset batches by 4.")
 		fns.noflags <- featureNames(object)[marker.index] ## allow processing to continue
 	}
-	snp.index <- sample(match(fns.noflags, featureNames(object)), 10000)
+	index.flag <- match(fns.noflags, featureNames(object))
+	snp.index <- sample(index.flag, min(c(length(index.flag), 10000)))
 	##
 	N.AA <- as.matrix(N.AA(object)[snp.index, batch.index, drop=FALSE])
 	N.AB <- as.matrix(N.AB(object)[snp.index, batch.index, drop=FALSE])

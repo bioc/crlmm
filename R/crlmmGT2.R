@@ -208,7 +208,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	callsGt.present <- !missing(callsGt)
 	callsPr.present <- !missing(callsPr)
 	overwriteAB <- !callsGt.present & !callsPr.present
-	if(overwriteAB){
+	if(!overwriteAB){
 		open(callsGt)
 		open(callsPr)
 	}
@@ -246,7 +246,7 @@ crlmmGT2 <- function(A, B, SNR, mixtureParams, cdfName, row.names=NULL,
 	close(A)
 	close(B)
 	close(mixtureParams)
-	if(overwriteAB){
+	if(!overwriteAB){
 		close(callsGt)
 		close(callsPr)
 	}

@@ -548,7 +548,7 @@ calculateRBafCNSet <- function(object, batch.name, chrom){
 	indexlist <- split(index, chr[index])
 	J <- which(batch(object) %in% batch.name)
 	sns <- sampleNames(object)[J]
-	sampleindex <- split(J, batch(object)[J])
+	sampleindex <- split(J, factor(batch(object)[J], levels=unique(batch(object)[J])))
 	if(!all(valid.chrs)) warning("Only computing log R ratios and BAFs for autosomes and chr X")
 	## if ff package is loaded, these will be ff objects
 	chr <- names(indexlist)

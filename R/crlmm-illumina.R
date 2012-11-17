@@ -1079,7 +1079,10 @@ getAvailableIlluminaGenomeBuild <- function(path){
 		message("genome build not specified. Using build hg19 for annotation.")
 		snp.file <- snp.file[1]
 	}
-	genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+	if(length(snp.file) == 1)
+		genome <- gsub(".rda", "", strsplit(snp.file, "snpProbes_")[[1]][[2]])
+	if(length(snp.file)==0) genome <- ""
+	genome
 }
 
 
