@@ -7,6 +7,8 @@ vignettes: AffyGW.tex
 	cp ../inst/scripts/Infrastructure.pdf .
 	cp ../inst/scripts/gtypeDownstream.pdf .
 	cp ../inst/scripts/crlmmIllumina.pdf .
+	texi2dvi --pdf genotyping.tex
+	texi2dvi --pdf CopyNumberOverview.tex
 
 clean:
 	-$(RM) -f *.out *.bbl *.log *.aux *.blg *.brf *.toc *.tex

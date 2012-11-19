@@ -583,6 +583,7 @@ calculateRBafCNSet <- function(object, batch.name, chrom){
 	if(isPackageLoaded("ff")){
 		pkgs <- c("oligoClasses", "ff", "Biobase", "crlmm")
 	} else pkgs <- c("oligoClasses", "Biobase", "crlmm")
+	i <- NULL
 	res <- foreach(i=indexlist, chr=names(indexlist), .packages=pkgs) %dopar% {
 		processByChromosome(i, chr, path)
 	}

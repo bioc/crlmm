@@ -35,3 +35,16 @@ runillumina.R
 inst/scripts/SmoothingRawCN.pdf
 inst/scripts/test
 .gitignore
+AffyGW-snr.pdf
+AffyGW.R
+IlluminaPreprocessCN-snr.pdf
+IlluminaPreprocessCN.bbl
+IlluminaPreprocessCN.blg
+gender.R
+runAffy.R.sh
+runIlluminaPreprocessCN.R.sh
+preproc_debug.R
+rowMediansByGenotype.c
+SimpleUsage.R
+copynumber.pdf
+crlmmDownstream.Rnw

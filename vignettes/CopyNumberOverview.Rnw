@@ -42,42 +42,18 @@ appropriate.
 \begin{center}
 \begin{tabular}{|lp{1.2in}p{1.5in}p{2in}|}
 \hline
- Vignette                &  Platform            &  Annotation package                        &  Scope                                               \\
-\hline
-Infrastructure          & Affy/Illumina                    &
-&  The CNSet container / large data support using the \Rpackage{ff} package            \\
- AffymetrixPreprocessCN  &  Affy 5.0, 6.0       &  genomewidesnp5Crlmm, genomewidesnp6Crlmm  &  Preprocessing and genotyping                        \\
- IlluminaPreprocessCN    &  Illumina  &  several$^\dagger$                                   &  Preprocessing and genotyping                        \\
- copynumber              &  Affy/Illumina       &  N/A                                       &  raw copy number estimates                           \\
-% SmoothingRawCN          &  Affy/Illumina       &  N/A                                       &  smoothing via segmentation or hidden Markov models  \\
-\hline
+ Vignette  &  Platform &  Annotation package  &  Scope  \\\hline
+Infrastructure   & Affy/Illumina  & &  The CNSet container / large data support using the \Rpackage{ff} package            \\
+ AffyGW  &  Affy 5.0, 6.0       &  genomewidesnp5crlmml, genomewidesnp6Crlmm  &  Preprocessing, genotyping, CN estimation\\
+ IlluminaPreprocessCN    &  Illumina  &  several$^\dagger$ &
+                  Preprocessing, genotyping, CN estimation\\ \hline
 \end{tabular}
 \end{center}
 \caption{\label{overview} Vignettes for copy number
-  estimation. $^\dagger$ Annotation packages available for the
-  Illumina platform include  \Rpackage{human370v1cCrlmm}, \Rpackage{human370quadv3cCrlmm},
-  \Rpackage{human550v3bCrlmm}, \Rpackage{human650v3aCrlmm}, \Rpackage{human610quadv1bCrlmm},
-  \Rpackage{human660quadv1aCrlmm}, \Rpackage{human1mduov3bCrlmm}, and \Rpackage{humanomni1quadv1bCrlmm}}
+  estimation. $^\dagger$ See \texttt{annotationPackages()} for a
+  complete listing of supported Illumina/Affy platforms}
 \end{table}
 
-%We make use of the \R{} package \Rpackage{cacheSweave} for cacheing
-%code chunks that are computationally intensive.  In addition, we
-%indicate that the cached files should be stored in the directory
-%\verb+outdir+.
-
-In general, the workflow is
-\begin{enumerate}
-\item preprocess and genotype the arrays
-  (\verb+AffymetrixPreprocessCN+ for Affymetrix and
-  \verb+IlluminaPreprocessCN+ vignettes for Illumina)
-\item copy number estimation (\verb+copynumber+ vignette)
-%\item inferring regions of copy number gain and loss
-%  (\verb+SmoothingRawCN+ vignette)
-\end{enumerate}
-%The \verb+SmoothingRawCN+ vignette illustrates one approach for
-%interfacing with packages such as \Rpackage{DNAcopy} and
-%\Rpackage{VanillaICE} for identifying regions of copy number gain or
-%loss.
 The \verb+Infrastructure+ vignette provides additional details on the
 \Rclass{CNSet} container used to organize the processed data as well
 as a brief discussion regarding large data support through the \ff{}
