@@ -42,11 +42,10 @@ appropriate.
 \begin{center}
 \begin{tabular}{|lp{1.2in}p{1.5in}p{2in}|}
 \hline
- Vignette                &  Platform            &  Annotation package                        &  Scope                                               \\
-\hline
-Infrastructure          & Affy/Illumina                    & &  The CNSet container / large data support using the \Rpackage{ff} package            \\
+ Vignette &  Platform &  Annotation package &  Scope \\ \hline
+Infrastructure & Affy/Illumina & & The CNSet container / large data support using the \Rpackage{ff} package            \\
  AffyGW  &  Affy 5.0, 6.0       &  genomewidesnp5Crlmm, genomewidesnp6Crlmm  &  Preprocessing, genotyping, CN estimation\\
- IlluminaPreprocessCN    &  Illumina  &  several$^\dagger$ &  Preprocessing, genotyping, CN estimation
+ IlluminaPreprocessCN    &  Illumina  &  several$^\dagger$ &  Preprocessing, genotyping, CN estimation\\
 \hline
 \end{tabular}
 \end{center}
