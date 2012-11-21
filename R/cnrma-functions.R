@@ -443,18 +443,19 @@ rowCors <- function(x, y, ...){
 	return(covar/(sd.x*sd.y))
 }
 
-dqrlsWrapper <- function(x, y, wts, tol=1e-7){
-	n <- NROW(y)
-	p <- ncol(x)
-	ny <- NCOL(y)
-	## perhaps use .Call("C_Cdqrls", x, y, tolerance)  instead -- see lsfit, for example
-	.Fortran("dqrls", qr=x*wts, n=n, p=p, y=y * wts, ny=ny,
-		 tol=as.double(tol), coefficients=mat.or.vec(p, ny),
-		 residuals=y, effects=mat.or.vec(n, ny),
-		 rank=integer(1L), pivot=1L:p, qraux=double(p),
-		 work=double(2 * p), PACKAGE="base")[["coefficients"]]
-}
+## dqrlsWrapper <- function(x, y, wts, tol=1e-7){
+## 	n <- NROW(y)
+## 	p <- ncol(x)
+## 	ny <- NCOL(y)
+## 	.Fortran("dqrls", qr=x*wts, n=n, p=p, y=y * wts, ny=ny,
+## 		 tol=as.double(tol), coefficients=mat.or.vec(p, ny),
+## 		 residuals=y, effects=mat.or.vec(n, ny),
+## 		 rank=integer(1L), pivot=1L:p, qraux=double(p),
+## 		 work=double(2 * p), PACKAGE="base")[["coefficients"]]
+## }
 
+dqrlsWrapper <- function(x, y, wts, ...)
+    fastLmPure(X=x*wts, y=y*wts, method=3)[['coefficients']]
 
 fit.wls <- function(NN, sigma, allele, Y, autosome, X){
 	Np <- NN

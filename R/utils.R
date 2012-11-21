@@ -14,8 +14,11 @@ getCrlmmAnnotationName <- function(x){
 	paste(tolower(gsub("_", "", x)), "Crlmm", sep="")
 }
 
+## medianSummaries <- function(mat, grps)
+##   .Call("R_subColSummarize_median", mat, grps, PACKAGE = "preprocessCore")
+
 medianSummaries <- function(mat, grps)
-  .Call("R_subColSummarize_median", mat, grps, PACKAGE = "preprocessCore")
+.Call("subColSummarizeMedianPP", mat, grps)
 
 intMedianSummaries <- function(mat, grps)
   as.integer(medianSummaries(mat, grps))

@@ -3,6 +3,7 @@
 \docType{class}
 \alias{PredictionRegion-class}
 \alias{[,PredictionRegion-method}
+\alias{[,PredictionRegion,ANY,ANY,ANY-method}
 
 \title{Class \code{"PredictionRegion"}}
 \description{

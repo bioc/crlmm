@@ -5,7 +5,7 @@ importClassesFrom(Biobase, AssayData, eSet)
 importClassesFrom(methods, ANY, character, formula, integer, list,
                   matrix, oldClass)
 importFrom(methods, setOldClass)
-
+importFrom(RcppEigen, fastLmPure)
 ## importClassesFrom(oligoClasses, CNSet, CNSetLM, ff_matrix,
 ##                   ff_or_matrix, oligoSnpSet)
 importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix)
@@ -56,7 +56,7 @@ importFrom(oligoClasses, celfileDate, chromosome2integer, i2p,
            splitIndicesByLength, splitIndicesByNode, AssayDataList)
 
 importFrom(preprocessCore, normalize.quantiles,
-           normalize.quantiles.use.target)
+           normalize.quantiles.use.target, subColSummarizeMedian)
 
 importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
            sd)
