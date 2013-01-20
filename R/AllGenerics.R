@@ -105,3 +105,7 @@ setGeneric("predictionRegion", function(object, copyNumber=0:4)
 setGeneric("xyplot", useAsDefault=function(x, data, ...) lattice::xyplot(x, data,...))
 setGeneric("xyplotcrlmm", function(x, data, predictRegion,...) standardGeneric("xyplotcrlmm"))
 setGeneric("calculateRBaf", function(object, batch.name, chrom) standardGeneric("calculateRBaf"))
+
+##setGeneric("mixtureParams<-", function(object,value) standardGeneric("mixtureParams<-"))
+setGeneric("OligoSetList", function(object,...) standardGeneric("OligoSetList"))
+setGeneric("BafLrrSetList", function(object,...) standardGeneric("BafLrrSetList"))

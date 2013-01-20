@@ -16,6 +16,8 @@
 \alias{phiA,CNSet-method}
 \alias{phiB,CNSet-method}
 \alias{tau2,CNSet-method}
+\alias{OligoSetList,CNSet-method}
+\alias{BafLrrSetList,CNSet-method}
 
 \title{crlmm methods for class "CNSet"}
 \description{
@@ -58,7 +60,17 @@
     \item{mads}{\code{signature(x="CNSet")}: ...}
     \item{medians}{\code{signature(object="CNSet")}: ...}
     \item{tau2}{\code{signature(object="CNSet")}: ...}
-	 }
+
+
+  \item{}{\code{OligoSetList(object)}: constructs an object of class
+    \code{OligoSetList} from \code{object} having class \code{CNSet}.
+  }
+
+  \item{}{\code{BafLrrSetList(object)}: constructs an object of class
+    \code{BafLrrSetList} from \code{object} having class \code{CNSet}.
+  }
+
+  }
 }
 
 \seealso{
