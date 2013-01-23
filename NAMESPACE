@@ -52,7 +52,7 @@ importFrom(ellipse, ellipse)
 importFrom(lattice, lpolygon, panel.grid, panel.number, panel.xyplot,
            xyplot)
 
-importFrom(methods, as, callNextMethod, is, new, validObject)
+##importFrom(methods, as, callNextMethod, is, new, validObject)
 
 importFrom(mvtnorm, rmvnorm)
 
