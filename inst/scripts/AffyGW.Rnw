@@ -194,16 +194,6 @@ table(c("male", "female")[cnSet$gender[]])
 if(any(is.na(cnSet$gender[]))) stop("missing genders")
 @
 
-%Parameters for determining log R ratios and B allele frequencies are
-%estimated using the function \Rfunction{crlmmCopynumber}:
-%
-%<<crlmmCopynumber>>=
-%crlmmCopynumber(cnSet, fit.linearModel=FALSE)
-%@
-%<<LDS_genotype, cache=TRUE>>=
-%cnSet <- genotype(celFiles, batch=plates, cdfName=cdfName, genome="hg19")
-%@
-
 The normalized intensities, genotype calls, and confidence scores are
 stored as \verb+ff+ objects in the \verb+assayData+ slot.  A concise
 summary of this object can be obtained throught the \Rfunction{print}
@@ -220,10 +210,6 @@ genotype calls are stored on disk rather than in active memory.
 print(object.size(cnSet), units="Mb")
 @
 
-%Users can proceed to the \verb+copynumber+ vignette for copy number
-%analyses.  See the \verb+Infrastructure+ vignette for additional
-%details on the \Robject{CNSet} class, including an overview of the
-%available accessors.
 \SweaveInput{copynumber}
 
 A sample-specific estimate of the signal to noise ratio (SNR)

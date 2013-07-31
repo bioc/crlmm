@@ -63,7 +63,7 @@ importFrom(oligoClasses, celfileDate, chromosome2integer, i2p,
 	   parStatus,
            splitIndicesByLength, splitIndicesByNode, AssayDataList)
 
-importFrom(preprocessCore, normalize.quantiles,
+importFrom(preprocessCore, normalize.quantiles, normalize.quantiles.determine.target,
            normalize.quantiles.use.target, subColSummarizeMedian)
 
 importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,

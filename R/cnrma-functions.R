@@ -2787,12 +2787,12 @@ calculateRTheta <- function(object, ##genotype=c("AA", "AB", "BB"),
 	centersMatrix <- lapply(centers, function(x, i, j) x[i, j], j=j, i=feature.index)
 	lapply(centers, close)
 	centersMatrix <- do.call(cbind, centersMatrix)
-	centersA <- centersMatrix[, 1:3]
-	centersB <- centersMatrix[, 4:6]
+	centersA <- centersMatrix[, 1:3, drop=FALSE]
+	centersB <- centersMatrix[, 4:6, drop=FALSE]
 	rm(centers, centersMatrix); gc()
 	centersA[centersA < 64] <- 64
 	centersB[centersB < 64] <- 64
-	theta <- atan2(centersB, centersA) * 2/pi
+	theta <- as.matrix(atan2(centersB, centersA) * 2/pi)
 	centersA[is.na(centersA)] <- 0
 	centersB[is.na(centersB)] <- 0
 	if(length(index.np) > 0) theta[index.np, ] <- 1
@@ -2844,3 +2844,5 @@ calculateRTheta <- function(object, ##genotype=c("AA", "AB", "BB"),
 	lrr <- integerMatrix(lrr, 100)
 	return(list(baf=bf, lrr=lrr))
 }
+
+truncate <- func

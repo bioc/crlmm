@@ -238,6 +238,7 @@ cnSet <- genotype.Illumina(sampleSheet=samplesheet,
 			   arrayInfoColNames=arrayInfo,
 			   cdfName="human370v1c",
 			   batch=batch)
+stop()
 @
 
 

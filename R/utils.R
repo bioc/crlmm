@@ -166,10 +166,12 @@ illuminaCdfNames <- function(){
 	  "human1mduov3b",          # 1M Duo
 	  "humanomni1quadv1b",      # Omni1 quad
 	  "humanomni25quadv1b",     # Omni2.5 quad
-	  "humanomni258v1a",        # Omni2.5 8 sample
+	  "humanomni258v1a",        # Omni2.5 8
+          "humanomni5quadv1b",      # Omni5 quad          
 	  "humanomniexpress12v1b",  # Omni express 12
 	  "humanimmuno12v1b",       # Immuno chip 12
-	  "humancytosnp12v2p1h")    # CytoSNP 12
+	  "humancytosnp12v2p1h",    # CytoSNP 12
+          "humanomniexpexome8v1p1b")
 }
 
 affyCdfNames <- function(){

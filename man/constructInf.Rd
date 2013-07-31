@@ -9,7 +9,9 @@
 	\code{batchStatistics} will be \code{ff} objects. See details.
 }
 \usage{
-constructInf(sampleSheet = NULL, arrayNames = NULL, path = ".", arrayInfoColNames = list(barcode = "SentrixBarcode_A", position = "SentrixPosition_A"), highDensity = FALSE, sep = "_", fileExt = list(green = "Grn.idat", red = "Red.idat"), cdfName, verbose = FALSE, batch, saveDate = TRUE)
+constructInf(sampleSheet = NULL, arrayNames = NULL, path = ".",
+       arrayInfoColNames = list(barcode="SentrixBarcode_A",position="SentrixPosition_A"), highDensity = FALSE, sep = "_",
+       fileExt = list(green = "Grn.idat", red = "Red.idat"), XY, cdfName, verbose = FALSE, batch=NULL, saveDate = TRUE)
 }
 \arguments{
   \item{sampleSheet}{\code{data.frame} containing Illumina sample sheet
@@ -35,6 +37,7 @@ constructInf(sampleSheet = NULL, arrayNames = NULL, path = ".", arrayInfoColName
     names.}
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
+  \item{XY}{an \code{NChannelSet} containing X and Y intensities.}
   \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
   \item{verbose}{  'logical.'  Whether to print descriptive messages
   during processing.}

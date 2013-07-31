@@ -19,9 +19,9 @@
 preprocessInf(cnSet, sampleSheet=NULL, arrayNames = NULL, ids = NULL,
 path = ".", arrayInfoColNames = list(barcode = "SentrixBarcode_A",
 position = "SentrixPosition_A"), highDensity = TRUE, sep = "_", fileExt
-= list(green = "Grn.idat", red = "Red.idat"), saveDate = TRUE, stripNorm
-= TRUE, useTarget = TRUE, mixtureSampleSize = 10^5, fitMixture = TRUE,
-eps = 0.1, verbose = TRUE, seed = 1, cdfName)
+= list(green = "Grn.idat", red = "Red.idat"), XY, saveDate = TRUE, stripNorm
+= TRUE, useTarget = TRUE, mixtureSampleSize = 10^5, fitMixture = TRUE, 
+quantile.method="between", eps = 0.1, verbose = TRUE, seed = 1, cdfName)
 }
 
 \arguments{
@@ -58,6 +58,7 @@ eps = 0.1, verbose = TRUE, seed = 1, cdfName)
     names.}
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
+  \item{XY}{an \code{NChannelSet} object containing X and Y intensities.}
   \item{saveDate}{'logical'.  Should the dates from each .idat be saved
     with sample information?}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
@@ -65,7 +66,8 @@ eps = 0.1, verbose = TRUE, seed = 1, cdfName)
     Should the reference HapMap intensities be used in strip-level normalization?}
   \item{mixtureSampleSize}{ Sample size to be use when fitting the mixture model.}
   \item{fitMixture}{ 'logical.' Whether to fit per-array mixture
-    model. }
+    model.}
+  \item{quantile.method}{character string specifying the quantile normalization method to use ('within' or 'between' channels).}
   \item{eps}{   Stop criteria.}
   \item{verbose}{  'logical.'  Whether to print descriptive messages during processing.}
   \item{seed}{ Seed to be used when sampling. Useful for

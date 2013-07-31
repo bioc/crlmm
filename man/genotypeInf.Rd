@@ -9,7 +9,7 @@
 \description{
 
 	Genotyping of Illumina Infinium II arrays. This function
-	provides CRLMM genotypes and confidence scores for the the
+	provides CRLMM/KRLMM genotypes and confidence scores for the the
 	polymorphic markers and is a required step prior to copy
 	number estimation.
 
@@ -17,7 +17,7 @@
 \usage{
 genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5,
 recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams =
-TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName)
+TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -43,11 +43,12 @@ TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName)
     t-distribution.}
   \item{cdfName}{\code{character} string indicating which annotation
     package to load.}
+  \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
 }
 
 \details{
 
-	The CRLMM genotype calls and confidence scores are written to
+	The genotype calls and confidence scores are written to
 	file using \code{ff} protocols for I/O.  For the most part,
 	the calls and confidence scores can be accessed as though the
 	data is in memory through the methods \code{snpCall} and

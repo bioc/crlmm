@@ -10,11 +10,11 @@
 \usage{
 genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"),
-      cdfName, copynumber=TRUE, batch, saveDate=TRUE, stripNorm=TRUE, useTarget=TRUE,
-      mixtureSampleSize=10^5, fitMixture=TRUE, eps =0.1, verbose = TRUE, seed = 1,
-      sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, recallMin = 10, recallRegMin = 1000,
-      gender = NULL, returnParams = TRUE, badSNP = 0.7)
+      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), XY=NULL,
+      call.method="crlmm", cdfName, copynumber=TRUE, batch=NULL, saveDate=TRUE, stripNorm=TRUE, 
+      useTarget=TRUE, quantile.method="between", mixtureSampleSize=10^5, fitMixture=TRUE,                               
+      eps =0.1, verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, 
+      recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
 }
 \arguments{
   \item{sampleSheet}{\code{data.frame} containing Illumina sample sheet
@@ -41,6 +41,8 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     names.}
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
+  \item{XY}{\code{NChannelSet} containing X and Y intensities.}
+  \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
   \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
   \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.}
   \item{batch}{ character vector indicating the batch variable. Must be
@@ -50,6 +52,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}
   \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
     Should the reference HapMap intensities be used in strip-level normalization?}
+  \item{quantile.method}{character string specifying the quantile normalization method to use ('within' or 'between' channels).}
   \item{mixtureSampleSize}{ Sample size to be use when fitting the mixture model.}
   \item{fitMixture}{ 'logical.' Whether to fit per-array mixture model.}
   \item{eps}{   Stop criteria.}
@@ -88,8 +91,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	Rather, \code{batch} is required in order to initialize a
 	\code{CNSet} container with the appropriate dimensions.
 
-
-
+        The new 'krlmm' option is available for certain chip types.
       }
 
 \value{	A \code{SnpSuperSet} instance.}
