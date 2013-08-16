@@ -2845,4 +2845,3 @@ calculateRTheta <- function(object, ##genotype=c("AA", "AB", "BB"),
 	return(list(baf=bf, lrr=lrr))
 }
 
-truncate <- func
