@@ -8,12 +8,12 @@
 }
 
 \usage{
-readGenCallOutput(file, path=".", cdfName, colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"),
+readGenCallOutput(filenames, path=".", cdfName, colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"),
                   type=list("SampleID"="character", "SNPID"="character", "XRaw"="integer", "YRaw"="integer"), verbose=FALSE)
 }
 
 \arguments{
-  \item{file}{'character' string specifying the name of the file to read in}
+  \item{filenames}{'character' string, or a vector of character string specifying the name of the file(s) to read in}
   \item{path}{'character' string specifying the location of file to be read by the function}
   \item{cdfName}{'character' defining the chip annotation (manifest) to use
     ('human370v1c', human550v3b', 'human650v3a', 'human1mv1c',

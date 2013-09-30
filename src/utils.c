@@ -3,12 +3,22 @@
 #include <Rdefines.h>
 #include <Rmath.h>
 #include <Rinternals.h>
+#include <assert.h>
+#include <string.h>
 
 int genotypeConfidence(const double *prob){
   int K=1000;
   if (*prob == 1.0) return(INT_MAX);
   else return( (int) round(-K*log2(1- *prob)));
 }
+
+
+int genotypeConfidence2(double probability){
+  int K = 1000;
+  if (probability == 1.0) return(INT_MAX);
+  else return( (int) round(-K * log2(1 - probability)));
+}
+
 
 int intInSet(const int *x, const int *set, const int *n){
   int i;
@@ -121,7 +131,8 @@ double  median(double *x, int length){
 
 void mad_median(double *datavec, int *classvec, int class, double trim, int cols, int rows, double *m1, double *m2, double *m3, int i_ext){
   /* trim is ignored for the moment - for compatibility */
-  int i, j=0, n_ignore, n=0;
+  int i, j=0; 
+  int n=0;
 
   for (i = 0; i < cols; i++)
     if (classvec[i] == class)
@@ -175,9 +186,9 @@ SEXP normalizeBAF(SEXP theta, SEXP cTheta){
 	p2baf[idx] = NA_REAL;
       }else if (p2theta[idx] < p2ctheta[i]){
 	p2baf[idx] = 0;
-      }else if (p2theta[idx] >= p2ctheta[i] & p2theta[idx] < p2ctheta[i + rowsT]){
+      }else if ((p2theta[idx] >= p2ctheta[i]) & (p2theta[idx] < p2ctheta[i + rowsT])){
 	p2baf[idx] = .5*(p2theta[idx]-p2ctheta[i])/(p2ctheta[i+rowsT]-p2ctheta[i]);
-      }else if(p2theta[idx] >= p2ctheta[i+rowsT] & p2theta[idx] < p2ctheta[i + 2*rowsT]){
+      }else if((p2theta[idx] >= p2ctheta[i+rowsT]) & (p2theta[idx] < p2ctheta[i + 2*rowsT])){
 	p2baf[idx] = .5+.5*(p2theta[idx]-p2ctheta[i+rowsT])/(p2ctheta[i+2*rowsT]-p2ctheta[i+rowsT]);
       }else{
 	p2baf[idx] = 1;
@@ -263,3 +274,216 @@ SEXP test_mad_median(SEXP X, SEXP Y, SEXP trim){
 
   return output;
 }
+
+/* Converts row-col notation into base-zero vector notation, based on a column-wise conversion*/
+long Cmatrix(int row, int col, int totrow){
+  return( (row)-1 + ((col)-1)*(totrow)); // num_SNP is number of rows
+}
+
+SEXP countFileLines(SEXP filename) {
+  FILE *fInput = fopen(CHAR(STRING_ELT(filename, 0)), "r");
+  char * line = NULL;
+  char *readline;
+  size_t len = 1000;
+  line = (char *)malloc(sizeof(char) * (len + 1));
+  if(fInput == NULL){
+    fclose(fInput);
+    return 0;
+  }
+  long line_count = 0;
+  while ((readline = fgets(line, len, fInput)) != NULL){
+    line_count++;
+  }
+  fclose(fInput);
+  free(line);
+  
+  SEXP Rcount;
+  PROTECT(Rcount = allocVector(INTSXP, 1));
+  int *ptr;
+  ptr = INTEGER_POINTER(Rcount);
+  ptr[0] = line_count;
+  UNPROTECT(1);
+  return Rcount;
+}
+
+void
+DoReadGenCallOutput(SEXP filename, int numSNP, int numsample, int SNPIDIndex, int sampleIDIndex, int XValueIndex, int YValueIndex, int *XValuesPt, int *YValuesPt, int delimiter, SEXP SNPNames, SEXP sampleNames){
+  FILE *fGenCall;
+  fGenCall = fopen(CHAR(STRING_ELT(filename, 0)), "r");
+
+  // ignore the first 10 lines, which contains heading information
+  char* token;
+  char * line = NULL;
+  size_t len = 1000;
+  char *readline;    
+  line = (char *)malloc(len+1);
+   
+  int i, j;
+  for (i = 0; i < 10; i++){
+    readline = fgets(line, len, fGenCall);
+  }
+
+  long index;
+  int pos;
+  int aXValue, aYValue;
+  aXValue = 0;
+  aYValue = 0;
+
+  for (j = 1; j <= numsample; j++){
+    for (i = 1; i <= numSNP; i++){
+      readline = fgets(line, len, fGenCall);
+	  if (readline == NULL){
+		Rprintf("Error reading from file");
+	  }
+      if (delimiter == 1){
+	token = strtok(line, ",");
+      } else {
+	token = strtok(line, "\t");
+      }
+      index = Cmatrix(i, j, numSNP);
+      pos = 0;     
+      while (token != NULL) {
+	if (pos == SNPIDIndex){
+	  if (j == 1){
+	    SET_STRING_ELT(SNPNames, (i - 1), mkChar(token));   
+	  }	  
+	}
+	if (pos == sampleIDIndex){
+	  if (i == 1){
+	    SET_STRING_ELT(sampleNames, (j - 1), mkChar(token));   
+	  }	 
+	}
+	if (pos == XValueIndex){
+	  aXValue = atoi(token);
+	}
+	if (pos == YValueIndex){
+	  aYValue = atoi(token);
+	}	
+	if (delimiter == 1){
+	  token = strtok(NULL, ",");
+	} else {
+	  token = strtok(NULL, "\t");
+	}
+	pos++;
+      }
+      XValuesPt[index] = aXValue; 
+      YValuesPt[index] = aYValue;
+    }  
+  }
+ 
+  free(line);
+  fclose(fGenCall);
+}
+
+SEXP readGenCallOutputCFunc(SEXP genCallOutputfile, SEXP num_SNP, SEXP num_Sample, SEXP SNPID_Index, SEXP sampleID_Index, SEXP XValue_Index, SEXP YValue_Index, SEXP delimiter_Index){
+  int numSNP;
+  int numsample;
+  numSNP = INTEGER_VALUE(num_SNP);
+  numsample = INTEGER_VALUE(num_Sample);
+
+  int SNPIDIndex, sampleIDIndex, XIndex, YIndex, delimiterIndex;
+  SNPIDIndex = INTEGER_VALUE(SNPID_Index);
+  sampleIDIndex = INTEGER_VALUE(sampleID_Index);
+  XIndex = INTEGER_VALUE(XValue_Index);
+  YIndex = INTEGER_VALUE(YValue_Index);
+  delimiterIndex = INTEGER_VALUE(delimiter_Index);
+ 
+  SEXP Xvalues, Yvalues, ret, ret_names, rownames, colnames, dimnames;
+
+  char *names[2] = {"Xvalues", "Yvalues"};
+
+  /* protect R objects in C. */
+  PROTECT(Xvalues = allocMatrix(INTSXP, numSNP, numsample));
+  PROTECT(Yvalues = allocMatrix(INTSXP, numSNP, numsample));
+ 
+  PROTECT(ret = allocVector(VECSXP, 2));
+  PROTECT(ret_names = allocVector(STRSXP, 2));
+  
+    /* set a list object for R. */
+  SET_VECTOR_ELT(ret, 0, Xvalues);
+  SET_VECTOR_ELT(ret, 1, Yvalues);
+
+  PROTECT(rownames = allocVector(STRSXP, numSNP));
+  PROTECT(colnames = allocVector(STRSXP, numsample));
+
+  PROTECT(dimnames = allocVector(VECSXP, 2));
+
+  SET_VECTOR_ELT(dimnames, 0, rownames);
+  SET_VECTOR_ELT(dimnames, 1, colnames);
+
+  setAttrib(Xvalues, R_DimNamesSymbol, dimnames);
+  setAttrib(Yvalues, R_DimNamesSymbol, dimnames);  
+
+    /* set list's names for R. */
+  SET_STRING_ELT(ret_names, 0, mkChar(names[0])); 
+  SET_STRING_ELT(ret_names, 1, mkChar(names[1])); 
+  setAttrib(ret, R_NamesSymbol, ret_names);
+  
+  int *Xptr, *Yptr;
+  /* assign points to R objects. */
+  Xptr = INTEGER_POINTER(Xvalues);
+  Yptr = INTEGER_POINTER(Yvalues);
+
+  // C is 0-based and XValueIndex and YVlaueIndex are 1-based
+  DoReadGenCallOutput(genCallOutputfile, numSNP, numsample, (SNPIDIndex-1), (sampleIDIndex-1), (XIndex-1), (YIndex-1), Xptr, Yptr, delimiterIndex, rownames, colnames);
+  
+  UNPROTECT(7);
+  return(ret);
+}
+
+
+SEXP krlmmHardyweinberg(SEXP clustering){
+  int counts[3];
+  int N;
+  int num;
+  num = length(clustering);
+
+  int *clusterPtr;
+  clusterPtr = INTEGER_POINTER(AS_INTEGER(clustering));
+
+  int aSample, temp;
+  counts[0] = 0;
+  counts[1] = 0;
+  counts[2] = 0;
+  for (aSample = 0; aSample < num; aSample++) {
+    counts[(clusterPtr[aSample] - 1)]++;
+  }
+  N = counts[0] + counts[1] + counts[2];
+  if (N != num) {
+    error("the count from all three doesn't equal to num_sample");
+  }
+
+  SEXP Rans;
+  PROTECT(Rans = NEW_NUMERIC(1));
+
+  double *ansPtr;
+  ansPtr = NUMERIC_POINTER(Rans);
+
+  double p;
+  double exp[3];
+  double ans;
+
+  if (counts[0] < counts[2]) {
+    temp = counts[0];
+    counts[0] = counts[2];
+    counts[2] = temp;
+  }
+  p = 1.0 * (2 * counts[0] + counts[1]) / ( 2 * N);
+  if (p == 1) 
+    ans = R_NaReal;
+  else {
+    exp[0] = N * pow(p, 2);
+    exp[1] = N * 2 * p * (1-p);
+    exp[2] = N * pow((1 - p), 2);
+    ans = 0;
+    ans += pow((counts[0] - exp[0]), 2) / exp[0];
+    ans += pow((counts[1] - exp[1]), 2) / exp[1];
+    ans += pow((counts[2] - exp[2]), 2) / exp[2];
+  }             
+  ansPtr[0] = ans;
+
+  UNPROTECT(1);
+  return(Rans);
+}
+
+

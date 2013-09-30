@@ -17,7 +17,8 @@
 \usage{
 genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5,
 recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams =
-TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm")
+TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm", 
+trueCalls = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -44,6 +45,7 @@ TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm")
   \item{cdfName}{\code{character} string indicating which annotation
     package to load.}
   \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
+  \item{trueCalls}{ matrix specifying known Genotype calls for a subset of samples and features(1 - AA, 2 - AB, 3 - BB).}
 }
 
 \details{
@@ -60,6 +62,16 @@ TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm")
 	the transformation 'round(-1000*log2(1-p))', where p is the
 	probability.  The function \code{i2P} can be used to convert the
 	integers back to the scale of probabilities.
+
+	An optional \code{trueCalls} argument can be provided to KRLMM method
+	which contains known genotype calls(can contain some NAs) for some 
+	samples and SNPs. This will used to compute KRLMM parameters by calling
+	\code{vglm} function from \code{VGAM} package.
+
+	The KRLMM method makes use of functions provided in \code{parallel} 
+	package to speed up the process. It by default initialises up to 
+	8 clusters. This is configurable by setting up an option named 
+	"krlmm.cores", e.g. options("krlmm.cores" = 16). 
       }
 
 \value{

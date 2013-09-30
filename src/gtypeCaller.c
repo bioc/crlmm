@@ -88,7 +88,7 @@ SEXP gtypeCallerPart1(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   double buffer;
 
   // All pointers appear here
-  int *ptr2nIndexes, *ptr2A, *ptr2B, *ptr2Ns, *ptr2df, *ptr2mIndex, *ptr2fIndex, *ptr2ncIndexes;
+  int *ptr2nIndexes, *ptr2A, *ptr2B, *ptr2Ns, *ptr2df, *ptr2mIndex, *ptr2fIndex; //*ptr2ncIndexes;
   double *ptr2Smedian, *ptr2knots, *ptr2params, *ptr2Centers, *ptr2Scales, *ptr2probs, *ptr2trim;
   ptr2nIndexes = INTEGER_POINTER(AS_INTEGER(nIndexes));
   ptr2A = INTEGER_POINTER(AS_INTEGER(A));
@@ -97,7 +97,7 @@ SEXP gtypeCallerPart1(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   ptr2df = INTEGER_POINTER(AS_INTEGER(df));
   ptr2mIndex = INTEGER_POINTER(AS_INTEGER(mIndex));
   ptr2fIndex = INTEGER_POINTER(AS_INTEGER(fIndex));
-  ptr2ncIndexes = INTEGER_POINTER(AS_INTEGER(ncIndexes));
+ // ptr2ncIndexes = INTEGER_POINTER(AS_INTEGER(ncIndexes));
   ptr2Smedian = NUMERIC_POINTER(AS_NUMERIC(SMEDIAN));
   ptr2knots = NUMERIC_POINTER(AS_NUMERIC(knots));
   ptr2params = NUMERIC_POINTER(AS_NUMERIC(mixtureParams));
@@ -311,8 +311,9 @@ SEXP gtypeCallerPart2(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   ib3 = GET_LENGTH(noInfo);
 
   // All pointers appear here
-  int *ptr2nIndexes, *ptr2A, *ptr2B, *ptr2Ns, *ptr2df, *ptr2mIndex, *ptr2fIndex, *ptr2ncIndexes, *ptr2noTraining, *ptr2noInfo;
-  double *ptr2Smedian, *ptr2knots, *ptr2params, *ptr2Centers, *ptr2Scales, *ptr2probs, *ptr2trim;
+  int *ptr2nIndexes, *ptr2A, *ptr2B, *ptr2Ns, *ptr2df, *ptr2mIndex, *ptr2fIndex; // *ptr2ncIndexes, 
+  int *ptr2noTraining, *ptr2noInfo;
+  double *ptr2Smedian, *ptr2knots, *ptr2params, *ptr2Centers, *ptr2Scales, *ptr2probs; // *ptr2trim;
   ptr2nIndexes = INTEGER_POINTER(AS_INTEGER(nIndexes));
   ptr2A = INTEGER_POINTER(AS_INTEGER(A));
   ptr2B = INTEGER_POINTER(AS_INTEGER(B));
@@ -320,7 +321,7 @@ SEXP gtypeCallerPart2(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   ptr2df = INTEGER_POINTER(AS_INTEGER(df));
   ptr2mIndex = INTEGER_POINTER(AS_INTEGER(mIndex));
   ptr2fIndex = INTEGER_POINTER(AS_INTEGER(fIndex));
-  ptr2ncIndexes = INTEGER_POINTER(AS_INTEGER(ncIndexes));
+ // ptr2ncIndexes = INTEGER_POINTER(AS_INTEGER(ncIndexes));
   ptr2noTraining = INTEGER_POINTER(AS_INTEGER(noTraining));
   ptr2noInfo = INTEGER_POINTER(AS_INTEGER(noInfo));
 
@@ -330,7 +331,7 @@ SEXP gtypeCallerPart2(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   ptr2Centers = NUMERIC_POINTER(AS_NUMERIC(theCenters));
   ptr2Scales = NUMERIC_POINTER(AS_NUMERIC(theScales));
   ptr2probs = NUMERIC_POINTER(AS_NUMERIC(probs));
-  ptr2trim = NUMERIC_POINTER(AS_NUMERIC(trim));
+  // ptr2trim = NUMERIC_POINTER(AS_NUMERIC(trim));
 
   // End pointers
 
@@ -408,3 +409,249 @@ SEXP gtypeCallerPart2(SEXP A, SEXP B, SEXP fIndex, SEXP mIndex,
   }
   return(R_NilValue);
 }
+
+
+SEXP krlmmComputeM(SEXP A, SEXP B){
+
+  /*
+    ARGUMENTS
+    ---------
+    A: intensity matrix for allele A
+    B: intensity matrix for allele B
+    M: log-ratio for a particular SNP (outgoing)
+
+    INTERNAL VARIABLES
+    -------- ---------
+    rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
+  */
+
+  int rowsAB, colsAB;
+  rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
+  colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
+
+  int i, j;
+
+  int *ptr2A, *ptr2B;
+  ptr2A = INTEGER_POINTER(AS_INTEGER(A));
+  ptr2B = INTEGER_POINTER(AS_INTEGER(B));
+
+  SEXP Rval;
+  PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
+
+  double *ptr2M;
+  long ele;
+  ptr2M = NUMERIC_POINTER(Rval);
+
+  for (i = 1; i <= rowsAB; i++){
+    for (j = 1; j <= colsAB; j++){
+      // elem is an index for A, B and M
+      ele = Cmatrix(i, j, rowsAB);
+      ptr2M[ele] = (log2(ptr2A[ele])-log2(ptr2B[ele]));
+    }
+  }
+  
+  UNPROTECT(1);
+  return Rval;
+}
+
+
+SEXP krlmmComputeS(SEXP A, SEXP B){
+
+  /*
+    ARGUMENTS
+    ---------
+    A: intensity matrix for allele A
+    B: intensity matrix for allele B
+    S: average log-intensity for a particular SNP (outgoing)
+
+    INTERNAL VARIABLES
+    -------- ---------
+    rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
+  */
+
+  int rowsAB, colsAB;
+  rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
+  colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
+
+  int i, j;
+
+  int *ptr2A, *ptr2B;
+  ptr2A = INTEGER_POINTER(AS_INTEGER(A));
+  ptr2B = INTEGER_POINTER(AS_INTEGER(B));
+
+  SEXP Rval;
+  PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
+
+  double *ptr2S;
+  long ele;
+  ptr2S = NUMERIC_POINTER(Rval);
+
+  for (i = 1; i <= rowsAB; i++){
+    for (j = 1; j <= colsAB; j++){
+      // elem is an index for A, B and S
+      ele = Cmatrix(i, j, rowsAB);
+      ptr2S[ele] = (log2(ptr2A[ele])+log2(ptr2B[ele]))/2;
+    }
+  }
+  
+  UNPROTECT(1);
+  return Rval;
+}
+
+void calculate_multiple_cluster_scores(int row, double *intensity, double mean_intensity, int *clustering, int num_SNP, int num_sample, int *ptr, double **dist, int *clustercount){
+    int p, q, o;
+    long vectorPos;
+    double a_dist;
+    for(p=1; p <= num_sample; p++){
+        dist[p][p] = 0;
+    }
+    for(p=1; p<num_sample; p++){
+        for(q=p+1; q<=num_sample; q++){
+   	    a_dist = fabs(intensity[Cmatrix(row, p, num_SNP)] - intensity[Cmatrix(row, q, num_SNP)]);
+            dist[p][q] = a_dist;
+            dist[q][p] = a_dist;
+        }
+    }
+
+    double sum[4];
+    double within_cluster;
+    double between_cluster;
+    double temp_between_cluster;
+    double max;
+    for (p=1; p <= num_sample; p++){
+        vectorPos = Cmatrix(row, p, num_SNP);
+        sum[1] = 0;
+        sum[2] = 0;
+        sum[3] = 0;
+        for (q=1; q<=num_sample; q++){
+	  sum[clustering[Cmatrix(row, q, num_SNP)]] += dist[p][q];
+        }
+       
+        within_cluster = sum[clustering[vectorPos]] / (clustercount[clustering[vectorPos]]- 1);
+        between_cluster = -1.0;
+        for (o=1; o<=3; o++){
+            if ((o != clustering[vectorPos]) && (clustercount[o] > 0)){
+                temp_between_cluster = sum[o] / clustercount[o];
+                if ((between_cluster < 0) || (temp_between_cluster < between_cluster)) {
+                    between_cluster = temp_between_cluster;
+                }                                           
+            }                                               
+        }
+       
+        if (clustercount[clustering[vectorPos]] > 1) {
+            if (between_cluster > within_cluster) {
+                max = between_cluster;
+            } else {
+                max = within_cluster;
+            }
+            ptr[vectorPos] = genotypeConfidence2((between_cluster - within_cluster) / max);                                                   
+        }
+    }   
+}
+
+void calculate_unique_cluster_scores(int row, double *intensity, double mean_intensity, double intensity_range, int num_SNP, int num_sample, int *ptr)				   
+{
+    int p;
+    long vectorPos;
+
+    for(p = 1; p <= num_sample; p++){
+        vectorPos = Cmatrix(row, p, num_SNP); 
+        ptr[vectorPos] = genotypeConfidence2(1 -  fabs(fabs(intensity[vectorPos] - mean_intensity) / intensity_range));
+    }
+}
+
+
+double calculate_SNP_mean(int row, double *intensity, int num_SNP, int num_sample)
+{
+  double sum_intensity;
+  sum_intensity = 0;
+  int p;
+  for(p = 1; p <= num_sample; p++){
+    sum_intensity = sum_intensity + intensity[Cmatrix(row, p, num_SNP)];
+  }
+  return(sum_intensity / num_sample);
+}
+
+double calculate_SNP_range(int row, double *intensity, int num_SNP, int num_sample)
+{
+  double min_intensity;
+  double max_intensity;
+  max_intensity = intensity[Cmatrix(row, 1, num_SNP)];
+  min_intensity = intensity[Cmatrix(row, 1, num_SNP)];
+  int p;  
+  for(p = 2; p <= num_sample; p++){
+    if (intensity[Cmatrix(row, p, num_SNP)] < min_intensity){
+      min_intensity = intensity[Cmatrix(row, p, num_SNP)];  
+    }	
+    if (intensity[Cmatrix(row, p, num_SNP)] > max_intensity){
+      max_intensity = intensity[Cmatrix(row, p, num_SNP)];
+    }
+  }
+  return(max_intensity - min_intensity);
+}
+
+
+SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
+{
+    int num_SNP, num_sample;
+    num_SNP = INTEGER(getAttrib(M, R_DimSymbol))[0];
+    num_sample = INTEGER(getAttrib(M, R_DimSymbol))[1];
+
+    double *ptr2M;
+    int *ptr2cluster;
+    ptr2M = NUMERIC_POINTER(AS_NUMERIC(M));
+    ptr2cluster = INTEGER_POINTER(AS_INTEGER(clustering));
+
+    int i, j;
+    int cluster;
+    double mean_intensity;
+    double intensity_range;
+    int k;
+    
+    SEXP Rval;
+    PROTECT(Rval = allocMatrix(INTSXP, num_SNP, num_sample));
+
+    int *ptr2score;
+    ptr2score = INTEGER_POINTER(Rval);
+    
+    double **dist;
+    // allocate memory to dist
+    dist = (double **)malloc((num_sample + 1)*sizeof(double *));
+    for (i = 1; i <= num_sample; i++){
+      dist[i] = (double *)malloc((num_sample + 1) * sizeof(double)); 
+    }
+
+    int cluster_count[4]; // extra element to cope with zero-base notation
+   // int clid[4];
+
+    for (i = 1; i <= num_SNP; i++) {
+        cluster_count[1] = 0;
+        cluster_count[2] = 0;
+        cluster_count[3] = 0;
+        for (j=1; j<= num_sample; j++){
+	    cluster = ptr2cluster[Cmatrix(i, j, num_SNP)];
+            cluster_count[cluster]++;
+        }
+	mean_intensity = calculate_SNP_mean(i, ptr2M, num_SNP, num_sample);
+	intensity_range = calculate_SNP_range(i, ptr2M, num_SNP, num_sample);
+
+        k = 0;
+        for (j=1; j<=3; j++){
+            if (cluster_count[j] > 0){
+                k++;
+            //    clid[k] = j;
+            }
+        }
+
+	if (k==1) {
+	  calculate_unique_cluster_scores(i, ptr2M, mean_intensity, intensity_range, num_SNP, num_sample, ptr2score);
+	} else {
+	  calculate_multiple_cluster_scores(i, ptr2M, mean_intensity, ptr2cluster, num_SNP, num_sample, ptr2score, dist, cluster_count);
+	}       
+      
+    } 
+
+    UNPROTECT(1);
+    return Rval;
+}
+

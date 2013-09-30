@@ -11,7 +11,7 @@
 genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
       highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), XY=NULL,
-      call.method="crlmm", cdfName, copynumber=TRUE, batch=NULL, saveDate=TRUE, stripNorm=TRUE, 
+      call.method="crlmm", trueCalls=NULL, cdfName, copynumber=TRUE, batch=NULL, saveDate=TRUE, stripNorm=TRUE, 
       useTarget=TRUE, quantile.method="between", mixtureSampleSize=10^5, fitMixture=TRUE,                               
       eps =0.1, verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, 
       recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
@@ -43,6 +43,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{XY}{\code{NChannelSet} containing X and Y intensities.}
   \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
+  \item{trueCalls}{matrix specifying known Genotype calls(can contain some NAs) for a subset of samples and features (1 - AA, 2 - AB, 3 - BB).}
   \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
   \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.}
   \item{batch}{ character vector indicating the batch variable. Must be
@@ -65,7 +66,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   out samples.}
   \item{recallMin}{Minimum number of samples for recalibration. }
   \item{recallRegMin}{Minimum number of SNP's for regression.}
-  \item{gender}{  integer vector (  male = 1, female =2 ) or missing,
+  \item{gender}{  integer vector (  male = 1, female = 2 ) or missing,
   with same length as filenames.  If missing, the gender is predicted.}
   \item{returnParams}{'logical'. Return recalibrated parameters from crlmm.}
   \item{badSNP}{'numeric'. Threshold to flag as bad SNP (affects batchQC)}
@@ -91,7 +92,9 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	Rather, \code{batch} is required in order to initialize a
 	\code{CNSet} container with the appropriate dimensions.
 
-        The new 'krlmm' option is available for certain chip types.
+        The new 'krlmm' option is available for certain chip types. Optional 
+	\code{trueCalls} matrix contains known Genotype calls (1 - AA, 2 - AB, 3 - BB)
+	for a subset of samples and features. 
       }
 
 \value{	A \code{SnpSuperSet} instance.}

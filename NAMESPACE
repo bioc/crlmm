@@ -75,6 +75,8 @@ importFrom(utils, packageDescription, setTxtProgressBar,
 ## foreach
 import(foreach)
 
+importFrom(VGAM, vglm, multinomial, coefficients)
+
 ##----------------------------------------------------------------------------
 ## export
 ##----------------------------------------------------------------------------

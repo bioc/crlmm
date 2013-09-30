@@ -150,84 +150,158 @@ readIdatFiles = function(sampleSheet=NULL,
 }
 
 
-readGenCallOutput = function(file, path=".", cdfName,
+
+getNumberOfSNPs = function(afile, path){
+    fullfilename = file.path(path, afile)
+    headerSection = readLines(fullfilename, n=15)
+
+    headerLine = headerSection[10][1]
+    delimiterList = c(",", "\t")
+
+    headers = unlist(strsplit(headerLine, delimiterList[1]))
+    if (length(headers)!=1) {
+        delimiterIndex = 1
+    }
+    if (length(headers) == 1) {
+        headers = unlist(strsplit(headerLine, delimiterList[2]))
+        if (length(headers) != 1) {
+            delimiterIndex = 2
+        }
+        if (length(headers) == 1) {
+            stop("Input file ", fullfilename, " is not delimited by either comm(,) or tab(\\t)")
+        }
+    }
+
+    SNPLine = headerSection[5][1]
+    elements = unlist(strsplit(SNPLine, delimiterList[delimiterIndex]))
+    numSNP = as.integer(elements[2])
+    return(numSNP)
+}
+
+checkNumberOfSNPs = function(filenames, path){
+    numSNP = getNumberOfSNPs(filenames[1], path)
+    if (length(filenames) > 1) {
+		for (i in 2:length(filenames)){
+			if (getNumberOfSNPs(filenames[i], path) != numSNP){
+				return(FALSE)
+			}
+		}
+    }
+    return(TRUE)
+}
+
+
+getNumberOfSamples = function(filenames, path, numSNP){
+    sampleCount = rep(0, length(filenames))
+    for (i in 1:length(filenames)){
+    	# number of sample in input file line 7 is not reliable, calculate from number of lines and number of SNPs
+    	fullfilename = file.path(path, filenames[i])
+	LineCount = .Call("countFileLines", fullfilename)
+  	if (((LineCount - 10) %% numSNP) != 0){
+           stop("Please check input file: ", fullfilename, " Line count is not a multiple of number of SNPs")
+    	}
+	sampleCount[i] = LineCount %/% numSNP
+    }	
+    return(sampleCount)
+}
+
+processOneGenCallFile = function(afile, numSNP, numSample,
+    colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"),
+    verbose=FALSE) {
+  
+    headerSection = readLines(afile, n=15)
+
+    headerLine = headerSection[10][1]
+    delimiterList = c(",", "\t")
+
+    headers = unlist(strsplit(headerLine, delimiterList[1]))
+    if (length(headers)!=1) {
+        delimiterIndex = 1
+    }
+    if (length(headers) == 1) {
+        headers = unlist(strsplit(headerLine, delimiterList[2]))
+        if (length(headers) != 1) {
+            delimiterIndex = 2
+        }
+        if (length(headers) == 1) {
+            stop("Input file is not delimited by either comm(,) or tab(\\t)")
+        }
+    }
+     
+    if(sum(is.na(match(colnames, headers))) != 0)
+	stop("Cannot find required columns: ", colnames[is.na(match(colnames, headers))], " in ", file, "\nPlease check whether this data was exported.")
+    
+    SNPIDPos = which(headers == colnames$SNPID)
+    sampleIDPos = which(headers == colnames$SampleID)
+    XValuePos = which(headers == colnames$XRaw)
+    YValuePos = which(headers == colnames$YRaw)   
+        
+    if(verbose) {
+        message("Number of SNPs in file: ", afile, " is ", numSNP, " and number of samples is ", numSample)
+        if (delimiterIndex == 1) message("File is comma-seperated. ")
+        if (delimiterIndex == 2) message("File is tab-seperated. ")              
+    }
+
+    values = .Call("readGenCallOutputCFunc", afile, numSNP, numSample, SNPIDPos, sampleIDPos, XValuePos, YValuePos, delimiterIndex)
+             
+    return(values)
+}
+
+readGenCallOutput = function(filenames, path=".", cdfName,
     colnames=list("SampleID"="Sample ID", "SNPID"="SNP Name", "XRaw"="X Raw", "YRaw"="Y Raw"),
     type=list("SampleID"="character", "SNPID"="character", "XRaw"="integer", "YRaw"="integer"), verbose=FALSE) {
 
     if(!identical(names(type), names(colnames)))
        stop("The arguments 'colnames' and 'type' must have consistent names")
-    if(verbose)
-  	cat("Reading", file, "\n")
-    tmp=readLines(file.path(path,file),n=15)
-    s=c("\t",",")
-    a=unlist(strsplit(tmp[10][1],s[1]))
-    if(length(a)!=1){
-	sepp=s[1]
-      	a1=unlist(strsplit(tmp[10][1],s[1]))
-    }
-    if(length(a)==1){
-	sepp=s[2]
-	a1=unlist(strsplit(tmp[10][1],s[2]))
+    if(missing(cdfName)) stop("must specify cdfName")
+
+    if (!checkNumberOfSNPs(filenames, path)){
+       stop("Number of SNPs in each file must be identical to form one output NChannelSet object.")
     }
 
-    if(sum(is.na(match(colnames,a1)))!=0)
-	stop("Cannot find required columns: ", colnames[is.na(match(colnames,a1))], " in ", file, "\nPlease check whether this data was exported.")
+    if (verbose) message("Checking number of samples and features in each file. ")
+    numSNP = getNumberOfSNPs(filenames[1], path)
+    sampleCounts = getNumberOfSamples(filenames, path, numSNP)
+    numSample = sum(sampleCounts)
 
-    m1=m=match(a1,colnames)
-    m[is.na(m1)==FALSE] =type[m1[!is.na(m1)]]
-    m[is.na(m)==TRUE] = list(NULL)
-    names(m) = names(colnames)[m1]
-
-    fc = file(file.path(path, file), open="r")
-
-    dat = scan(fc, what=m, skip=10,sep=sepp)
-    close(fc)
-
-    samples = unique(dat$"SampleID")
-    nsamples = length(samples)
-    snps = unique(dat$"SNPID")
-    nsnps = length(snps)
-    if(verbose)
-        cat("Check ordering for samples","\n")
-
-    X = Y = zeroes = matrix(0, nsnps, nsamples)
-
-    for(i in 1:length(samples)) {
-        ind = dat$"SampleID"==samples[i]
-	    if(sum(dat$"SNPID"[ind]==snps)==nsnps) {
-#           if(verbose)
-#	            cat(paste("Correct ordering for sample", samples[i], "\n"))
-			X[,i] = dat$"XRaw"[ind]
-	        Y[,i] = dat$"YRaw"[ind]
-	    }
-        if(sum(dat$"SNPID"[ind]==snps)!=nsnps) {
-	        if(verbose)
-                cat("Reordering sample ", samples[i],"\n")
-            m=match(snps,dat$"SNPID"[ind])
-            X[,i]= dat$"XRaw"[ind][m]
-            Y[,i]= dat$"YRaw"[ind][m]
-        }
-        gc(verbose=FALSE)
+    X = initializeBigMatrix(name = "X", nr = numSNP, nc = numSample, vmode = "integer")
+    Y = initializeBigMatrix(name = "Y", nr = numSNP, nc = numSample, vmode = "integer")
+    zero = initializeBigMatrix(name = "zero", nr = numSNP, nc = numSample, vmode = "integer")
+    
+    totSampleNames = rep(NA, numSample)
+   
+    baseIndex = 1
+    if (verbose) message("Start processing ", length(filenames), " input file(s)")
+    for (i in 1:length(filenames)){
+    	fullfilename = file.path(path, filenames[i])
+    	valuesThisFile = processOneGenCallFile(fullfilename, numSNP, sampleCounts[i], colnames, verbose)
+	
+	if (i == 1){
+	    totSNPNames = rownames(valuesThisFile$Xvalues)
+	} else {
+	    # matching on SNP names? now assume they come in order
+	}
+	maxIndex = baseIndex + sampleCounts[i] - 1
+	X[, baseIndex:maxIndex] = valuesThisFile$Xvalues
+	Y[, baseIndex:maxIndex] = valuesThisFile$Yvalues
+        zero[, baseIndex:maxIndex] = (X[, baseIndex:maxIndex] == 0) || (Y[, baseIndex:maxIndex] == 0)
+	totSampleNames[baseIndex:(baseIndex + sampleCounts[i] - 1)] = colnames(valuesThisFile$Xvalues)
+	rm(valuesThisFile)
+	baseIndex = baseIndex + sampleCounts[i]
     }
 
-    zeroes=(X=="0"|Y=="0")
-    colnames(X) = colnames(Y) =  colnames(zeroes) = samples
-    rownames(X) = rownames(Y) = snps
+    if(verbose) message("Creating NChannelSet object\n")
 
+    XY = new("NChannelSet", X=X, Y=Y, zero=zero, annotation=cdfName, storage.mode = "environment")
+    sampleNames(XY) = totSampleNames
+    featureNames(XY) = totSNPNames
+    
     if(verbose)
-        cat("Creating NChannelSet object\n")
-
-    XY = new("NChannelSet", X = initializeBigMatrix(name = "X", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=X),
-			 Y = initializeBigMatrix(name = "Y", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=Y),
-			 zero = initializeBigMatrix(name = "zero", nr = nrow(X), nc = ncol(X), vmode = "integer", initdata=zeroes),
-			 annotation = cdfName, storage.mode = "environment")
-    sampleNames(XY)=colnames(X)
-
-    if(verbose)
-      cat("Done\n")
+    cat("Done\n")
 
     XY
 }
+
 
 
 RGtoXY = function(RG, chipType, verbose=TRUE) {
@@ -514,6 +588,7 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
 		## new lines below - useful to keep track of zeroed out probes
 		zero <- matrix(as.integer(assayData(XY)[["zero"]][npIndex, ]), nprobes, narrays)
 		##zero = matrix(as.integer(exprs(channel(XY, "zero"))[npIndex,]), nprobes, narrays)
+		
 		colnames(A) = colnames(B) = colnames(zero) = sns
 		rownames(A) = rownames(B) = rownames(zero) = names(npIndex)
 		cnAB = list(A=A, B=B, zero=zero, sns=sns, gns=names(npIndex), cdfName=cdfName)
@@ -546,7 +621,6 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   A = matrix(NA, nprobes, narrays)
   B = matrix(NA, nprobes, narrays)
   zero = matrix(NA, nprobes, narrays)
-
   if(verbose && fitMixture){
      message("Calibrating ", narrays, " arrays.")
      if (getRversion() > '2.7.0') pb = txtProgressBar(min=0, max=narrays, style=3)
@@ -862,7 +936,6 @@ constructInf <- function(sampleSheet=NULL,
 			 verbose=FALSE,
 			 batch=NULL, #fns,
 			 saveDate=TRUE) { #, outdir="."){
-	verbose <- FALSE
         if(is.null(XY)) {
   	  if(!is.null(arrayNames)) {
 		pd = new("AnnotatedDataFrame", data = data.frame(Sample_ID=arrayNames))
@@ -967,7 +1040,7 @@ constructInf <- function(sampleSheet=NULL,
 	  cnSet$SNR = initializeBigVector("crlmmSNR-", ncol(cnSet), "double")
 	  cnSet$SKW = initializeBigVector("crlmmSKW-", ncol(cnSet), "double")
 	##sampleNames(cnSet) <- basename(sampleNames(cnSet))
-        } else{ # if XY specified, easier set-up of cnSet
+        } else { # if XY specified, easier set-up of cnSet
           narrays = ncol(XY)
           if(verbose) message("Initializing container for genotyping and copy number estimation")           
           if(!is.null(batch)) {
@@ -1084,7 +1157,8 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
 			gender=NULL,
 			DF=6,
 			cdfName,
-                        call.method="crlmm"){
+                        call.method="crlmm",
+                        trueCalls=NULL){
 	is.snp = isSnp(cnSet)
 	snp.index = which(is.snp)
 ##	narrays = ncol(cnSet)
@@ -1125,7 +1199,7 @@ genotypeInf <- function(cnSet, mixtureParams, probs=rep(1/3,3),
            close(cnSet$gender)
         }
         if(call.method=="krlmm")
-          tmp <- krlmm(cnSet, cdfName, gender=gender) # new function required...  cnSet, cdfName and gender are probably the only arguments you need...
+          tmp <- krlmm(cnSet, cdfName, gender=gender, trueCalls=trueCalls, verbose=verbose) # new function required...  cnSet, cdfName and gender are probably the only arguments you need...
 	## snp.names=featureNames(cnSet)[snp.index])
 	if(verbose) message("Genotyping finished.") # Updating container with genotype calls and confidence scores.")
 	TRUE
@@ -1141,7 +1215,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      sep="_",
 			      fileExt=list(green="Grn.idat", red="Red.idat"),
                               XY=NULL,
-                              call.method="crlmm",                              
+                              call.method="crlmm",
+                              trueCalls=NULL,
 			      cdfName,
 			      copynumber=TRUE,
 			      batch=NULL,
@@ -1192,7 +1267,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
           # quantile.method="between"
         }
 	is.lds = ifelse(isPackageLoaded("ff"), TRUE, FALSE)
-	stopifnot(is.lds)
+        if (!(is.lds))
+            stop("Package ff not loaded")
         if(!is.null(XY) && missing(cdfName))
           cdfName = getCrlmmAnnotationName(annotation(cnSet))
 	if(missing(cdfName)) stop("must specify cdfName")
@@ -1247,7 +1323,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 		    gender=gender,
 		    DF=DF,
 		    cdfName=cdfName,
-                    call.method=call.method)
+                    call.method=call.method,
+                    trueCalls=trueCalls)
 	return(cnSet)
 }
 
@@ -1292,8 +1369,9 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
                                quantile.method=quantile.method) #, outdir=outdir)
           rm(XY)
         }else{ #XY already available
+          if (missing(sns) || length(sns)!=ncol(XY)) sns = sampleNames(XY)  
           res = preprocessInfinium2(XY[,sel], mixtureSampleSize=mixtureSampleSize, fitMixture=TRUE, verbose=verbose,
-                                           seed=seed, eps=eps, cdfName=cdfName, sns=sns, stripNorm=stripNorm, useTarget=useTarget,
+                                           seed=seed, eps=eps, cdfName=cdfName, sns=sns[sel], stripNorm=stripNorm, useTarget=useTarget,
                                            quantile.method=quantile.method) 
         }
         gc(verbose=FALSE)
