@@ -41,7 +41,7 @@ The function crlmmillumina() can be run on the output of the \code{readGenCallOu
   genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
 }
 
-\author{Cynthia Liu and Matt Ritchie}
+\author{Cynthia Liu, Matt Ritchie, Zhiyin Dai}
 
 \examples{
 #XY = readGenCallOutput(file="Hap650Yv3_Final_Report.txt", cdfName="human650v3a")

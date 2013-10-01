@@ -172,7 +172,7 @@ calculateKrlmmCoefficients <- function(trueCalls, params, numSample, samplenames
     xx = data.frame(params1)
     t = as.factor(as.numeric(truek1)) 
     xx = data.frame(xx, t)
-    fit = VGAM::vglm(t~., multinomial(refLevel=1), xx)
+    fit = suppressWarnings(VGAM::vglm(t~., multinomial(refLevel=1), xx))
     coe = VGAM::coefficients(fit)
     return(coe)    
 }
@@ -180,16 +180,15 @@ calculateKrlmmCoefficients <- function(trueCalls, params, numSample, samplenames
 getKrlmmVGLMCoefficients <- function(pkgname, trueCalls, params, verbose, numSample, samplenames){
     if (!is.null(trueCalls)) {
         coe = calculateKrlmmCoefficients(trueCalls, params, numSample, samplenames)
+        if (!is.null(coe)) {
+            if (verbose) message ("Done calculating platform-specific coefficients to predict number of clusters")
+            return(coe)
+        }
     }
-    if (!is.null(coe)) {
-        if (verbose) message ("Done calculating platform-specific coefficients to predict number of clusters")
-        return(coe)
-    } else {
-        if (!is.null(trueCalls)) message("Fall back to use defined platform-specific coefficients")
-        if (verbose) message ("Retrieving defined platform-specific coefficients to predict number of clusters")
-        loader("krlmmVGLMCoefficients.rda", .crlmmPkgEnv, pkgname)
-        return(getVarInEnv("krlmmCoefficients"))      
-    }
+    if (!is.null(trueCalls)) message("Fall back to use defined platform-specific coefficients")
+    if (verbose) message ("Retrieving defined platform-specific coefficients to predict number of clusters")
+    loader("krlmmVGLMCoefficients.rda", .crlmmPkgEnv, pkgname)
+    return(getVarInEnv("krlmmCoefficients"))      
 }
 
 

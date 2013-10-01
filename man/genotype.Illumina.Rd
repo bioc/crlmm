@@ -93,8 +93,16 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	\code{CNSet} container with the appropriate dimensions.
 
         The new 'krlmm' option is available for certain chip types. Optional 
-	\code{trueCalls} matrix contains known Genotype calls (1 - AA, 2 - AB, 3 - BB)
-	for a subset of samples and features. 
+	argument \code{trueCalls} matrix contains known Genotype calls 
+	(1 - AA, 2 - AB, 3 - BB) for a subset of samples and features. This 
+	will used to compute KRLMM coefficients by calling \code{vglm} function 
+	from \code{VGAM} package.
+
+	The 'krlmm' method makes use of functions provided in \code{parallel} 
+	package to speed up the process. It by default initialises up to 
+	8 clusters. This is configurable by setting up an option named 
+	"krlmm.cores", e.g. options("krlmm.cores" = 16). 
+
       }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -114,7 +122,7 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 
 }
 
-\author{Matt Ritchie}
+\author{Matt Ritchie, Cynthia Liu, Zhiyin Dai}
 
   \note{For large datasets, load the 'ff' package prior to genotyping
 -- this will greatly reduce the RAM required for big jobs.  See
@@ -129,6 +137,7 @@ example below indicates.}
 }
 \examples{
 \dontrun{
+	# example for 'crlmm' option
 	library(ff)
 	library(crlmm)
 	## to enable paralellization, set to TRUE
@@ -151,6 +160,32 @@ example below indicates.}
 				   arrayInfoColNames=arrayInfo,
 				   cdfName="human370v1c",
 				   batch=rep("1", nrow(samplesheet)))
+
+}
+\dontrun{
+	# example for 'krlmm' option
+	library(crlmm)
+	library(ff)
+	# line below is an optional step for krlmm to initialise 16 workers 
+	# options("krlmm.cores" = 16)
+	# read in raw X and Y intensities output by GenomeStudio's GenCall genotyping module
+	XY = readGenCallOutput(c("HumanOmni2-5_4v1_FinalReport_83TUSCAN.csv","HumanOmni2-5_4v1_FinalReport_88CHB-JPT.csv"),
+				cdfName="humanomni25quadv1b",
+				verbose=TRUE)
+	krlmmResult = genotype.Illumina(XY=XY, 
+		      			cdfName=ThiscdfName, 
+					call.method="krlmm", 
+					verbose=TRUE)
+
+	# example for 'krlmm' option with known genotype call for some SNPs and samples
+	library(VGAM)
+	hapmapCalls = load("hapmapCalls.rda")
+	# hapmapCalls should have rownames and colnames corresponding to XY featureNames and sampleNames
+	krlmmResult = genotype.Illumina(XY=XY,
+					cdfName=ThiscdfName, 
+					call.method="krlmm", 
+					trueCalls=hapmapCalls, 
+					verbose=TRUE)		
 }
 }
 \keyword{classif}
