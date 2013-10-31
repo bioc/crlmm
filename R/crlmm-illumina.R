@@ -371,12 +371,18 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
   bord = match(bids, featureNames(RG)) # and here
 #  argrg = aids[rrgg]
 #  brgrg = bids[rrgg]
+  xyPhenoData = AnnotatedDataFrame(data=RG@phenoData@data,varMetadata=RG@phenoData@varMetadata)
+  levels(xyPhenoData@varMetadata$channel) = c("X","Y","zero","_ALL_")
   XY <- new("NChannelSet",
-	    X=matrix(0, nsnps, narrays),
-	    Y=matrix(0, nsnps, narrays),
-	    zero=matrix(0, nsnps, narrays),
-	    annotation=chipType, phenoData=RG@phenoData,
-	    protocolData=RG@protocolData, storage.mode="environment")
+        assayDataNew(X=matrix(0, nsnps, narrays),Y=matrix(0, nsnps, narrays),zero=matrix(0, nsnps, narrays)),
+        phenoData=xyPhenoData, protocolData=RG@protocolData, annotation=chipType)
+   storageMode(XY) = "environment"
+#  XY <- new("NChannelSet",
+#	    X=matrix(0, nsnps, narrays),
+#	    Y=matrix(0, nsnps, narrays),
+#	    zero=matrix(0, nsnps, narrays),
+#	    annotation=chipType, phenoData=RG@phenoData,
+#	    protocolData=RG@protocolData, storage.mode="environment")
   featureNames(XY) = ids
   sampleNames(XY) = sampleNames(RG)
   ## RS
@@ -1352,7 +1358,7 @@ processIDAT <- function(stratum, sampleBatches, sampleSheet=NULL,
 			A, B,
 			GT,
 			GTP,
-			SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
+			SKW, SNR, mixtureParams, is.snp) { #, outdir=".") {
 	message("Processing sample stratum ", stratum, " of ", length(sampleBatches))
 	sel <- sampleBatches[[stratum]]
         if(length(path)>= length(sel)) path = path[sel]
