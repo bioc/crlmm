@@ -43,6 +43,7 @@
 \section{Set up}
 
 <<crlmm, results=hide, echo=FALSE>>=
+library(Biobase)
 library(crlmm)
 options(width=70)
 options(continue=" ")
@@ -238,7 +239,6 @@ cnSet <- genotype.Illumina(sampleSheet=samplesheet,
 			   arrayInfoColNames=arrayInfo,
 			   cdfName="human370v1c",
 			   batch=batch)
-stop()
 @
 
 

@@ -90,8 +90,12 @@ readIdatFiles = function(sampleSheet=NULL,
 		       warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
 		       next()
 	       }
-	       dates$decode[i] = G$RunInfo[1, 1]
-	       dates$scan[i] = G$RunInfo[2, 1]
+               if(saveDate) {
+                      if(nrow(G$RunInfo)>=2) {
+	              dates$decode[i] = G$RunInfo[1, 1]
+	              dates$scan[i] = G$RunInfo[2, 1]
+                      }
+               }
 	       if(i==1) {
 		       if(is.null(ids) && !is.null(G)){
 			       ids = idsG
@@ -99,9 +103,9 @@ readIdatFiles = function(sampleSheet=NULL,
 		       nprobes = length(ids)
 		       narrays = length(arrayNames)
 		       RG = new("NChannelSet",
-		                 R=matrix(NA, nprobes, narrays),
-		                 G=matrix(NA, nprobes, narrays),
-		                 zero=matrix(NA, nprobes, narrays),
+		                 R=matrix(0, nprobes, narrays),
+		                 G=matrix(0, nprobes, narrays),
+		                 zero=matrix(1, nprobes, narrays),
 				 annotation=headerInfo$Manifest[1],
 				 phenoData=pd, storage.mode="environment")
 		       featureNames(RG) = ids
@@ -117,8 +121,9 @@ readIdatFiles = function(sampleSheet=NULL,
 		       }
 	       } else {
 		       indG = match(ids, idsG)
-		       RG@assayData$G[,i] = G$Quants[indG, "Mean"]
-		       zeroG = G$Quants[indG, "NBeads"]==0
+                       nasG = is.na(indG)
+		       RG@assayData$G[!nasG,i] = G$Quants[indG[!nasG], "Mean"]
+		       zeroG = G$Quants[indG[!nasG], "NBeads"]==0
 	       }
 	       rm(G)
 	       gc(verbose=FALSE)
@@ -132,13 +137,16 @@ readIdatFiles = function(sampleSheet=NULL,
 		       if(sum(ids==idsR)==nprobes) {
 			       RG@assayData$R[,i] = R$Quants[ ,"Mean"]
 		               zeroR = R$Quants[ ,"NBeads"]==0
+                               RG@assayData$zero[,i] = zeroG | zeroR
 		       }
 	       } else {
 		       indR = match(ids, idsR)
-		       RG@assayData$R[,i] = R$Quants[indR, "Mean"]
-		       zeroR = R$Quants[indR, "NBeads"]==0
+	               nasR = is.na(indR)
+		       RG@assayData$R[!nasR,i] = R$Quants[indR[!nasR], "Mean"]
+		       zeroR = R$Quants[indR[!nasR], "NBeads"]==0
+                       RG@assayData$zero[!nasR,i] = zeroG | zeroR
 	       }
-	       RG@assayData$zero[,i] = zeroG | zeroR
+#	       RG@assayData$zero[,i] = zeroG | zeroR
 	       rm(R, zeroG, zeroR)
 	       gc(verbose=FALSE)
        }
@@ -148,7 +156,6 @@ readIdatFiles = function(sampleSheet=NULL,
        storageMode(RG) = "lockedEnvironment"
        RG
 }
-
 
 
 getNumberOfSNPs = function(afile, path){
@@ -624,8 +631,8 @@ preprocessInfinium2 = function(XY, mixtureSampleSize=10^5,
   ##NOTE: We actually dont need to save S. Only for pics etc...
   ##f is the correction. we save to avoid recomputing
 
-  A = matrix(NA, nprobes, narrays)
-  B = matrix(NA, nprobes, narrays)
+  A = matrix(0, nprobes, narrays)
+  B = matrix(0, nprobes, narrays)
   zero = matrix(NA, nprobes, narrays)
   if(verbose && fitMixture){
      message("Calibrating ", narrays, " arrays.")
@@ -904,8 +911,10 @@ getProtocolData.Illumina = function(filenames, sep="_", fileExt="Grn.idat", verb
 		       warning("Chips are not of the same type.  Skipping ", basename(filenames[i]))
 		       next()
 	       }
-	       scanDates$ScanDate[i] = G$RunInfo[1, 1]
-	       scanDates$DecodeDate[i] = G$RunInfo[2, 1]
+               if(nrow(G$RunInfo)>=2) {
+   	           scanDates$ScanDate[i] = G$RunInfo[1, 1]
+	           scanDates$DecodeDate[i] = G$RunInfo[2, 1]
+               }
 	       rm(G)
 	       gc(verbose=FALSE)
        }
@@ -1226,7 +1235,7 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      cdfName,
 			      copynumber=TRUE,
 			      batch=NULL,
-			      saveDate=TRUE,
+			      saveDate=FALSE,
 			      stripNorm=TRUE,
 			      useTarget=TRUE,
                               quantile.method="between",                             

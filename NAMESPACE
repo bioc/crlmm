@@ -18,7 +18,7 @@ importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix)
 import(matrixStats)
 
 importMethodsFrom(Biobase, annotatedDataFrameFrom, annotation,
-                  assayData, experimentData, featureData,
+                  AnnotatedDataFrame, assayData, experimentData, featureData,
                   "featureData<-", featureNames, "featureNames<-",
                   pData, "pData<-", phenoData, "phenoData<-",
                   protocolData, "protocolData<-",
