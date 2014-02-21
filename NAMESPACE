@@ -17,7 +17,8 @@ importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix)
 ##setOldClass(ff_or_matrix)
 import(matrixStats)
 
-importMethodsFrom(Biobase, annotatedDataFrameFrom, annotation,
+importMethodsFrom(Biobase, AnnotatedDataFrame,
+									annotatedDataFrameFrom, annotation,
                   assayData, experimentData, featureData,
                   "featureData<-", featureNames, "featureNames<-",
                   pData, "pData<-", phenoData, "phenoData<-",
