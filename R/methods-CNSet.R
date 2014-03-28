@@ -571,7 +571,7 @@ calculateRBafCNSet <- function(object, batch.name, chrom){
 		for(j in seq_along(sampleindex)){
 			bname <- batch.name[j]
 			J <- sampleindex[[j]]
-			res <- crlmm:::calculateRTheta(object=object,
+			res <- calculateRTheta(object=object, # crlmm:::
 						       batch.name=bname,
 						       feature.index=i)
 			k <- match(sampleNames(object)[J], sns)
