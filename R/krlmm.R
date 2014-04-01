@@ -1,20 +1,33 @@
 krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
   
-    pkgname <- getCrlmmAnnotationName(cdfName)
+    pkgname <- getCrlmmAnnotationName(cdfName) # crlmm:::
     
 ### pre-processing, output M    
-    M = computeLogRatio(cnSet, verbose) 
+    M = computeLogRatio(cnSet, verbose)
+    message("leaving out novariant SNPs")
+    
+    # For SNPs with less than 3 distinct data point, exclude them from downstream analysis
+    uniqueCount = apply(M[,], 1, function(x){length(unique(x))})
+    SNPtoProcessIndex = uniqueCount >= 3
+    noVariantSNPIndex = uniqueCount < 3
+    M = M[SNPtoProcessIndex, ]
+
     numSNP = nrow(M)
     numSample = ncol(M)
     
-    callsGt = calls(cnSet)
-    callsPr = snpCallProbability(cnSet)
-    open(callsGt)
-    open(callsPr)
+    calls = oligoClasses::initializeBigMatrix(name="calls", numSNP, numSample, vmode = "integer")
+    scores = oligoClasses::initializeBigMatrix(name="scores", numSNP, numSample, vmode = "double")
+    open(calls)
+    open(scores)
 
+    rownames(calls) = rownames(M)
+    rownames(scores) = rownames(M)
+    colnames(calls) = colnames(M)
+    colnames(scores) = colnames(M)  
+    
     priormeans = calculatePriorValues(M, numSNP, verbose)
     VGLMparameters = calculateParameters(M, priormeans, numSNP, verbose)
-
+  
 ### retrieve or calculate coefficients
     krlmmCoefficients = getKrlmmVGLMCoefficients(pkgname, trueCalls, VGLMparameters, verbose, numSample, colnames(M))
     
@@ -23,22 +36,37 @@ krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
     rm(VGLMparameters)
     
 ### assign calls
-    assignCalls(callsGt, M, kPrediction, priormeans, numSNP, numSample, verbose);
+    assignCalls(calls, M, kPrediction, priormeans, numSNP, numSample, verbose);
     rm(kPrediction)
 
 ### assign confidence scores
-    computeCallPr(callsPr, M, callsGt, numSNP, numSample, verbose)
-    close(callsGt)
-    close(callsPr)
+    computeCallPr(scores, M, calls, numSNP, numSample, verbose)
+    
+### add back SNPs excluded before
+    AddBackNoVarianceSNPs(cnSet, calls, scores, numSNP, numSample, SNPtoProcessIndex, noVariantSNPIndex)
 
+    loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
+    YIndex <- getVarInEnv("YIndex")
+    loader("annotation.rda", .crlmmPkgEnv, pkgname)
+    annotation <- getVarInEnv("annot")
+    
 ### impute gender if gender information not provided
     if (is.null(gender)) {
-      gender = krlmmImputeGender(cnSet, pkgname, verbose)
+        gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose)
     }
-    open(cnSet$gender)
-    cnSet$gender[,] = gender
-    close(cnSet$gender)
 
+### double-check ChrY SNP cluster, impute gender if gender information not provided
+    if (!(is.null(gender))) {
+        verifyChrYSNPs(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose)
+    }
+
+    close(calls)
+    close(scores)
+    rm(calls)
+    rm(scores)
+    rm(M)
+    rm(annotation)
+    rm(YIndex)
     TRUE
 }
 
@@ -80,7 +108,7 @@ computeLogRatio <- function(cnSet, verbose, blockSize = 500000){
     close(A)
     close(B)
     if (verbose) message("Done computing log ratio")
-    return(M)
+    return(M)    
 }
 
 computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
@@ -95,7 +123,9 @@ computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
     numSample <- ncol(A)
     
     S <- oligoClasses::initializeBigMatrix(name="S", numSNP, numSample, vmode = "double")
-    
+    rownames(S) = rownames(A)
+    colnames(S) = colnames(A)
+      
     numBlock = ceiling(numSNP / blockSize)
     for (i in 1:numBlock){
         if (verbose) message(" -- Processing segment ", i, " out of ", numBlock)
@@ -110,6 +140,7 @@ computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
     close(B)
     if (verbose) message("Done computing average log intensity")
     return(S)
+  
 }
 
 
@@ -135,10 +166,10 @@ calculatePriorValues <- function(M, numSNP, verbose) {
 #######################################################################################################
 
 calculateKrlmmCoefficients <- function(trueCalls, params, numSample, samplenames){
-    if (!require(VGAM)) {
-        message("VGAM package not found, fall back to use defined platform-specific coefficients")
-        return(NULL)
-    }
+#    if (!require(VGAM)) {
+#        message("VGAM package not found, fall back to use defined platform-specific coefficients")
+#        return(NULL)
+#    }
     amatch = match(rownames(params), rownames(trueCalls))
     amatch = amatch[!is.na(amatch)]
     trueCalls = trueCalls[amatch,]
@@ -172,8 +203,8 @@ calculateKrlmmCoefficients <- function(trueCalls, params, numSample, samplenames
     xx = data.frame(params1)
     t = as.factor(as.numeric(truek1)) 
     xx = data.frame(xx, t)
-    fit = suppressWarnings(VGAM::vglm(t~., multinomial(refLevel=1), xx))
-    coe = VGAM::coefficients(fit)
+    fit = suppressWarnings(vglm(t~., multinomial(refLevel=1), xx))
+    coe = coefficients(fit) # VGAM::
     return(coe)    
 }
 
@@ -372,14 +403,6 @@ assignCalls <- function(callsGt, M, a, priormeans, numSNP, numSample, verbose, b
 
 #######################################################################################################
 
-hardyweinberg <- function(x, minN=10){
-  if (length(x) < minN){
-    return(NA) 
-  } else {
-    result = .Call("krlmmHardyweinberg", x)
-    return(result)
-  }
-}
 
 calculateParameters <- function(M, priormeans, numSNP, verbose) {
     if (verbose) message("Start calculating 3-clusters parameters")
@@ -404,8 +427,17 @@ calculateParameters <- function(M, priormeans, numSNP, verbose) {
     return(parameters)
 }
 
+hardyweinberg <- function(x, minN = 8){
+   if (length(x) < minN){
+       return(NA) 
+    } else {
+       result = .Call("krlmmHardyweinberg", x)
+       return(result)
+    }
+}
 
 calculateOneParams3Cluster <- function(x, priors, priorDown, priorUp){
+
     tmp = try(kmeans(x, priors, nstart=1), TRUE)
     if(class(tmp) == "kmeans") {
         flag = 1
@@ -436,6 +468,7 @@ calculateParameters3Cluster <- function(M, priormeans, numSNP, verbose) {
     ApriorUp = c(Apriors[1], Apriors[2], Apriors[3]/2) # shift-up
 
     cl <- makeCluster(getNumberOfCores())
+    clusterEvalQ(cl, library(crlmm))
     parAns <- parRapply(cl, M, calculateOneParams3Cluster, Apriors, ApriorDown, ApriorUp)
 
     stopCluster(cl)
@@ -476,7 +509,6 @@ calculateMahalDist3Cluster <- function(centers, sigma, flag, priors, priorDown, 
 
 
 calculateOneParams2Cluster <- function(x, priors){
-  
     aa = rep(NA, 3)   
     for(j in 1:3){
         dist = as.vector(abs(priors[j]-x))
@@ -508,6 +540,7 @@ calculateParameters2Cluster <- function(M, priormeans, numSNP, verbose) {
     Apriors = priormeans
    
     cl <- makeCluster(getNumberOfCores())
+    clusterEvalQ(cl, library(crlmm))
     parAns <- parRapply(cl, M, calculateOneParams2Cluster, Apriors)
     stopCluster(cl)
 
@@ -559,6 +592,7 @@ calculateParameters1Cluster <- function(M, priormeans, numSNP, verbose) {
     Apriors = priormeans
    
     cl <- makeCluster(getNumberOfCores())
+    clusterEvalQ(cl, library(crlmm))
     parAns <- parRapply(cl, M, calculateOneParams1Cluster, Apriors)
     stopCluster(cl)
 
@@ -615,43 +649,130 @@ computeCallPr <- function(callsPr, M, calls, numSNP, numSample, verbose, blockSi
 
 #############################################
 
-krlmmImputeGender <- function(cnSet, pkgname, verbose){
+AddBackNoVarianceSNPs <- function(cnSet, calls, scores, numSNP, numSample, variantSNPIndex, noVariantSNPIndex){
+    callsGt = calls(cnSet)
+    callsPr = snpCallProbability(cnSet)
+    open(callsGt)
+    open(callsPr)
+
+    callsGt[variantSNPIndex, ] = calls[,]
+    callsPr[variantSNPIndex, ] = scores[,]  
+    
+    callsGt[noVariantSNPIndex, ] = NA
+    callsPr[noVariantSNPIndex, ] = 0     
+
+    close(callsGt)
+    close(callsPr)    
+}
+
+#############################################
+
+krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose){
     if (verbose) message("Start imputing gender")    
     S = computeAverageLogIntensity(cnSet, verbose) 
-    loader("genotypeStuff.rda", .crlmmPkgEnv, pkgname)
-    YIndex <- getVarInEnv("YIndex")
-    loader("annotation.rda", .crlmmPkgEnv, pkgname)
-    annotation <- getVarInEnv("annot")
 
-    A = A(cnSet)
-    open(A)
-    SNPNames = rownames(A)
-    close(A)
-
-    matchy = match(annotation[YIndex, 2], SNPNames)
+    # S is calculated and saved in original SNP order. 
+    matchy = match(annotation[YIndex, 2], rownames(S))
+    matchy = matchy[!is.na(matchy)]
+    if (length(matchy) <= 10){
+        predictedGender = rep(NA, ncol(A))
+    }
     Sy = S[matchy,]
+
+    uniqueDataPoint = apply(Sy, 1, function(x){length(unique(x))})
+    validYSNPs = uniqueDataPoint >= 2
+    SyValid = Sy[validYSNPs, ]
+    
+    if (nrow(SyValid) < 20){
+        message("Not enough ChrY SNPs, skipping gender prediction step");
+        predictedGender = rep(NA, ncol(Sy))
+    }
+   
     rm(S)
-    numYChrSNP = nrow(Sy)
+    numYChrSNP = nrow(SyValid)
 
     allS = matrix(NA, numYChrSNP, 2)
 
     for (i in 1:numYChrSNP) {
-        tmp = kmeans(Sy[i,] ,2, nstart=45)
+        tmp = kmeans(SyValid[i,] ,2, nstart=45)
         allS[i,] = sort(tmp$centers, decreasing=F)
     }
     priorS = apply(allS, 2, FUN="median", na.rm=TRUE)
 
-    group = rep(NA, ncol(Sy))
-
+    if (abs(priorS[1] - priorS[2]) <= 1.6) {
+        message("Skipping gender prediction step");
+        predictedGender = rep(NA, ncol(Sy))        
+    }
+    
     meanmatrix = apply(Sy, 2, median)
 
-    Sy1 = abs(meanmatrix-priorS[1])
-    Sy2 = abs(meanmatrix-priorS[2])
+    Sy1 = abs(meanmatrix - priorS[1])
+    Sy2 = abs(meanmatrix - priorS[2])
 
     # output male - 1, female - 2, female S-values are smaller than male S-values. 
     test = cbind(Sy2, Sy1)
-    group = apply(test, 1, which.min)
+    predictedGender = apply(test, 1, which.min)
 
-    if (verbose) message("Done imputing gender") 
-    return(group)    
+    open(cnSet$gender)
+    cnSet$gender[,] = predictedGender
+    close(cnSet$gender)
+    
+    if (verbose) message("Done imputing gender")
+    return(predictedGender)   
+}
+
+
+#############################################
+
+verifyChrYSNPs <- function(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose){
+    if (verbose) message("Start verifying SNPs on Chromosome Y")
+    callsGt = calls(cnSet)
+    callsPr = snpCallProbability(cnSet)
+    open(callsGt)
+    open(callsPr)
+       
+    matchy = match(annotation[YIndex, 2], rownames(M))
+    matchy = matchy[!is.na(matchy)]
+   
+    MChrY = M[matchy,]
+    callsChrY = calls[matchy,]
+  
+    male = gender == 1
+    female = gender == 2    
+    
+    checkK = apply(callsChrY[, male], 1, function(x){ length(unique(x[!is.na(x)])) } )
+    
+    for(i in 1:nrow(MChrY)){
+        # Chromosome Y SNPs, no calls for female, k = 1 or 2 permitted for male samples
+        thisChrYSNPorigPosition = match(rownames(callsChrY)[i], rownames(callsGt))
+        callsGt[thisChrYSNPorigPosition, female] = NA
+        callsPr[thisChrYSNPorigPosition, female] = 0
+
+        # early exit for k = 1 or 2 cases. Only re-assign calls to male samples if we previouly assigned
+        # male samples to 3 clusters by mistake. 
+        if (checkK[i] < 3) next;
+          
+        if (class(try(kmeans(MChrY[i, male], c(priormeans[1], priormeans[3]), nstart=1), TRUE)) != "try-error"){
+           
+            maleSampleCalls = kmeans(MChrY[i, male],c(priormeans[1], priormeans[3]), nstart=45)$cluster
+            callsGt[thisChrYSNPorigPosition, male][maleSampleCalls == 1] = 1
+            callsGt[thisChrYSNPorigPosition, male][maleSampleCalls == 2] = 3
+        } else {
+                    
+            distanceToPrior1 = mean(abs(MChrY[i, male] - priormeans[1]))
+            distanceToPrior3 = mean(abs(MChrY[i, male] - priormeans[3]))                
+            callsGt[thisChrYSNPorigPosition, male] = ifelse(distanceToPrior1 < distanceToPrior3, 1, 3)
+        }
+
+        MMaleSamples = MChrY[i, male]
+        callsMaleSample = callsGt[thisChrYSNPorigPosition, male]
+        scoresMaleSample = .Call("krlmmConfidenceScore", t(as.matrix(MMaleSamples)), t(as.matrix(callsMaleSample)), PACKAGE="crlmm");
+
+        callsPr[thisChrYSNPorigPosition, male] = scoresMaleSample       
+    }
+
+    close(callsGt)
+    close(callsPr)
+    
+    if (verbose) message("Done verifying SNPs on Chromosome Y")
 }

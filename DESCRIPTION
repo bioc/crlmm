@@ -2,8 +2,8 @@ Package: crlmm
 Type: Package
 Title: Genotype Calling (CRLMM) and Copy Number Analysis tool for
         Affymetrix SNP 5.0 and 6.0 and Illumina arrays.
-Version: 1.21.8
-Date: Fri Mar 28 16:26:10 EST 2014
+Version: 1.21.9
+Date: Mon 31 Mar 2014 18:08:54 EST
 Author: Benilton S Carvalho, Robert Scharpf, Matt Ritchie, Ingo
         Ruczinski, Rafael A Irizarry
 Maintainer: Benilton S Carvalho <Benilton.Carvalho@cancer.org.uk>,

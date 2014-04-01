@@ -324,7 +324,8 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	  "human1mduov3b",          # 1M Duo
 	  "humanomni1quadv1b",      # Omni1 quad
 	  "humanomni25quadv1b",     # Omni2.5 quad
-	  "humanomni258v1a",        # Omni2.5 8
+	  "humanomni258v1a",        # Omni2.5 8 v1 A
+          "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
           "humanomni5quadv1b",      # Omni5 quad  
 	  "humanomniexpress12v1b",  # Omni express 12
 	  "humanimmuno12v1b",       # Immuno chip 12
@@ -1255,7 +1256,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 			      badSNP=0.7) {
         krlmm.supported = c("humanomni1quadv1b",      # Omni1 quad
 	                    "humanomni25quadv1b",     # Omni2.5 quad
-	                    "humanomni258v1a",        # Omni2.5 8
+	                    "humanomni258v1a",        # Omni2.5 8 v1 A
+                            "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
                             "humanomni5quadv1b")      # Omni5 quad
         crlmm.supported = c("human1mv1c",             # 1M
                             "human370v1c",            # 370CNV
@@ -1266,6 +1268,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	                    "human550v3b",            # 550K
 	                    "human1mduov3b",          # 1M Duo
                             "humanomni1quadv1b",      # Omni1 quad
+			    "humanomni258v1a",        # Omni2.5 8 v1 A
+                            "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
 	                    "humanomniexpress12v1b",  # Omni express 12
 	                    "humanimmuno12v1b",       # Immuno chip 12
                             "humancytosnp12v2p1h",    # CytoSNP 12
