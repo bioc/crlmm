@@ -77,6 +77,9 @@ import(foreach)
 
 importFrom(VGAM, vglm, multinomial, coefficients)
 
+importFrom(parallel, makeCluster, detectCores, parRapply, stopCluster, clusterEvalQ)
+
+
 ##----------------------------------------------------------------------------
 ## export
 ##----------------------------------------------------------------------------

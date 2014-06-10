@@ -86,7 +86,7 @@ readIdatFiles = function(sampleSheet=NULL,
 	       headerInfo$ChipType[i] = G$ChipType
 	       headerInfo$Manifest[i] = G$Unknown$MostlyNull
 	       headerInfo$Position[i] = G$Unknowns$MostlyA
-               if(headerInfo$nProbes[i]>(headerInfo$nProbes[1]+10000) || headerInfo$nProbes[i]<(headerInfo$nProbes[1]-10000)) {
+               if(headerInfo$nProbes[i]>(headerInfo$nProbes[1]+headerInfo$nProbes[1]*0.04) || headerInfo$nProbes[i]<(headerInfo$nProbes[1]-headerInfo$nProbes[1]*0.04)) {
 		       warning("Chips are not of the same type.  Skipping ", basename(grnidats[i]), " and ", basename(redidats[i]))
 		       next()
 	       }
