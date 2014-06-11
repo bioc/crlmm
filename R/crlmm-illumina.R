@@ -1311,6 +1311,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 				    batch=batch,
 				    saveDate=saveDate)
 #        }
+        if(call.method=="krlmm" && ncol(cnSet)<8)
+           stop(paste("To run krlmm you need at least 8 samples (in general, the more the better).  You currently have", ncol(cnSet)))
 	mixtureParams <- preprocessInf(cnSet=cnSet,
 				    sampleSheet=sampleSheet,
 				    arrayNames=arrayNames,
