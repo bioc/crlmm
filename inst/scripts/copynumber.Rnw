@@ -225,4 +225,3 @@ dim(bafList[[1]]) ## B allele frequencies for chromosome 1
 If the \Rfunction{crlmmCopynumber} function is not run prior to the
 \Rfunction{BafLrrSetList} construction, the log R ratios and BAFs will
 be initialized as NAs.
-

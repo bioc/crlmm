@@ -1034,7 +1034,8 @@ fit.lm3 <- function(strata,
 		medianB.Flist <- res[["medianB"]]
 		NN.Flist <- res[["NN"]]
 		rm(res)
-	}
+              }
+        enough.men <- enough.women <- FALSE
 	for(k in seq_along(batches)){
 		sample.index <- batches[[k]]
 		if(is.null(sample.index)) next()
@@ -2844,4 +2845,3 @@ calculateRTheta <- function(object, ##genotype=c("AA", "AB", "BB"),
 	lrr <- integerMatrix(lrr, 100)
 	return(list(baf=bf, lrr=lrr))
 }
-
