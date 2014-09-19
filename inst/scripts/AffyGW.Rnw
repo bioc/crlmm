@@ -77,7 +77,8 @@ the path indicated by \verb+outdir+.
 
 <<setup>>=
 pathToCels <- "/thumper/ctsa/snpmicroarray/hapmap/raw/affy/1m"
-outdir <- paste("/local_data/r00/crlmm/", getRversion(), "/affy_vignette", sep="")
+v <- paste0("crlmm_v", gsub("\\.", "_", packageDescription("crlmm")$Version))
+outdir <- file.path("/thumper/ctsa/snpmicroarray/rs/ProcessedData", v)
 dir.create(outdir, recursive=TRUE, showWarnings=FALSE)
 @
 

@@ -200,8 +200,7 @@ Estimation of log R ratios and B allele frequencies from an object of class \Rcl
 crlmmCopynumber(cnSet, fit.linearModel=FALSE)
 @
 
-<<oligoSnpSet,eval=FALSE>>=
-library(VanillaICE)
+<<oligoSnpSet>>=
 open(cnSet)
 oligoSetList <- BafLrrSetList(cnSet)
 close(cnSet)
@@ -214,7 +213,7 @@ oligoSetList[[1]]
 \noindent Log R ratios and B allele frequences can be retrieved by the
 accessors \Rfunction{lrr} and \Rfunction{baf}, respectively.
 
-<<testEqual,eval=FALSE>>=
+<<testEqual>>=
 lrrList <- lrr(oligoSetList)
 class(lrrList)
 dim(lrrList[[1]]) ## log R ratios for chromosome 1.
