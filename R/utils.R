@@ -172,6 +172,7 @@ illuminaCdfNames <- function(){
 	  "humanomniexpress12v1b",  # Omni express 12
 	  "humanimmuno12v1b",       # Immuno chip 12
 	  "humancytosnp12v2p1h",    # CytoSNP 12
+          "humanexome12v1p2a",      # Exome 12 v1.2 A
           "humanomniexpexome8v1p1b")
 }
 

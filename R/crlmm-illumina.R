@@ -330,6 +330,7 @@ RGtoXY = function(RG, chipType, verbose=TRUE) {
 	  "humanomniexpress12v1b",  # Omni express 12
 	  "humanimmuno12v1b",       # Immuno chip 12
           "humancytosnp12v2p1h",    # CytoSNP 12
+          "humanexome12v1p2a",      # Exome 12 v1.2 A
           "humanomniexpexome8v1p1b") # Omni Express Exome 8 v1.1b
 	  ## RS: added cleancdfname()
 	  if(missing(chipType)){
@@ -1258,7 +1259,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	                    "humanomni25quadv1b",     # Omni2.5 quad
 	                    "humanomni258v1a",        # Omni2.5 8 v1 A
                             "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
-                            "humanomni5quadv1b")      # Omni5 quad
+                            "humanomni5quadv1b",      # Omni5 quad
+			    "humanexome12v1p2a")      # Exome 12 v1.2 A
         crlmm.supported = c("human1mv1c",             # 1M
                             "human370v1c",            # 370CNV
 	                    "human650v3a",            # 650Y
