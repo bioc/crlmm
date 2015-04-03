@@ -159,10 +159,10 @@ calculatePriorValues <- function(M, numSNP, verbose) {
     stopCluster(cl) 
     centers <- matrix(centers, numSNP, 3, byrow = TRUE)
     priormeans = apply(centers, 2, FUN="median", na.rm=TRUE)
-       if(abs(sum(priormeans))>1)
-        checksymmetric= apply(centers,1,function(x){abs(sum(x))})<1
+    if(abs(sum(priormeans))>1) {
+      checksymmetric= apply(centers,1,function(x){abs(sum(x))})<1
       priormeans=apply(centers[checksymmetric,],2, FUN="median", na.rm=TRUE)
- 
+    }
     if (verbose) message("Done calculating Prior Means")
     return(priormeans)
 }

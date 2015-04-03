@@ -1260,7 +1260,8 @@ genotype.Illumina <- function(sampleSheet=NULL,
 	                    "humanomni258v1a",        # Omni2.5 8 v1 A
                             "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
                             "humanomni5quadv1b",      # Omni5 quad
-			    "humanexome12v1p2a")      # Exome 12 v1.2 A
+			    "humanexome12v1p2a",      # Exome 12 v1.2 A
+                            "humanomniexpexome8v1p1b") # Omni Express Exome 8 v1.1b
         crlmm.supported = c("human1mv1c",             # 1M
                             "human370v1c",            # 370CNV
 	                    "human650v3a",            # 650Y
