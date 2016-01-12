@@ -7,8 +7,8 @@ vignettes: AffyGW.tex
 	cp ../inst/scripts/Infrastructure.pdf .
 	cp ../inst/scripts/gtypeDownstream.pdf .
 	cp ../inst/scripts/crlmmIllumina.pdf .
-	"$(R_HOME)/bin/R" CMD texi2dvi --pdf genotyping.tex
-	"$(R_HOME)/bin/R" CMD texi2dvi --pdf CopyNumberOverview.tex
+	"$(R_HOME)/bin/R" CMD pdflatex genotyping.tex
+	"$(R_HOME)/bin/R" CMD pdflatex CopyNumberOverview.tex
 
 clean:
 	-$(RM) -f *.out *.bbl *.log *.aux *.blg *.brf *.toc *.tex
