@@ -11,35 +11,35 @@ genotypingTest <- function(){
 	checkTrue(all.equal(calls(cnSet), calls(cnSet2)[,]))
 }
 
-genotypingTestIllumina <- function(){
-	setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k/")
-	library(crlmm)
-	library(ff)
-	ldPath(tempdir())
-
-	samples <- read.csv("samples370k.csv", as.is=TRUE)
-	RG <- readIdatFiles(sampleSheet=samples,
-			    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-			    saveDate=TRUE)
-
-	crlmmResult <-  crlmmIllumina(RG=RG,
-				      cdfName="human370v1c",
-				      returnParams=TRUE)
-	checkTrue(is(calls(crlmmResult)[1:5,1], "integer"))
-
-	crlmmResult2 <- crlmmIlluminaV2(sampleSheet=samples,
-					arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
-					saveDate=TRUE, cdfName="human370v1c", returnParams=TRUE)
-	checkTrue(identical(calls(crlmmResult)[1:5, ]),
-		  identical(calls(crlmmResult2)[1:5, ]))
-
-	crlmmResult3 <- genotype.Illumina(sampleSheet=samples,
-					  arrayInfoColNames=list(barcode=NULL,
-					  position="SentrixPosition"),
-					  saveDate=TRUE, cdfName="human370v1c",
-					  batch = as.factor(rep(1, nrow(samples))))
-
-	checkTrue(identical(calls(crlmmResult)[1:5, ]),
-		  identical(calls(crlmmResult3)[1:5, ]))
-
-}
+#genotypingTestIllumina <- function(){
+#	setwd("/thumper/ctsa/snpmicroarray/illumina/IDATS/370k/")
+#	library(crlmm)
+#	library(ff)
+#	ldPath(tempdir())
+#
+#	samples <- read.csv("samples370k.csv", as.is=TRUE)
+#	RG <- readIdatFiles(sampleSheet=samples,
+#			    arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+#			    saveDate=TRUE)
+#
+#	crlmmResult <-  crlmmIllumina(RG=RG,
+#				      cdfName="human370v1c",
+#				      returnParams=TRUE)
+#	checkTrue(is(calls(crlmmResult)[1:5,1], "integer"))
+#
+#	crlmmResult2 <- crlmmIlluminaV2(sampleSheet=samples,
+#					arrayInfoColNames=list(barcode=NULL, position="SentrixPosition"),
+#					saveDate=TRUE, cdfName="human370v1c", returnParams=TRUE)
+#	checkTrue(identical(calls(crlmmResult)[1:5, ]),
+#		  identical(calls(crlmmResult2)[1:5, ]))
+#
+#	crlmmResult3 <- genotype.Illumina(sampleSheet=samples,
+#					  arrayInfoColNames=list(barcode=NULL,
+#					  position="SentrixPosition"),
+#					  saveDate=TRUE, cdfName="human370v1c",
+#					  batch = as.factor(rep(1, nrow(samples))))
+#
+#	checkTrue(identical(calls(crlmmResult)[1:5, ]),
+#		  identical(calls(crlmmResult3)[1:5, ]))
+#
+#}

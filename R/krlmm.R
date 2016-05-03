@@ -1,10 +1,9 @@
 krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
-  
-    pkgname <- getCrlmmAnnotationName(cdfName) # crlmm:::
+    pkgname <- getCrlmmAnnotationName(cdfName)
     
 ### pre-processing, output M    
     M = computeLogRatio(cnSet, verbose)
-    message("leaving out novariant SNPs")
+    message("Leaving out non-variant SNPs")
     
     # For SNPs with less than 3 distinct data point, exclude them from downstream analysis
     uniqueCount = apply(M[,], 1, function(x){length(unique(x))})
@@ -32,11 +31,11 @@ krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
     krlmmCoefficients = getKrlmmVGLMCoefficients(pkgname, trueCalls, VGLMparameters, verbose, numSample, colnames(M))
     
 ### do VGLM fit, to predict k for each SNP
-    kPrediction <- predictKwithVGLM(VGLMparameters, krlmmCoefficients, verbose);
+    kPrediction <- predictKwithVGLM(VGLMparameters, krlmmCoefficients, verbose)
     rm(VGLMparameters)
     
 ### assign calls
-    assignCalls(calls, M, kPrediction, priormeans, numSNP, numSample, verbose);
+    assignCalls(calls, M, kPrediction, priormeans, numSNP, numSample, verbose)
     rm(kPrediction)
 
 ### assign confidence scores
@@ -70,6 +69,208 @@ krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
     TRUE
 }
 
+krlmmnopkg <- function(cnSet, offset, gender=NULL, normalize.method=NULL, annotation=NULL, verbose=TRUE) {
+    if(is.null(normalize.method)){
+        message("No normalization method specified. Quantile normalization applied")
+        M=quantilenormalization(cnSet,verbose,offset=offset)
+    }else{
+        if(normalize.method=="quantile"){
+            M=quantilenormalization(cnSet,verbose,offset=offset)
+        }
+        if(normalize.method=="loess"){
+            M=loessnormalization(cnSet,verbose,offset=offset)
+	}
+    }
+
+    message("Leaving out non-variant SNPs")
+
+    # For SNPs with less than 3 distinct data point, exclude them from downstream analysis
+    uniqueCount = apply(M[,], 1, function(x){length(unique(x))})
+    SNPtoProcessIndex = uniqueCount >= 3
+    noVariantSNPIndex = uniqueCount < 3
+    M = M[SNPtoProcessIndex, ]
+
+    numSNP = nrow(M)
+    numSample = ncol(M)
+
+    calls = oligoClasses::initializeBigMatrix(name="calls", numSNP, numSample, vmode = "integer")
+    scores = oligoClasses::initializeBigMatrix(name="scores", numSNP, numSample, vmode = "double")
+    open(calls)
+    open(scores)
+
+    rownames(calls) = rownames(M)
+    rownames(scores) = rownames(M)
+    colnames(calls) = colnames(M)
+    colnames(scores) = colnames(M)
+
+    prepriormeans=calculatePriorcentersC(M,numSample)
+
+    trueCalls=matrix(NA,nrow(M),ncol(M))
+
+    for(i in 1:ncol(M)){
+      tmp=kmeans(M[,i],centers=prepriormeans,nstart=45)
+      trueCalls[,i]=tmp$cluster
+    }
+    colnames(trueCalls)=colnames(M)
+    rownames(trueCalls)=rownames(M)
+
+    priormeans = calculatePriorValues(M, numSNP, verbose)
+    VGLMparameters = calculateParameters(M, priormeans, numSNP, verbose)
+
+### retrieve or calculate coefficients
+
+    krlmmCoefficients = getKrlmmVGLMCoefficients(trueCalls=trueCalls,params=VGLMparameters,numSample=ncol(M),samplenames=colnames(M),verbose=T)
+### do VGLM fit, to predict k for each SNP
+    kPrediction <- predictKwithVGLM(VGLMparameters, krlmmCoefficients, verbose)
+    rm(VGLMparameters)
+
+### assign calls
+    assignCalls(calls, M, kPrediction, priormeans, numSNP, numSample, verbose=T)
+    rm(kPrediction)
+
+### assign confidence scores
+    computeCallPr(scores, M, calls, numSNP, numSample, verbose)
+
+    YIndex = seq(1:nrow(cnSet))[chromosome(cnSet)==24 & isSnp(cnSet)]
+
+### impute gender if gender information not provided
+    if (is.null(gender)) {
+        gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose, offset=offset)
+    }
+
+### double-check ChrY SNP cluster, impute gender if gender information not provided
+    if (!(is.null(gender))) {
+        verifyChrYSNPs(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose)
+    }
+
+#    if (length(YIndex)>0  && !(is.null(gender))) {
+#      verifyChrYSNPs(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose)
+#    }
+### add back SNPs excluded before
+    AddBackNoVarianceSNPs(cnSet, calls, scores, numSNP, numSample, SNPtoProcessIndex, noVariantSNPIndex)
+
+    close(calls)
+    close(scores)
+    rm(calls)
+    rm(scores)
+    rm(M)
+    TRUE
+}
+
+
+#######################################################################################################
+
+loessnormalization<- function(cnSet, verbose, offset=16, blockSize = 300000){
+    # compute log-ratio in blocksize of 300,000 by default
+    message("Start computing log-ratios")
+    A <- A(cnSet)
+    B <- B(cnSet)
+    open(A)
+    open(B)
+
+    numSNP <- nrow(A)
+    numSample <- ncol(A)
+    library(limma)
+
+    M <- oligoClasses::initializeBigMatrix(name="M", numSNP, numSample, vmode = "double")
+    S <- oligoClasses::initializeBigMatrix(name="S", numSNP, numSample, vmode = "double")
+
+    rownames(M) = rownames(A)
+    colnames(M) = colnames(A)
+
+    numBlock = ceiling(numSNP / blockSize)
+    for (i in 1:numBlock){
+        if (verbose) message(" -- Processing segment ", i, " out of ", numBlock)
+        subsetA = as.matrix(A[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset
+        subsetB = as.matrix(B[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset
+        subsetM = .Call("krlmmComputeM", subsetA, subsetB, PACKAGE="crlmm")
+        M[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetM[1:nrow(subsetM), ]
+        subsetS = .Call("krlmmComputeS", subsetA, subsetB, PACKAGE="crlmm")
+        S[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetS[1:nrow(subsetS), ]
+
+        rm(subsetA, subsetB, subsetM,subsetS)
+
+    }
+    close(A)
+    close(B)
+    gc()
+
+    isna=is.na(M[,1])
+    prepriormeansL=calculatePriorcentersC(M[,][!isna,],numSample)
+    F01=abs(prepriormeansL[1])-prepriormeansL[2]   
+    F02=abs(prepriormeansL[3])+prepriormeansL[2]
+
+    for(i in 1:ncol(M)) {
+        isna=is.na(M[,i])
+        Msub = M[!isna,i]
+        Mna=M[isna,i]
+        Ssub = S[!isna,i]
+        Sna=S[isna,i]
+
+        km = kmeans(Msub, prepriormeansL)
+        ind1v2 = km$cluster==1
+        ind2v2 = km$cluster==2
+        ind3v2 = km$cluster==3
+
+        l1v2 = loessFit(Msub[ind1v2], Ssub[ind1v2])
+        l2v2 = loessFit(Msub[ind2v2], Ssub[ind2v2])
+        l3v2 = loessFit(Msub[ind3v2], Ssub[ind3v2])
+        Msub[ind1v2] = l1v2$residuals+F01
+        Msub[ind2v2] = l2v2$residuals
+        Msub[ind3v2] = l3v2$residuals-F02
+        Mnew=rbind(as.matrix(Msub),as.matrix(Mna))
+        rownames(Mnew)=c(rownames(as.matrix(Msub)),rownames(as.matrix(Mna)))
+        m=match(rownames(M),rownames(Mnew))
+        Mnew=Mnew[m]
+        M[,i] = Mnew
+        rm(Msub, Ssub, ind1v2, ind2v2, ind3v2, l1v2, l2v2, l3v2)
+    }
+    return(M)
+}
+
+
+#######################################################################################################
+
+quantilenormalization <- function(cnSet, verbose, offset=16, blockSize = 300000){
+    A <- A(cnSet)
+    B <- B(cnSet)
+    open(A)
+    open(B)
+
+    numSNP <- nrow(A)
+    numSample <- ncol(A)
+
+    M <- oligoClasses::initializeBigMatrix(name="M", numSNP, numSample, vmode = "double")
+    X <- oligoClasses::initializeBigMatrix(name="X", numSNP, numSample, vmode = "integer")
+    Y <- oligoClasses::initializeBigMatrix(name="Y", numSNP, numSample, vmode = "integer")
+    rownames(M) = rownames(X) = rownames(Y) = rownames(A)
+    colnames(M) = colnames(X) = colnames(Y) = colnames(A)
+
+    # This step may chew up a lot of memory...
+    X =  normalize.quantiles(as.matrix(A[,]))+offset
+    Y =  normalize.quantiles(as.matrix(B[,]))+offset
+
+    numBlock = ceiling(numSNP / blockSize)
+    for (i in 1:numBlock){
+        if (verbose) message(" -- Processing segment ", i, " out of ", numBlock)
+        subsetXqws = as.matrix(X[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])
+        subsetYqws = as.matrix(Y[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])
+        subsetM = .Call("krlmmComputeM", subsetXqws, subsetYqws, PACKAGE="crlmm")
+        M[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetM[1:nrow(subsetM), ]
+        rm(subsetYqws, subsetXqws, subsetM)
+    }
+
+   close(A)
+   close(B)
+   return(M)
+   delete(X)
+   delete(Y)
+   rm(X)
+   rm(Y)
+   gc()
+}
+
+
 #######################################################################################################
 
 getNumberOfCores <- function(){
@@ -80,11 +281,27 @@ getNumberOfCores <- function(){
 
 #######################################################################################################
 
-computeLogRatio <- function(cnSet, verbose, blockSize = 500000){
+computeLogRatio <- function(cnSet, verbose=FALSE, offset=0, blockSize = 500000, col=NULL, row=NULL){
     # compute log-ratio in blocksize of 500,000 by default
-    message("Start computing log ratio")
-    A <- A(cnSet)
-    B <- B(cnSet)
+    if(verbose)
+        message("Start computing log-ratios")
+    if(!is.null(col) | !is.null(row)) {
+      if(is.null(row)) {
+       A <- A(cnSet)[,col]
+       B <- B(cnSet)[,col]
+      }
+      if(is.null(col)) {
+       A <- A(cnSet)[row,]
+       B <- B(cnSet)[row,]
+      }
+      if(!is.null(col) & !is.null(row)) {
+       A <- A(cnSet)[row,col]
+       B <- B(cnSet)[row,col]
+      }
+    } else {
+       A <- A(cnSet)
+       B <- B(cnSet)
+    }
     open(A)
     open(B)
     
@@ -97,9 +314,9 @@ computeLogRatio <- function(cnSet, verbose, blockSize = 500000){
   
     numBlock = ceiling(numSNP / blockSize)
     for (i in 1:numBlock){
-        if (verbose) message(" -- Processing segment ", i, " out of ", numBlock)
-        subsetA = as.matrix(A[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])
-        subsetB = as.matrix(B[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])                     
+        if(verbose) message(" -- Processing segment ", i, " out of ", numBlock)
+        subsetA = as.matrix(A[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset
+        subsetB = as.matrix(B[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset              
         subsetM = .Call("krlmmComputeM", subsetA, subsetB, PACKAGE="crlmm")
         M[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetM[1:nrow(subsetM), ]
         rm(subsetA, subsetB, subsetM)
@@ -107,15 +324,32 @@ computeLogRatio <- function(cnSet, verbose, blockSize = 500000){
     
     close(A)
     close(B)
-    if (verbose) message("Done computing log ratio")
+    if(verbose)
+        message("Done computing log-ratios")
     return(M)    
 }
 
-computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
+computeAverageLogIntensity <- function(cnSet, verbose=FALSE, offset=0, blockSize = 500000, col=NULL, row=NULL){
     # compute average log intensity in blocksize of 500,000 by default
-    message("Start computing average log intensity")
-    A <- A(cnSet)
-    B <- B(cnSet)
+    if(verbose)
+        message("Start computing average log-intensities")
+    if(!is.null(col) | !is.null(row)) {
+      if(is.null(row)) {
+       A <- A(cnSet)[,col]
+       B <- B(cnSet)[,col]
+      }
+      if(is.null(col)) {
+       A <- A(cnSet)[row,]
+       B <- B(cnSet)[row,]
+      }
+      if(!is.null(col) & !is.null(row)) {
+       A <- A(cnSet)[row,col]
+       B <- B(cnSet)[row,col]
+      }
+    } else {
+       A <- A(cnSet)
+       B <- B(cnSet)
+    }
     open(A)
     open(B)
     
@@ -128,9 +362,9 @@ computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
       
     numBlock = ceiling(numSNP / blockSize)
     for (i in 1:numBlock){
-        if (verbose) message(" -- Processing segment ", i, " out of ", numBlock)
-        subsetA = as.matrix(A[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])
-        subsetB = as.matrix(B[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])                     
+        if(verbose) message(" -- Processing segment ", i, " out of ", numBlock)
+        subsetA = as.matrix(A[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset
+        subsetB = as.matrix(B[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP), ])+offset                     
         subsetS = .Call("krlmmComputeS", subsetA, subsetB, PACKAGE="crlmm")
         S[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetS[1:nrow(subsetS), ]
         rm(subsetA, subsetB, subsetS)
@@ -138,9 +372,9 @@ computeAverageLogIntensity <- function(cnSet, verbose, blockSize = 500000){
     
     close(A)
     close(B)
-    if (verbose) message("Done computing average log intensity")
-    return(S)
-  
+    if(verbose)
+        message("Done computing average log-intensities")
+    return(S)  
 }
 
 
@@ -153,7 +387,7 @@ calculatePriorValues <- function(M, numSNP, verbose) {
         return(sort(tmp$centers, decreasing = T))
     }
 
-    if (verbose) message("Start calculating Prior Means")
+    if (verbose) message("Start calculating prior means")
     cl <- makeCluster(getNumberOfCores())
     centers <- parRapply(cl, M, calculateOneKmeans)
     stopCluster(cl) 
@@ -163,9 +397,26 @@ calculatePriorValues <- function(M, numSNP, verbose) {
       checksymmetric= apply(centers,1,function(x){abs(sum(x))})<1
       priormeans=apply(centers[checksymmetric,],2, FUN="median", na.rm=TRUE)
     }
-    if (verbose) message("Done calculating Prior Means")
+    if (verbose) message("Done calculating prior means")
     return(priormeans)
 }
+
+calculatePriorcentersC <- function(M, numSample) {
+
+    calculateOneKmeans <- function(x) {
+        tmp = kmeans(x, 3, nstart=45)
+        return(sort(tmp$centers, decreasing = T))
+    }
+
+    cl <- makeCluster(getNumberOfCores())
+    centers <- parCapply(cl, M, calculateOneKmeans)
+    stopCluster(cl) 
+    centers <- matrix(centers, numSample, 3, byrow = TRUE)
+    prepriormeans = apply(centers, 2, FUN="median", na.rm=TRUE)
+    
+    return(prepriormeans)
+}
+
 
 #######################################################################################################
 
@@ -378,7 +629,7 @@ assignCallsOneSNP <- function(x, priormeans, numSample){
 
 assignCalls <- function(callsGt, M, a, priormeans, numSNP, numSample, verbose, blockSize=500000){
     # process by block size of 500,000 by default
-    message("Start assign calls")
+    message("Start assigning calls")
        
     numBlock = ceiling(numSNP / blockSize)
 
@@ -402,14 +653,14 @@ assignCalls <- function(callsGt, M, a, priormeans, numSNP, numSample, verbose, b
         callsGt[((i-1) * (blockSize) + 1):min(i * blockSize, numSNP),] = subsetcalls[1:thisnumSNP, ]
         rm(subsetM, subseta, subsetcalls)
     }
-    message("Done assign calls")
+    message("Done assigning calls")
 }
 
 #######################################################################################################
 
 
 calculateParameters <- function(M, priormeans, numSNP, verbose) {
-    if (verbose) message("Start calculating 3-clusters parameters")
+    if (verbose) message("Start calculating 3-cluster parameters")
     params3cluster <- calculateParameters3Cluster(M, priormeans, numSNP, verbose);
     if (verbose) message("Done calculating 3-cluster parameters")
 
@@ -636,7 +887,7 @@ calculateMahalDist1Cluster <- function(centers, sigma, priors, numSNP){
 
 computeCallPr <- function(callsPr, M, calls, numSNP, numSample, verbose, blockSize = 500000){
     # compute log-ratio in blocksize of 500,000 by default
-    if (verbose) message("Start computing confidence score")
+    if (verbose) message("Start computing confidence scores")
     
     numBlock = ceiling(numSNP / blockSize)
     for (i in 1:numBlock){
@@ -648,7 +899,7 @@ computeCallPr <- function(callsPr, M, calls, numSNP, numSample, verbose, blockSi
         rm(subsetM, subsetCalls, subsetCallProb)
     }
 
-    if (verbose) message("Done computing confidence score")
+    if (verbose) message("Done computing confidence scores")
 }
 
 #############################################
@@ -671,15 +922,15 @@ AddBackNoVarianceSNPs <- function(cnSet, calls, scores, numSNP, numSample, varia
 
 #############################################
 
-krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose){
+krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose, offset=0){
     if (verbose) message("Start imputing gender")    
-    S = computeAverageLogIntensity(cnSet, verbose) 
+    S = computeAverageLogIntensity(cnSet, verbose, offset=offset) 
 
     # S is calculated and saved in original SNP order. 
-    matchy = match(annotation[YIndex, 2], rownames(S))
+    matchy = match(annotation[YIndex, "Name"], rownames(S))
     matchy = matchy[!is.na(matchy)]
     if (length(matchy) <= 10){
-        predictedGender = rep(NA, ncol(A))
+        predictedGender = rep(NA, ncol(S))
     }
     Sy = S[matchy,]
 
@@ -704,8 +955,8 @@ krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose){
     priorS = apply(allS, 2, FUN="median", na.rm=TRUE)
 
     if (abs(priorS[1] - priorS[2]) <= 1.6) {
-        message("Skipping gender prediction step");
-        predictedGender = rep(NA, ncol(Sy))        
+        message("Separation between clusters too small (samples probabaly all the same gender): skipping gender prediction step");
+        predictedGender = rep(NA, ncol(Sy))
     }
     
     meanmatrix = apply(Sy, 2, median)
@@ -735,7 +986,7 @@ verifyChrYSNPs <- function(cnSet, M, calls, gender, annotation, YIndex, priormea
     open(callsGt)
     open(callsPr)
        
-    matchy = match(annotation[YIndex, 2], rownames(M))
+    matchy = match(annotation[YIndex, "Name"], rownames(M))
     matchy = matchy[!is.na(matchy)]
    
     MChrY = M[matchy,]

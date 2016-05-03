@@ -19,7 +19,7 @@
 preprocessInf(cnSet, sampleSheet=NULL, arrayNames = NULL, ids = NULL,
 path = ".", arrayInfoColNames = list(barcode = "SentrixBarcode_A",
 position = "SentrixPosition_A"), highDensity = TRUE, sep = "_", fileExt
-= list(green = "Grn.idat", red = "Red.idat"), XY, saveDate = TRUE, stripNorm
+= list(green = "Grn.idat", red = "Red.idat"), XY, anno, saveDate = TRUE, stripNorm
 = TRUE, useTarget = TRUE, mixtureSampleSize = 10^5, fitMixture = TRUE, 
 quantile.method="between", eps = 0.1, verbose = TRUE, seed = 1, cdfName)
 }
@@ -59,6 +59,9 @@ quantile.method="between", eps = 0.1, verbose = TRUE, seed = 1, cdfName)
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{XY}{an \code{NChannelSet} object containing X and Y intensities.}
+  \item{anno}{data.frame containing SNP annotation information from 
+    manifest and additional columns 'isSnp', 'position', 'chromosome' 
+    and 'featureNames'. For use when \code{cdfName}='nopackage'}
   \item{saveDate}{'logical'.  Should the dates from each .idat be saved
     with sample information?}
   \item{stripNorm}{'logical'.  Should the data be strip-level normalized?}

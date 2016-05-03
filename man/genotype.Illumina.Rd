@@ -1,5 +1,6 @@
 \name{genotype.Illumina}
 \alias{genotype.Illumina}
+\alias{crlmmIllumina}
 
 \title{
 	Preprocessing and genotyping of Illumina Infinium II arrays.
@@ -10,11 +11,20 @@
 \usage{
 genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
       arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
-      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), XY=NULL,
+      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), XY=NULL, anno, genome, 
       call.method="crlmm", trueCalls=NULL, cdfName, copynumber=TRUE, batch=NULL, saveDate=FALSE, stripNorm=TRUE, 
-      useTarget=TRUE, quantile.method="between", mixtureSampleSize=10^5, fitMixture=TRUE,                               
-      eps =0.1, verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, 
+      useTarget=TRUE, quantile.method="between", nopackage.norm="quantile", mixtureSampleSize=10^5, fitMixture=TRUE,
+      eps=0.1, verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, 
       recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+
+crlmmIllumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
+      arrayInfoColNames=list(barcode="SentrixBarcode_A", position="SentrixPosition_A"),
+      highDensity=FALSE, sep="_", fileExt=list(green="Grn.idat", red="Red.idat"), XY=NULL, anno, genome, 
+      call.method="crlmm", trueCalls=NULL, cdfName, copynumber=TRUE, batch=NULL, saveDate=FALSE, stripNorm=TRUE, 
+      useTarget=TRUE, quantile.method="between", nopackage.norm="quantile", mixtureSampleSize=10^5, fitMixture=TRUE,
+      eps=0.1, verbose = TRUE, seed = 1, sns, probs = rep(1/3, 3), DF = 6, SNRMin = 5, 
+      recallMin = 10, recallRegMin = 1000, gender = NULL, returnParams = TRUE, badSNP = 0.7)
+
 }
 \arguments{
   \item{sampleSheet}{\code{data.frame} containing Illumina sample sheet
@@ -42,9 +52,13 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   \item{fileExt}{list containing elements 'Green' and 'Red' which
     specify the .idat file extension for the Cy3 and Cy5 channels.}
   \item{XY}{\code{NChannelSet} containing X and Y intensities.}
+  \item{anno}{data.frame containing SNP annotation information from 
+    manifest and additional columns 'isSnp', 'position', 'chromosome' 
+    and 'featureNames'. For use when \code{cdfName}='nopackage'}
+  \item{genome}{character string specifying which genome is used in annotation}
   \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
   \item{trueCalls}{matrix specifying known Genotype calls(can contain some NAs) for a subset of samples and features (1 - AA, 2 - AB, 3 - BB).}
-  \item{cdfName}{ annotation package  (see also \code{validCdfNames})}
+  \item{cdfName}{annotation package (see also \code{validCdfNames}) or 'nopackage' when combined with 'krlmm', an \code{anno} data.frame and \code{genome}.}
   \item{copynumber}{ 'logical.' Whether to store copy number intensities with SNP output.}
   \item{batch}{ character vector indicating the batch variable. Must be
 	the same length as the number of samples. See details.}
@@ -54,6 +68,8 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   \item{useTarget}{'logical' (only used when \code{stripNorm=TRUE}).
     Should the reference HapMap intensities be used in strip-level normalization?}
   \item{quantile.method}{character string specifying the quantile normalization method to use ('within' or 'between' channels).}
+  \item{nopackage.norm}{character string specifying normalization to be used when \code{cdfName}='nopackage'.
+    Options are 'none', 'quantile' (within channel, between array) and 'loess'.}
   \item{mixtureSampleSize}{ Sample size to be use when fitting the mixture model.}
   \item{fitMixture}{ 'logical.' Whether to fit per-array mixture model.}
   \item{eps}{   Stop criteria.}
@@ -74,23 +90,15 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 
 \details{
 
-	For large datasets it is important to utilize the large data
-	support by installing and loading the ff package before calling
-	the \code{genotype} function. In previous versions of the
-	\code{crlmm} package, we used different functions for
-	genotyping depending on whether the ff package is loaded, namely
-	\code{genotype} and \code{genotype2}.  The \code{genotype}
-	function now handles both instances.
-
-	\code{genotype.Illumina} is a wrapper of the \code{crlmm}
-	function for genotyping.  Differences include (1) that the copy
-	number probes (if present) are also quantile-normalized and (2)
-	the class of object returned by this function, \code{CNSet}, is
-	needed for subsequent copy number estimation.  Note that the
-	batch variable (a character string) that must be passed to this
-	function has no effect on the normalization or genotyping steps.
-	Rather, \code{batch} is required in order to initialize a
-	\code{CNSet} container with the appropriate dimensions.
+	\code{genotype.Illumina} (or equivalently \code{crlmmIllumina}) 
+        is a wrapper of the \code{crlmm} function for genotyping.  
+        Differences include (1) that the copy number probes (if present) 
+        are also quantile-normalized and (2) the class of object returned 
+        by this function, \code{CNSet}, is needed for subsequent copy number 
+        estimation.  Note that the batch variable (a character string) has 
+        no effect on the normalization or genotyping steps. Rather, \code{batch} 
+        is required in order to initialize a \code{CNSet} container with the 
+        appropriate dimensions.
 
         The new 'krlmm' option is available for certain chip types. Optional 
 	argument \code{trueCalls} matrix contains known Genotype calls 
@@ -103,6 +111,15 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
 	8 clusters. This is configurable by setting up an option named 
 	"krlmm.cores", e.g. options("krlmm.cores" = 16). 
 
+        In general, a chip specific annotation package is required to use the 
+        \code{genotype.Illumina} function. If this is not available (newer chip 
+        types or custom chips often don't have a chip-specific package available
+        on Bioconductor), consider using \code{cdfName}='nopackage' and specifying 
+        \code{anno} and \code{genome}, which runs 'krlmm' on the samples available.
+        Here \code{anno} is a data.frame read in from the relevant chip-specific
+        manifest, which must have additional columns 'isSnp' which is a logical that
+        indicates whether a probe is polymorphic or not, 'position', 'chromosome' and
+        'featureNames' that give the location on the chromosome and SNP name.
       }
 
 \value{	A \code{SnpSuperSet} instance.}
@@ -110,6 +127,10 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   Ritchie ME, Carvalho BS, Hetrick KN, Tavar\'{e} S, Irizarry RA.
   R/Bioconductor software for Illumina's Infinium whole-genome
   genotyping BeadChips. Bioinformatics. 2009 Oct 1;25(19):2621-3.
+
+  Liu R, Dai Z, Yeager M, Irizarry RA1, Ritchie ME.
+  KRLMM: an adaptive genotype calling method for common and low frequency variants.
+  BMC Bioinformatics. 2014 May 23;15:158.
 
   Carvalho B, Bengtsson H, Speed TP, Irizarry RA. Exploration,
   normalization, and genotype calls of high-density oligonucleotide SNP
@@ -119,19 +140,11 @@ genotype.Illumina(sampleSheet=NULL, arrayNames=NULL, ids=NULL, path=".",
   Carvalho BS, Louis TA, Irizarry RA.
   Quantifying uncertainty in genotype calls.
   Bioinformatics. 2010 Jan 15;26(2):242-9.
-
 }
 
 \author{Matt Ritchie, Cynthia Liu, Zhiyin Dai}
 
-  \note{For large datasets, load the 'ff' package prior to genotyping
--- this will greatly reduce the RAM required for big jobs.  See
-\code{ldPath} and \code{ocSamples}.  The function
-\code{genotype.Illumina} supports parallelization, as the (not run)
-example below indicates.}
-
 \seealso{
-	\code{\link{crlmmIlluminaV2}},
 	\code{\link[oligoClasses]{ocSamples}},
 	\code{\link[oligoClasses]{ldOpts}}
 }

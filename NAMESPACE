@@ -13,7 +13,7 @@ import(methods)
 importFrom(RcppEigen, fastLmPure)
 ## importClassesFrom(oligoClasses, CNSet, CNSetLM, ff_matrix,
 ##                   ff_or_matrix, oligoSnpSet)
-importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix)
+importClassesFrom(oligoClasses, CNSet, oligoSnpSet, ff_or_matrix, GenomeAnnotatedDataFrame)
 ##setOldClass(ff_or_matrix)
 import(matrixStats)
 
@@ -72,13 +72,18 @@ importFrom(stats, coef, cov, dnorm, kmeans, lm, mad, median, quantile,
 importFrom(utils, packageDescription, setTxtProgressBar,
            txtProgressBar)
 
+importFrom(graphics, plot, smoothScatter, abline)
+
+importFrom(beanplot, beanplot)
+
 ## foreach
 import(foreach)
 
 importFrom(VGAM, vglm, multinomial, coefficients)
 
-importFrom(parallel, makeCluster, detectCores, parRapply, stopCluster, clusterEvalQ)
+importFrom(parallel, makeCluster, detectCores, parRapply, stopCluster, clusterEvalQ, parCapply)
 
+importFrom(limma, loessFit)
 
 ##----------------------------------------------------------------------------
 ## export
@@ -92,7 +97,6 @@ exportMethods(CA, CB,
 	      BafLrrSetList)
 export(crlmm,
        crlmmIllumina,
-       crlmmIlluminaV2,
        constructAffyCNSet,
        genotype,
        genotypeAffy,
@@ -106,6 +110,7 @@ export(crlmm,
        genotype2, genotypeLD,
        genotypeAffy,
        genotype.Illumina,
+       plotSamples, plotSNPs,
        crlmmCopynumber2, crlmmCopynumberLD, crlmmCopynumber)
 export(genotypes, totalCopynumber, rawCopynumber, xyplot)
 export(ABpanel, validCEL, celDates, validCdfNames)

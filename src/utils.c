@@ -275,9 +275,9 @@ SEXP test_mad_median(SEXP X, SEXP Y, SEXP trim){
   return output;
 }
 
-/* Converts row-col notation into base-zero vector notation, based on a column-wise conversion*/
-long Cmatrix(int row, int col, int totrow){
-  return( (row)-1 + ((col)-1)*(totrow)); // num_SNP is number of rows
+/* Converts base-one row-col notation into base-zero vector notation, based on a column-wise conversion*/
+long CMatrixElementPosition(long row, long col, long totrow){
+  return( (row -1) + ((col-1)*totrow)); // num_SNP is number of rows
 }
 
 SEXP countFileLines(SEXP filename) {
@@ -340,7 +340,7 @@ DoReadGenCallOutput(SEXP filename, int numSNP, int numsample, int SNPIDIndex, in
       } else {
 	token = strtok(line, "\t");
       }
-      index = Cmatrix(i, j, numSNP);
+      index = CMatrixElementPosition(i, j, numSNP);
       pos = 0;     
       while (token != NULL) {
 	if (pos == SNPIDIndex){

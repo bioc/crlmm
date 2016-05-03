@@ -425,28 +425,27 @@ SEXP krlmmComputeM(SEXP A, SEXP B){
     rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
   */
 
-  int rowsAB, colsAB;
+  long rowsAB, colsAB;
   rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
   colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
 
-  int i, j;
-
-  int *ptr2A, *ptr2B;
-  ptr2A = INTEGER_POINTER(AS_INTEGER(A));
-  ptr2B = INTEGER_POINTER(AS_INTEGER(B));
+  A = coerceVector(A, REALSXP);
+  B = coerceVector(B, REALSXP);
+  
+  long i, j;
 
   SEXP Rval;
   PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
 
   double *ptr2M;
-  long ele;
+  long elepos;
   ptr2M = NUMERIC_POINTER(Rval);
 
   for (i = 1; i <= rowsAB; i++){
     for (j = 1; j <= colsAB; j++){
-      // elem is an index for A, B and M
-      ele = Cmatrix(i, j, rowsAB);
-      ptr2M[ele] = (log2(ptr2A[ele])-log2(ptr2B[ele]));
+      // elepos is an index for A, B and M
+      elepos = CMatrixElementPosition(i, j, rowsAB);
+      ptr2M[elepos] = (log2(REAL(A)[elepos])-log2(REAL(B)[elepos]));
     }
   }
   
@@ -460,7 +459,7 @@ SEXP krlmmComputeS(SEXP A, SEXP B){
   /*
     ARGUMENTS
     ---------
-    A: intensity matrix for allele A
+    A: intensity matrix for allele A11
     B: intensity matrix for allele B
     S: average log-intensity for a particular SNP (outgoing)
 
@@ -469,28 +468,26 @@ SEXP krlmmComputeS(SEXP A, SEXP B){
     rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
   */
 
-  int rowsAB, colsAB;
+  long rowsAB, colsAB;
   rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
   colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
 
-  int i, j;
-
-  int *ptr2A, *ptr2B;
-  ptr2A = INTEGER_POINTER(AS_INTEGER(A));
-  ptr2B = INTEGER_POINTER(AS_INTEGER(B));
+  A = coerceVector(A, REALSXP);
+  B = coerceVector(B, REALSXP); 
+  long i, j;
 
   SEXP Rval;
   PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
 
   double *ptr2S;
-  long ele;
+  long elepos;
   ptr2S = NUMERIC_POINTER(Rval);
 
   for (i = 1; i <= rowsAB; i++){
     for (j = 1; j <= colsAB; j++){
-      // elem is an index for A, B and S
-      ele = Cmatrix(i, j, rowsAB);
-      ptr2S[ele] = (log2(ptr2A[ele])+log2(ptr2B[ele]))/2;
+      // elepos is an index for A, B and S
+      elepos = CMatrixElementPosition(i, j, rowsAB);
+      ptr2S[elepos] = (log2(REAL(A)[elepos])+log2(REAL(B)[elepos]))/2;
     }
   }
   
@@ -507,7 +504,7 @@ void calculate_multiple_cluster_scores(int row, double *intensity, double mean_i
     }
     for(p=1; p<num_sample; p++){
         for(q=p+1; q<=num_sample; q++){
-   	    a_dist = fabs(intensity[Cmatrix(row, p, num_SNP)] - intensity[Cmatrix(row, q, num_SNP)]);
+   	    a_dist = fabs(intensity[CMatrixElementPosition(row, p, num_SNP)] - intensity[CMatrixElementPosition(row, q, num_SNP)]);
             dist[p][q] = a_dist;
             dist[q][p] = a_dist;
         }
@@ -519,12 +516,12 @@ void calculate_multiple_cluster_scores(int row, double *intensity, double mean_i
     double temp_between_cluster;
     double max;
     for (p=1; p <= num_sample; p++){
-        vectorPos = Cmatrix(row, p, num_SNP);
+        vectorPos = CMatrixElementPosition(row, p, num_SNP);
         sum[1] = 0;
         sum[2] = 0;
         sum[3] = 0;
         for (q=1; q<=num_sample; q++){
-	  sum[clustering[Cmatrix(row, q, num_SNP)]] += dist[p][q];
+	  sum[clustering[CMatrixElementPosition(row, q, num_SNP)]] += dist[p][q];
         }
        
         within_cluster = sum[clustering[vectorPos]] / (clustercount[clustering[vectorPos]]- 1);
@@ -555,7 +552,7 @@ void calculate_unique_cluster_scores(int row, double *intensity, double mean_int
     long vectorPos;
 
     for(p = 1; p <= num_sample; p++){
-        vectorPos = Cmatrix(row, p, num_SNP); 
+        vectorPos = CMatrixElementPosition(row, p, num_SNP); 
         ptr[vectorPos] = genotypeConfidence2(1 -  fabs(fabs(intensity[vectorPos] - mean_intensity) / intensity_range));
     }
 }
@@ -567,7 +564,7 @@ double calculate_SNP_mean(int row, double *intensity, int num_SNP, int num_sampl
   sum_intensity = 0;
   int p;
   for(p = 1; p <= num_sample; p++){
-    sum_intensity = sum_intensity + intensity[Cmatrix(row, p, num_SNP)];
+    sum_intensity = sum_intensity + intensity[CMatrixElementPosition(row, p, num_SNP)];
   }
   return(sum_intensity / num_sample);
 }
@@ -576,15 +573,15 @@ double calculate_SNP_range(int row, double *intensity, int num_SNP, int num_samp
 {
   double min_intensity;
   double max_intensity;
-  max_intensity = intensity[Cmatrix(row, 1, num_SNP)];
-  min_intensity = intensity[Cmatrix(row, 1, num_SNP)];
+  max_intensity = intensity[CMatrixElementPosition(row, 1, num_SNP)];
+  min_intensity = intensity[CMatrixElementPosition(row, 1, num_SNP)];
   int p;  
   for(p = 2; p <= num_sample; p++){
-    if (intensity[Cmatrix(row, p, num_SNP)] < min_intensity){
-      min_intensity = intensity[Cmatrix(row, p, num_SNP)];  
+    if (intensity[CMatrixElementPosition(row, p, num_SNP)] < min_intensity){
+      min_intensity = intensity[CMatrixElementPosition(row, p, num_SNP)];  
     }	
-    if (intensity[Cmatrix(row, p, num_SNP)] > max_intensity){
-      max_intensity = intensity[Cmatrix(row, p, num_SNP)];
+    if (intensity[CMatrixElementPosition(row, p, num_SNP)] > max_intensity){
+      max_intensity = intensity[CMatrixElementPosition(row, p, num_SNP)];
     }
   }
   return(max_intensity - min_intensity);
@@ -597,11 +594,10 @@ SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
     num_SNP = INTEGER(getAttrib(M, R_DimSymbol))[0];
     num_sample = INTEGER(getAttrib(M, R_DimSymbol))[1];
 
-    double *ptr2M;
     int *ptr2cluster;
-    ptr2M = NUMERIC_POINTER(AS_NUMERIC(M));
     ptr2cluster = INTEGER_POINTER(AS_INTEGER(clustering));
-
+    M = coerceVector(M, REALSXP);
+  
     int i, j;
     int cluster;
     double mean_intensity;
@@ -629,11 +625,11 @@ SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
         cluster_count[2] = 0;
         cluster_count[3] = 0;
         for (j=1; j<= num_sample; j++){
-	    cluster = ptr2cluster[Cmatrix(i, j, num_SNP)];
+	    cluster = ptr2cluster[CMatrixElementPosition(i, j, num_SNP)];
             cluster_count[cluster]++;
         }
-	mean_intensity = calculate_SNP_mean(i, ptr2M, num_SNP, num_sample);
-	intensity_range = calculate_SNP_range(i, ptr2M, num_SNP, num_sample);
+	mean_intensity = calculate_SNP_mean(i, REAL(M), num_SNP, num_sample);
+	intensity_range = calculate_SNP_range(i, REAL(M), num_SNP, num_sample);
 
         k = 0;
         for (j=1; j<=3; j++){
@@ -644,9 +640,9 @@ SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
         }
 
 	if (k==1) {
-	  calculate_unique_cluster_scores(i, ptr2M, mean_intensity, intensity_range, num_SNP, num_sample, ptr2score);
+	  calculate_unique_cluster_scores(i, REAL(M), mean_intensity, intensity_range, num_SNP, num_sample, ptr2score);
 	} else {
-	  calculate_multiple_cluster_scores(i, ptr2M, mean_intensity, ptr2cluster, num_SNP, num_sample, ptr2score, dist, cluster_count);
+	  calculate_multiple_cluster_scores(i, REAL(M), mean_intensity, ptr2cluster, num_SNP, num_sample, ptr2score, dist, cluster_count);
 	}       
       
     } 

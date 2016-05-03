@@ -18,13 +18,13 @@ LinkingTo: preprocessCore (>= 1.17.7)
 Imports: methods, Biobase (>= 2.15.4), BiocGenerics, affyio (>=
         1.23.2), illuminaio, ellipse, mvtnorm, splines, stats, SNPchip,
         utils, lattice, ff, foreach, RcppEigen (>= 0.3.1.2.1),
-        matrixStats, VGAM, parallel
+        matrixStats, VGAM, parallel, graphics, limma, beanplot
 Suggests: hapmapsnp6, genomewidesnp6Crlmm (>= 1.0.7), GGdata, snpStats,
         RUnit
 Collate: AllGenerics.R AllClasses.R methods-AssayData.R methods-CNSet.R
         methods-CNSetLM.R methods-eSet.R methods-SnpSuperSet.R
         methods-PredictionRegion.R cnrma-functions.R cnset-accessors.R
-        crlmm-functions.R crlmmGT2.R crlmm-illumina.R krlmm.R
+        crlmm-functions.R crlmmGT2.R crlmm-illumina.R krlmm.R plot.R
         snprma-functions.R utils.R zzz.R test_crlmm_package.R
 LazyLoad: yes
 ## Local Variables:

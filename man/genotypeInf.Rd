@@ -16,9 +16,9 @@
 }
 \usage{
 genotypeInf(cnSet, mixtureParams, probs = rep(1/3, 3), SNRMin = 5,
-recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams =
-TRUE, badSNP = 0.7, gender = NULL, DF = 6, cdfName, call.method="crlmm", 
-trueCalls = NULL)
+             recallMin = 10, recallRegMin = 1000, verbose = TRUE, returnParams = TRUE, 
+             badSNP = 0.7, gender = NULL, DF = 6, cdfName, nopackage.norm="quantile",
+             call.method="crlmm", trueCalls = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -44,6 +44,8 @@ trueCalls = NULL)
     t-distribution.}
   \item{cdfName}{\code{character} string indicating which annotation
     package to load.}
+  \item{nopackage.norm}{character string specifying normalization to be used when \code{cdfName}='nopackage'.
+    Options are 'none', 'quantile' (within channel, between array) and 'quantileloess'.}
   \item{call.method}{character string specifying the genotype calling algorithm to use ('crlmm' or 'krlmm').}
   \item{trueCalls}{ matrix specifying known Genotype calls for a subset of samples and features(1 - AA, 2 - AB, 3 - BB).}
 }
