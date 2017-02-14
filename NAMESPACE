@@ -58,10 +58,9 @@ importFrom(mvtnorm, rmvnorm)
 
 importFrom(oligoClasses, celfileDate, chromosome2integer, i2p,
            initializeBigMatrix, initializeBigVector, integerMatrix,
-	   isPackageLoaded,
-           ldPath, ocLapply, ocProbesets, ocSamples,
-	   parStatus,
-           splitIndicesByLength, splitIndicesByNode, AssayDataList)
+           isPackageLoaded, ldPath, ocLapply, ocProbesets, ocSamples,
+           parStatus, splitIndicesByLength, splitIndicesByNode, 
+           AssayDataList, genomeBuild, celfileName)
 
 importFrom(preprocessCore, normalize.quantiles, normalize.quantiles.determine.target,
            normalize.quantiles.use.target, subColSummarizeMedian)
@@ -84,6 +83,8 @@ importFrom(VGAM, vglm, multinomial, coefficients)
 importFrom(parallel, makeCluster, detectCores, parRapply, stopCluster, clusterEvalQ, parCapply)
 
 importFrom(limma, loessFit)
+
+importFrom(ff, delete)
 
 ##----------------------------------------------------------------------------
 ## export

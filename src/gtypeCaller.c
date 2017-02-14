@@ -422,12 +422,12 @@ SEXP krlmmComputeM(SEXP A, SEXP B){
 
     INTERNAL VARIABLES
     -------- ---------
-    rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
+    num_SNP, num_sample: dimensions of A and B, which is number of SNP and number of sample
   */
 
-  long rowsAB, colsAB;
-  rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
-  colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
+  long num_SNP, num_sample;
+  num_SNP = INTEGER(getAttrib(A, R_DimSymbol))[0];
+  num_sample = INTEGER(getAttrib(A, R_DimSymbol))[1];
 
   A = coerceVector(A, REALSXP);
   B = coerceVector(B, REALSXP);
@@ -435,16 +435,16 @@ SEXP krlmmComputeM(SEXP A, SEXP B){
   long i, j;
 
   SEXP Rval;
-  PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
+  PROTECT(Rval = allocMatrix(REALSXP, num_SNP, num_sample));
 
   double *ptr2M;
   long elepos;
   ptr2M = NUMERIC_POINTER(Rval);
 
-  for (i = 1; i <= rowsAB; i++){
-    for (j = 1; j <= colsAB; j++){
+  for (i = 1; i <= num_SNP; i++){
+    for (j = 1; j <= num_sample; j++){
       // elepos is an index for A, B and M
-      elepos = CMatrixElementPosition(i, j, rowsAB);
+      elepos = CMatrixElementPosition(i, j, num_SNP);
       ptr2M[elepos] = (log2(REAL(A)[elepos])-log2(REAL(B)[elepos]));
     }
   }
@@ -459,34 +459,34 @@ SEXP krlmmComputeS(SEXP A, SEXP B){
   /*
     ARGUMENTS
     ---------
-    A: intensity matrix for allele A11
+    A: intensity matrix for allele A
     B: intensity matrix for allele B
     S: average log-intensity for a particular SNP (outgoing)
 
     INTERNAL VARIABLES
     -------- ---------
-    rowsAB, colsAB: dimensions of A and B, which is number of SNP and number of sample
+    num_SNP, num_sample: dimensions of A and B, which is number of SNP and number of sample
   */
 
-  long rowsAB, colsAB;
-  rowsAB = INTEGER(getAttrib(A, R_DimSymbol))[0];
-  colsAB = INTEGER(getAttrib(A, R_DimSymbol))[1];
+  long num_SNP, num_sample;
+  num_SNP = INTEGER(getAttrib(A, R_DimSymbol))[0];
+  num_sample = INTEGER(getAttrib(A, R_DimSymbol))[1];
 
   A = coerceVector(A, REALSXP);
   B = coerceVector(B, REALSXP); 
   long i, j;
 
   SEXP Rval;
-  PROTECT(Rval = allocMatrix(REALSXP, rowsAB, colsAB));
+  PROTECT(Rval = allocMatrix(REALSXP, num_SNP, num_sample));
 
   double *ptr2S;
   long elepos;
   ptr2S = NUMERIC_POINTER(Rval);
 
-  for (i = 1; i <= rowsAB; i++){
-    for (j = 1; j <= colsAB; j++){
+  for (i = 1; i <= num_SNP; i++){
+    for (j = 1; j <= num_sample; j++){
       // elepos is an index for A, B and S
-      elepos = CMatrixElementPosition(i, j, rowsAB);
+      elepos = CMatrixElementPosition(i, j, num_SNP);
       ptr2S[elepos] = (log2(REAL(A)[elepos])+log2(REAL(B)[elepos]))/2;
     }
   }
@@ -495,15 +495,16 @@ SEXP krlmmComputeS(SEXP A, SEXP B){
   return Rval;
 }
 
-void calculate_multiple_cluster_scores(int row, double *intensity, double mean_intensity, int *clustering, int num_SNP, int num_sample, int *ptr, double **dist, int *clustercount){
-    int p, q, o;
+void calculate_multiple_cluster_scores(long row, double *intensity, double mean_intensity, int *clustering, long num_SNP, long num_sample, int *ptr, double **dist, long *clustercount){
+    long p, q;
+    int o;
     long vectorPos;
     double a_dist;
     for(p=1; p <= num_sample; p++){
         dist[p][p] = 0;
     }
-    for(p=1; p<num_sample; p++){
-        for(q=p+1; q<=num_sample; q++){
+    for(p=1; p < num_sample; p++){
+        for(q = p+1; q <= num_sample; q++){
    	    a_dist = fabs(intensity[CMatrixElementPosition(row, p, num_SNP)] - intensity[CMatrixElementPosition(row, q, num_SNP)]);
             dist[p][q] = a_dist;
             dist[q][p] = a_dist;
@@ -521,7 +522,7 @@ void calculate_multiple_cluster_scores(int row, double *intensity, double mean_i
         sum[2] = 0;
         sum[3] = 0;
         for (q=1; q<=num_sample; q++){
-	  sum[clustering[CMatrixElementPosition(row, q, num_SNP)]] += dist[p][q];
+            sum[clustering[CMatrixElementPosition(row, q, num_SNP)]] += dist[p][q];
         }
        
         within_cluster = sum[clustering[vectorPos]] / (clustercount[clustering[vectorPos]]- 1);
@@ -546,9 +547,9 @@ void calculate_multiple_cluster_scores(int row, double *intensity, double mean_i
     }   
 }
 
-void calculate_unique_cluster_scores(int row, double *intensity, double mean_intensity, double intensity_range, int num_SNP, int num_sample, int *ptr)				   
+void calculate_unique_cluster_scores(long row, double *intensity, double mean_intensity, double intensity_range, long num_SNP, long num_sample, int *ptr)				   
 {
-    int p;
+    long p;
     long vectorPos;
 
     for(p = 1; p <= num_sample; p++){
@@ -558,24 +559,24 @@ void calculate_unique_cluster_scores(int row, double *intensity, double mean_int
 }
 
 
-double calculate_SNP_mean(int row, double *intensity, int num_SNP, int num_sample)
+double calculate_SNP_mean(long row, double *intensity, long num_SNP, long num_sample)
 {
   double sum_intensity;
   sum_intensity = 0;
-  int p;
+  long p;
   for(p = 1; p <= num_sample; p++){
     sum_intensity = sum_intensity + intensity[CMatrixElementPosition(row, p, num_SNP)];
   }
   return(sum_intensity / num_sample);
 }
 
-double calculate_SNP_range(int row, double *intensity, int num_SNP, int num_sample)
+double calculate_SNP_range(long row, double *intensity, long num_SNP, long num_sample)
 {
   double min_intensity;
   double max_intensity;
   max_intensity = intensity[CMatrixElementPosition(row, 1, num_SNP)];
   min_intensity = intensity[CMatrixElementPosition(row, 1, num_SNP)];
-  int p;  
+  long p;  
   for(p = 2; p <= num_sample; p++){
     if (intensity[CMatrixElementPosition(row, p, num_SNP)] < min_intensity){
       min_intensity = intensity[CMatrixElementPosition(row, p, num_SNP)];  
@@ -590,7 +591,7 @@ double calculate_SNP_range(int row, double *intensity, int num_SNP, int num_samp
 
 SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
 {
-    int num_SNP, num_sample;
+    long num_SNP, num_sample;
     num_SNP = INTEGER(getAttrib(M, R_DimSymbol))[0];
     num_sample = INTEGER(getAttrib(M, R_DimSymbol))[1];
 
@@ -598,7 +599,7 @@ SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
     ptr2cluster = INTEGER_POINTER(AS_INTEGER(clustering));
     M = coerceVector(M, REALSXP);
   
-    int i, j;
+    long i, j;
     int cluster;
     double mean_intensity;
     double intensity_range;
@@ -617,34 +618,31 @@ SEXP krlmmConfidenceScore(SEXP M, SEXP clustering)
       dist[i] = (double *)malloc((num_sample + 1) * sizeof(double)); 
     }
 
-    int cluster_count[4]; // extra element to cope with zero-base notation
-   // int clid[4];
+    long cluster_count[4]; // extra element to cope with zero-base notation
 
     for (i = 1; i <= num_SNP; i++) {
         cluster_count[1] = 0;
         cluster_count[2] = 0;
         cluster_count[3] = 0;
         for (j=1; j<= num_sample; j++){
-	    cluster = ptr2cluster[CMatrixElementPosition(i, j, num_SNP)];
+            cluster = ptr2cluster[CMatrixElementPosition(i, j, num_SNP)];
             cluster_count[cluster]++;
         }
-	mean_intensity = calculate_SNP_mean(i, REAL(M), num_SNP, num_sample);
-	intensity_range = calculate_SNP_range(i, REAL(M), num_SNP, num_sample);
+        mean_intensity = calculate_SNP_mean(i, REAL(M), num_SNP, num_sample);
+        intensity_range = calculate_SNP_range(i, REAL(M), num_SNP, num_sample);
 
         k = 0;
         for (j=1; j<=3; j++){
             if (cluster_count[j] > 0){
                 k++;
-            //    clid[k] = j;
             }
         }
 
-	if (k==1) {
-	  calculate_unique_cluster_scores(i, REAL(M), mean_intensity, intensity_range, num_SNP, num_sample, ptr2score);
-	} else {
-	  calculate_multiple_cluster_scores(i, REAL(M), mean_intensity, ptr2cluster, num_SNP, num_sample, ptr2score, dist, cluster_count);
-	}       
-      
+        if (k==1) {
+            calculate_unique_cluster_scores(i, REAL(M), mean_intensity, intensity_range, num_SNP, num_sample, ptr2score);
+        } else {
+	        calculate_multiple_cluster_scores(i, REAL(M), mean_intensity, ptr2cluster, num_SNP, num_sample, ptr2score, dist, cluster_count);			
+        }       
     } 
 
     UNPROTECT(1);

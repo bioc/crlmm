@@ -25,8 +25,7 @@ krlmm <- function(cnSet, cdfName, gender=NULL, trueCalls=NULL, verbose=TRUE) {
     colnames(scores) = colnames(M)  
     
     priormeans = calculatePriorValues(M, numSNP, verbose)
-    VGLMparameters = calculateParameters(M, priormeans, numSNP, verbose)
-  
+      
 ### retrieve or calculate coefficients
     krlmmCoefficients = getKrlmmVGLMCoefficients(pkgname, trueCalls, VGLMparameters, verbose, numSample, colnames(M))
     
@@ -83,7 +82,7 @@ krlmmnopkg <- function(cnSet, offset, gender=NULL, normalize.method=NULL, annota
     }
 
     message("Leaving out non-variant SNPs")
-
+    
     # For SNPs with less than 3 distinct data point, exclude them from downstream analysis
     uniqueCount = apply(M[,], 1, function(x){length(unique(x))})
     SNPtoProcessIndex = uniqueCount >= 3
@@ -113,8 +112,18 @@ krlmmnopkg <- function(cnSet, offset, gender=NULL, normalize.method=NULL, annota
     }
     colnames(trueCalls)=colnames(M)
     rownames(trueCalls)=rownames(M)
-
-    priormeans = calculatePriorValues(M, numSNP, verbose)
+if(numSample<=30){
+  priormeans=prepriormeans
+}else{
+  priormeans = calculatePriorValues(M, numSNP, verbose)
+    if((abs(priormeans[1]-prepriormeans[1])+abs(priormeans[2]-prepriormeans[2])+abs(priormeans[3]-prepriormeans[3]))>=3){
+priormeans=prepriormeans
+}else{
+      priormeans=priormeans
+  }
+ }
+ 
+    
     VGLMparameters = calculateParameters(M, priormeans, numSNP, verbose)
 
 ### retrieve or calculate coefficients
@@ -131,23 +140,24 @@ krlmmnopkg <- function(cnSet, offset, gender=NULL, normalize.method=NULL, annota
 ### assign confidence scores
     computeCallPr(scores, M, calls, numSNP, numSample, verbose)
 
-    YIndex = seq(1:nrow(cnSet))[chromosome(cnSet)==24 & isSnp(cnSet)]
-
+   YIndex = seq(1:nrow(cnSet))[chromosome(cnSet)==24 & isSnp(cnSet)]
+    XIndex = seq(1:nrow(cnSet))[chromosome(cnSet)==23 & isSnp(cnSet)]
 ### impute gender if gender information not provided
     if (is.null(gender)) {
-        gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose, offset=offset)
+       gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose, offset=offset)
     }
 
-### double-check ChrY SNP cluster, impute gender if gender information not provided
+### double-check ChrY ChrX SNP cluster, impute gender if gender information not provided
     if (!(is.null(gender))) {
         verifyChrYSNPs(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose)
+        verifyChrXSNPs(cnSet, M, calls, gender, annotation, XIndex, priormeans, verbose)
     }
 
 #    if (length(YIndex)>0  && !(is.null(gender))) {
 #      verifyChrYSNPs(cnSet, M, calls, gender, annotation, YIndex, priormeans, verbose)
 #    }
 ### add back SNPs excluded before
-    AddBackNoVarianceSNPs(cnSet, calls, scores, numSNP, numSample, SNPtoProcessIndex, noVariantSNPIndex)
+   AddBackNoVarianceSNPs(cnSet, calls, scores, numSNP, numSample, SNPtoProcessIndex, noVariantSNPIndex)
 
     close(calls)
     close(scores)
@@ -170,7 +180,7 @@ loessnormalization<- function(cnSet, verbose, offset=16, blockSize = 300000){
 
     numSNP <- nrow(A)
     numSample <- ncol(A)
-    library(limma)
+   
 
     M <- oligoClasses::initializeBigMatrix(name="M", numSNP, numSample, vmode = "double")
     S <- oligoClasses::initializeBigMatrix(name="S", numSNP, numSample, vmode = "double")
@@ -927,7 +937,7 @@ krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose, offset=0){
     S = computeAverageLogIntensity(cnSet, verbose, offset=offset) 
 
     # S is calculated and saved in original SNP order. 
-    matchy = match(annotation[YIndex, "Name"], rownames(S))
+    matchy = match(rownames(annotation)[YIndex], rownames(S))
     matchy = matchy[!is.na(matchy)]
     if (length(matchy) <= 10){
         predictedGender = rep(NA, ncol(S))
@@ -955,8 +965,8 @@ krlmmImputeGender <- function(cnSet, annotation, YIndex, verbose, offset=0){
     priorS = apply(allS, 2, FUN="median", na.rm=TRUE)
 
     if (abs(priorS[1] - priorS[2]) <= 1.6) {
-        message("Separation between clusters too small (samples probabaly all the same gender): skipping gender prediction step");
-        predictedGender = rep(NA, ncol(Sy))
+        message("Separation between clusters too small (samples probabaly all the same gender): ");
+      
     }
     
     meanmatrix = apply(Sy, 2, median)
@@ -986,7 +996,7 @@ verifyChrYSNPs <- function(cnSet, M, calls, gender, annotation, YIndex, priormea
     open(callsGt)
     open(callsPr)
        
-    matchy = match(annotation[YIndex, "Name"], rownames(M))
+    matchy = match(rownames(annotation)[YIndex], rownames(M))
     matchy = matchy[!is.na(matchy)]
    
     MChrY = M[matchy,]
@@ -1030,4 +1040,59 @@ verifyChrYSNPs <- function(cnSet, M, calls, gender, annotation, YIndex, priormea
     close(callsPr)
     
     if (verbose) message("Done verifying SNPs on Chromosome Y")
+}
+
+
+
+
+#######################################
+verifyChrXSNPs <- function(cnSet, M, calls, gender, annotation, XIndex, priormeans, verbose){
+    if (verbose) message("Start verifying SNPs on Chromosome X")
+    callsGt = calls(cnSet)
+    callsPr = snpCallProbability(cnSet)
+    open(callsGt)
+    open(callsPr)
+      
+    matchx = match(rownames(annotation)[XIndex], rownames(M))
+    matchx = matchx[!is.na(matchx)]
+   
+    MChrX= M[matchx,]
+    callsChrX = callsGt[matchx,]
+  
+    male = gender == 1
+    female = gender == 2    
+    
+    checkK = apply(callsChrX[, male], 1, function(x){ length(unique(x[!is.na(x)])) } )
+    
+    for(i in 1:nrow(MChrX)){
+      
+        # Chromosome X SNPs for male, k = 1 or 2 permitted for male samples
+thisChrXSNPorigPosition = match(rownames(callsChrX)[i], rownames(callsGt))
+        # early exit for k = 1 or 2 cases. Only re-assign calls to male samples if we previouly assigned
+        # male samples to 3 clusters by mistake. 
+        if (checkK[i] < 3) next;
+          
+        if (class(try(kmeans(MChrX[i, male], c(priormeans[1], priormeans[3]), nstart=1), TRUE)) != "try-error"){
+           
+            maleSampleCalls = kmeans(MChrX[i, male],c(priormeans[1], priormeans[3]), nstart=45)$cluster
+            callsGt[thisChrXSNPorigPosition, male][maleSampleCalls == 1] = 1
+            callsGt[thisChrXSNPorigPosition, male][maleSampleCalls == 2] = 3
+        } else {
+                    
+            distanceToPrior1 = mean(abs(MChrX[i, male] - priormeans[1]))
+            distanceToPrior3 = mean(abs(MChrX[i, male] - priormeans[3]))                
+            callsGt[thisChrXSNPorigPosition, male] = ifelse(distanceToPrior1 < distanceToPrior3, 1, 3)
+        }
+
+        MMaleSamples = MChrX[i, male]
+        callsMaleSample = callsGt[thisChrXSNPorigPosition, male]
+        scoresMaleSample = .Call("krlmmConfidenceScore", t(as.matrix(MMaleSamples)), t(as.matrix(callsMaleSample)), PACKAGE="crlmm");
+
+       callsPr[thisChrXSNPorigPosition, male] = scoresMaleSample       
+    }
+
+    close(callsGt)
+    close(callsPr)
+    
+    if (verbose) message("Done verifying SNPs on Chromosome X")
 }
