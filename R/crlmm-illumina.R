@@ -324,186 +324,139 @@ readGenCallOutput = function(filenames, path=".", cdfName,
 
 
 
-RGtoXY = function(RG, chipType, anno, verbose=TRUE) {
-  if(chipType!="nopackage") {
-  needToLoad <- !all(sapply(c('addressA', 'addressB', 'base'), isLoaded))
-  if(needToLoad){
-	  chipList = c("human1mv1c",# 1M
-	  "human370v1c",            # 370CNV
-	  "human650v3a",            # 650Y
-	  "human610quadv1b",        # 610 quad
-	  "human660quadv1a",        # 660 quad
-	  "human370quadv3c",        # 370CNV quad
-	  "human550v3b",            # 550K
-	  "human1mduov3b",          # 1M Duo
-	  "humanomni1quadv1b",      # Omni1 quad
-	  "humanomni25quadv1b",     # Omni2.5 quad
-	  "humanomni258v1a",        # Omni2.5 8 v1 A
-          "humanomni258v1p1b",      # Omni2.5 8 v1.1 B
-          "humanomni5quadv1b",      # Omni5 quad  
-	  "humanomniexpress12v1b",  # Omni express 12
-	  "humanimmuno12v1b",       # Immuno chip 12
-          "humancytosnp12v2p1h",    # CytoSNP 12
-          "humanexome12v1p2a",      # Exome 12 v1.2 A
-          "humanomniexpexome8v1p1b") # Omni Express Exome 8 v1.1b
-	  ## RS: added cleancdfname()
-	  if(missing(chipType)){
-		  chipType = match.arg(cleancdfname(annotation(RG)), chipList)
-	  } else chipType = match.arg(cleancdfname(chipType), chipList)
-	  pkgname = getCrlmmAnnotationName(chipType)
-	  if(!require(pkgname, character.only=TRUE, quietly=!verbose)){
-		  suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", sep="")
-		  msg = paste("If", pkgname, "is installed on an alternative location, please load it manually by using", suggCall)
-		  message(strwrap(msg))
-		  stop("Package ", pkgname, " could not be found.")
-		  rm(suggCall, msg)
-	  }
-	  if(verbose) message("Loading chip annotation information.")
-	  loader("address.rda", .crlmmPkgEnv, pkgname)
-  }
-  aids = getVarInEnv("addressA") # comes from AddressA_ID or Address column in manifest
-  bids = getVarInEnv("addressB") # comes from AddressB_ID or Address2 column in manifest
-  snpbase = getVarInEnv("base")
-##  loader(‘file.rda’)
-##  x = getVarInEnv(‘x’)
-##  y = getVarInEnv(‘y’)
-##
-##  I’d consider using something like:
-##
-##	  needToLoad = !all(sapply(c(‘x’, ‘y’), isLoaded))
-##  if (needToLoad){
-##	  loader(‘file.rda’)
-##	  x = getVarInEnv(‘x’)
-##	  y = getVarInEnv(‘y’)
-##  }
-  ids = names(aids)
-  nsnps = length(aids)
-  narrays = ncol(RG)
-#  aidcol = match("AddressA_ID", colnames(annot))
-#  if(is.na(aidcol))
-#    aidcol = match("Address", colnames(annot))
-#  if(is.na(bidcol))
-#    bidcol = match("Address2", colnames(annot))
-#  aids = annot[, aidcol]
-#  bids = annot[, bidcol]
-#  snpids = annot[,"Name"]
-#  snpbase = annot[,"SNP"]
-  infI = !is.na(bids) & bids!=0
-  aord = match(aids, featureNames(RG)) # NAs are possible here
-  bord = match(bids, featureNames(RG)) # and here
-#  argrg = aids[rrgg]
-#  brgrg = bids[rrgg]
-  xyPhenoData = AnnotatedDataFrame(data=RG@phenoData@data,varMetadata=RG@phenoData@varMetadata)
-  levels(xyPhenoData@varMetadata$channel) = c("X","Y","zero","_ALL_")
-  XY <- new("NChannelSet",
-        assayDataNew(X=initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer"),
-                     Y=initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer"),
-                     zero=initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer")),
-        phenoData=xyPhenoData, protocolData=RG@protocolData, annotation=chipType)
-   storageMode(XY) = "environment"
-#  XY <- new("NChannelSet",
-#	    X=matrix(0, nsnps, narrays),
-#	    Y=matrix(0, nsnps, narrays),
-#	    zero=matrix(0, nsnps, narrays),
-#	    annotation=chipType, phenoData=RG@phenoData,
-#	    protocolData=RG@protocolData, storage.mode="environment")
-  featureNames(XY) = ids
-  sampleNames(XY) = sampleNames(RG)
-  ## RS
-  rm(list=c("bord", "infI", "aids", "bids", "ids", "snpbase"))
-#  print(gc())
-  gc(verbose=FALSE)
-  # Need to initialize - matrices filled with NAs to begin with
-#  XY@assayData$X[1:nsnps,] = 0
-#  XY@assayData$Y[1:nsnps,] = 0
-#  XY@assayData$zero[1:nsnps,] = 0
+RGtoXY = function (RG, chipType, anno, verbose = TRUE) 
+{
+    if (chipType != "nopackage") {
+        needToLoad <- !all(sapply(c("addressA", "addressB", "base"), 
+            isLoaded))
+        if (needToLoad) {
+            chipList = c("human1mv1c", "human370v1c", "human650v3a", 
+                "human610quadv1b", "human660quadv1a", "human370quadv3c", 
+                "human550v3b", "human1mduov3b", "humanomni1quadv1b", 
+                "humanomni25quadv1b", "humanomni258v1a", "humanomni258v1p1b", 
+                "humanomni5quadv1b", "humanomniexpress12v1b", 
+                "humanimmuno12v1b", "humancytosnp12v2p1h", "humanexome12v1p2a", 
+                "humanomniexpexome8v1p1b")
+            if (missing(chipType)) {
+                chipType = match.arg(cleancdfname(annotation(RG)), 
+                  chipList)
+            }
+            else chipType = match.arg(cleancdfname(chipType), 
+                chipList)
+            pkgname = getCrlmmAnnotationName(chipType)
+            if (!require(pkgname, character.only = TRUE, quietly = !verbose)) {
+                suggCall = paste("library(", pkgname, ", lib.loc='/Altern/Lib/Loc')", 
+                  sep = "")
+                msg = paste("If", pkgname, "is installed on an alternative location, please load it manually by using", 
+                  suggCall)
+                message(strwrap(msg))
+                stop("Package ", pkgname, " could not be found.")
+                rm(suggCall, msg)
+            }
+            if (verbose) 
+                message("Loading chip annotation information.")
+            loader("address.rda", .crlmmPkgEnv, pkgname)
+        }
+        aids = getVarInEnv("addressA")
+        bids = getVarInEnv("addressB")
+        snpbase = getVarInEnv("base")
+        ids = names(aids)
+        nsnps = length(aids)
+        narrays = ncol(RG)
+        infI = !is.na(bids) & bids != 0
+        aord = match(aids, featureNames(RG))
+        bord = match(bids, featureNames(RG))
+        xyPhenoData = AnnotatedDataFrame(data = RG@phenoData@data, 
+            varMetadata = RG@phenoData@varMetadata)
+        levels(xyPhenoData@varMetadata$channel) = c("X", "Y", 
+            "zero", "_ALL_")
+        XY <- new("NChannelSet", assayDataNew(X = initializeBigMatrix(name = "X", 
+            nr = nsnps, nc = narrays, vmode = "integer"), Y = initializeBigMatrix(name = "Y", 
+            nr = nsnps, nc = narrays, vmode = "integer"), zero = initializeBigMatrix(name = "zero", 
+            nr = nsnps, nc = narrays, vmode = "integer")), phenoData = xyPhenoData, 
+            protocolData = RG@protocolData, annotation = chipType)
+        storageMode(XY) = "environment"
+        featureNames(XY) = ids
+        sampleNames(XY) = sampleNames(RG)
+        rm(list = c("bord", "infI", "aids", "bids", "ids", "snpbase"))
+        gc(verbose = FALSE)
+        not.na <- !is.na(aord)
+        not.na.aord <- aord[not.na]
+        r <- as.matrix(assayData(RG)[["R"]][not.na.aord, ])
+        XY@assayData$X[not.na, ] <- r
+        rm(r)
+        gc(verbose = FALSE)
+        g <- as.matrix(assayData(RG)[["G"]][not.na.aord, ])
+        XY@assayData$Y[not.na, ] <- g
+        rm(g)
+        gc(verbose = FALSE)
+        z <- as.matrix(assayData(RG)[["zero"]][not.na.aord, ])
+        XY@assayData$zero[not.na, ] <- z
+        rm(z)
+        gc(verbose = FALSE)
+        rm(RG)
+        gc(verbose = FALSE)
+    }
+    if (chipType == "nopackage" && !is.null(anno)) {
+        pkgname = NULL
+        if(sum(colnames(anno@data)=="AddressA_ID")!=1){
+           
+           message("annotation format is wrong, could not find a column with name: AddressA_ID")
+         }else{
+         anno2=anno@data
+           # chr = as.character(anno$Chr)
+  #chr[chr=="X"] = 23
+  #  chr[chr=="Y"] = 24
+  #  chr[chr=="XY"] = 25
+#chr[chr=="MT"] = 26
+#anno[,"chromosome"]=as.integer(chr)
 
-  # First sort out Infinium II SNPs, X -> R (allele A)  and Y -> G (allele B) from the same probe
-  ## RS added
-  not.na <- !is.na(aord)
-  not.na.aord <- aord[not.na]
-  ## RS substitution  !is.na(aord) -> not.na
-  ##r <- as.matrix(exprs(channel(RG, "R"))[not.na.aord,]) # mostly red
-  r <- as.matrix(assayData(RG)[["R"]][not.na.aord, ])
-  XY@assayData$X[not.na,] <- r
-  rm(r);gc(verbose=FALSE)
-  g <- as.matrix(assayData(RG)[["G"]][not.na.aord,]) # mostly green
-  XY@assayData$Y[not.na,] <- g
-  rm(g); gc(verbose=FALSE)
-  ##z <- as.matrix(exprs(channel(RG, "zero"))[not.na.aord,]) # mostly green
-  z <- as.matrix(assayData(RG)[["zero"]][not.na.aord, ])
-  XY@assayData$zero[not.na,] <- z
-  rm(z); gc(verbose=FALSE)
-  ##RS added
-  rm(RG)
-#  print(gc())
-  gc(verbose=FALSE)
-  ## Warning - not 100% sure that the code below is correct - could be more complicated than this
-#  infIRR = infI & (snpbase=="[A/T]" | snpbase=="[T/A]" | snpbase=="[a/t]" | snpbase=="[t/a]")
-
-#  X[infIRR,] = exprs(channel(RG, "R"))[aord[infIRR],] # mostly red
-#  Y[infIRR,] = exprs(channel(RG, "R"))[bord[infIRR],] # mostly green
-
-  # Finally Infinium I where X -> G from allele A probe and Y -> G from allele B probe
-#  infIGG = infI & (snpbase=="[C/G]" | snpbase=="[G/C]" | snpbase=="[g/c]" | snpbase=="[c/g]")
-
-#  X[infIGG,] = exprs(channel(RG, "G"))[aord[infIGG],] # mostly red
-#  Y[infIGG,] = exprs(channel(RG, "G"))[bord[infIGG],] # mostly green
-
-  #  For now zero out Infinium I probes
-#  XY@assayData$X[infI,] = 0
-#  XY@assayData$Y[infI,] = 0
-#  XY@assayData$zero[infI,] = 0
-#  gc(verbose=FALSE)
-  }
-  if(chipType=="nopackage" && !is.null(anno)) {
-            pkgname=NULL
-#            anno=read.csv(annot,header=TRUE, as.is=TRUE, check.names=FALSE,skip=7)
-            aids=anno[,"AddressA_ID"]
-            bids=anno[,"AddressB_ID"]
-            snpbase=anno[,"SNP"]
-            names(aids)=ids=anno[,"Name"]
-#            m=match(aids,rownames(RG@assayData$R))
-#            ARG=RG[m[!is.na(m)],]
-#            mm=match(rownames(ARG@assayData$R),aids)
-#            aids=aids[mm]
-#            bids=bids[mm]
-#            snpbas=snpbase[mm]
-            nsnps = length(aids)
-            narrays = ncol(RG)
-            infI = !is.na(bids) & bids != 0
-            aord = match(aids, featureNames(RG))
-            bord = match(bids, featureNames(RG))
-            xyPhenoData = AnnotatedDataFrame(data = RG@phenoData@data, 
-                                             varMetadata = RG@phenoData@varMetadata)
-            levels(xyPhenoData@varMetadata$channel) = c("X", "Y", "zero", "_ALL_")
-            XY <- new("NChannelSet", assayDataNew(X = initializeBigMatrix(name="X", nr=nsnps, nc=narrays, vmode="integer"),
-                                                  Y = initializeBigMatrix(name="Y", nr=nsnps, nc=narrays, vmode="integer"),
-                                                  zero = initializeBigMatrix(name="zero", nr=nsnps, nc=narrays, vmode="integer")),
-                      phenoData = xyPhenoData, protocolData = RG@protocolData)
-            storageMode(XY) = "environment"
-            featureNames(XY) = names(aids)
-            sampleNames(XY) = sampleNames(RG)
-            rm(list = c("bord", "infI", "aids", "bids", "snpbase"))
-            gc(verbose = FALSE)
-            not.na <- !is.na(aord)
-            not.na.aord <- aord[not.na]
-            r <- as.matrix(assayData(RG)[["R"]][not.na.aord, ])
-            XY@assayData$X[not.na, ] <- r
-            rm(r)
-            gc(verbose = FALSE)
-            g <- as.matrix(assayData(RG)[["G"]][not.na.aord, ])
-            XY@assayData$Y[not.na, ] <- g
-            rm(g)
-            gc(verbose = FALSE)
-            z <- as.matrix(assayData(RG)[["zero"]][not.na.aord, ])
-            XY@assayData$zero[not.na, ] <- z
-            rm(z)
-            gc(verbose = FALSE)
-            rm(RG)
-            gc(verbose = FALSE)
-   }
-   XY
+       aids = anno2[, "AddressA_ID"]
+        bids = anno2[, "AddressB_ID"]
+        snpbase = anno2[, "SNP"]
+        names(aids) = ids = anno2[, "featureNames"]
+        nsnps = length(aids)
+        narrays = ncol(RG)
+        infI = !is.na(bids) & bids != 0
+        aord = match(aids, featureNames(RG))
+        bord = match(bids,featureNames(RG))
+        xyPhenoData = AnnotatedDataFrame(data = RG@phenoData@data, 
+            varMetadata = RG@phenoData@varMetadata)
+        levels(xyPhenoData@varMetadata$channel) = c("X", "Y", 
+            "zero", "_ALL_")
+        XY <- new("NChannelSet", assayDataNew(X = initializeBigMatrix(name = "X", 
+            nr = nsnps, nc = narrays, vmode = "integer"), Y = initializeBigMatrix(name = "Y", 
+            nr = nsnps, nc = narrays, vmode = "integer"), zero = initializeBigMatrix(name = "zero", 
+            nr = nsnps, nc = narrays, vmode = "integer")), phenoData = xyPhenoData, 
+            protocolData = RG@protocolData)
+        storageMode(XY) = "environment"
+       # featureNames(XY) = names(aids)
+        sampleNames(XY) = sampleNames(RG)
+        rm(list = c("bord", "infI", "aids", "bids", "snpbase"))
+        gc(verbose = FALSE)
+        not.na <- !is.na(aord)
+        not.na.aord <- aord[not.na]
+        r <- as.matrix(assayData(RG)[["R"]][not.na.aord, ])
+        XY@assayData$X[not.na, ] <- r
+        rm(r)
+        gc(verbose = FALSE)
+        g <- as.matrix(assayData(RG)[["G"]][not.na.aord, ])
+        XY@assayData$Y[not.na, ] <- g
+        rm(g)
+        gc(verbose = FALSE)
+        z <- as.matrix(assayData(RG)[["zero"]][not.na.aord, ])
+        XY@assayData$zero[not.na, ] <- z
+        rm(z)
+        gc(verbose = FALSE)
+        rm(RG)
+        gc(verbose = FALSE)
+   
+    
+    
+    
+         }
+      }
+           XY 
 }
 
 
@@ -1155,7 +1108,10 @@ constructInf <- function(sampleSheet=NULL,
             genome <- getAvailableIlluminaGenomeBuild(path)
             featureData = getFeatureData(cdfName, copynumber=TRUE, genome=genome)
           } else {
-            featureData=anno
+                      anno = as(anno, "AnnotatedDataFrame")
+ anno = as(anno, "GenomeAnnotatedDataFrame")
+featureData=anno
+           
           }
           nr <- nrow(featureData)
           nc <- narrays

@@ -144,7 +144,11 @@ priormeans=prepriormeans
     XIndex = seq(1:nrow(cnSet))[chromosome(cnSet)==23 & isSnp(cnSet)]
 ### impute gender if gender information not provided
     if (is.null(gender)) {
-       gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose, offset=offset)
+       if(sum(is.na(YIndex))==length(YIndex)){
+		gender=NULL
+       }else{
+	gender = krlmmImputeGender(cnSet, annotation, YIndex, verbose, offset=offset)
+       }
     }
 
 ### double-check ChrY ChrX SNP cluster, impute gender if gender information not provided
