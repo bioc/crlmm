@@ -48,8 +48,9 @@ information used by CRLMM is stored in the \Rpackage{human370v1cCrlmm} package.
 The required packages can be installed in the usual way using the \Rfunction{biocLite} function.
 
 <<echo=TRUE, results=hide, eval=FALSE>>=
-source("http://www.bioconductor.org/biocLite.R")
-biocLite(c("crlmm", "hapmap370k", "human370v1cCrlmm"))
+if (!requireNamespace("BiocManager", quietly=TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("crlmm", "hapmap370k", "human370v1cCrlmm"))
 @
 
 \section{Reading in data}
