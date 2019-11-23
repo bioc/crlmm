@@ -16,7 +16,7 @@ Depends: R (>= 2.14.0), oligoClasses (>= 1.21.12), preprocessCore (>=
         1.17.7)
 LinkingTo: preprocessCore (>= 1.17.7)
 Imports: methods, Biobase (>= 2.15.4), BiocGenerics, affyio (>=
-        1.23.2), illuminaio, ellipse, mvtnorm, splines, stats, SNPchip,
+        1.23.2), illuminaio, ellipse, mvtnorm, splines, stats, 
         utils, lattice, ff, foreach, RcppEigen (>= 0.3.1.2.1),
         matrixStats, VGAM, parallel, graphics, limma, beanplot
 Suggests: hapmapsnp6, genomewidesnp6Crlmm (>= 1.0.7), GGdata, snpStats,
